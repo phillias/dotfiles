@@ -1,0 +1,69 @@
+#!	/bin/bash
+ipconfig /all | gawk '
+
+  BEGIN {
+    # Initialize state variables.
+    addSuffixes=0;
+    searchList="";
+    addServers=0
+  };
+
+  {
+    # Strip undesired carriage returns from DOS style command output.
+    sub("\x0D","");
+  };
+
+  /:/ {
+    # Stop accumulations when we encounter a new line header.
+    # No lines we are interested in contain a colon.
+    addSuffixes=0;
+    addServers=0;
+  };
+
+  /DNS Servers/ {
+    # Start identifying DNS servers when we see the appropriate line header.
+    addServers=1;
+    # Convert the current line to the same form as subsequent entries.
+    sub("[^:]+: ","");
+  };
+
+  {
+    # If we are identifying DNS servers the current line contains an IP number
+    # for a server, so configure a "nameserver" record with this IP number.
+    if (addServers) {
+      printf ("nameserver %s\n", $1)
+    }
+  };
+
+  /Primary Dns Suffix  \. \. \. \. \. \. \. : ./ {
+    # When we spot the Primary DNS suffix use it to configure a "domain" record
+    # and append it to the searchList for later use.
+    sub("[^:]+: ","");
+    printf ("domain %s\n", $0);
+    searchList=(searchList " " $1);
+  };
+
+  /DNS Suffix Search List/ {
+    # Start accumulating searchList entries for later use.
+    addSuffixes=1;
+    # Convert the current line into the same form as any subsequent entries.
+    sub("[^:]+: ","");
+  };
+
+  {
+    # If we are accumulating searchList entries the current line contains a
+    # suffix, append it to the list.
+    if (addSuffixes) {
+      searchList=(searchList " " $1);
+    }
+  };
+
+  END {
+    # Final clean up. If we accumulated a non-empty searchList configure a
+    # "search" record with the contents of the list.
+    if (searchList) {
+      print "search " searchList;
+    }
+  }
+
+' >/etc/resolv.conf
