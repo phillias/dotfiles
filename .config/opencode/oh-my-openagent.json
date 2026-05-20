@@ -2,6 +2,16 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-openagent.schema.json",
 
   /*
+   * ── DISABLED HOOKS ──
+   * no-hephaestus-non-gpt: Hephaestus deliberately uses DS-V4-Pro (non-GPT)
+   * as a documented Dangerous override. This hook's error toast and
+   * force-switch to Sisyphus is counterproductive — we know the trade-off.
+   */
+  "disabled_hooks": [
+    "no-hephaestus-non-gpt"
+  ],
+
+  /*
    * ── RUNTIME FALLBACK ──
    * Auto-switches to fallback_models chain on API errors.
    * model_fallback intercepts OpenCode's internal retry loop on usage limits,
