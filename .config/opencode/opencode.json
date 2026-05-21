@@ -16,8 +16,8 @@
 
   /*
    * Small model used for compaction (session summarization) and title generation.
-   * A cheap/free model is ideal since these are frequent, low-stakes tasks.
-   */
+    * A cheap/free model is ideal since these are frequent, low-stakes tasks.
+    */
   "small_model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
 
   "provider": {
