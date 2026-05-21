@@ -2,13 +2,13 @@
   "$schema": "https://opencode.ai/config.json",
 
   /*
-   * CODEMEM CROSS-MACHINE SYNC CONFIGURATION
-   * This configuration includes codemem for cross-machine memory synchronization.
-   * Use this when you want to sync memories across multiple machines (e.g., OCI + Kali).
-   * Requires setting up codemem sync peers between machines.
+   * CODEMEM LOCAL-ONLY CONFIGURATION
+   * This configuration includes codemem for local memory persistence only.
+   * Memories are stored locally and survive session restarts, but are NOT synced
+   * to other machines. Use this when you want local memory on a single machine
+   * without cross-machine synchronization.
    *
-   * For local-only codemem (no sync), use: opencode-codemem-local.json
-   * For default configuration, use: opencode.json
+   * For cross-machine sync, use: opencode.json (default) or opencode-codemem-shared.json
    */
 
   /*
