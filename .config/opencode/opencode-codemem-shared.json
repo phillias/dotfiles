@@ -2,10 +2,10 @@
   "$schema": "https://opencode.ai/config.json",
 
   /*
-   * LOCAL-ONLY CONFIGURATION
-   * This is the default opencode.json without codemem sync.
-   * Use this on machines where you don't need cross-machine memory sharing.
-   * For shared/codemem configuration, see opencode-codemem-shared.json
+   * SHARED/CODEMEM CONFIGURATION
+   * This configuration includes codemem for cross-machine memory sync.
+   * Use this on machines that need to share memories (e.g., OCI + Kali setup).
+   * For local-only configuration without codemem, see opencode.json
    */
 
   /*
@@ -75,6 +75,14 @@
       "args": [
         "-y",
         "chrome-devtools-mcp@latest"
+      ]
+    },
+    "codemem": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "codemem",
+        "mcp"
       ]
     }
   },
