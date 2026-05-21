@@ -2,13 +2,6 @@
   "$schema": "https://opencode.ai/config.json",
 
   /*
-   * LOCAL-ONLY CONFIGURATION
-   * This is the default opencode.json without codemem sync.
-   * Use this on machines where you don't need cross-machine memory sharing.
-   * For shared/codemem configuration, see opencode-codemem-shared.json
-   */
-
-  /*
    * Default fallback model — last resort in oh-my-openagent's model resolution chain.
    * Used when all agent/category model overrides and fallback_chains fail.
    */
@@ -75,6 +68,14 @@
       "args": [
         "-y",
         "chrome-devtools-mcp@latest"
+      ]
+    },
+    "codemem": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "codemem",
+        "mcp"
       ]
     }
   },
