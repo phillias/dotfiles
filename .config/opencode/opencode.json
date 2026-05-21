@@ -9,8 +9,8 @@
 
   /*
    * Small model used for compaction (session summarization) and title generation.
-   * A cheap/free model is ideal since these are frequent, low-stakes tasks.
-   */
+    * A cheap/free model is ideal since these are frequent, low-stakes tasks.
+    */
   "small_model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
 
   "provider": {
@@ -79,6 +79,14 @@
       ]
     }
   },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "tail_turns": 2,
+    "preserve_recent_tokens": 8000,
+    "reserved": 4000
+  },
+
   "plugin": [
     "oh-my-openagent@latest"
   ]
