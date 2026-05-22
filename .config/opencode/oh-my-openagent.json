@@ -3,8 +3,8 @@
 
   /*
    * ── DISABLED HOOKS ──
-   * no-hephaestus-non-gpt: Hephaestus deliberately uses DS-V4-Pro (non-GPT)
-   * as a documented Dangerous override. This hook's error toast and
+   * no-hephaestus-non-gpt: Hephaestus is deliberately configured with DS-V4-Pro
+   * (non-GPT) as a documented Dangerous override. This hook's error toast and
    * force-switch to Sisyphus is counterproductive — we know the trade-off.
    */
   "disabled_hooks": [
@@ -22,7 +22,7 @@
   "model_fallback": true,
   "runtime_fallback": {
     "enabled": true,
-    "retry_on_errors": [400, 401, 429, 500, 502, 503, 504, 529],
+    "retry_on_errors": [400, 401, 402, 429, 500, 502, 503, 504, 529],
     "max_fallback_attempts": 5,
     "cooldown_seconds": 30,
     "timeout_seconds": 20,
@@ -76,7 +76,8 @@
       },
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/deepseek-v4-flash",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -97,7 +98,8 @@
       "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/deepseek-v4-flash",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -108,7 +110,8 @@
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "opencode-go/kimi-k2.5"
+        "opencode-go/kimi-k2.5",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -118,7 +121,8 @@
       "model": "opencode-go/deepseek-v4-pro",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/deepseek-v4-flash",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -129,7 +133,8 @@
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
-        "opencode-go/kimi-k2.5"
+        "opencode-go/kimi-k2.5",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -141,7 +146,8 @@
       "model": "opencode-go/deepseek-v4-pro",
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
-        "opencode-go/kimi-k2.6"
+        "opencode-go/kimi-k2.6",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -152,7 +158,8 @@
       "variant": "xhigh",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/deepseek-v4-flash",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -185,7 +192,8 @@
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free"
+        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+        "opencode/deepseek-v4-flash-free"
       ]
     }
   },
@@ -204,7 +212,8 @@
       "model": "opencode-go/kimi-k2.5",
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
-        "opencode-go/minimax-m2.7"
+        "opencode-go/minimax-m2.7",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -214,7 +223,8 @@
       "variant": "xhigh",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/deepseek-v4-flash",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -223,7 +233,8 @@
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
-        "opencode-go/kimi-k2.5"
+        "opencode-go/kimi-k2.5",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -232,7 +243,8 @@
       "model": "opencode-go/kimi-k2.5",
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
-        "opencode-go/minimax-m2.7"
+        "opencode-go/minimax-m2.7",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -259,7 +271,8 @@
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
-        "opencode-go/kimi-k2.5"
+        "opencode-go/kimi-k2.5",
+        "opencode/deepseek-v4-flash-free"
       ]
     },
 
@@ -268,7 +281,8 @@
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
         "opencode-go/kimi-k2.5",
-        "opencode-go/minimax-m2.5"
+        "opencode-go/minimax-m2.5",
+        "opencode/deepseek-v4-flash-free"
       ]
     }
   }
