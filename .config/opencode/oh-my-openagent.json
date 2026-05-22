@@ -77,7 +77,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/deepseek-v4-flash",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -99,7 +101,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/deepseek-v4-flash",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -111,7 +115,9 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/kimi-k2.5",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -122,7 +128,9 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -134,7 +142,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/kimi-k2.5",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -147,7 +157,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -159,7 +171,9 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -193,7 +207,9 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     }
   },
@@ -213,7 +229,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/minimax-m2.7",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -224,7 +242,9 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -234,7 +254,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/kimi-k2.5",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -244,7 +266,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/minimax-m2.7",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -272,7 +296,9 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/kimi-k2.5",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     },
 
@@ -282,7 +308,9 @@
       "fallback_models": [
         "opencode-go/kimi-k2.5",
         "opencode-go/minimax-m2.5",
-        "opencode/deepseek-v4-flash-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/big-pickle",
+        "opencode/nemotron-3-super-free"
       ]
     }
   }
