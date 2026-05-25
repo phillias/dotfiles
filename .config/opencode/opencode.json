@@ -9,8 +9,10 @@
 
   /*
    * Small model used for compaction (session summarization) and title generation.
-    * A cheap/free model is ideal since these are frequent, low-stakes tasks.
-    */
+   * A cheap/free model is ideal since these are frequent, low-stakes tasks.
+   * TODO: When #11930 (compaction.model config) lands, use opencode/deepseek-v4-flash-free here
+   * for compaction — DeepSeek V4 Flash Free has strong instruction-following, 1M context, and is free.
+   */
   "small_model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
 
   "provider": {
@@ -82,10 +84,16 @@
   "compaction": {
     "auto": true,
     "prune": true,
-    "tail_turns": 2,
-    "preserve_recent_tokens": 8000,
-    "reserved": 4000
+    "tail_turns": 15,
+    "reserved": 20000
   },
+
+  /*
+   * Full autonomy — all tools allow without approval.
+   * Only external_directory and doom_loop still default to "ask" as safety guards.
+   * See opencode.ai/docs/permissions/ for granular overrides.
+   */
+  "permission": "allow",
 
   "plugin": [
     "oh-my-openagent@latest"
