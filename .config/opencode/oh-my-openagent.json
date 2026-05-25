@@ -55,7 +55,7 @@
    * Each agent maps to a role in oh-my-openagent's orchestration system.
    * Model choices follow oh-my-openagent's agent-model-matching guide
    * agent type classification: Communicators, Dual-Prompt, Deep Specialists, Utility Runners.
-   * Fallback chains cascade: paid Go → Zen free → OpenRouter free.
+   * Fallback chains cascade: paid Go → Owl Alpha → Zen free → OpenRouter free.
    */
 
   "agents": {
@@ -77,18 +77,23 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/deepseek-v4-flash",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
     // ═══ EXECUTOR (HIGH VOLUME) ═══
-    // Utility Runner — cheapest-fastest. Zen free model avoids touching Go pool.
+    // Utility Runner — Owl Alpha provides agentic optimization at zero cost.
     "sisyphus-junior": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-        "opencode/minimax-m2.5-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/minimax-m2.5-free",
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -100,8 +105,10 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/deepseek-v4-flash",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -113,8 +120,10 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/kimi-k2.5",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -125,8 +134,10 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -138,8 +149,10 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/kimi-k2.5",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -152,8 +165,10 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -165,20 +180,24 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
     // ═══ UTILITY RUNNERS (HIGH VOLUME, FREE MODELS) ═══
     // Guide explicitly recommends "cheapest-fastest" for Utility Runners.
-    // Zen free models avoid rate limiting and Go pool consumption.
+    // Owl Alpha provides agentic tool-use optimization at zero cost —
+    // a bet on bleeding-edge performance over Zen curation.
     "explore": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
+        "opencode/deepseek-v4-flash-free",
         "opencode/minimax-m2.5-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ],
       "permission": {
         "edit": "deny",
@@ -186,24 +205,28 @@
       }
     },
     "librarian": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "opencode/deepseek-v4-flash-free",
         "opencode/minimax-m2.5-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // ═══ MULTIMODAL ═══
     // MiMo-V2.5-Pro (per user directive: "stay with MiMo").
-    // Falls back to K2.6 then a free OpenRouter VL model for vision tasks.
+    // Owl Alpha offered as fallback for non-vision tasks; Nemotron VL
+    // retained at end of chain for vision-specific queries.
     "multimodal-looker": {
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free"
       ]
     }
   },
@@ -223,8 +246,10 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/minimax-m2.7",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -235,8 +260,10 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -246,8 +273,10 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/kimi-k2.5",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -257,26 +286,34 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "opencode-go/minimax-m2.7",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
-    // Trivial tasks — free model, high volume.
+    // Trivial tasks — Owl Alpha as primary, Zen free and OpenRouter free as fallback.
     "quick": {
-      "model": "opencode/deepseek-v4-flash-free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-        "opencode/minimax-m2.5-free"
+        "opencode/deepseek-v4-flash-free",
+        "opencode/minimax-m2.5-free",
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // General low-effort — free model.
+    // General low-effort — Owl Alpha as primary.
     "unspecified-low": {
-      "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
         "opencode/deepseek-v4-flash-free",
-        "opencode/minimax-m2.5-free"
+        "opencode/minimax-m2.5-free",
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -286,8 +323,10 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "opencode-go/kimi-k2.5",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
@@ -297,8 +336,10 @@
       "fallback_models": [
         "opencode-go/kimi-k2.5",
         "opencode-go/minimax-m2.5",
+        "openrouter/owl-alpha",
         "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle"
+        "opencode/big-pickle",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     }
   }
