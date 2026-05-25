@@ -9,11 +9,9 @@
 
   /*
    * Small model used for compaction (session summarization) and title generation.
-   * A cheap/free model is ideal since these are frequent, low-stakes tasks.
-   * TODO: When #11930 (compaction.model config) lands, use opencode/deepseek-v4-flash-free here
-   * for compaction — DeepSeek V4 Flash Free has strong instruction-following, 1M context, and is free.
-   */
-  "small_model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+    * A cheap/free model is ideal since these are frequent, low-stakes tasks.
+    */
+  "small_model": "opencode/deepseek-v4-flash-free",
 
   "provider": {
     "opencode-go": {
