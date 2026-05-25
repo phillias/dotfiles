@@ -82,10 +82,16 @@
   "compaction": {
     "auto": true,
     "prune": true,
-    "tail_turns": 2,
-    "preserve_recent_tokens": 8000,
-    "reserved": 4000
+    "tail_turns": 15,
+    "reserved": 20000
   },
+
+  /*
+   * Full autonomy — all tools allow without approval.
+   * Only external_directory and doom_loop still default to "ask" as safety guards.
+   * See opencode.ai/docs/permissions/ for granular overrides.
+   */
+  "permission": "allow",
 
   "plugin": [
     "oh-my-openagent@latest"
