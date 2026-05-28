@@ -55,7 +55,9 @@
    * Each agent maps to a role in oh-my-openagent's orchestration system.
    * Model choices follow oh-my-openagent's agent-model-matching guide
    * agent type classification: Communicators, Dual-Prompt, Deep Specialists, Utility Runners.
-   * Fallback chains cascade: paid Go → Owl Alpha → Zen free → OpenRouter free.
+   * Fallback chains cascade: Go pool primary → Owl Alpha → OpenRouter free.
+   * No Go pool models appear in fallback chains — once the Go pool is exhausted,
+   * we skip straight to OpenRouter instead of burning attempts on dead models.
    */
 
   "agents": {
@@ -75,12 +77,10 @@
         "variant": "xhigh"
       },
       "fallback_models": [
-        "opencode-go/deepseek-v4-pro",
-        "opencode-go/deepseek-v4-flash",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -89,9 +89,8 @@
     "sisyphus-junior": {
       "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "opencode/deepseek-v4-flash-free",
-        "opencode/minimax-m2.5-free",
-        "opencode/big-pickle",
+        "openrouter/owl-alpha",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
@@ -103,12 +102,10 @@
     "prometheus": {
       "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
-        "opencode-go/deepseek-v4-pro",
-        "opencode-go/deepseek-v4-flash",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -118,12 +115,10 @@
     "metis": {
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/kimi-k2.5",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -132,12 +127,10 @@
     "momus": {
       "model": "opencode-go/deepseek-v4-pro",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -147,12 +140,10 @@
     "atlas": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
-        "opencode-go/deepseek-v4-pro",
-        "opencode-go/kimi-k2.5",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -163,12 +154,10 @@
     "hephaestus": {
       "model": "opencode-go/deepseek-v4-pro",
       "fallback_models": [
-        "opencode-go/deepseek-v4-flash",
-        "opencode-go/kimi-k2.6",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -178,12 +167,10 @@
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -194,9 +181,7 @@
     "explore": {
       "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "opencode/deepseek-v4-flash-free",
-        "opencode/minimax-m2.5-free",
-        "opencode/big-pickle",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ],
       "permission": {
@@ -207,9 +192,7 @@
     "librarian": {
       "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "opencode/deepseek-v4-flash-free",
-        "opencode/minimax-m2.5-free",
-        "opencode/big-pickle",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
@@ -222,10 +205,9 @@
     "multimodal-looker": {
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free"
       ]
     }
@@ -244,12 +226,10 @@
     "visual-engineering": {
       "model": "opencode-go/kimi-k2.5",
       "fallback_models": [
-        "opencode-go/deepseek-v4-flash",
-        "opencode-go/minimax-m2.7",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -258,12 +238,10 @@
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -271,12 +249,10 @@
     "deep": {
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
-        "opencode-go/deepseek-v4-pro",
-        "opencode-go/kimi-k2.5",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -284,12 +260,10 @@
     "artistry": {
       "model": "opencode-go/kimi-k2.5",
       "fallback_models": [
-        "opencode-go/deepseek-v4-flash",
-        "opencode-go/minimax-m2.7",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -297,9 +271,7 @@
     "quick": {
       "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "opencode/deepseek-v4-flash-free",
-        "opencode/minimax-m2.5-free",
-        "opencode/big-pickle",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
@@ -309,9 +281,7 @@
     "unspecified-low": {
       "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "opencode/deepseek-v4-flash-free",
-        "opencode/minimax-m2.5-free",
-        "opencode/big-pickle",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
@@ -321,12 +291,10 @@
     "unspecified-high": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
-        "opencode-go/deepseek-v4-pro",
-        "opencode-go/kimi-k2.5",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -334,12 +302,10 @@
     "writing": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
-        "opencode-go/kimi-k2.5",
-        "opencode-go/minimax-m2.5",
         "openrouter/owl-alpha",
-        "opencode/deepseek-v4-flash-free",
-        "opencode/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     }
   }
