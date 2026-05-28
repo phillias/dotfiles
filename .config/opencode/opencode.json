@@ -1,18 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
-  /*
-   * Default fallback model — last resort in oh-my-openagent's model resolution chain.
-   * Used when all agent/category model overrides and fallback_chains fail.
-   */
-  "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-
-  /*
-   * Small model used for compaction (session summarization) and title generation.
-    * A cheap/free model is ideal since these are frequent, low-stakes tasks.
-    */
-  "small_model": "opencode/deepseek-v4-flash-free",
-
+  "small_model": "openrouter/deepseek/deepseek-v4-flash:free",
   "provider": {
     "opencode-go": {
       "models": {
@@ -32,6 +20,7 @@
     },
     "openrouter": {
       "models": {
+        "owl-alpha": {},
         "anthropic/claude-sonnet-4": {},
         "anthropic/claude-3.5-haiku": {},
         "openai/gpt-4o": {},
@@ -45,6 +34,13 @@
       }
     }
   },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 20000,
+    "tail_turns": 15
+  },
+  "permission": "allow",
   "mcp": {
     "netdata-bylocalhost": {
       "type": "remote",
@@ -79,20 +75,6 @@
       ]
     }
   },
-  "compaction": {
-    "auto": true,
-    "prune": true,
-    "tail_turns": 15,
-    "reserved": 20000
-  },
-
-  /*
-   * Full autonomy — all tools allow without approval.
-   * Only external_directory and doom_loop still default to "ask" as safety guards.
-   * See opencode.ai/docs/permissions/ for granular overrides.
-   */
-  "permission": "allow",
-
   "plugin": [
     "oh-my-openagent@latest"
   ]
