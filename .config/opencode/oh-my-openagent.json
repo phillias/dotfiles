@@ -22,10 +22,10 @@
   "model_fallback": true,
   "runtime_fallback": {
     "enabled": true,
-    "retry_on_errors": [400, 401, 402, 429, 500, 502, 503, 504, 529],
-    "max_fallback_attempts": 5,
-    "cooldown_seconds": 30,
-    "timeout_seconds": 20,
+    "retry_on_errors": [401, 402, 429, 500, 502, 503, 504, 529],
+    "max_fallback_attempts": 2,
+    "cooldown_seconds": 120,
+    "timeout_seconds": 180,
     "notify_on_fallback": true
   },
 
