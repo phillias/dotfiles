@@ -37,8 +37,8 @@
   "compaction": {
     "auto": true,
     "prune": true,
-    "reserved": 20000,
-    "tail_turns": 15
+    "reserved": 50000,
+    "tail_turns": 40
   },
   "permission": "allow",
   "mcp": {
