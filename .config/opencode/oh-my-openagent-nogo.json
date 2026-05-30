@@ -46,10 +46,10 @@
       "openrouter": 3
     },
     "modelConcurrency": {
-      "opencode-go/kimi-k2.6": 2,
-      "opencode-go/deepseek-v4-pro": 2,
-      "opencode-go/deepseek-v4-flash": 10,
-      "opencode-go/mimo-v2.5-pro": 3
+      "openrouter/deepseek/deepseek-v4-flash:free": 2,
+      "openrouter/deepseek/deepseek-v4-flash:free": 2,
+      "openrouter/deepseek/deepseek-v4-flash:free": 10,
+      "openrouter/deepseek/deepseek-v4-flash:free": 3
     }
   },
 
@@ -67,20 +67,20 @@
     // Guide recommends "Kimi K2.5/GLM 5/Sonnet" as safe overrides for Sisyphus.
     // K2.6 selected over K2.5 for superior benchmarks (SWE-Bench 80.2% vs 77.8%).
     "sisyphus": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       /*
        * ultrawork: "turbo button" for harder tasks.
        * Typing "ultrawork"/"ulw" in a message temporarily upgrades to DS-V4-Pro
        * for that turn only, without making every message expensive.
        */
       "ultrawork": {
-        "model": "opencode-go/deepseek-v4-pro",
+        "model": "openrouter/deepseek/deepseek-v4-flash:free",
         "variant": "xhigh"
       },
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
@@ -90,40 +90,40 @@
     "sisyphus-junior": {
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
-        "opencode-go/kimi-k2.5",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
     // ═══ PLANNING LAYER ═══
     // Prometheus: Dual-Prompt, planning layer — requires highest quality.
     "prometheus": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
     // Metis: Communicators class, consulting role.
     // MiMo-V2.5-Pro's 1M context window benefits plan consultation.
     "metis": {
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
     // Momus: Deep Specialist, principle-driven critique.
     // DS-V4-Pro for nuanced evaluation quality.
     "momus": {
-      "model": "opencode-go/deepseek-v4-pro",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ]
@@ -132,11 +132,11 @@
     // Atlas: Dual-Prompt, execution layer (history management, routing).
     // DS-V4-Flash Go pool — 31,650 req/5hr, efficient for high-volume.
     "atlas": {
-      "model": "opencode-go/deepseek-v4-flash",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
@@ -145,22 +145,22 @@
     // ⚠️ DANGEROUS OVERRIDE per official guide — no GPT-5.4 in Go pool.
     // DS-V4-Pro is the best available substitute for principle-driven autonomous work.
     "hephaestus": {
-      "model": "opencode-go/deepseek-v4-pro",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
     // ═══ DEEP SPECIALISTS ═══
     // Oracle: Deep Specialist, high-IQ reasoning. Rare calls justify premium.
     "oracle": {
-      "model": "opencode-go/deepseek-v4-pro",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "variant": "xhigh",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
@@ -172,7 +172,7 @@
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ],
       "permission": {
         "edit": "deny",
@@ -183,7 +183,7 @@
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
@@ -191,7 +191,7 @@
     // MiMo-V2.5-Pro (per user directive: "stay with MiMo").
     // Nemotron VL at end of chain for vision-specific queries.
     "multimodal-looker": {
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
@@ -211,30 +211,30 @@
   "categories": {
     // UI/UX work needs good instruction-following for code generation.
     "visual-engineering": {
-      "model": "opencode-go/kimi-k2.5",
+      "model": "openrouter/qwen/qwen3-coder:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
     // Hard logic — highest quality available.
     "ultrabrain": {
-      "model": "opencode-go/deepseek-v4-pro",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "variant": "xhigh",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
     // Deep exploration benefits from 1M context (MiMo).
     "deep": {
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/deepseek/deepseek-v4-flash:free"
       ]
@@ -242,11 +242,11 @@
 
     // Creative work — K2.5 is sufficient.
     "artistry": {
-      "model": "opencode-go/kimi-k2.5",
+      "model": "openrouter/qwen/qwen3-coder:free",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
@@ -255,7 +255,7 @@
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
@@ -264,25 +264,25 @@
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
     // Complex general — DS-V4-Flash (Go pool) as primary.
     "unspecified-high": {
-      "model": "opencode-go/deepseek-v4-flash",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
     // Prose generation — DS-V4-Flash (Go pool) as primary.
     "writing": {
-      "model": "opencode-go/deepseek-v4-flash",
+      "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ]
