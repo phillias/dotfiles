@@ -1,0 +1,4 @@
+# Internal chezmoi files
+.chezmoi.toml
+.chezmoiignore
+age-key.txt.age
