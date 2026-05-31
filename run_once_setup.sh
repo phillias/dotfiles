@@ -9,7 +9,6 @@ set -euo pipefail
 
 export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 CHEZMOI_DIR="$HOME/.local/share/chezmoi"
-BW_ITEM_AGE="ff07b560-a406-4e56-ad99-b45b0167a9db"
 
 echo "=== phillias/dotfiles bootstrap ==="
 
@@ -42,7 +41,7 @@ fi
 
 # ── 4. Bitwarden login (interactive) ────────────────────────────────
 echo ""
-echo "==> Bitwarden login required (for API keys + SSH age passphrase)"
+echo "==> Bitwarden login required (for API keys + SSH keys)"
 bw login phillias@gmail.com
 export BW_SESSION=$(bw unlock --raw)
 
@@ -51,36 +50,20 @@ echo "==> Applying dotfiles (Bitwarden secrets)..."
 chezmoi apply
 
 # ── 6. Decrypt age encryption key ───────────────────────────────────
-#     The age private key (encrypted) is in the repo.
-#     Get the passphrase from Bitwarden and decrypt it.
-echo "==> Setting up age encryption..."
-AGE_PASSPHRASE=$(bw get item "$BW_ITEM_AGE" | bw encode 2>/dev/null | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-for f in d.get('fields', []):
-    if f['name'] == 'Age Passphrase':
-        print(f['value'])
-        break
-" 2>/dev/null || bw get item "$BW_ITEM_AGE" --raw 2>/dev/null | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-for f in d.get('fields', []):
-    if f['name'] == 'Age Passphrase':
-        print(f['value'])
-        break
-")
+#     The age passphrase is stored in your Bitwarden vault.
+#     Open vault.bitwarden.com -> search "Age Encryption Passphrase"
+#     or retrieve it from the Age Public Key field.
+echo ""
+echo "==> Age encryption setup"
+echo "    The SSH private keys in this repo are age-encrypted."
+echo "    You need the age passphrase to decrypt them."
+echo "    Find it in Bitwarden: search 'Age Encryption Passphrase'"
+echo "    (It's in a hidden field — click 'reveal' in the web vault)"
+echo ""
 
-# Try alternate method to get the passphrase
-if [ -z "$AGE_PASSPHRASE" ]; then
-    AGE_PASSPHRASE=$(export BW_SESSION=$(bw unlock --raw 2>/dev/null); bw get item "$BW_ITEM_AGE" 2>/dev/null | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-for f in d.get('fields', []):
-    if f['name'] == 'Age Passphrase':
-        print(f['value'])
-        break
-" 2>/dev/null)
-fi
+# Prompt for the age passphrase
+read -rsp "Enter age passphrase from Bitwarden: " AGE_PASSPHRASE
+echo ""
 
 if [ -n "$AGE_PASSPHRASE" ]; then
     AGE_KEY_FILE="$HOME/.config/chezmoi/key.txt"
@@ -100,32 +83,44 @@ EXPECTEOF
         echo "Age key decrypted"
     fi
 
-    # Get public key for chezmoi.toml
-    AGE_PUB=$(bw get item "$BW_ITEM_AGE" 2>/dev/null | python3 -c "
+    # Get public key from the encrypted file header or hardcode it
+    AGE_PUB=$(chezmoi data 2>/dev/null | python3 -c "
 import sys, json
-d = json.load(sys.stdin)
-for f in d.get('fields', []):
-    if f['name'] == 'Age Public Key':
-        print(f['value'])
-        break
-" 2>/dev/null || echo "age1p5cu2lhvhjxq2rkzxlgk9ekknr3ang7n5nla5pst94ckm8jmmq9sp66mc5")
+try:
+    d = json.load(sys.stdin)
+    # Try to get from chezmoi data
+    print(d.get('age', {}).get('recipient', ''))
+except:
+    pass
+" 2>/dev/null || echo "")
+
+    if [ -z "$AGE_PUB" ]; then
+        # Fallback: extract public key from the age encrypted file
+        # or just prompt
+        read -rp "Enter age public key (or press Enter to skip): " AGE_PUB
+    fi
 
     # Write chezmoi config
-    cat > "$HOME/.config/chezmoi/chezmoi.toml" << AGECONF
+    if [ -n "$AGE_PUB" ]; then
+        cat > "$HOME/.config/chezmoi/chezmoi.toml" << AGECONF
 encryption = "age"
 [age]
     identity = "~/.config/chezmoi/key.txt"
     recipient = "$AGE_PUB"
 AGECONF
-    echo "chezmoi.toml written"
+        echo "chezmoi.toml written"
+    else
+        echo "WARN: chezmoi.toml not written (no public key)"
+    fi
 else
-    echo "WARN: Could not retrieve age passphrase from Bitwarden."
-    echo "      SSH keys will not be decrypted. Run manually later:"
-    echo "      bw login && export BW_SESSION=\$(bw unlock --raw)"
-    echo "      chezmoi age decrypt --passphrase --output ~/.config/chezmoi/key.txt ~/.local/share/chezmoi/age-key.txt.age"
+    echo "WARN: No passphrase entered. SSH keys will not be decrypted."
+    echo "      Run manually later:"
+    echo "      chezmoi age decrypt --passphrase --output ~/.config/chezmoi/key.txt \\"
+    echo "        ~/.local/share/chezmoi/age-key.txt.age"
 fi
 
 # ── 7. Full apply (age-decrypt SSH keys + render all templates) ─────
+echo ""
 echo "==> Full apply..."
 export BW_SESSION=$(bw unlock --raw 2>/dev/null) || true
 chezmoi apply
@@ -138,14 +133,21 @@ echo ""
 echo "=== Managed files ==="
 chezmoi managed
 echo ""
-echo "=== SSH private keys ==="
-ls ~/.ssh/id_ed25519 2>/dev/null && echo "  id_ed25519: present" || echo "  id_ed25519: MISSING"
-ls ~/.ssh/id_ed25519_inspironkali 2>/dev/null && echo "  id_ed25519_inspironkali: present" || echo "  id_ed25519_inspironkali: MISSING"
+echo "=== SSH key status ==="
+for key in id_ed25519 id_ed25519_inspironkali id_ed25519_kali id_ed25519_oraclecloud id_ed25519_huggingface; do
+    if [ -f ~/.ssh/$key ]; then
+        perms=$(stat -c '%a' ~/.ssh/$key 2>/dev/null || stat -f '%Lp' ~/.ssh/$key 2>/dev/null)
+        echo "  $key: present ($perms)"
+    else
+        echo "  $key: MISSING"
+    fi
+done
 echo ""
 echo "=== Bootstrap complete ==="
 echo ""
 echo "Daily commands:"
-echo "  export BW_SESSION=\$(bw unlock --raw)   # unlock Bitwarden"
+echo "  export BW_SESSION=\$(bw unlock --raw)   # unlock Bitwarden (for templates)"
 echo "  chezmoi update                           # pull + apply latest"
 echo "  chezmoi edit <file>                      # edit a managed file"
+echo "  chezmoi diff                             # see pending changes"
 echo "  chezmoi re-add <file>                    # adopt local changes to source"
