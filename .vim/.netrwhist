@@ -1,3 +1,8 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =1
-let g:netrw_dirhist_1='/cygdrive/c/Users/slocud1/.ssh'
+let g:netrw_dirhistcnt =6
+let g:netrw_dirhist_6='/home/phillias/docker/nextcloud/data'
+let g:netrw_dirhist_5='/opt/audiobookshelf'
+let g:netrw_dirhist_4='/opt/audiobookshelf/config'
+let g:netrw_dirhist_3='/home/phillias/docker/audiobookshelf'
+let g:netrw_dirhist_2='/home/phillias/docker/torbox-media-center'
+let g:netrw_dirhist_1='/home/phillias/Downloads/stremio-addons/aiometadata/aiometadata'
