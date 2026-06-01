@@ -59,12 +59,20 @@ if ! command -v gh &>/dev/null; then
         fi
         tmpdir=$(mktemp -d)
         if [ "$IS_MAC" = true ]; then
-            curl -fsSL -o "$tmpdir/gh.zip" \
-                "https://github.com/cli/cli/releases/latest/download/gh_2.76.0_${gh_arch}.${ext}"
+            curl -fsSL -L -o "$tmpdir/gh.zip" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.76.0_${gh_arch}.${ext}" || \
+            curl -fsSL -L -o "$tmpdir/gh.zip" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.75.0_${gh_arch}.${ext}" || \
+            curl -fsSL -L -o "$tmpdir/gh.zip" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.74.0_${gh_arch}.${ext}"
             unzip -o "$tmpdir/gh.zip" -d "$tmpdir"
         else
-            curl -fsSL -o "$tmpdir/gh.tar.gz" \
-                "https://github.com/cli/cli/releases/latest/download/gh_2.76.0_${gh_arch}.${ext}"
+            curl -fsSL -L -o "$tmpdir/gh.tar.gz" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.76.0_${gh_arch}.${ext}" || \
+            curl -fsSL -L -o "$tmpdir/gh.tar.gz" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.75.0_${gh_arch}.${ext}" || \
+            curl -fsSL -L -o "$tmpdir/gh.tar.gz" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.74.0_${gh_arch}.${ext}"
             tar xzf "$tmpdir/gh.tar.gz" -C "$tmpdir"
         fi
         mkdir -p "$HOME/bin"
@@ -81,8 +89,9 @@ if ! command -v bw &>/dev/null; then
         brew install bitwarden-cli
     else
         tmpdir=$(mktemp -d)
-        curl -fsSL -o "$tmpdir/bw.zip" \
-            "https://github.com/bitwarden/clients/releases/download/cli-v2025.2.0/bw-linux-2025.2.0.zip"
+        BW_TAG=$(curl -fsSL https://api.github.com/repos/bitwarden/clients/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)[\x27tag_name\x27])" 2>/dev/null || echo "cli-v2025.2.0")
+        echo "==> Bitwarden CLI: ${BW_TAG}"
+        curl -fsSL -o "$tmpdir/bw.zip" "https://github.com/bitwarden/clients/releases/download/${BW_TAG}/bw-linux-${BW_TAG#cli-}.zip"
         unzip -o "$tmpdir/bw.zip" -d "$tmpdir"
         chmod +x "$tmpdir/bw"
         mkdir -p "$HOME/bin"
