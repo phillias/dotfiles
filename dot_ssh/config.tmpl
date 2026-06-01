@@ -1,18 +1,22 @@
+# OS-specific cloudflared path
+{{- $cloudflared := "/usr/bin/cloudflared" }}
+{{- if eq .chezmoi.os "darwin" }}
+{{-   $cloudflared = "/opt/homebrew/bin/cloudflared" }}
+{{- end }}
+
+# Default SSH user
+{{- $ssh_user := .chezmoi.username }}
+
 Host github.com
   AddKeysToAgent yes
-  #UseKeychain yes
   IdentityFile ~/.ssh/id_ed25519_inspironkali
 
 Host gcp
   IdentityFile ~/.ssh/id_ed25519_inspironkali
-  #HostName gcp.phillias.us
   HostName gcp.phillias.us
-  #User phillias_gmail_com
-  
+
 Host ora
-  #IdentityFile ~/.ssh/id_ed25519_oraclecloud
   IdentityFile ~/.ssh/id_ed25519_inspironkali
-  #HostName 147.224.201.181
   HostName ora.phillias.us
   User ubuntu
 
@@ -20,7 +24,7 @@ Host primary55522
   IdentityFile ~/.ssh/id_ed25519_kali
   IdentityFile ~/.ssh/id_ed25519_inspironkali
   HostName primary55522.phillias.cc
-  ProxyCommand /usr/bin/cloudflared access ssh --hostname %h
+  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User ubuntu
 
 # Cloudflare Tunnel SSH keepalive - prevent Gateway 270s idle timeout
