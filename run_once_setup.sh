@@ -57,8 +57,8 @@ echo ""
 echo "==> Age encryption setup"
 echo "    The SSH private keys in this repo are age-encrypted."
 echo "    You need the age passphrase to decrypt them."
-echo "    Find it in Bitwarden: search 'Age Encryption Passphrase'"
-echo "    (It's in a hidden field — click 'reveal' in the web vault)"
+echo "    Find it in Bitwarden: search 'Chezmoi Age Key'"
+echo "    Copy the password field value
 echo ""
 
 # Prompt for the age passphrase
