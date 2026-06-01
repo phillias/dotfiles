@@ -2,3 +2,5 @@
 .chezmoi.toml
 .chezmoiignore
 age-key.txt.age
+.chezmoi-sync.log
+node_modules
