@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "small_model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+  "small_model": "openrouter/deepseek/deepseek-v4-flash:free",
   "provider": {
     "opencode-go": {
       "models": {
@@ -21,6 +21,11 @@
     "openrouter": {
       "models": {
         "owl-alpha": {},
+        "qwen/qwen3-coder:free": {},
+        "deepseek/deepseek-v4-flash:free": {},
+        "meta-llama/llama-3.3-70b-instruct:free": {},
+        "nvidia/nemotron-3-super-120b-a12b:free": {},
+        "openai/gpt-oss-20b:free": {},
         "anthropic/claude-sonnet-4": {},
         "anthropic/claude-3.5-haiku": {},
         "openai/gpt-4o": {},
