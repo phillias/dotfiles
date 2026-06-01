@@ -1,44 +1,72 @@
 #!/usr/bin/env bash
-# run_once_setup.sh — bootstrap chezmoi + dotfiles on a new server
+# run_once_setup.sh — bootstrap chezmoi + dotfiles on a new machine
 # Usage: curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/run_once_setup.sh | bash
+# Works on: macOS (Homebrew), Debian/Ubuntu/Kali (apt), Fedora/RHEL (dnf), Alpine (apk)
 
 set -euo pipefail
 
 export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 CHEZMOI_DIR="$HOME/.local/share/chezmoi"
 DEPLOY_KEY="$HOME/.ssh/chezmoi-deploy-key"
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+IS_MAC=false
+if [ "$OS" = "darwin" ]; then
+    IS_MAC=true
+    # Ensure Homebrew paths are available
+    if [ -d /opt/homebrew/bin ]; then
+        export PATH="/opt/homebrew/bin:$PATH"
+    elif [ -d /usr/local/bin ]; then
+        export PATH="/usr/local/bin:$PATH"
+    fi
+fi
 
-echo "=== phillias/dotfiles bootstrap ==="
+echo "=== phillias/dotfiles bootstrap ($(hostname)) ==="
 
 # ── 1. Install chezmoi ──────────────────────────────────────────────
 if ! command -v chezmoi &>/dev/null; then
     echo "==> Installing chezmoi..."
-    BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)"
+    if $IS_MAC && command -v brew &>/dev/null; then
+        brew install chezmoi
+    else
+        BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)"
+    fi
 fi
 echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
 
 # ── 2. Install GitHub CLI ───────────────────────────────────────────
 if ! command -v gh &>/dev/null; then
     echo "==> Installing GitHub CLI..."
-    # Try apt first, then fall back to binary download
-    if command -v apt-get &>/dev/null; then
+    if $IS_MAC && command -v brew &>/dev/null; then
+        brew install gh
+    elif command -v apt-get &>/dev/null; then
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
         sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
         sudo apt-get update -qq && sudo apt-get install -y -qq gh 2>/dev/null
     fi
     if ! command -v gh &>/dev/null; then
-        # Binary download fallback
         arch=$(uname -m)
-        case "$arch" in
-            x86_64)  gh_arch="amd64" ;;
-            aarch64) gh_arch="arm64" ;;
-            *)       gh_arch="amd64" ;;
-        esac
+        if [ "$IS_MAC" = true ]; then
+            gh_arch="apple-darwin"
+            ext="zip"
+        else
+            case "$arch" in
+                x86_64)  gh_arch="linux-amd64" ;;
+                aarch64) gh_arch="linux-arm64" ;;
+                *)       gh_arch="linux-amd64" ;;
+            esac
+            ext="tar.gz"
+        fi
         tmpdir=$(mktemp -d)
-        curl -fsSL -o "$tmpdir/gh.tar.gz" \
-            "https://github.com/cli/cli/releases/latest/download/gh_2.76.0_linux_${gh_arch}.tar.gz"
-        tar xzf "$tmpdir/gh.tar.gz" -C "$tmpdir"
+        if [ "$IS_MAC" = true ]; then
+            curl -fsSL -o "$tmpdir/gh.zip" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.76.0_${gh_arch}.${ext}"
+            unzip -o "$tmpdir/gh.zip" -d "$tmpdir"
+        else
+            curl -fsSL -o "$tmpdir/gh.tar.gz" \
+                "https://github.com/cli/cli/releases/latest/download/gh_2.76.0_${gh_arch}.${ext}"
+            tar xzf "$tmpdir/gh.tar.gz" -C "$tmpdir"
+        fi
         mkdir -p "$HOME/bin"
         find "$tmpdir" -name "gh" -type f -exec cp {} "$HOME/bin/" \;
         rm -rf "$tmpdir"
@@ -49,35 +77,45 @@ echo "gh: $(gh --version 2>&1 | head -1)"
 # ── 3. Install Bitwarden CLI ────────────────────────────────────────
 if ! command -v bw &>/dev/null; then
     echo "==> Installing Bitwarden CLI..."
-    tmpdir=$(mktemp -d)
-    curl -fsSL -o "$tmpdir/bw.zip" \
-        "https://github.com/bitwarden/clients/releases/download/cli-v2025.2.0/bw-linux-2025.2.0.zip"
-    unzip -o "$tmpdir/bw.zip" -d "$tmpdir"
-    chmod +x "$tmpdir/bw"
-    mkdir -p "$HOME/bin"
-    mv "$tmpdir/bw" "$HOME/bin/"
-    rm -rf "$tmpdir"
+    if $IS_MAC && command -v brew &>/dev/null; then
+        brew install bitwarden-cli
+    else
+        tmpdir=$(mktemp -d)
+        curl -fsSL -o "$tmpdir/bw.zip" \
+            "https://github.com/bitwarden/clients/releases/download/cli-v2025.2.0/bw-linux-2025.2.0.zip"
+        unzip -o "$tmpdir/bw.zip" -d "$tmpdir"
+        chmod +x "$tmpdir/bw"
+        mkdir -p "$HOME/bin"
+        mv "$tmpdir/bw" "$HOME/bin/"
+        rm -rf "$tmpdir"
+    fi
 fi
 echo "bw: $(bw --version 2>&1)"
 
-# ── 4. Install cloudflared (needed for SSH tunnel hosts) ─────────────
+# ── 4. Install cloudflared ──────────────────────────────────────────
 if ! command -v cloudflared &>/dev/null; then
     echo "==> Installing cloudflared..."
-    arch=$(uname -m)
-    case "$arch" in
-        x86_64)  cf_arch="amd64" ;;
-        aarch64) cf_arch="arm64" ;;
-        armv7l)  cf_arch="arm" ;;
-        *)       cf_arch="amd64" ;;
-    esac
-    curl -fsSL -o /tmp/cloudflared \
-        "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${cf_arch}"
-    chmod +x /tmp/cloudflared
-    if command -v sudo &>/dev/null; then
-        sudo mv /tmp/cloudflared /usr/bin/cloudflared
+    if $IS_MAC && command -v brew &>/dev/null; then
+        brew install cloudflared
     else
-        mkdir -p "$HOME/bin"
-        mv /tmp/cloudflared "$HOME/bin/cloudflared"
+        arch=$(uname -m)
+        case "$arch" in
+            x86_64)  cf_arch="amd64" ;;
+            aarch64) cf_arch="arm64" ;;
+            armv7l)  cf_arch="arm" ;;
+            *)       cf_arch="amd64" ;;
+        esac
+        tmpdir=$(mktemp -d)
+        curl -fsSL -o "$tmpdir/cloudflared" \
+            "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${cf_arch}"
+        chmod +x "$tmpdir/cloudflared"
+        if command -v sudo &>/dev/null; then
+            sudo mv "$tmpdir/cloudflared" /usr/bin/cloudflared
+        else
+            mkdir -p "$HOME/bin"
+            mv "$tmpdir/cloudflared" "$HOME/bin/cloudflared"
+        fi
+        rm -rf "$tmpdir"
     fi
     echo "cloudflared: $(cloudflared --version 2>&1 | head -1)"
 fi
@@ -124,7 +162,7 @@ echo "==> Bitwarden login required"
 bw login phillias@gmail.com
 export BW_SESSION=$(bw unlock --raw)
 
-# ── 10. First apply — renders Bitwarden templates ───────────────────
+# ── 10. Apply dotfiles ─────────────────────────────────────────────
 echo "==> Applying dotfiles..."
 BW_SESSION="$BW_SESSION" chezmoi apply
 
@@ -140,7 +178,10 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
     read -rp "Enter age passphrase from Bitwarden: " AGE_PP
     if [ -n "$AGE_PP" ]; then
         mkdir -p "$(dirname "$AGE_KEY_FILE")"
-        expect << EXPECTEOF
+        if $IS_MAC; then
+            # macOS: use script to fake TTY for expect
+            if command -v expect &>/dev/null; then
+                expect << EXPECTEOF
 set timeout 10
 spawn chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age"
 expect "Enter passphrase:"
@@ -149,6 +190,21 @@ expect "Confirm passphrase:"
 send "$AGE_PP\r"
 expect eof
 EXPECTEOF
+            else
+                echo "WARN: 'expect' not found on macOS. Install with: brew install expect"
+                echo "      Then run: chezmoi age decrypt --passphrase -o $AGE_KEY_FILE $CHEZMOI_DIR/age-key.txt.age"
+            fi
+        else
+            expect << EXPECTEOF
+set timeout 10
+spawn chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age"
+expect "Enter passphrase:"
+send "$AGE_PP\r"
+expect "Confirm passphrase:"
+send "$AGE_PP\r"
+expect eof
+EXPECTEOF
+        fi
         chmod 600 "$AGE_KEY_FILE"
         echo "Age key decrypted"
     else
@@ -209,13 +265,19 @@ print('Inventory updated: ' + hostname)
 "
 fi
 
-# ── 15. Install cron job ────────────────────────────────────────────
-CRON_LINE="*/30 * * * * export PATH=\$HOME/bin:\$HOME/.local/bin:\$PATH; export BW_SESSION=\$(bw unlock --raw 2>/dev/null); chezmoi update >> \$HOME/.local/share/chezmoi/.chezmoi-sync.log 2>&1"
-if ! crontab -l 2>/dev/null | grep -q "chezmoi update"; then
-    (crontab -l 2>/dev/null; echo "$CRON_LINE") | crontab -
-    echo "Cron job installed: chezmoi update every 30 minutes"
+# ── 15. Install cron job (Linux only, macOS uses launchd) ───────────
+if $IS_MAC; then
+    echo "==> Auto-sync on macOS requires launchd (not cron)."
+    echo "    Manual setup: create a LaunchAgent that runs 'chezmoi update' periodically."
+    echo "    Or simply run 'chezmoi update' when you want to sync."
 else
-    echo "Cron job already installed"
+    CRON_LINE="*/30 * * * * export PATH=\$HOME/bin:\$HOME/.local/bin:\$PATH; export BW_SESSION=\$(bw unlock --raw 2>/dev/null); chezmoi update >> \$HOME/.local/share/chezmoi/.chezmoi-sync.log 2>&1"
+    if ! crontab -l 2>/dev/null | grep -q "chezmoi update"; then
+        (crontab -l 2>/dev/null; echo "$CRON_LINE") | crontab -
+        echo "Cron job installed: chezmoi update every 30 minutes"
+    else
+        echo "Cron job already installed"
+    fi
 fi
 
 # ── 16. Verify ──────────────────────────────────────────────────────
