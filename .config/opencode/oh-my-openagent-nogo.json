@@ -1,9 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-openagent.schema.json",
 
-  /*
-   * ── DISABLED HOOKS ──
-   */
   "disabled_hooks": [
     "no-hephaestus-non-gpt"
   ],
@@ -36,6 +33,7 @@
       },
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "openrouter/owl-alpha"
       ]
@@ -45,7 +43,8 @@
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/owl-alpha",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openai/gpt-oss-20b:free"
       ]
     },
 
@@ -53,6 +52,7 @@
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
         "openrouter/qwen/qwen3-coder:free",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "opencode/big-pickle"
       ]
@@ -61,6 +61,7 @@
     "metis": {
       "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
       "fallback_models": [
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/owl-alpha"
@@ -70,16 +71,18 @@
     "momus": {
       "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
       "fallback_models": [
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/owl-alpha",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openai/gpt-oss-20b:free"
       ]
     },
 
     "atlas": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
       "fallback_models": [
         "opencode/big-pickle",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/owl-alpha"
       ]
@@ -88,6 +91,7 @@
     "hephaestus": {
       "model": "openrouter/qwen/qwen3-coder:free",
       "fallback_models": [
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "opencode/big-pickle",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free"
@@ -95,9 +99,10 @@
     },
 
     "oracle": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
       "variant": "xhigh",
       "fallback_models": [
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "openrouter/qwen/qwen3-coder:free",
         "opencode/big-pickle"
@@ -107,6 +112,7 @@
     "explore": {
       "model": "openrouter/owl-alpha",
       "fallback_models": [
+        "openai/gpt-oss-20b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ],
@@ -117,11 +123,12 @@
     },
 
     "librarian": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/owl-alpha",
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openai/gpt-oss-20b:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
       ]
     },
 
@@ -140,8 +147,9 @@
       "model": "openrouter/qwen/qwen3-coder:free",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "opencode/big-pickle",
-        "openrouter/owl-alpha"
+        "openai/gpt-oss-20b:free"
       ]
     },
 
@@ -149,6 +157,7 @@
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "variant": "xhigh",
       "fallback_models": [
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "opencode/big-pickle",
         "openrouter/qwen/qwen3-coder:free"
@@ -156,8 +165,9 @@
     },
 
     "deep": {
-      "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+      "model": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
       "fallback_models": [
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "opencode/big-pickle",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
@@ -165,18 +175,19 @@
     },
 
     "artistry": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/owl-alpha",
-        "openrouter/qwen/qwen3-coder:free",
-        "opencode/big-pickle"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openai/gpt-oss-20b:free",
+        "openrouter/qwen/qwen3-coder:free"
       ]
     },
 
     "quick": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/owl-alpha",
+        "openai/gpt-oss-20b:free",
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
@@ -184,6 +195,7 @@
     "unspecified-low": {
       "model": "openrouter/owl-alpha",
       "fallback_models": [
+        "openai/gpt-oss-20b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free"
       ]
@@ -192,6 +204,7 @@
     "unspecified-high": {
       "model": "opencode/big-pickle",
       "fallback_models": [
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free"
@@ -201,6 +214,7 @@
     "writing": {
       "model": "opencode/big-pickle",
       "fallback_models": [
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/owl-alpha"
