@@ -1,0 +1,15 @@
+{
+  "servers": {
+    "CabinInspiron22Kali": {
+      "hostname": "CabinInspiron22Kali",
+      "username": "phillias",
+      "os": "linux",
+      "arch": "x86_64",
+      "deploy_key_title": "chezmoi@CabinInspiron22Kali",
+      "deploy_key_fp": "SHA256:MTyzAN/jU+NVlW3/CcHUQeng17UBJ31wSRTo5McYM/8",
+      "first_seen": "2026-06-01T20:48:19Z",
+      "last_sync": "2026-06-01T20:51:21Z",
+      "status": "active"
+    }
+  }
+}
