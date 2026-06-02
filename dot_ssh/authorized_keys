@@ -1,10 +1,10 @@
 # DO NOT EDIT MANUALLY — managed by chezmoi
-# Each server/user key for cross-server access
+# Master branch: all keys (shared baseline)
 
 # primary server (ubuntu user)
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDpUFakTrEZ+EIzXEYDVPbJLUjyFCIzXI7wFpGax4GCq ubuntu@primary
 
-# phillias personal machines
+# Personal machines
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDCdvLo1rdj4w7KCaGQtvSvwUSn/sXe3MspxQ11nftZe phillias@inspironkali
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG2EM7XL2/UvUIUgg7F57s5rQEyOXC+zv1S7aGHixBuc phillias@MBP
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHVwb0kv+vvjA2vGDqudeMtPRPl90/tm6T97BLhopffH phillias@kali-cabin
