@@ -42,9 +42,9 @@
     "sisyphus-junior": {
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
-        "openrouter/owl-alpha",
+        "openai/gpt-oss-20b:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openai/gpt-oss-20b:free"
+        "openrouter/owl-alpha"
       ]
     },
 
@@ -74,7 +74,7 @@
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openai/gpt-oss-20b:free"
+        "openrouter/owl-alpha"
       ]
     },
 
@@ -110,11 +110,11 @@
     },
 
     "explore": {
-      "model": "openrouter/owl-alpha",
+      "model": "openai/gpt-oss-20b:free",
       "fallback_models": [
-        "openai/gpt-oss-20b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha"
       ],
       "permission": {
         "edit": "deny",
@@ -123,12 +123,11 @@
     },
 
     "librarian": {
-      "model": "openrouter/owl-alpha",
+      "model": "openai/gpt-oss-20b:free",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openai/gpt-oss-20b:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
+        "openrouter/owl-alpha"
       ]
     },
 
@@ -136,8 +135,8 @@
       "model": "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/owl-alpha",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha"
       ]
     }
   },
@@ -149,7 +148,7 @@
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "opencode/big-pickle",
-        "openai/gpt-oss-20b:free"
+        "openrouter/owl-alpha"
       ]
     },
 
@@ -175,29 +174,29 @@
     },
 
     "artistry": {
-      "model": "openrouter/owl-alpha",
+      "model": "openai/gpt-oss-20b:free",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openai/gpt-oss-20b:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha"
       ]
     },
 
     "quick": {
-      "model": "openrouter/owl-alpha",
+      "model": "openai/gpt-oss-20b:free",
       "fallback_models": [
-        "openai/gpt-oss-20b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha"
       ]
     },
 
     "unspecified-low": {
-      "model": "openrouter/owl-alpha",
+      "model": "openai/gpt-oss-20b:free",
       "fallback_models": [
-        "openai/gpt-oss-20b:free",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha"
       ]
     },
 
