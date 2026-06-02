@@ -144,11 +144,20 @@ fi
 echo "==> Registering deploy key..."
 gh repo deploy-key add "${DEPLOY_KEY}.pub" --repo phillias/dotfiles --title "chezmoi@$(hostname)" --allow-write 2>/dev/null || echo "Key may already exist"
 
-# ── 8. Clone dotfiles repo ──────────────────────────────────────────
-if [ ! -d "$CHEZMOI_DIR" ]; then
-    echo "==> Cloning dotfiles..."
-    GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" chezmoi init git@github.com:phillias/dotfiles.git
-fi
+# ── 8. Select profile branch ────────────────────────────────────────
+echo ""
+echo "Which profile do you want to use?"
+echo "  1) master  — shared configs only (no SSH keys or API keys)"
+echo "  2) personal — personal SSH keys and API keys"
+echo "  3) work     — work SSH keys and API keys"
+read -rp "Enter choice [1-3]: " BRANCH_CHOICE
+case "$BRANCH_CHOICE" in
+    1) BRANCH="master" ;;
+    2) BRANCH="personal" ;;
+    3) BRANCH="work" ;;
+    *) echo "Invalid choice, defaulting to master"; BRANCH="master" ;;
+esac
+echo "Using branch: $BRANCH"
 
 # ── 9. Bitwarden login (interactive) ────────────────────────────────
 echo ""
@@ -156,11 +165,24 @@ echo "==> Bitwarden login required"
 bw login phillias@gmail.com
 export BW_SESSION=$(bw unlock --raw)
 
-# ── 10. Apply dotfiles ─────────────────────────────────────────────
+# ── 10. Clone dotfiles repo ─────────────────────────────────────────
+if [ ! -d "$CHEZMOI_DIR" ]; then
+    echo "==> Cloning dotfiles (branch: $BRANCH)..."
+    GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" chezmoi init --branch "$BRANCH" git@github.com:phillias/dotfiles.git
+fi
+
+# ── 11. Register deploy key for SSH access ──────────────────────────
+DEPLOY_PUB=$(cat "${DEPLOY_KEY}.pub")
+if ! grep -qF "$DEPLOY_PUB" ~/.ssh/authorized_keys 2>/dev/null; then
+    echo "$DEPLOY_PUB" >> ~/.ssh/authorized_keys
+    echo "Deploy key added to authorized_keys"
+fi
+
+# ── 12. Apply dotfiles ─────────────────────────────────────────────
 echo "==> Applying dotfiles..."
 BW_SESSION="$BW_SESSION" chezmoi apply
 
-# ── 11. Decrypt age encryption key ─────────────────────────────────
+# ── 13. Decrypt age encryption key ─────────────────────────────────
 AGE_KEY_FILE="$HOME/.config/chezmoi/key.txt"
 if [ ! -f "$AGE_KEY_FILE" ]; then
     echo ""
@@ -184,7 +206,7 @@ else
     echo "Age key already present, skipping"
 fi
 
-# ── 12. Write chezmoi config ────────────────────────────────────────
+# ── 14. Write chezmoi config ────────────────────────────────────────
 if [ -f "$AGE_KEY_FILE" ]; then
     AGE_PUB=$(chezmoi data --format=json 2>/dev/null | python3 -c "
 import sys,json
@@ -201,12 +223,12 @@ AGEEOF
     echo "chezmoi.toml written"
 fi
 
-# ── 13. Full apply ──────────────────────────────────────────────────
+# ── 15. Full apply ──────────────────────────────────────────────────
 echo ""
 echo "==> Full apply..."
 BW_SESSION=$(bw unlock --raw) chezmoi apply
 
-# ── 14. Register in inventory ───────────────────────────────────────
+# ── 16. Register in inventory ───────────────────────────────────────
 if [ -f "$CHEZMOI_DIR/.chezmoi-inventory.json" ]; then
     python3 -c "
 import json,subprocess,datetime
@@ -221,7 +243,7 @@ print('Inventory: '+h)
 "
 fi
 
-# ── 15. Auto-sync ───────────────────────────────────────────────────
+# ── 17. Auto-sync ───────────────────────────────────────────────────
 if $IS_MAC; then
     echo "===> macOS: use launchd for auto-sync"
 else
@@ -232,7 +254,7 @@ else
     fi
 fi
 
-# ── 16. Verify ──────────────────────────────────────────────────────
+# ── 18. Verify ──────────────────────────────────────────────────────
 echo ""
 echo "=== Verification ==="
 if chezmoi verify 2>/dev/null; then echo "OK"; else echo "WARN: differences"; fi
