@@ -49,8 +49,35 @@ if ! command -v chezmoi &>/dev/null; then
         brew install chezmoi
     else
         echo "==> Installing chezmoi via binary download..."
-        BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)"
-    fi  # Works on all OS/arch combos
+        # Retry up to 3 times on checksum/EOF failures
+        for attempt in 1 2 3; do
+            if BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)" 2>/dev/null; then
+                break
+            fi
+            echo "  Retry $attempt/3 (download failed, possibly network issue)..."
+            sleep 2
+        done
+        # Fallback: direct GitHub release download
+        if ! command -v chezmoi &>/dev/null; then
+            echo "  Falling back to direct GitHub download..."
+            ARCH=$(uname -m)
+            case "$ARCH" in
+                x86_64)  CZ_ARCH="amd64" ;;
+                aarch64) CZ_ARCH="arm64" ;;
+                armv7l)  CZ_ARCH="arm" ;;
+                *)       CZ_ARCH="amd64" ;;
+            esac
+            CZ_TAG=$(curl -fsSL https://api.github.com/repos/twpayne/chezmoi/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.70.4")
+            CZ_FILE="chezmoi_${CZ_TAG#v}_linux_${CZ_ARCH}.tar.gz"
+            TMP=$(mktemp -d)
+            curl -fsSL -o "$TMP/chezmoi.tar.gz" "https://github.com/twpayne/chezmoi/releases/download/${CZ_TAG}/${CZ_FILE}" || true
+            tar xzf "$TMP/chezmoi.tar.gz" -C "$TMP" 2>/dev/null
+            mkdir -p "$HOME/bin"
+            cp "$TMP/chezmoi" "$HOME/bin/" 2>/dev/null
+            chmod +x "$HOME/bin/chezmoi" 2>/dev/null
+            rm -rf "$TMP"
+        fi
+    fi
 fi
 echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
 
