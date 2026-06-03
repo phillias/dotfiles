@@ -50,7 +50,7 @@ if ! command -v chezmoi &>/dev/null; then
     else
         echo "==> Installing chezmoi via binary download..."
         BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)"
-    fi
+    fi  # Works on all OS/arch combos
 fi
 echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
 
@@ -59,13 +59,7 @@ if ! command -v gh &>/dev/null; then
     echo "==> Installing GitHub CLI..."
     if $BREW_OK; then
         brew install gh
-    elif command -v apt-get &>/dev/null; then
-        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
-        sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
-        sudo apt-get update -qq && sudo apt-get install -y -qq gh 2>/dev/null
-    fi
-    if ! command -v gh &>/dev/null; then
+    else
         GH_TAG=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.76.0")
         echo "==> gh: downloading ${GH_TAG}"
         ARCH=$(uname -m)
@@ -90,27 +84,27 @@ if ! command -v bw &>/dev/null; then
         brew install bitwarden-cli
     else
         ARCH=$(uname -m)
-        case "$ARCH" in
-            x86_64)  BW_ARCH="x64" ;;
-            aarch64) BW_ARCH="arm64" ;;
-            *)       BW_ARCH="x64" ;;
-        esac
         BW_TAG=$(curl -fsSL https://api.github.com/repos/bitwarden/clients/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "")
-        if [ -n "$BW_TAG" ] && [ -n "$BW_ARCH" ]; then
+        if [ -n "$BW_TAG" ]; then
             BW_VERSION="${BW_TAG#cli-}"
-            echo "==> bw: trying ${BW_TAG} (${BW_ARCH})"
+            echo "==> bw: downloading ${BW_VERSION}"
             TMP=$(mktemp -d)
-            if curl -fsSL -o "$TMP/bw.zip" "https://github.com/bitwarden/clients/releases/download/${BW_TAG}/bw-linux-${BW_VERSION}-${BW_ARCH}.zip" 2>/dev/null; then
+            if [ "$IS_MAC" = true ]; then
+                case "$ARCH" in arm64) BW_FILE="bw-macos-arm64-${BW_VERSION}.zip" ;; *) BW_FILE="bw-macos-${BW_VERSION}.zip" ;; esac
+            else
+                case "$ARCH" in aarch64) BW_FILE="bw-linux-arm64-${BW_VERSION}.zip" ;; *) BW_FILE="bw-linux-${BW_VERSION}.zip" ;; esac
+            fi
+            if curl -fsSL -o "$TMP/bw.zip" "https://github.com/bitwarden/clients/releases/download/${BW_TAG}/${BW_FILE}" 2>/dev/null; then
                 unzip -o "$TMP/bw.zip" -d "$TMP" 2>/dev/null
                 if [ -f "$TMP/bw" ]; then
                     chmod +x "$TMP/bw"
                     mkdir -p "$HOME/bin"
                     mv "$TMP/bw" "$HOME/bin/"
                     rm -rf "$TMP"
-                    echo "==> bw: installed from GitHub release"
+                    echo "==> bw: installed"
                 else
                     rm -rf "$TMP"
-                    echo "==> bw: release binary not found"
+                    echo "==> bw: binary not found in archive"
                 fi
             else
                 rm -rf "$TMP" 2>/dev/null
@@ -119,10 +113,10 @@ if ! command -v bw &>/dev/null; then
         fi
         if ! command -v bw &>/dev/null; then
             if command -v npm &>/dev/null; then
-                echo "==> bw: installing via npm"
+                echo "==> bw: installing via npm @bitwarden/cli"
                 npm install -g @bitwarden/cli
             elif command -v bun &>/dev/null; then
-                echo "==> bw: installing via bun"
+                echo "==> bw: installing via bun @bitwarden/cli"
                 bun add -g @bitwarden/cli
             else
                 echo "==> bw: ERROR — install npm or bun first"
@@ -140,11 +134,22 @@ if ! command -v cloudflared &>/dev/null; then
         brew install cloudflared
     else
         ARCH=$(uname -m)
-        case "$ARCH" in x86_64) CA="amd64" ;; aarch64) CA="arm64" ;; armv7l) CA="arm" ;; *) CA="amd64" ;; esac
-        curl -fsSL -o /tmp/cloudflared "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CA}"
-        chmod +x /tmp/cloudflared
-        if command -v sudo &>/dev/null; then sudo mv /tmp/cloudflared /usr/bin/cloudflared
-        else mkdir -p "$HOME/bin" && mv /tmp/cloudflared "$HOME/bin/cloudflared"; fi
+        if [ "$IS_MAC" = true ]; then
+            case "$ARCH" in arm64) CF_FILE="cloudflared-darwin-arm64.tgz" ;; *) CF_FILE="cloudflared-darwin-amd64.tgz" ;; esac
+        else
+            case "$ARCH" in aarch64) CF_FILE="cloudflared-linux-arm64" ;; *) CF_FILE="cloudflared-linux-amd64" ;; esac
+        fi
+        echo "==> cloudflared: downloading ${CF_FILE}"
+        TMP=$(mktemp -d)
+        if echo "$CF_FILE" | grep -q tgz; then
+            curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_FILE}" | tar xzf - -C "$TMP"
+        else
+            curl -fsSL -o "$TMP/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_FILE}"
+        fi
+        chmod +x "$TMP/cloudflared"
+        mkdir -p "$HOME/bin"
+        mv "$TMP/cloudflared" "$HOME/bin/"
+        rm -rf "$TMP"
     fi
     echo "cloudflared: $(cloudflared --version 2>&1 | head -1)"
 fi
