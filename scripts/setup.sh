@@ -118,7 +118,26 @@ if ! command -v gh &>/dev/null; then
         fi
     fi
 fi
-echo "gh: $(gh --version 2>&1 | head -1)"
+if command -v gh &>/dev/null; then
+    echo "gh: $(gh --version 2>&1 | head -1)"
+else
+    echo "ERROR: gh install failed. Downloading binary directly..."
+    GH_TAG=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.76.0")
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  GA="linux_amd64.tar.gz" ;;
+        aarch64) GA="linux_arm64.tar.gz" ;;
+        *)       GA="linux_amd64.tar.gz" ;;
+    esac
+    TMP=$(mktemp -d)
+    curl -fsSL -o "$TMP/gh.tar.gz" "https://github.com/cli/cli/releases/download/${GH_TAG}/gh_${GH_TAG#v}_${GA}"
+    tar xzf "$TMP/gh.tar.gz" -C "$TMP"
+    mkdir -p "$HOME/bin"
+    cp "$TMP/gh" "$HOME/bin/"
+    chmod +x "$HOME/bin/gh"
+    rm -rf "$TMP"
+    echo "gh: $(gh --version 2>&1 | head -1)"
+fi
 
 # ── 4. Install Bitwarden CLI ────────────────────────────────────────
 if ! command -v bw &>/dev/null; then
@@ -234,6 +253,10 @@ if [ ! -f "$DEPLOY_KEY" ]; then
 fi
 
 # ── 7. Authenticate gh (one-time) ───────────────────────────────────
+if ! command -v gh &>/dev/null; then
+    echo "ERROR: gh is not installed. This should not happen."
+    exit 1
+fi
 if ! gh auth status &>/dev/null; then
     echo ""
     echo "==> GitHub auth required"
