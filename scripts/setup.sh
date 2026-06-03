@@ -17,10 +17,28 @@ fi
 
 echo "=== phillias/dotfiles bootstrap ($(hostname)) ==="
 
-# ── 1. Install chezmoi ──────────────────────────────────────────────
+# ── 1. Handle Homebrew on macOS ─────────────────────────────────────
+BREW_OK=false
+if $IS_MAC && command -v brew &>/dev/null; then
+    BREW_PREFIX=$(brew --prefix 2>/dev/null || echo "/opt/homebrew")
+    if [ -w "$BREW_PREFIX/Cellar" ] || [ -w "$BREW_PREFIX" ]; then
+        BREW_OK=true
+    else
+        echo "==> Homebrew Cellar not writable by $(whoami)"
+        if command -v sudo &>/dev/null; then
+            echo "    → Fixing permissions with sudo..."
+            sudo chown -R "$(whoami)" "$BREW_PREFIX/Cellar" "$BREW_PREFIX/Homebrew" 2>/dev/null && BREW_OK=true
+        fi
+        if ! $BREW_OK; then
+            echo "    → sudo not available, using binary downloads instead of brew"
+        fi
+    fi
+fi
+
+# ── 2. Install chezmoi ──────────────────────────────────────────────
 if ! command -v chezmoi &>/dev/null; then
     echo "==> Installing chezmoi..."
-    if $IS_MAC && command -v brew &>/dev/null; then
+    if $BREW_OK; then
         brew install chezmoi
     else
         BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)"
@@ -28,10 +46,10 @@ if ! command -v chezmoi &>/dev/null; then
 fi
 echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
 
-# ── 2. Install GitHub CLI ───────────────────────────────────────────
+# ── 3. Install GitHub CLI ───────────────────────────────────────────
 if ! command -v gh &>/dev/null; then
     echo "==> Installing GitHub CLI..."
-    if $IS_MAC && command -v brew &>/dev/null; then
+    if $BREW_OK; then
         brew install gh
     elif command -v apt-get &>/dev/null; then
         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
@@ -57,10 +75,10 @@ if ! command -v gh &>/dev/null; then
 fi
 echo "gh: $(gh --version 2>&1 | head -1)"
 
-# ── 3. Install Bitwarden CLI ────────────────────────────────────────
+# ── 4. Install Bitwarden CLI ────────────────────────────────────────
 if ! command -v bw &>/dev/null; then
     echo "==> Installing Bitwarden CLI..."
-    if $IS_MAC && command -v brew &>/dev/null; then
+    if $BREW_OK; then
         brew install bitwarden-cli
     else
         ARCH=$(uname -m)
@@ -107,10 +125,10 @@ if ! command -v bw &>/dev/null; then
 fi
 echo "bw: $(bw --version 2>&1)"
 
-# ── 4. Install cloudflared ──────────────────────────────────────────
+# ── 5. Install cloudflared ──────────────────────────────────────────
 if ! command -v cloudflared &>/dev/null; then
     echo "==> Installing cloudflared..."
-    if $IS_MAC && command -v brew &>/dev/null; then
+    if $BREW_OK; then
         brew install cloudflared
     else
         ARCH=$(uname -m)
@@ -123,7 +141,7 @@ if ! command -v cloudflared &>/dev/null; then
     echo "cloudflared: $(cloudflared --version 2>&1 | head -1)"
 fi
 
-# ── 5. Generate deploy key ──────────────────────────────────────────
+# ── 6. Generate deploy key ──────────────────────────────────────────
 if [ ! -f "$DEPLOY_KEY" ]; then
     echo "==> Generating deploy key..."
     mkdir -p "$(dirname "$DEPLOY_KEY")"
@@ -133,7 +151,7 @@ if [ ! -f "$DEPLOY_KEY" ]; then
     echo "Key: $(ssh-keygen -l -f "${DEPLOY_KEY}.pub" | awk '{print $2}')"
 fi
 
-# ── 6. Authenticate gh (one-time) ───────────────────────────────────
+# ── 7. Authenticate gh (one-time) ───────────────────────────────────
 if ! gh auth status &>/dev/null; then
     echo ""
     echo "==> GitHub auth required"
@@ -149,11 +167,11 @@ if ! gh auth status &>/dev/null; then
     gh auth login --with-token
 fi
 
-# ── 7. Register deploy key on GitHub ────────────────────────────────
+# ── 8. Register deploy key on GitHub ────────────────────────────────
 echo "==> Registering deploy key..."
 gh repo deploy-key add "${DEPLOY_KEY}.pub" --repo phillias/dotfiles --title "chezmoi@$(hostname)" --allow-write 2>/dev/null || echo "Key may already exist"
 
-# ── 8. Select profile branch ────────────────────────────────────────
+# ── 9. Select profile branch ────────────────────────────────────────
 echo ""
 echo "Which profile do you want to use?"
 echo "  1) master  — shared configs only (no SSH keys or API keys)"
@@ -168,30 +186,30 @@ case "$BRANCH_CHOICE" in
 esac
 echo "Using branch: $BRANCH"
 
-# ── 9. Bitwarden login (interactive) ────────────────────────────────
+# ── 10. Bitwarden login (interactive) ────────────────────────────────
 echo ""
 echo "==> Bitwarden login required"
 bw login phillias@gmail.com
 export BW_SESSION=$(bw unlock --raw)
 
-# ── 10. Clone dotfiles repo ─────────────────────────────────────────
+# ── 11. Clone dotfiles repo ─────────────────────────────────────────
 if [ ! -d "$CHEZMOI_DIR" ]; then
     echo "==> Cloning dotfiles (branch: $BRANCH)..."
     GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" chezmoi init --branch "$BRANCH" git@github.com:phillias/dotfiles.git
 fi
 
-# ── 11. Register deploy key for SSH access ──────────────────────────
+# ── 12. Register deploy key for SSH access ──────────────────────────
 DEPLOY_PUB=$(cat "${DEPLOY_KEY}.pub")
 if ! grep -qF "$DEPLOY_PUB" ~/.ssh/authorized_keys 2>/dev/null; then
     echo "$DEPLOY_PUB" >> ~/.ssh/authorized_keys
     echo "Deploy key added to authorized_keys"
 fi
 
-# ── 12. Apply dotfiles ─────────────────────────────────────────────
+# ── 13. Apply dotfiles ─────────────────────────────────────────────
 echo "==> Applying dotfiles..."
 BW_SESSION="$BW_SESSION" chezmoi apply
 
-# ── 13. Decrypt age encryption key ─────────────────────────────────
+# ── 14. Decrypt age encryption key ─────────────────────────────────
 AGE_KEY_FILE="$HOME/.config/chezmoi/key.txt"
 if [ ! -f "$AGE_KEY_FILE" ]; then
     echo ""
@@ -215,7 +233,7 @@ else
     echo "Age key already present, skipping"
 fi
 
-# ── 14. Write chezmoi config ────────────────────────────────────────
+# ── 15. Write chezmoi config ────────────────────────────────────────
 if [ -f "$AGE_KEY_FILE" ]; then
     AGE_PUB=$(chezmoi data --format=json 2>/dev/null | python3 -c "
 import sys,json
@@ -232,12 +250,12 @@ AGEEOF
     echo "chezmoi.toml written"
 fi
 
-# ── 15. Full apply ──────────────────────────────────────────────────
+# ── 16. Full apply ──────────────────────────────────────────────────
 echo ""
 echo "==> Full apply..."
 BW_SESSION=$(bw unlock --raw) chezmoi apply
 
-# ── 16. Register in inventory ───────────────────────────────────────
+# ── 17. Register in inventory ───────────────────────────────────────
 if [ -f "$CHEZMOI_DIR/.chezmoi-inventory.json" ]; then
     python3 -c "
 import json,subprocess,datetime
@@ -252,7 +270,7 @@ print('Inventory: '+h)
 "
 fi
 
-# ── 17. Auto-sync ───────────────────────────────────────────────────
+# ── 18. Auto-sync ───────────────────────────────────────────────────
 if $IS_MAC; then
     echo "===> macOS: use launchd for auto-sync"
 else
@@ -263,7 +281,7 @@ else
     fi
 fi
 
-# ── 18. Verify ──────────────────────────────────────────────────────
+# ── 19. Verify ──────────────────────────────────────────────────────
 echo ""
 echo "=== Verification ==="
 if chezmoi verify 2>/dev/null; then echo "OK"; else echo "WARN: differences"; fi
