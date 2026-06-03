@@ -1,0 +1,48 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "small_model": "groq/llama-3.3-70b-versatile",
+  "provider": {
+    "groq": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Groq",
+      "options": {
+        "baseURL": "https://api.groq.com/openai/v1",
+        "apiKey": "{env:GROQ_API_KEY}"
+      },
+      "models": {
+        "llama-3.3-70b-versatile": { "name": "Llama 3.3 70B", "limit": { "context": 131072 } },
+        "gpt-oss-120b": { "name": "GPT-OSS 120B", "limit": { "context": 131072 } },
+        "gpt-oss-20b": { "name": "GPT-OSS 20B", "limit": { "context": 131072 } },
+        "llama-4-scout-17b-16e-instruct": { "name": "Llama 4 Scout 17B", "limit": { "context": 131072 } },
+        "qwen-3-32b": { "name": "Qwen3 32B", "limit": { "context": 131072 } }
+      }
+    },
+    "openrouter": {
+      "models": {
+        "deepseek/deepseek-v4-flash:free": {},
+        "qwen/qwen3-coder:free": {},
+        "meta-llama/llama-3.3-70b-instruct:free": {},
+        "nvidia/nemotron-3-super-120b-a12b:free": {},
+        "openai/gpt-oss-20b:free": {},
+        "owl-alpha": {}
+      }
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 50000,
+    "tail_turns": 40
+  },
+  "permission": "allow",
+  "mcp": {
+    "chrome-devtools": {
+      "enabled": true,
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    }
+  },
+  "plugin": [
+    "oh-my-openagent@latest"
+  ]
+}
