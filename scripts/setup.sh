@@ -17,6 +17,14 @@ fi
 
 echo "=== phillias/dotfiles bootstrap ($(hostname)) ==="
 
+# Ensure ~/bin is in PATH permanently for future shells
+if ! grep -q 'HOME/bin' "$HOME/.bashrc" 2>/dev/null; then
+    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+if ! grep -q 'HOME/bin' "$HOME/.zshrc" 2>/dev/null; then
+    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.zshrc"
+fi
+
 # ── 1. Determine install method on macOS ─────────────────────────────
 # Prefer the current user's own Homebrew. Fall back to binary downloads.
 # Never sudo-chown another user's Homebrew — that breaks multi-user setups.
