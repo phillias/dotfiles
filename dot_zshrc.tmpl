@@ -289,6 +289,8 @@ export PATH="/usr/local/go/bin:$HOME/.bun/bin:$HOME/go/bin:$PATH"
 {{- if (env "BW_SESSION") }}
 export GROQ_API_KEY="{{ (index (bitwardenFields "item" "339936cd-b111-492b-8a77-b3f900fb1c23") "Groq API Key").value }}"
 {{- else }}
-export GROQ_API_KEY=""
+if [ -f "$HOME/.config/opencode/.groq-key" ]; then
+    export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
+fi
 {{- end }}
 export PLAYWRIGHT_BROWSERS_PATH=/home/phillias/.cache/ms-playwright
