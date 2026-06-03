@@ -129,7 +129,11 @@ if ! command -v bw &>/dev/null; then
         ARCH=$(uname -m)
         BW_TAG=$(curl -fsSL https://api.github.com/repos/bitwarden/clients/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "")
         if [ -n "$BW_TAG" ]; then
-            BW_VERSION="${BW_TAG#cli-}"
+            # Tag format: cli-v2026.5.1 or browser-v2026.5.1 — extract version number
+            BW_VERSION=$(echo "$BW_TAG" | grep -oP '[\d]+\.[\d]+\.[\d]+' | head -1)
+            if [ -z "$BW_VERSION" ]; then
+                BW_VERSION="2026.5.1"
+            fi
             echo "==> bw: downloading ${BW_VERSION}"
             TMP=$(mktemp -d)
             if [ "$IS_MAC" = true ]; then
