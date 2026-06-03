@@ -306,11 +306,12 @@ echo "  1) master  — shared configs only (no SSH keys or API keys)"
 echo "  2) personal — personal SSH keys and API keys"
 echo "  3) work     — work SSH keys and API keys"
 read -rp "Enter choice [1-3]: " BRANCH_CHOICE
-case "$BRANCH_CHOICE" in
-    1) BRANCH="master" ;;
-    2) BRANCH="personal" ;;
-    3) BRANCH="work" ;;
-    *) echo "Invalid choice, defaulting to master"; BRANCH="master" ;;
+BRANCH="master"
+case "${BRANCH_CHOICE}" in
+    1)  BRANCH="master" ;;
+    2)  BRANCH="personal" ;;
+    3)  BRANCH="work" ;;
+    *)  BRANCH="master" ;;
 esac
 echo "Using branch: $BRANCH"
 
