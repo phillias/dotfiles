@@ -48,35 +48,36 @@ if ! command -v chezmoi &>/dev/null; then
     if $BREW_OK; then
         brew install chezmoi
     else
-        echo "==> Installing chezmoi via binary download..."
-        # Retry up to 3 times on checksum/EOF failures
-        for attempt in 1 2 3; do
-            if BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)" 2>/dev/null; then
-                break
+        TMP=$(mktemp -d)
+        ARCH=$(uname -m)
+        case "$ARCH" in
+            x86_64)  CZ_ARCH="amd64" ;;
+            aarch64) CZ_ARCH="arm64" ;;
+            armv7l)  CZ_ARCH="armhf" ;;
+            *)       CZ_ARCH="amd64" ;;
+        esac
+        CZ_TAG=$(curl -fsSL https://api.github.com/repos/twpayne/chezmoi/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.70.4")
+        CZ_DEB="chezmoi_${CZ_TAG#v}_linux_${CZ_ARCH}.deb"
+        echo "==> Installing chezmoi ${CZ_TAG}..."
+        if curl -fsSL -o "$TMP/chezmoi.deb" "https://github.com/twpayne/chezmoi/releases/download/${CZ_TAG}/${CZ_DEB}" 2>/dev/null; then
+            if command -v sudo &>/dev/null; then
+                sudo dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
+            else
+                dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || apt-get install -f -y 2>/dev/null
             fi
-            echo "  Retry $attempt/3 (download failed, possibly network issue)..."
-            sleep 2
-        done
-        # Fallback: direct GitHub release download
-        if ! command -v chezmoi &>/dev/null; then
-            echo "  Falling back to direct GitHub download..."
-            ARCH=$(uname -m)
-            case "$ARCH" in
-                x86_64)  CZ_ARCH="amd64" ;;
-                aarch64) CZ_ARCH="arm64" ;;
-                armv7l)  CZ_ARCH="arm" ;;
-                *)       CZ_ARCH="amd64" ;;
-            esac
-            CZ_TAG=$(curl -fsSL https://api.github.com/repos/twpayne/chezmoi/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.70.4")
-            CZ_FILE="chezmoi_${CZ_TAG#v}_linux_${CZ_ARCH}.tar.gz"
-            TMP=$(mktemp -d)
-            curl -fsSL -o "$TMP/chezmoi.tar.gz" "https://github.com/twpayne/chezmoi/releases/download/${CZ_TAG}/${CZ_FILE}" || true
-            tar xzf "$TMP/chezmoi.tar.gz" -C "$TMP" 2>/dev/null
-            mkdir -p "$HOME/bin"
-            cp "$TMP/chezmoi" "$HOME/bin/" 2>/dev/null
-            chmod +x "$HOME/bin/chezmoi" 2>/dev/null
-            rm -rf "$TMP"
         fi
+        # Fallback to binary download if dpkg not available
+        if ! command -v chezmoi &>/dev/null; then
+            echo "  Falling back to binary download..."
+            for attempt in 1 2 3; do
+                if BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)" 2>/dev/null; then
+                    break
+                fi
+                echo "  Retry $attempt/3..."
+                sleep 2
+            done
+        fi
+        rm -rf "$TMP"
     fi
 fi
 echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
@@ -92,14 +93,29 @@ if ! command -v gh &>/dev/null; then
         ARCH=$(uname -m)
         if [ "$IS_MAC" = true ]; then
             case "$ARCH" in arm64) GA="macOS_arm64.zip" ;; *) GA="macOS_amd64.zip" ;; esac
+            TMP=$(mktemp -d)
+            curl -fsSL -o "$TMP/gh.zip" "https://github.com/cli/cli/releases/download/${GH_TAG}/gh_${GH_TAG#v}_${GA}"
+            unzip -o "$TMP/gh.zip" -d "$TMP"
+            find "$TMP" -name "gh" -type f -exec cp {} "$HOME/bin/" \;
+            rm -rf "$TMP"
         else
-            case "$ARCH" in x86_64) GA="linux_amd64.tar.gz" ;; aarch64) GA="linux_arm64.tar.gz" ;; *) GA="linux_amd64.tar.gz" ;; esac
+            case "$ARCH" in
+                x86_64)  GH_DEB="amd64" ;;
+                aarch64) GH_DEB="arm64" ;;
+                armv7l)  GH_DEB="armv6" ;;
+                *)       GH_DEB="amd64" ;;
+            esac
+            GH_DEB_FILE="gh_${GH_TAG#v}_linux_${GH_DEB}.deb"
+            TMP=$(mktemp -d)
+            if curl -fsSL -o "$TMP/gh.deb" "https://github.com/cli/cli/releases/download/${GH_TAG}/${GH_DEB_FILE}" 2>/dev/null; then
+                if command -v sudo &>/dev/null; then
+                    sudo dpkg -i "$TMP/gh.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
+                else
+                    dpkg -i "$TMP/gh.deb" 2>/dev/null
+                fi
+            fi
+            rm -rf "$TMP"
         fi
-        TMP=$(mktemp -d)
-        curl -fsSL -o "$TMP/gh.bin" "https://github.com/cli/cli/releases/download/${GH_TAG}/gh_${GH_TAG#v}_${GA}"
-        if echo "$GA" | grep -q zip; then unzip -o "$TMP/gh.bin" -d "$TMP"; else tar xzf "$TMP/gh.bin" -C "$TMP"; fi
-        find "$TMP" -name "gh" -type f -exec cp {} "$HOME/bin/" \;
-        rm -rf "$TMP"
     fi
 fi
 echo "gh: $(gh --version 2>&1 | head -1)"
@@ -163,20 +179,38 @@ if ! command -v cloudflared &>/dev/null; then
         ARCH=$(uname -m)
         if [ "$IS_MAC" = true ]; then
             case "$ARCH" in arm64) CF_FILE="cloudflared-darwin-arm64.tgz" ;; *) CF_FILE="cloudflared-darwin-amd64.tgz" ;; esac
-        else
-            case "$ARCH" in aarch64) CF_FILE="cloudflared-linux-arm64" ;; *) CF_FILE="cloudflared-linux-amd64" ;; esac
-        fi
-        echo "==> cloudflared: downloading ${CF_FILE}"
-        TMP=$(mktemp -d)
-        if echo "$CF_FILE" | grep -q tgz; then
+            echo "==> cloudflared: downloading ${CF_FILE}"
+            TMP=$(mktemp -d)
             curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_FILE}" | tar xzf - -C "$TMP"
+            chmod +x "$TMP/cloudflared"
+            mkdir -p "$HOME/bin"
+            mv "$TMP/cloudflared" "$HOME/bin/"
+            rm -rf "$TMP"
         else
-            curl -fsSL -o "$TMP/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_FILE}"
+            case "$ARCH" in
+                x86_64)  CF_DEB="cloudflared-linux-amd64.deb" ;;
+                aarch64) CF_DEB="cloudflared-linux-arm64.deb" ;;
+                armv7l)  CF_DEB="cloudflared-linux-armhf.deb" ;;
+                *)       CF_DEB="cloudflared-linux-amd64.deb" ;;
+            esac
+            echo "==> cloudflared: installing ${CF_DEB}"
+            TMP=$(mktemp -d)
+            if curl -fsSL -o "$TMP/cloudflared.deb" "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_DEB}" 2>/dev/null; then
+                if command -v sudo &>/dev/null; then
+                    sudo dpkg -i "$TMP/cloudflared.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
+                else
+                    dpkg -i "$TMP/cloudflared.deb" 2>/dev/null
+                fi
+            fi
+            rm -rf "$TMP"
+            # Fallback to binary download if dpkg not available
+            if ! command -v cloudflared &>/dev/null; then
+                echo "  Falling back to binary download..."
+                CF_BIN="cloudflared-linux-${CF_DEB##*-}"
+                curl -fsSL -o "$HOME/bin/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_BIN}" 2>/dev/null
+                chmod +x "$HOME/bin/cloudflared" 2>/dev/null
+            fi
         fi
-        chmod +x "$TMP/cloudflared"
-        mkdir -p "$HOME/bin"
-        mv "$TMP/cloudflared" "$HOME/bin/"
-        rm -rf "$TMP"
     fi
     echo "cloudflared: $(cloudflared --version 2>&1 | head -1)"
 fi
