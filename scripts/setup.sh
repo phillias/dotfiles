@@ -270,7 +270,7 @@ fi
 GH_AUTHENTICATED=false
 if gh auth status &>/dev/null 2>&1; then
     GH_AUTHENTICATED=true
-elif [ -f "$HOME/.config/gh/hosts.yml" ] && grep -q "oauth_token\|user:" "$HOME/.config/gh/hosts.yml" 2>/dev/null; then
+elif [ -f "$HOME/.config/gh/hosts.yml" ] && grep -qE "oauth_token|user:" "$HOME/.config/gh/hosts.yml" 2>/dev/null; then
     GH_AUTHENTICATED=true
 fi
 if $GH_AUTHENTICATED; then
