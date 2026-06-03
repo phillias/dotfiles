@@ -127,13 +127,17 @@ if ! command -v bw &>/dev/null; then
         brew install bitwarden-cli
     else
         ARCH=$(uname -m)
-        BW_TAG=$(curl -fsSL https://api.github.com/repos/bitwarden/clients/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "")
+        # Get the latest CLI-specific release (tag starts with cli-)
+        BW_TAG=$(curl -fsSL "https://api.github.com/repos/bitwarden/clients/releases?per_page=10" 2>/dev/null | python3 -c "
+import sys,json
+for r in json.load(sys.stdin):
+    if r['tag_name'].startswith('cli-'):
+        print(r['tag_name'])
+        break
+" 2>/dev/null || echo "")
         if [ -n "$BW_TAG" ]; then
-            # Tag format: cli-v2026.5.1 or browser-v2026.5.1 — extract version number
-            BW_VERSION=$(echo "$BW_TAG" | grep -oP '[\d]+\.[\d]+\.[\d]+' | head -1)
-            if [ -z "$BW_VERSION" ]; then
-                BW_VERSION="2026.5.1"
-            fi
+            BW_VERSION="${BW_TAG#cli-}"
+            BW_VERSION="${BW_VERSION#v}"  # Strip leading v if present
             echo "==> bw: downloading ${BW_VERSION}"
             TMP=$(mktemp -d)
             if [ "$IS_MAC" = true ]; then
