@@ -318,8 +318,15 @@ echo "Using branch: $BRANCH"
 # ── 10. Bitwarden login (interactive) ────────────────────────────────
 echo ""
 echo "==> Bitwarden login required"
+# Clear any stale session
+unset BW_SESSION
 bw login phillias@gmail.com
-export BW_SESSION=$(bw unlock --raw)
+echo "==> Unlock Bitwarden vault (enter master password)"
+BW_SESSION=$(bw unlock --raw 2>/dev/null)
+if [ -z "$BW_SESSION" ]; then
+    echo "WARN: Bitwarden unlock failed. Some features may not work."
+    echo "      You can unlock later with: export BW_SESSION=\$(bw unlock --raw)"
+fi
 
 # ── 11. Clone dotfiles repo ─────────────────────────────────────────
 if [ ! -d "$CHEZMOI_DIR" ]; then
@@ -336,27 +343,42 @@ fi
 
 # ── 13. Apply dotfiles ─────────────────────────────────────────────
 echo "==> Applying dotfiles..."
-BW_SESSION="$BW_SESSION" chezmoi apply
+if [ -n "$BW_SESSION" ]; then
+    BW_SESSION="$BW_SESSION" chezmoi apply
+else
+    echo "WARN: BW_SESSION not set, skipping Bitwarden template rendering"
+    chezmoi apply
+fi
 
 # ── 14. Decrypt age encryption key ─────────────────────────────────
 AGE_KEY_FILE="$HOME/.config/chezmoi/key.txt"
 if [ ! -f "$AGE_KEY_FILE" ]; then
     echo ""
     echo "==> Age encryption (Bitwarden: Chezmoi Age Key)"
-    read -rp "Enter age passphrase: " AGE_PP
-    if [ -n "$AGE_PP" ]; then
+    echo "    Copy the password field value (no extra spaces or newlines)"
+    AGE_PP=""
+    for attempt in 1 2 3; do
+        read -rp "Enter age passphrase (attempt $attempt/3): " AGE_PP </dev/tty
+        # Trim leading/trailing whitespace
+        AGE_PP="$(echo "$AGE_PP" | tr -d '[:space:]')"
+        if [ -z "$AGE_PP" ]; then
+            echo "  Empty passphrase, skipping."
+            break
+        fi
         mkdir -p "$(dirname "$AGE_KEY_FILE")"
-        expect << XEOF
-set timeout 10
-spawn chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age"
-expect "Enter passphrase:"
-send "$AGE_PP\r"
-expect "Confirm passphrase:"
-send "$AGE_PP\r"
-expect eof
-XEOF
-        chmod 600 "$AGE_KEY_FILE"
-        echo "Age key decrypted"
+        # Use printf to avoid expect issues with special chars
+        if printf '%s\n%s\n' "$AGE_PP" "$AGE_PP" | chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>/dev/null; then
+            chmod 600 "$AGE_KEY_FILE"
+            echo "Age key decrypted"
+            break
+        else
+            echo "  Incorrect passphrase or decryption failed."
+            AGE_PP=""
+        fi
+    done
+    if [ ! -f "$AGE_KEY_FILE" ]; then
+        echo "WARN: Age key not decrypted. You can do this later:"
+        echo "  chezmoi age decrypt --passphrase -o ~/.config/chezmoi/key.txt ~/.local/share/chezmoi/age-key.txt.age"
     fi
 else
     echo "Age key already present, skipping"
@@ -382,7 +404,12 @@ fi
 # ── 16. Full apply ──────────────────────────────────────────────────
 echo ""
 echo "==> Full apply..."
-BW_SESSION=$(bw unlock --raw) chezmoi apply
+if [ -n "$BW_SESSION" ]; then
+    BW_SESSION="$BW_SESSION" chezmoi apply
+else
+    echo "WARN: BW_SESSION not set, skipping Bitwarden template rendering"
+    chezmoi apply
+fi
 
 # ── 17. Register in inventory ───────────────────────────────────────
 if [ -f "$CHEZMOI_DIR/.chezmoi-inventory.json" ]; then
