@@ -265,22 +265,34 @@ if ! command -v gh &>/dev/null; then
     echo "ERROR: gh is not installed. This should not happen."
     exit 1
 fi
-if ! gh auth status &>/dev/null; then
+# Check if already authenticated (e.g. user ran gh auth login in another terminal)
+# Try gh auth status first, fall back to checking config file directly
+GH_AUTHENTICATED=false
+if gh auth status &>/dev/null 2>&1; then
+    GH_AUTHENTICATED=true
+elif [ -f "$HOME/.config/gh/hosts.yml" ] && grep -q "oauth_token\|user:" "$HOME/.config/gh/hosts.yml" 2>/dev/null; then
+    GH_AUTHENTICATED=true
+fi
+if $GH_AUTHENTICATED; then
+    echo "==> GitHub already authenticated"
+else
     echo ""
     echo "==> GitHub auth required"
     echo ""
-    echo "Option A (recommended): Run 'gh auth login' on a machine with a browser,"
-    echo "  then paste the token here (never expires):"
+    echo "Option A: Run 'gh auth login' in another terminal first, then re-run this script."
     echo "  $ gh auth login --scopes repo"
     echo ""
-    echo "Option B: Create a PAT at https://github.com/settings/tokens"
-    echo "  Required scopes: repo (full control)"
+    echo "Option B: Paste a PAT or OAuth token below."
+    echo "  Create at: https://github.com/settings/tokens (scope: repo)"
     echo ""
-    # Prompt reads from /dev/tty so it works with curl | bash (stdin is the pipe)
-    read -rp "Paste GitHub token: " GH_TOKEN </dev/tty
-    echo "$GH_TOKEN" | gh auth login --with-token 2>/dev/null || {
-        echo "WARN: gh auth failed. You can authenticate later with: gh auth login"
-    }
+    read -rp "Paste GitHub token (or press Ctrl+C to skip): " GH_TOKEN </dev/tty
+    if [ -n "$GH_TOKEN" ]; then
+        echo "$GH_TOKEN" | gh auth login --with-token 2>/dev/null || {
+            echo "WARN: gh auth failed. You can authenticate later with: gh auth login"
+        }
+    else
+        echo "WARN: Skipping GitHub auth. Run 'gh auth login' later."
+    fi
 fi
 
 # ── 8. Register deploy key on GitHub ────────────────────────────────
