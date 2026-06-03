@@ -320,7 +320,8 @@ echo ""
 echo "==> Bitwarden login required"
 # Clear any stale session
 unset BW_SESSION
-bw login phillias@gmail.com
+# bw login returns exit 1 if already logged in — that's OK
+bw login phillias@gmail.com 2>/dev/null || true
 echo "==> Unlock Bitwarden vault (enter master password)"
 BW_SESSION=$(bw unlock --raw 2>/dev/null)
 if [ -z "$BW_SESSION" ]; then
