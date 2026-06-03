@@ -17,20 +17,27 @@ fi
 
 echo "=== phillias/dotfiles bootstrap ($(hostname)) ==="
 
-# ── 1. Handle Homebrew on macOS ─────────────────────────────────────
+# ── 1. Determine install method on macOS ─────────────────────────────
+# Prefer the current user's own Homebrew. Fall back to binary downloads.
+# Never sudo-chown another user's Homebrew — that breaks multi-user setups.
 BREW_OK=false
-if $IS_MAC && command -v brew &>/dev/null; then
-    BREW_PREFIX=$(brew --prefix 2>/dev/null || echo "/opt/homebrew")
-    if [ -w "$BREW_PREFIX/Cellar" ] || [ -w "$BREW_PREFIX" ]; then
+BREW_USER_PREFIX="$HOME/homebrew"
+if $IS_MAC; then
+    # Check for user-local homebrew first
+    if [ -x "$BREW_USER_PREFIX/bin/brew" ]; then
         BREW_OK=true
-    else
-        echo "==> Homebrew Cellar not writable by $(whoami)"
-        if command -v sudo &>/dev/null; then
-            echo "    → Fixing permissions with sudo..."
-            sudo chown -R "$(whoami)" "$BREW_PREFIX/Cellar" "$BREW_PREFIX/Homebrew" 2>/dev/null && BREW_OK=true
-        fi
-        if ! $BREW_OK; then
-            echo "    → sudo not available, using binary downloads instead of brew"
+        export PATH="$BREW_USER_PREFIX/bin:$PATH"
+        echo "==> Using user-local Homebrew at $BREW_USER_PREFIX"
+    elif command -v brew &>/dev/null; then
+        BREW_PREFIX=$(brew --prefix 2>/dev/null || echo "/opt/homebrew")
+        # Only use system homebrew if current user owns it
+        if [ -w "$BREW_PREFIX/Cellar" ]; then
+            BREW_OK=true
+            echo "==> Using system Homebrew at $BREW_PREFIX"
+        else
+            echo "==> System Homebrew exists but Cellar is owned by another user."
+            echo "    → Installing tools via binary download instead (no brew needed)."
+            echo "    → Optionally, set up your own Homebrew later: https://brew.sh"
         fi
     fi
 fi
@@ -41,6 +48,7 @@ if ! command -v chezmoi &>/dev/null; then
     if $BREW_OK; then
         brew install chezmoi
     else
+        echo "==> Installing chezmoi via binary download..."
         BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)"
     fi
 fi
