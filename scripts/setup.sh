@@ -136,7 +136,16 @@ fi
 # ── 6. Authenticate gh (one-time) ───────────────────────────────────
 if ! gh auth status &>/dev/null; then
     echo ""
-    echo "==> GitHub auth required (PAT with repo scope)"
+    echo "==> GitHub auth required"
+    echo ""
+    echo "Option A (recommended): Run 'gh auth login' on a machine with a browser,"
+    echo "  then paste the token here (never expires):"
+    echo "  $ gh auth login --scopes repo"
+    echo ""
+    echo "Option B: Create a PAT at https://github.com/settings/tokens"
+    echo "  Required scopes: repo (full control)"
+    echo ""
+    echo ""
     gh auth login --with-token
 fi
 
