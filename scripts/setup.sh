@@ -245,8 +245,11 @@ if ! gh auth status &>/dev/null; then
     echo "Option B: Create a PAT at https://github.com/settings/tokens"
     echo "  Required scopes: repo (full control)"
     echo ""
-    echo ""
-    gh auth login --with-token
+    # Prompt reads from /dev/tty so it works with curl | bash (stdin is the pipe)
+    read -rp "Paste GitHub token: " GH_TOKEN </dev/tty
+    echo "$GH_TOKEN" | gh auth login --with-token 2>/dev/null || {
+        echo "WARN: gh auth failed. You can authenticate later with: gh auth login"
+    }
 fi
 
 # ── 8. Register deploy key on GitHub ────────────────────────────────
