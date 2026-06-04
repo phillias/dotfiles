@@ -355,32 +355,29 @@ fi
 AGE_KEY_FILE="$HOME/.config/chezmoi/key.txt"
 if [ ! -f "$AGE_KEY_FILE" ]; then
     echo ""
-    echo "==> Age encryption (Bitwarden: Chezmoi Age Key)"
-    echo "    Copy the password field value (no extra spaces or newlines)"
+    echo "==> Age encryption"
+    echo "    The age key is encrypted. You need the passphrase to decrypt it."
+    echo "    Find it in Bitwarden: search 'Chezmoi Age Key' (password field)"
+    echo ""
     AGE_PP=""
     for attempt in 1 2 3; do
-        read -rp "Enter age passphrase (attempt $attempt/3): " AGE_PP </dev/tty
-        # Trim leading/trailing whitespace
+        read -rp "Enter age passphrase (attempt $attempt/3, or press Enter to skip): " AGE_PP </dev/tty
         AGE_PP="$(echo "$AGE_PP" | tr -d '[:space:]')"
         if [ -z "$AGE_PP" ]; then
-            echo "  Empty passphrase, skipping."
+            echo "  Skipping. Decrypt later with:"
+            echo "    chezmoi age decrypt --passphrase -o ~/.config/chezmoi/key.txt ~/.local/share/chezmoi/age-key.txt.age"
             break
         fi
         mkdir -p "$(dirname "$AGE_KEY_FILE")"
-        # Use printf to avoid expect issues with special chars
         if printf '%s\n%s\n' "$AGE_PP" "$AGE_PP" | chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>/dev/null; then
             chmod 600 "$AGE_KEY_FILE"
             echo "Age key decrypted"
             break
         else
-            echo "  Incorrect passphrase or decryption failed."
+            echo "  Incorrect passphrase."
             AGE_PP=""
         fi
     done
-    if [ ! -f "$AGE_KEY_FILE" ]; then
-        echo "WARN: Age key not decrypted. You can do this later:"
-        echo "  chezmoi age decrypt --passphrase -o ~/.config/chezmoi/key.txt ~/.local/share/chezmoi/age-key.txt.age"
-    fi
 else
     echo "Age key already present, skipping"
 fi
