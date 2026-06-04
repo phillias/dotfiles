@@ -383,30 +383,41 @@ else
 fi
 
 # ── 14. Write chezmoi config ────────────────────────────────────────
+mkdir -p "$HOME/.config/chezmoi"
 if [ -f "$AGE_KEY_FILE" ]; then
     AGE_PUB=$(chezmoi data --format=json 2>/dev/null | python3 -c "
 import sys,json
 d=json.load(sys.stdin)
 print(d.get('chezmoi',{}).get('config',{}).get('age',{}).get('recipient',''))
 " 2>/dev/null || echo "age1p5cu2lhvhjxq2rkzxlgk9ekknr3ang7n5nla5pst94ckm8jmmq9sp66mc5")
-    mkdir -p "$HOME/.config/chezmoi"
-    cat > "$HOME/.config/chezmoi/chezmoi.toml" << AGEEOF
+else
+    AGE_PUB="age1p5cu2lhvhjxq2rkzxlgk9ekknr3ang7n5nla5pst94ckm8jmmq9sp66mc5"
+fi
+cat > "$HOME/.config/chezmoi/chezmoi.toml" << AGEEOF
 encryption = "age"
 [age]
     identity = "~/.config/chezmoi/key.txt"
     recipient = "$AGE_PUB"
 AGEEOF
+if [ -f "$AGE_KEY_FILE" ]; then
     echo "chezmoi.toml written"
+else
+    echo "chezmoi.toml written (age key not decrypted yet)"
 fi
 
 # ── 15. Full apply ──────────────────────────────────────────────────
 echo ""
 echo "==> Full apply..."
+CHEZMOI_APPLY_OPTS=""
+if [ ! -f "$AGE_KEY_FILE" ]; then
+    echo "WARN: Age key not decrypted, encrypted files will be skipped"
+    CHEZMOI_APPLY_OPTS="--keep-going"
+fi
 if [ -n "$BW_SESSION" ]; then
-    BW_SESSION="$BW_SESSION" chezmoi apply
+    BW_SESSION="$BW_SESSION" chezmoi apply $CHEZMOI_APPLY_OPTS
 else
     echo "WARN: BW_SESSION not set, skipping Bitwarden template rendering"
-    chezmoi apply
+    chezmoi apply $CHEZMOI_APPLY_OPTS
 fi
 
 # ── 16. Register in inventory ───────────────────────────────────────
