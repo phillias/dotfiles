@@ -157,3 +157,16 @@ fi
 
 alias dockernetmap='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/muratovas/docker-network-graph:latest -u'
 alias carb='docker run -it --rm --network host fathyb/carbonyl'
+
+# opencode
+export PATH=$HOME/.npm-global/bin:$PATH
+export PATH=/home/phillias/.opencode/bin:$PATH
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# Groq API key for OpenCode
+if [ -f "$HOME/.config/opencode/.groq-key" ]; then
+    export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
+fi
