@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "servers": {
+    "CabinInspiron22Kali": {
+      "hostname": "CabinInspiron22Kali",
+      "username": "phillias",
+      "os": "linux",
+      "arch": "x86_64",
+      "first_seen": "2026-06-06T04:27:39Z",
+      "last_sync": "2026-06-06T04:27:39Z",
+      "status": "active"
+    }
+  }
+}

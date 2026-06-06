@@ -421,19 +421,53 @@ else
 fi
 
 # ── 16. Register in inventory ───────────────────────────────────────
-if [ -f "$CHEZMOI_DIR/.chezmoi-inventory.json" ]; then
-    python3 -c "
-import json,subprocess,datetime
-f='$CHEZMOI_DIR/.chezmoi-inventory.json'
-with open(f) as fh: inv=json.load(fh)
-h=subprocess.check_output(['hostname']).decode().strip()
-n=datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-s=subprocess.check_output
-inv.setdefault('servers',{})[h]={'hostname':h,'username':s(['whoami']).decode().strip(),'os':s(['uname','-s']).decode().strip().lower(),'arch':s(['uname','-m']).decode().strip(),'deploy_key_title':'chezmoi@'+h,'first_seen':inv.get('servers',{}).get(h,{}).get('first_seen',n),'last_sync':n,'status':'active'}
-with open(f,'w') as fh: json.dump(inv,fh,indent=2)
-print('Inventory: '+h)
+echo "==> Registering this host in inventory..."
+INVENTORY_FILE="$CHEZMOI_DIR/.chezmoi-inventory.json"
+python3 -c "
+import json, subprocess, datetime, os
+
+f = '$INVENTORY_FILE'
+h = subprocess.check_output(['hostname']).decode().strip()
+u = subprocess.check_output(['whoami']).decode().strip()
+os_str = subprocess.check_output(['uname', '-s']).decode().strip().lower()
+arch = subprocess.check_output(['uname', '-m']).decode().strip()
+n = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+branch = '$BRANCH'
+
+if os.path.exists(f):
+    with open(f) as fh:
+        inv = json.load(fh)
+else:
+    inv = {'version': 1, 'servers': {}}
+
+entry = inv.setdefault('servers', {}).get(h, {})
+first_seen = entry.get('first_seen', n)
+
+inv['servers'][h] = {
+    'hostname': h,
+    'username': u,
+    'os': os_str,
+    'arch': arch,
+    'profile': branch,
+    'first_seen': first_seen,
+    'last_sync': n,
+    'status': 'active'
+}
+
+with open(f, 'w') as fh:
+    json.dump(inv, fh, indent=2)
+print('Inventory: ' + h)
 "
-fi
+
+# Commit and push inventory change back to master via deploy key
+GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" \
+    git -C "$CHEZMOI_DIR" add .chezmoi-inventory.json
+GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" \
+    git -C "$CHEZMOI_DIR" -c user.name="phillias" -c user.email="phillias@gmail.com" \
+    commit -m "Register $(hostname) in inventory" 2>/dev/null || true
+GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" \
+    git -C "$CHEZMOI_DIR" push origin HEAD:master 2>/dev/null || \
+    echo "WARN: inventory push failed (will retry on next sync)"
 
 # ── 17. Auto-sync ───────────────────────────────────────────────────
 if $IS_MAC; then
