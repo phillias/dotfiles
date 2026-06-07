@@ -172,11 +172,11 @@
     },
 
     "artistry": {
-      "model": "groq/gpt-oss-20b",
+      "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
+        "groq/gpt-oss-20b",
         "cerebras/llama3.3-70b",
-        "openrouter/deepseek/deepseek-v4-flash:free",
-        "google/gemini-2.0-flash"
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
@@ -184,8 +184,8 @@
       "model": "groq/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
-        "openrouter/deepseek/deepseek-v4-flash:free",
-        "sambanova/Meta-Llama-3.3-70B-Instruct"
+        "huggingface/google/gemma-4-12b-it",
+        "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
 
@@ -193,7 +193,7 @@
       "model": "groq/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
-        "openrouter/deepseek/deepseek-v4-flash:free",
+        "huggingface/google/gemma-4-12b-it",
         "openrouter/owl-alpha"
       ]
     },

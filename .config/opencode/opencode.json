@@ -131,7 +131,8 @@
         "deepseek-ai/DeepSeek-R1-0528": { "name": "DeepSeek R1 0528", "limit": { "context": 131072, "output": 8192 } },
         "Qwen/Qwen3-Coder-480B-A35B-Instruct": { "name": "Qwen3 Coder 480B", "limit": { "context": 131072, "output": 8192 } },
         "Qwen/Qwen3-235B-A22B-Instruct-2507": { "name": "Qwen3 235B", "limit": { "context": 131072, "output": 8192 } },
-        "Qwen/QwQ-32B": { "name": "QwQ 32B", "limit": { "context": 131072, "output": 8192 } }
+        "Qwen/QwQ-32B": { "name": "QwQ 32B", "limit": { "context": 131072, "output": 8192 } },
+        "google/gemma-4-12b-it": { "name": "Gemma 4 12B", "limit": { "context": 262144, "output": 8192 } }
       }
     }
   },
