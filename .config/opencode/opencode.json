@@ -51,7 +51,12 @@
         "deepseek/deepseek-chat": {},
         "meta-llama/llama-3.1-70b-instruct": {},
         "mistralai/mistral-large": {},
-        "qwen/qwen-2.5-72b-instruct": {}
+        "qwen/qwen-2.5-72b-instruct": {},
+        "z-ai/glm-5": {},
+        "z-ai/glm-5-turbo": {},
+        "z-ai/glm-4.7-flash": {},
+        "agentica-org/DeepCoder-14B-Preview": {},
+        "Qwen/Qwen3-Coder-Next-80B-A3B-Instruct": {}
       }
     },
     "cerebras": {
