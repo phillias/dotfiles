@@ -27,12 +27,13 @@
 
   "agents": {
     "sisyphus": {
-      "model": "groq/gpt-oss-120b",
+      "model": "opencode-zen/big-pickle",
       "ultrawork": {
         "model": "groq/gpt-oss-120b",
         "variant": "xhigh"
       },
       "fallback_models": [
+        "groq/gpt-oss-120b",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",

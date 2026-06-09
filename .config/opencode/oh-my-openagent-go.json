@@ -90,7 +90,7 @@
     "sisyphus-junior": {
       "model": "openrouter/deepseek/deepseek-v4-flash:free",
       "fallback_models": [
-        "opencode-go/kimi-k2.5",
+        "opencode-zen/big-pickle",
         "openrouter/qwen/qwen3-coder:free",
         "openrouter/deepseek/deepseek-v4-flash:free"
       ]
