@@ -1,4 +1,5 @@
 # Internal chezmoi files
 .chezmoi.toml
 .chezmoiignore
+.chezmoi-inventory.json
 age-key.txt.age

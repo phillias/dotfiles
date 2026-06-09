@@ -18,9 +18,6 @@
    * preventing infinite retry when Go pool hits $12/5hr cap.
    * runtime_fallback catches session.error / message.updated events.
    * Both are needed — they handle different failure paths.
-   *
-   * Strategy: Go pool as primary (quality), varied free fallbacks per agent role.
-   * If Go pool exhausts, free models provide uninterrupted service.
    */
   "model_fallback": true,
   "runtime_fallback": {
@@ -58,7 +55,9 @@
    * Each agent maps to a role in oh-my-openagent's orchestration system.
    * Model choices follow oh-my-openagent's agent-model-matching guide
    * agent type classification: Communicators, Dual-Prompt, Deep Specialists, Utility Runners.
-   * Go pool primary for quality; varied free OpenRouter fallbacks per role.
+   * Fallback chains cascade: Go pool primary → Owl Alpha → OpenRouter free.
+   * No Go pool models appear in fallback chains — once the Go pool is exhausted,
+   * we skip straight to OpenRouter instead of burning attempts on dead models.
    */
 
   "agents": {
@@ -78,78 +77,87 @@
         "variant": "xhigh"
       },
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // ═══ EXECUTOR (HIGH VOLUME) ═══
-    // Utility Runner — DS-V4-Flash free as primary. Good enough for most
-    // subagent tasks; Go pool DS-V4-Flash as fallback for complex cases.
+    // Utility Runner — Owl Alpha provides agentic optimization at zero cost.
     "sisyphus-junior": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // ═══ PLANNING LAYER ═══
     // Prometheus: Dual-Prompt, planning layer — requires highest quality.
+    // Matches Sisyphus model (K2.6) for planning consistency.
     "prometheus": {
       "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // Metis: Communicators class, consulting role.
-    // MiMo-V2.5-Pro's 1M context window benefits plan consultation.
+    // MiMo-V2.5-Pro's 1M context window benefits plan consultation
+    // (Reddit post insight: "consulting role benefits from 1M context").
     "metis": {
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // Momus: Deep Specialist, principle-driven critique.
-    // DS-V4-Pro for nuanced evaluation quality.
+    // Rare calls justify premium model cost.
     "momus": {
       "model": "opencode-go/deepseek-v4-pro",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // Atlas: Dual-Prompt, execution layer (history management, routing).
-    // DS-V4-Flash Go pool — 31,650 req/5hr, efficient for high-volume.
+    // DS-V4-Flash gives 31,650 req/5hr vs K2.5's 1,850 — 17x more efficient
+    // for a role that doesn't need premium reasoning.
     "atlas": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // ═══ PROJECT EXECUTION ═══
-    // Hephaestus: Deep Specialist.
+    // Hephaestus: Deep Specialist, GPT-5.4 canonical.
     // ⚠️ DANGEROUS OVERRIDE per official guide — no GPT-5.4 in Go pool.
     // DS-V4-Pro is the best available substitute for principle-driven autonomous work.
     "hephaestus": {
       "model": "opencode-go/deepseek-v4-pro",
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -159,20 +167,22 @@
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // ═══ UTILITY RUNNERS (HIGH VOLUME) ═══
+    // ═══ UTILITY RUNNERS (HIGH VOLUME, FREE MODELS) ═══
     // Guide explicitly recommends "cheapest-fastest" for Utility Runners.
-    // DS-V4-Flash free — fast, cheap, good enough for search/browse tasks.
+    // Owl Alpha provides agentic tool-use optimization at zero cost —
+    // a bet on bleeding-edge performance over Zen curation.
     "explore": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/deepseek/deepseek-v4-flash:free",
+        "openrouter/qwen/qwen3-coder:free"
       ],
       "permission": {
         "edit": "deny",
@@ -180,22 +190,25 @@
       }
     },
     "librarian": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
     // ═══ MULTIMODAL ═══
     // MiMo-V2.5-Pro (per user directive: "stay with MiMo").
-    // Nemotron VL at end of chain for vision-specific queries.
+    // Owl Alpha offered as fallback for non-vision tasks; Nemotron VL
+    // retained at end of chain for vision-specific queries.
     "multimodal-looker": {
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
-        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free"
       ]
     }
   },
@@ -203,19 +216,20 @@
   /*
    * ── CATEGORIES ──
    * Used by delegate_task() when Sisyphus dispatches work.
-   * Budget-conscious: expensive Go pool models where reasoning quality is critical.
-   * High-volume categories use Go pool flash models (high req/5hr limit).
-   * Free fallbacks vary by category to avoid uniformity.
+   * Budget-conscious: expensive models only where reasoning quality is critical.
+   * High-volume categories (quick, unspecified-low) use free models.
    */
 
   "categories": {
     // UI/UX work needs good instruction-following for code generation.
+    // K2.5 hits the sweet spot between quality and cost.
     "visual-engineering": {
       "model": "opencode-go/kimi-k2.5",
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
@@ -224,67 +238,74 @@
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // Deep exploration benefits from 1M context (MiMo).
+    // Deep exploration benefits from 1M context (Reddit post insight).
     "deep": {
       "model": "opencode-go/mimo-v2.5-pro",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // Creative work — K2.5 is sufficient.
+    // Creative work — K2.5 is sufficient and saves Go pool.
     "artistry": {
       "model": "opencode-go/kimi-k2.5",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // Trivial tasks — DS-V4-Flash free as primary for speed and availability.
+    // Trivial tasks — Owl Alpha as primary, Zen free and OpenRouter free as fallback.
     "quick": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // General low-effort — DS-V4-Flash free as primary.
+    // General low-effort — Owl Alpha as primary.
     "unspecified-low": {
-      "model": "openrouter/deepseek/deepseek-v4-flash:free",
+      "model": "openrouter/owl-alpha",
       "fallback_models": [
+        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // Complex general — DS-V4-Flash (Go pool) as primary.
+    // Complex general — DS-V4-Flash handles this well at 31,650 req/5hr.
     "unspecified-high": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
-        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     },
 
-    // Prose generation — DS-V4-Flash (Go pool) as primary.
+    // Prose generation — DS-V4-Flash is efficient and capable.
     "writing": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
+        "openrouter/owl-alpha",
         "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/deepseek/deepseek-v4-flash:free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
       ]
     }
   }

@@ -262,7 +262,11 @@ if [ -f /etc/zsh_command_not_found ]; then
 fi
 
 export ANTHROPIC_BASE_URL="https://openrouter.ai"
+{{- if (env "BW_SESSION") }}
 export ANTHROPIC_AUTH_TOKEN="{{ (index (bitwardenFields "item" "339936cd-b111-492b-8a77-b3f900fb1c23") "Anthropic Auth Token").value }}"
+{{- else }}
+export ANTHROPIC_AUTH_TOKEN=""
+{{- end }}
 export ANTHROPIC_API_KEY=""
 export ENABLE_TOOL_SEARCH=false
 export ANTHROPIC_COMPATIBILITY_MODE=1
@@ -282,5 +286,26 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="/usr/local/go/bin:$HOME/.bun/bin:$HOME/go/bin:$PATH"
+{{- if (env "BW_SESSION") }}
 export GROQ_API_KEY="{{ (index (bitwardenFields "item" "339936cd-b111-492b-8a77-b3f900fb1c23") "Groq API Key").value }}"
+{{- else }}
+if [ -f "$HOME/.config/opencode/.groq-key" ]; then
+    export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
+fi
+if [ -f "$HOME/.config/opencode/.cerebras-key" ]; then
+    export CEREBRAS_API_KEY="$(cat $HOME/.config/opencode/.cerebras-key)"
+fi
+if [ -f "$HOME/.config/opencode/.mistral-key" ]; then
+    export MISTRAL_API_KEY="$(cat $HOME/.config/opencode/.mistral-key)"
+fi
+if [ -f "$HOME/.config/opencode/.sambanova-key" ]; then
+    export SAMBANOVA_API_KEY="$(cat $HOME/.config/opencode/.sambanova-key)"
+fi
+if [ -f "$HOME/.config/opencode/.google-key" ]; then
+    export GOOGLE_API_KEY="$(cat $HOME/.config/opencode/.google-key)"
+fi
+if [ -f "$HOME/.config/opencode/.together-key" ]; then
+    export TOGETHER_API_KEY="$(cat $HOME/.config/opencode/.together-key)"
+fi
+{{- end }}
 export PLAYWRIGHT_BROWSERS_PATH=/home/phillias/.cache/ms-playwright
