@@ -137,8 +137,8 @@
     "multimodal-looker": {
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
-        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         "groq/gpt-oss-120b",
+        "google/gemini-2.0-flash",
         "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     }
@@ -207,8 +207,7 @@
         "cerebras/llama3.3-70b",
         "sambanova/Meta-Llama-3.3-70B-Instruct",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "together/deepseek-ai/DeepSeek-R1",
-        "openrouter/owl-alpha"
+        "together/deepseek-ai/DeepSeek-R1"
       ]
     },
 
