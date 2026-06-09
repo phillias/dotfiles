@@ -92,6 +92,7 @@
     "hephaestus": {
       "model": "groq/gpt-oss-120b",
       "fallback_models": [
+        "opencode-zen/big-pickle",
         "cerebras/gpt-oss-120b",
         "openrouter/qwen/qwen3-coder:free",
         "mistral/mistral-large-latest",
@@ -126,9 +127,9 @@
     "librarian": {
       "model": "groq/gpt-oss-20b",
       "fallback_models": [
-        "openrouter/owl-alpha",
         "cerebras/llama3.3-70b",
-        "google/gemini-2.0-flash"
+        "google/gemini-2.0-flash",
+        "openrouter/owl-alpha"
       ]
     },
 
@@ -194,17 +195,19 @@
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it",
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
         "openrouter/owl-alpha"
       ]
     },
 
     "unspecified-high": {
-      "model": "groq/llama-3.3-70b-versatile",
+      "model": "opencode-zen/big-pickle",
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "sambanova/Meta-Llama-3.3-70B-Instruct",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "together/deepseek-ai/DeepSeek-R1"
+        "together/deepseek-ai/DeepSeek-R1",
+        "openrouter/owl-alpha"
       ]
     },
 
