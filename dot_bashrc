@@ -170,3 +170,20 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 if [ -f "$HOME/.config/opencode/.groq-key" ]; then
     export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
 fi
+
+# Additional provider API keys
+if [ -f "$HOME/.config/opencode/.cerebras-key" ]; then
+    export CEREBRAS_API_KEY="$(cat $HOME/.config/opencode/.cerebras-key)"
+fi
+if [ -f "$HOME/.config/opencode/.mistral-key" ]; then
+    export MISTRAL_API_KEY="$(cat $HOME/.config/opencode/.mistral-key)"
+fi
+if [ -f "$HOME/.config/opencode/.sambanova-key" ]; then
+    export SAMBANOVA_API_KEY="$(cat $HOME/.config/opencode/.sambanova-key)"
+fi
+if [ -f "$HOME/.config/opencode/.google-key" ]; then
+    export GOOGLE_API_KEY="$(cat $HOME/.config/opencode/.google-key)"
+fi
+if [ -f "$HOME/.config/opencode/.together-key" ]; then
+    export TOGETHER_API_KEY="$(cat $HOME/.config/opencode/.together-key)"
+fi
