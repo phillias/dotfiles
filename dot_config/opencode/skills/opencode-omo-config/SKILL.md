@@ -10,14 +10,14 @@ This skill documents the research, decisions, and priorities behind the OpenCode
 - **No-Go config** (`oh-my-openagent-nogo.json`): Uses free OpenRouter + other free providers. For when Go pool is exhausted or unavailable.
 - **Switching**: `go-pool-switch.sh go|nogo|status` toggles between configs.
 
-### Provider Stack (11 providers, 58 models)
+### Provider Stack (11 providers, 57 models)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
 | **OpenCode Go** | 12 (K2.6, DS-V4-Pro, MiMo, etc.) | $10/mo | Quality primary (Go config) |
 | **Groq** | 5 (GPT-OSS 120B/20B, Llama 3.3/4, Qwen3) | Free (14.4K req/day) | Fast primary (LPU, 394-1000 t/s) |
 | **OpenRouter** | 22 (DS-V4-Flash, Qwen3-Coder, GLM-5, etc.) | Free/Paid | Broadest model selection |
-| **OpenCode Zen** | 4 (Big Pickle, DS-V4-Flash Free, MiMo, Nemtron) | Free (limited) | Big Pickle for Docker admin |
+| **OpenCode Zen** | 3 (Big Pickle, MiMo, Nemtron) | Free (limited) | Big Pickle for Docker admin; DS-V4-Flash Free removed — no longer available for no-Go |
 | **Cerebras** | 2 (Llama 3.3 70B, GPT-OSS 120B) | Free (1M tok/day) | Fast 70B backup |
 | **Mistral** | 1 (Mistral Large) | Free (1 req/s) | Reasoning, multilingual |
 | **SambaNova** | 1 (Llama 3.3 70B) | Free | Fast 70B option |
@@ -58,6 +58,8 @@ This skill documents the research, decisions, and priorities behind the OpenCode
 6. **Free-first fallback philosophy**: Every agent's fallback chain starts with free models, escalates to paid only when necessary. Go pool models are last resort in no-Go config.
 
 7. **MoE preference**: All selected models use Mixture of Experts for efficiency — fewer active parameters per token = faster inference at lower cost.
+
+8. **DeepSeek V4 Flash Free removed from no-Go**: The `opencode-zen/deepseek-v4-flash-free` model is no longer available for the no-Go design. The no-Go config (`oh-my-openagent-nogo.json`) has never depended on it — it relies on Groq LPU models (1000 t/s) as primary with Cerebras, SambaNova, Mistral, Google, Together, and HuggingFace as fallbacks. The Go config still uses `opencode-go/deepseek-v4-flash` (Go pool paid version) as a primary for Atlas, unspecified-high, and writing, and `openrouter/deepseek/deepseek-v4-flash:free` (OpenRouter free tier, different endpoint) extensively in fallback chains — neither of those is affected.
 
 ### Compaction Configuration
 ```json
