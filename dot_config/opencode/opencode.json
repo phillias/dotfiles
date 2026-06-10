@@ -144,7 +144,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "OpenCode Zen",
       "options": {
-        "baseURL": "https://opencode.ai/zen/v1/chat/completions"
+        "baseURL": "https://opencode.ai/zen/v1"
       },
       "models": {
         "big-pickle": { "name": "Big Pickle", "limit": { "context": 200000, "output": 32768 } },
