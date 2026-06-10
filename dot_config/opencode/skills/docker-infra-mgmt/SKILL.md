@@ -69,43 +69,78 @@ ebooks/audiobooks), see the `pirate-stack` skill.
 
 ## 2. Secret Injection: bws-init / locket Pattern
 
-The infrastructure uses **four variants** of the same bws-init image
+The infrastructure uses the **bws-init** image
 (`us-chicago-1.ocir.io/axh7zpa5qpqc/bws-init:latest`) for injecting secrets
-from Bitwarden SM into containers. The base image contains `locket` (from
-`ghcr.io/bpbradley/locket:bws`); Variants B/C/D additionally require OCI CLI
-only when OCI Vault integration is needed.
+from Bitwarden SM into containers. The image has a **standardized entrypoint**
+(`/opt/init/locket-init.sh`) that handles both `inject` (config file templates)
+and `exec` (env file + command) modes. All settings are controlled via
+environment variables, eliminating inline bash `command:` blocks.
 
-### Variant A: locket inject — used by pirate services
+The entrypoint manages the full lifecycle:
+1. Creates output directory (cold boot — tmpfs doesn't persist)
+2. Cleans Docker `create_host_path` directory placeholders
+3. Checks idempotency — skips locket if all outputs already exist
+4. Delegates to `locket inject` or `locket exec`
 
-The init container runs `locket inject` with a `--map` flag to render
-template files into a named volume. The service then mounts that volume
-read-only.
+Three variants exist today, but only **Variant A** is the recommended pattern
+for new stacks and migrations.
+
+### Variant A: Standardized entrypoint — locket inject (recommended)
+
+The init container runs with environment variables instead of an inline command.
+The entrypoint auto-detects `inject` mode when `TEMPLATES_DIR` and `OUTPUT_DIR`
+are set. The output directory should be on **host tmpfs** (`/run/<stack>-secrets/`).
 
 ```yaml
   service-init:
     image: us-chicago-1.ocir.io/axh7zpa5qpqc/bws-init:latest
     container_name: service-init
     restart: "no"
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - mkdir -p /run/secrets && locket inject --provider bws
-          --bws-token file:/run/secrets/bwstoken --mode one-shot
-          --map /templates/service:/run/secrets
-          --user 1001:998 --file-mode 0640 --dir-mode 0755
+    environment:
+      TEMPLATES_DIR: /templates
+      OUTPUT_DIR: /rendered
     volumes:
-      - ./templates/service:/templates/service:ro
-      - service-secrets:/run/secrets
-      - ~/.config/bwsh/token:/run/secrets/bwstoken:ro
+      - ./templates:/templates:ro
+      - /run/mylar3-secrets:/rendered:rw
+      - ~/.config/bwsh:/root/.config/bwsh:ro
+    networks: []
 
   service:
     depends_on:
       service-init:
         condition: service_completed_successfully
     volumes:
-      - service-secrets:/run/secrets:ro
+      - /run/mylar3-secrets/config.ini:/config/config.ini:rw
 ```
 
-### Variant B: key mapping + secrets-entrypoint — used by linkwarden, flexget, newrelic, hermes, ntfy
+**Key characteristics:**
+- **No `command:` block** — all settings via env vars
+- **Entrypoint handles**: `mkdir -p`, Docker placeholder cleanup, idempotency skip
+- **Host tmpfs** (`/run/<stack>-secrets/`) — not named volumes — so secrets auto-clear on reboot
+- **Bind mounts**: `:rw` if the service entrypoint chowns the file at startup (e.g., linuxserver images), `:ro` otherwise
+- **BWS token**: mounted as `~/.config/bwsh:/root/.config/bwsh:ro` (includes token + cache)
+- **Init runs as root** — short-lived container on root-owned tmpfs, no user data touched
+
+**Customizable env vars (with defaults):**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TEMPLATES_DIR` | `/templates` | Directory with template files |
+| `OUTPUT_DIR` | `/rendered` | Directory for rendered secrets |
+| `SECRETS_PROVIDER` | `bws` | Secret provider for locket |
+| `BWS_MACHINE_TOKEN` | `file:/root/.config/bwsh/token` | BWS token path |
+| `LOCKET_INJECT_MODE` | `one-shot` | Locket inject mode |
+| `LOCKET_FILE_MODE` | `0644` | File permissions for rendered secrets |
+| `LOCKET_DIR_MODE` | `0755` | Directory permissions |
+
+For **exec mode** (env file injection for services like newrelic), set `LOCKET_MODE=exec`
+along with `LOCKET_ENV_FILE` for the output env file path and any additional args as
+the `command:`.
+
+### Variant B: key mapping + secrets-entrypoint (legacy — linkwarden, flexget, newrelic, hermes, ntfy)
+
+> **Note**: This variant is being phased out. New stacks should use Variant A
+> with `locket exec` for env file injection.
 
 These stacks use the same bws-init image but with `BWS_KEY_MAPPING` and
 `BWS_SECRET_PREFIXES` environment variables. The init container renders
@@ -151,107 +186,95 @@ Key files:
 - `selfhost/bws-init/Dockerfile` — custom image with OCI CLI
 - `selfhost/bws-init/scripts/oci-vault-get-secret.sh` — OCI Vault helper
 
-### Variant D: single-source Bitwarden SM (no OCI Vault) — recommended for new services
+### Variant D: single-source Bitwarden SM (no OCI Vault, no bwsh — use Variant A)
+
+> **Note**: This variant is effectively replaced by Variant A with the standardized
+> `locket-init.sh` entrypoint. For new services, use Variant A directly with
+> host tmpfs. The bwsh-based manual `init.sh` pattern is no longer needed
+> because `locket` handles the entire inject pipeline.
 
 For services that use Bitwarden SM as the **sole** secret source (no OCI Vault
-replication, no drift detection), the init container can be dramatically
-simplified. This is the recommended pattern for new services and new server
-installations (e.g., Kali).
+replication, no drift detection, no bwsh wrapper), the bws-init image with the
+standardized entrypoint is the recommended approach. See Variant A above.
 
-**Differences from Variant C:**
-- No OCI CLI installed in the image (~150MB savings)
-- No `oci-vault-get-secret.sh` script
-- No drift detection logic
-- `init.sh` reduces to: fetch from BWSM → render templates → exit
-- Image size drops from ~200MB to ~15-20MB
+**Key characteristics (Variant A / entrypoint-based approach):**
+- Image size: ~15-20MB (Alpine + locket + bws + entrypoint script)
+- No OCI CLI (saves ~150MB)
+- No bwsh wrapper — locket handles BWS auth directly
+- No inline bash — all configuration via environment variables
+- Template syntax: `{{ UUID }}` via locket inject (not `envsubst`)
 
-**Simplified Dockerfile:**
+**Current bws-init Dockerfile:**
 ```dockerfile
 FROM alpine:3.19
 
 RUN apk add --no-cache bash curl openssl
 
-# locket for Bitwarden SM inject (Variant A)
-COPY --from=ghcr.io/bpbradley/locket:bws /usr/local/bin/locket /usr/local/bin/locket
+# locket 0.17.3 compiled with compose feature
+COPY locket /usr/local/bin/locket
 
-COPY scripts/ /opt/init/scripts/
-RUN chmod -R +x /opt/init/scripts/
+# bws CLI for Bitwarden SM secret management
+COPY bws /usr/local/bin/bws
 
-ENTRYPOINT []
+# bwsh — shell wrapper for bws (legacy Variant B env injection)
+COPY bwsh /usr/local/bin/bwsh
+
+# Standard entrypoint — handles tmpfs lifecycle, Docker placeholder cleanup,
+# idempotency check, and delegates to locket inject/exec
+COPY scripts/locket-init.sh /opt/init/locket-init.sh
+RUN chmod +x /opt/init/locket-init.sh
+
+ENTRYPOINT ["/opt/init/locket-init.sh"]
 ```
 
-**Simplified init.sh (no drift detection):**
-```bash
-#!/bin/bash
-set -u
+**Entrypoint: `/opt/init/locket-init.sh`**
 
-CONFIG_TEMPLATE_DIR="${CONFIG_TEMPLATE_DIR:-/config/templates}"
-CONFIG_OUTPUT_DIR="${CONFIG_OUTPUT_DIR:-/config}"
-BWSH_TOKEN_FILE="${BWSH_TOKEN_FILE:-/root/.config/bwsh/token}"
-BWS_PROJECT_ID="${BWS_PROJECT_ID:?BWS_PROJECT_ID must be set}"
+The standardized entrypoint handles two modes, auto-detected from env vars:
 
-mkdir -p "$CONFIG_OUTPUT_DIR"
+| Mode | Detection | Purpose |
+|------|-----------|---------|
+| `inject` (default) | `TEMPLATES_DIR` and `OUTPUT_DIR` are set | Render config file templates via `locket inject` |
+| `exec` | `LOCKET_ENV_FILE` or `LOCKET_ENV` is set | Render env files and run command via `locket exec` |
 
-# Step 1: Fetch secrets from Bitwarden SM
-export BWS_DEFAULT_PROJECT_ID="$BWS_PROJECT_ID"
-bwsh run -p "$BWS_DEFAULT_PROJECT_ID" env > /tmp/bws-all.env 2>/dev/null || {
-    echo "ERROR: Failed to fetch secrets from Bitwarden SM" >&2; exit 1;
-}
+**Lifecycle (inject mode):**
+1. Verify `TEMPLATES_DIR` exists and contains files — fail fast if missing
+2. `mkdir -p "$OUTPUT_DIR"` — ensures tmpfs directory exists on cold boot
+3. Check each template file's expected output path for Docker directory placeholders
+   (Compose v2.40+ creates `create_host_path` directories for missing bind-mount targets)
+4. If all outputs already exist as regular files: exit 0 (idempotency skip)
+5. Otherwise: run `locket inject` with `SECRET_MAP=${TEMPLATES_DIR}:${OUTPUT_DIR}`
 
-# Step 2: Parse secrets into associative array
-declare -A SECRETS
-while IFS='=' read -r key value; do
-    [[ -z "$key" || "$key" =~ ^# ]] && continue
-    [[ "$key" =~ ^(${BWS_SECRET_PREFIXES:-BWS_}) ]] || continue
-    clean_key="${key#BWS_}"
-    # Apply key mapping if set (format: "FROM:TO,FROM:TO,...")
-    if [[ -n "$BWS_KEY_MAPPING" ]]; then
-        IFS=',' read -ra mappings <<< "$BWS_KEY_MAPPING"
-        for mapping in "${mappings[@]}"; do
-            from="${mapping%%:*}"; to="${mapping##*:}"
-            [[ "$key" == "$from" ]] && { clean_key="$to"; break; }
-        done
-    fi
-    SECRETS["$clean_key"]="$value"
-done < <(grep -E "^(${BWS_SECRET_PREFIXES:-BWS_})" /tmp/bws-all.env)
-
-echo "Fetched ${#SECRETS[@]} secrets from Bitwarden SM"
-
-# Step 3: Render templates
-for template in "$CONFIG_TEMPLATE_DIR"/*.template; do
-    [[ -f "$template" ]] || continue
-    output="${CONFIG_OUTPUT_DIR}/$(basename "$template" .template)"
-    envsubst < "$template" > "$output"
-    chmod 600 "$output"
-    echo "Rendered $output"
-done
-
-echo "Secret injection complete. Exiting."
-```
+**Lifecycle (exec mode):**
+1. Set `SECRET_MAP` if both `TEMPLATES_DIR` and `OUTPUT_DIR` are provided
+2. Run `locket exec "$@"` — passes through any `command:` arguments
 
 **When to use each variant:**
 
 | Variant | Use When | Image Size | Complexity |
 |---------|----------|------------|------------|
-| **A** | Pirate services with `{{ ocid }}` templates | ~15MB | Low |
-| **B** | Services needing env var injection (linkwarden, flexget, newrelic, hermes) | ~200MB | Medium |
-| **C** | Dual-source OCI Vault + BWSM with drift detection (legacy ntfy) | ~200MB | High |
-| **D** | New services, single-source BWSM only (recommended) | ~15-20MB | Low |
+| **A** | **New stacks and migrations (recommended)** — config file injection via `locket inject` or env file injection via `locket exec` | ~15-20MB | Low |
+| **B** | Legacy stacks with bwsh key mapping + `secrets-entrypoint.sh` (linkwarden, flexget, newrelic, hermes, ntfy) | ~200MB | Medium |
+| **C** | Legacy dual-source OCI Vault + BWSM with drift detection (selfhost only) | ~200MB | High |
 
 ### Common init container requirements
 
-All four variants require:
-1. **BWS token file**: `~/.config/bwsh/token` mounted into the init container
-2. **BWS project ID**: `BWS_PROJECT_ID` env var matching the Bitwarden SM project
-3. **Template directory**: mapped into the init container as `:ro`
-4. **Named volume**: for rendered secrets output
-5. **`restart: "no"`** — init runs once and exits
+All init container variants require:
+1. **BWS token directory**: `~/.config/bwsh:/root/.config/bwsh:ro` (includes both `token` and `cache/`)
+2. **Template directory**: mapped into the init container as `:ro` (for inject mode)
+3. **Output directory**: host tmpfs (`/run/<stack>-secrets/`) as `:rw`
+4. **`restart: "no"`** — init runs once and exits
+5. **`networks: []`** — init does not need network access (BWS token is pre-authenticated)
+
+**For Variant A (recommended):** the init container mounts
+`~/.config/bwsh:/root/.config/bwsh:ro` which provides both the token file
+and the bwsh cache directory. No separate token file mount is needed.
+No named volumes — use host tmpfs instead.
 
 ### Deprecated: OCI CLI vault-init
 
 Older services (`opencode-telegram-bot/`, `linkwarden/`) use `vault-init.sh`
 with the Oracle OCI CLI directly. These are being phased out in favor of
-the bws-init pattern. See Section 5.
+the bws-init pattern (Variant A). See Section 5.
 
 ---
 
@@ -556,10 +579,25 @@ Common causes of stale volumes:
 
 ### Volume Permissions
 
-Init containers should set explicit ownership and permissions on rendered secrets:
+Init containers should set explicit permissions on rendered secrets.
+With the standardized entrypoint (Variant A), defaults are configured via
+environment variables and the entrypoint script:
 
+```yaml
+environment:
+  LOCKET_FILE_MODE: "0644"   # Default — readable by any UID
+  LOCKET_DIR_MODE: "0755"    # Default — world-traversable for compose CLI
+```
+
+**Why 0644/0755:**
+- `0644` (not `0640`): Services run as various UIDs (MSSQL 10001, mylar3 911, decypharr 1001)
+  — group-based permissions don't work when every service has a different UID
+- `0755` (not `0750`): Docker Compose reads `env_file` paths at parse time as a non-root
+  user — `0750` blocks world traversal, causing parse errors
+
+For legacy patterns (inline bash), set `locket inject` flags explicitly:
 ```bash
-locket inject ... --user 1001:998 --file-mode 0640 --dir-mode 0755
+locket inject ... --file-mode 0644 --dir-mode 0755
 ```
 
 ---
@@ -727,9 +765,14 @@ docker logs <service>-init
 ```
 
 Common causes:
-- BWS token expired or missing → check `~/.config/bwsh/token`
-- Template directory not mapped → check compose volumes
-- `BWS_PROJECT_ID` mismatch → verify against Bitwarden SM project
+- BWS token expired or missing → check `~/.config/bwsh/token` exists and is valid
+- Template directory not mapped → check compose volumes: `TEMPLATES_DIR` must exist inside the container
+- `BWS_MACHINE_TOKEN` path wrong → default is `file:/root/.config/bwsh/token` — verify mount path
+- Docker placeholder directory blocking file write → `locket-init.sh` handles this automatically,
+  but if using a custom entrypoint, check for directories where files should be:
+  `ls -la /run/<stack>-secrets/`
+- Permission denied on output dir → host tmpfs directory must be `:rw` mounted; verify with
+  `docker inspect <service>-init | jq '.[].Mounts'`
 
 ### Godoxy Service Unreachable
 
