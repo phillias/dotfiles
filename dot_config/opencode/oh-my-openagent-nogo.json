@@ -34,7 +34,6 @@
       },
       "fallback_models": [
         "groq/gpt-oss-120b",
-        "openrouter/deepseek/deepseek-v4-flash:free",
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "google/gemini-2.0-flash"
@@ -44,7 +43,6 @@
     "sisyphus-junior": {
       "model": "groq/gpt-oss-20b",
       "fallback_models": [
-        "openrouter/deepseek/deepseek-v4-flash:free",
         "cerebras/llama3.3-70b",
         "sambanova/Meta-Llama-3.3-70B-Instruct"
       ]
@@ -54,7 +52,6 @@
       "model": "groq/gpt-oss-120b",
       "fallback_models": [
         "cerebras/gpt-oss-120b",
-        "openrouter/deepseek/deepseek-v4-flash:free",
         "mistral/mistral-large-latest",
         "google/gemini-2.0-flash"
       ]
@@ -116,7 +113,6 @@
       "model": "groq/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
-        "openrouter/deepseek/deepseek-v4-flash:free",
         "sambanova/Meta-Llama-3.3-70B-Instruct"
       ],
       "permission": {
@@ -138,8 +134,7 @@
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
-        "groq/gpt-oss-120b",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "groq/gpt-oss-120b"
       ]
     }
   },
@@ -177,8 +172,7 @@
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
         "groq/gpt-oss-20b",
-        "cerebras/llama3.3-70b",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "cerebras/llama3.3-70b"
       ]
     },
 
@@ -186,8 +180,7 @@
       "model": "groq/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
-        "huggingface/google/gemma-4-12b-it",
-        "openrouter/deepseek/deepseek-v4-flash:free"
+        "huggingface/google/gemma-4-12b-it"
       ]
     },
 
