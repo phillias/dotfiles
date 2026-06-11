@@ -116,8 +116,8 @@
         "sambanova/Meta-Llama-3.3-70B-Instruct"
       ],
       "permission": {
-        "edit": "deny",
-        "bash": "ask"
+        "edit": "allow",
+        "bash": "allow"
       }
     },
 
