@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "small_model": "groq/llama-3.3-70b-versatile",
+  "small_model": "google/gemini-2.0-flash",
   "provider": {
     "opencode-go": {
       "models": {

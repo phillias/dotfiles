@@ -72,7 +72,7 @@ This skill documents the research, decisions, and priorities behind the OpenCode
 ```
 - `reserved: 50000`: Only triggers compaction on real volume, not retry noise
 - `tail_turns: 40`: Preserves more post-compaction context
-- `small_model`: `groq/llama-3.3-70b-versatile` (394 t/s for fast compaction)
+- `small_model`: `google/gemini-2.0-flash` (1M context — sees full session before compacting, unlike 131K Groq)
 
 ### Runtime Fallback
 ```json
