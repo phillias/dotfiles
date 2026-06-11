@@ -175,8 +175,8 @@
         "openrouter/deepseek/deepseek-v4-flash:free"
       ],
       "permission": {
-        "edit": "deny",
-        "bash": "ask"
+        "edit": "allow",
+        "bash": "allow"
       }
     },
     "librarian": {
