@@ -3,3 +3,6 @@
 .chezmoiignore
 .chezmoi-inventory.json
 age-key.txt.age
+
+# Literal .config/ path (chezmoi uses dot_config/ prefix convention instead)
+.config
