@@ -35,13 +35,12 @@
     },
     "openrouter": {
       "models": {
-        "deepseek/deepseek-v4-flash:free": {},
         "qwen/qwen3-coder:free": {},
         "meta-llama/llama-3.3-70b-instruct:free": {},
         "nvidia/nemotron-3-super-120b-a12b:free": {},
         "nvidia/nemotron-nano-12b-v2-vl:free": {},
         "openai/gpt-oss-20b:free": {},
-        "owl-alpha": {},
+        "horizon-beta": {},
         "anthropic/claude-sonnet-4": {},
         "anthropic/claude-3.5-haiku": {},
         "openai/gpt-4o": {},
@@ -148,7 +147,6 @@
       },
       "models": {
         "big-pickle": { "name": "Big Pickle", "limit": { "context": 200000, "output": 32768 } },
-        "deepseek-v4-flash-free": { "name": "DeepSeek V4 Flash Free", "limit": { "context": 1048576, "output": 8192 } },
         "mimo-v2.5-free": { "name": "MiMo V2.5 Free", "limit": { "context": 131072, "output": 8192 } },
         "nemotron-3-super-free": { "name": "Nemotron 3 Super Free", "limit": { "context": 262144, "output": 8192 } }
       }
@@ -175,20 +173,27 @@
         "@modelcontextprotocol/server-everything"
       ]
     },
+    {{- if eq .chezmoi.hostname "primary" }}
+    "google-workspace": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "node",
+        "/home/ubuntu/google-mcp-server/index.js"
+      ],
+      "env": {
+        "GOOGLE_CLIENT_ID": "{env:GOOGLE_CLIENT_ID}",
+        "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
+        "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
+      }
+    },
+    {{- end }}
     "chrome-devtools": {
       "enabled": true,
       "command": "npx",
       "args": [
         "-y",
         "chrome-devtools-mcp@latest"
-      ]
-    },
-    "codemem": {
-      "enabled": true,
-      "type": "local",
-      "command": [
-        "codemem",
-        "mcp"
       ]
     }
   },
