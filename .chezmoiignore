@@ -5,4 +5,4 @@
 age-key.txt.age
 
 # Literal .config/ path (chezmoi uses dot_config/ prefix convention instead)
-.config
+# .config  - Disabled to allow dot_config/ prefix convention for ~/.config/
