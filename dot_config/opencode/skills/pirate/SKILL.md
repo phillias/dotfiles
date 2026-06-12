@@ -1,18 +1,20 @@
 ---
-name: pirate-stack
+name: pirate
 description: >
   Management of the Pirate media suite at /home/ubuntu/docker/pirate/ — Stremio
   (AIostreams), ARR indexers (Prowlarr/Jackett/NZB Hydra2), VPN proxies
   (Proton/Warp), ebook/audiobook services (Shelfmark/Grimmory/Storyteller),
   and Decypharr. Covers per-service operations, profiles, proxy routing,
-  init-bws specifics, and backup/restore script usage. Depends on
-  docker-infra-mgmt skill for cross-stack patterns (bws-init, Godoxy, etc.).
+  init-bws specifics, and backup/restore script usage. Serves as the combined
+  skill replacing the former pirate-infra-mgmt and pirate-stack skills.
+  Depends on the docker skill for cross-stack patterns (bws-init, Godoxy, etc.).
 compatibility: opencode
 metadata:
   stacks: pirate
   services: aios,decypharr,prowlarr,jackett,nzbhydra2,shelfmark,grimmory,storyteller,proton,warp
   tools: docker compose,bws,locket,sqlite3,restic
   profiles: all,stremio,arrs,proxy,books
+  replaces: pirate-infra-mgmt, pirate-stack
 ---
 
 # Pirate Stack Management
@@ -20,7 +22,7 @@ metadata:
 Service-specific management guide for the Pirate media suite at
 `/home/ubuntu/docker/pirate/`. For cross-stack patterns (bws-init/locket
 secret injection, Godoxy reverse proxy, socket-proxy, OCI Vault, restic
-backup architecture), see the `docker-infra-mgmt` skill.
+backup architecture), see the `docker` skill.
 
 ---
 
@@ -57,7 +59,7 @@ by `network_mode` in the compose config:
 
 ### Secrets Architecture
 
-All pirate services use Variant A of the bws-init pattern (see `docker-infra-mgmt`
+All pirate services use Variant A of the bws-init pattern (see `docker`
 skill Section 2). Each service has a `*-init` container that runs `locket inject`
 to render secrets into a named volume.
 
@@ -351,7 +353,7 @@ docker logs decypharr
 
 ### Bind Mount → Named Volume (init-bws pattern)
 
-See `docker-infra-mgmt` skill Section 2 for the general pattern.
+See `docker` skill Section 2 for the general pattern.
 Pirate-specific migration steps:
 
 1. Create template files in `./templates/<service>/`
