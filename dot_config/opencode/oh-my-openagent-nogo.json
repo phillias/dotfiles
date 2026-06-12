@@ -126,7 +126,7 @@
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "google/gemini-2.0-flash",
-        "openrouter/owl-alpha"
+        "openrouter/horizon-beta"
       ]
     },
 
@@ -190,7 +190,7 @@
         "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it",
         "sambanova/Meta-Llama-3.3-70B-Instruct",
-        "openrouter/owl-alpha"
+        "openrouter/horizon-beta"
       ]
     },
 
@@ -201,7 +201,7 @@
         "sambanova/Meta-Llama-3.3-70B-Instruct",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "together/deepseek-ai/DeepSeek-R1",
-        "openrouter/owl-alpha"
+        "openrouter/horizon-beta"
       ]
     },
 
