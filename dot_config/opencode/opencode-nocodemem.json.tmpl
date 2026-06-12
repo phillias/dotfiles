@@ -173,22 +173,7 @@
         "@modelcontextprotocol/server-everything"
       ]
     },
-    "chrome-devtools": {
-      "enabled": true,
-      "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest"
-      ]
-    },
-    "codemem": {
-      "enabled": true,
-      "type": "local",
-      "command": [
-        "codemem",
-        "mcp"
-      ]
-    },
+    {{- if eq .chezmoi.hostname "primary" }}
     "google-workspace": {
       "enabled": true,
       "type": "local",
@@ -201,6 +186,15 @@
         "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
         "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
       }
+    },
+    {{- end }}
+    "chrome-devtools": {
+      "enabled": true,
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
     }
   },
   "plugin": [

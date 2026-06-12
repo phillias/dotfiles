@@ -181,6 +181,7 @@
         "chrome-devtools-mcp@latest"
       ]
     },
+    {{- if eq .chezmoi.hostname "primary" }}
     "google-workspace": {
       "enabled": true,
       "type": "local",
@@ -193,6 +194,15 @@
         "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
         "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
       }
+    },
+    {{- end }}
+    "codemem": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "codemem",
+        "mcp"
+      ]
     }
   },
   "plugin": [
