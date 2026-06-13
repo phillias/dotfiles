@@ -96,7 +96,7 @@
     },
 
     "hephaestus": {
-      "model": "opencode/gpt-5.3-codex",
+      "model": "opencode/gpt-5.5",
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
         "groq/gpt-oss-120b",
