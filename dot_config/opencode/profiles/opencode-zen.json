@@ -147,6 +147,7 @@
       },
       "models": {
         "big-pickle": { "name": "Big Pickle", "limit": { "context": 200000, "output": 32768 } },
+        "kimi-k2.6": { "name": "Kimi K2.6", "limit": { "context": 200000, "output": 32768 } },
         "mimo-v2.5-free": { "name": "MiMo V2.5 Free", "limit": { "context": 131072, "output": 8192 } },
         "nemotron-3-super-free": { "name": "Nemotron 3 Super Free", "limit": { "context": 262144, "output": 8192 } }
       }
