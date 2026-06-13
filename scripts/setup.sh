@@ -381,6 +381,39 @@ else
     echo "--> Already logged in to Bitwarden"
 fi
 
+# ── 12b. For CRON automation: Bitwarden API key login (non-interactive)
+# The cron runs 'bw unlock --raw' which needs a persisted session.
+# Standard login expires; use an API key for permanent non-interactive access.
+# Get API key from: Bitwarden Web Vault → Settings → Security → Keys → View API Key
+echo ""
+echo "==> For automated cron sync (non-interactive):"
+echo "    The cron uses 'bw unlock --raw' which requires a persisted login."
+echo "    Standard login expires; use 'bw login --apikey' for permanent access."
+echo ""
+echo "    Get API key from:"
+echo "      Bitwarden Web Vault → Settings → Security → Keys → View API Key"
+echo ""
+echo "    Then run ONCE on this machine:"
+echo "      bw logout          # if already logged in with master password"
+echo "      bw login --apikey  # paste the API key when prompted"
+echo ""
+echo "    After this, 'bw unlock --raw' works in cron without TTY/password."
+echo ""
+read -rp "Configure API key login now? [y/N]: " CONFIG_APIKEY </dev/tty
+if [ "$CONFIG_APIKEY" = "y" ] || [ "$CONFIG_APIKEY" = "Y" ]; then
+    echo "--> Logging out existing session (if any)..."
+    bw logout 2>/dev/null || true
+    echo "--> Logging in with API key..."
+    bw login --apikey
+    echo "--> Testing unlock..."
+    BW_SESSION=$(bw unlock --raw) || true
+    if [ -n "$BW_SESSION" ]; then
+        echo "  ✓ API key login configured and working"
+    else
+        echo "  WARN: API key login may not be working; check credentials"
+    fi
+fi
+
 # Unlock vault — capture session key via temp file, NOT $()
 # This avoids the stdin buffering that causes double-Enter and ghost prompts.
 echo "--> Unlocking vault..."
