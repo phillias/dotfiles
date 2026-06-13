@@ -1,0 +1,277 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-openagent.schema.json",
+
+  "disabled_hooks": [],
+
+  "model_fallback": true,
+  "runtime_fallback": {
+    "enabled": true,
+    "retry_on_errors": [401, 402, 429, 500, 502, 503, 504, 529],
+    "max_fallback_attempts": 2,
+    "cooldown_seconds": 120,
+    "timeout_seconds": 180,
+    "notify_on_fallback": true
+  },
+
+  // ── Team Mode ──────────────────────────────────────────────
+  // Parallel multi-agent coordination via 12 team_* tools.
+  // Lead agent (sisyphus) delegates to up to 4 parallel members.
+  "team_mode": {
+    "enabled": true,
+    "max_parallel_members": 4,
+    "max_members": 8,
+    "tmux_visualization": true,
+    "max_messages_per_run": 10000,
+    "max_wall_clock_minutes": 120,
+    "max_member_turns": 500,
+    "message_payload_max_bytes": 32768,
+    "recipient_unread_max_bytes": 262144,
+    "mailbox_poll_interval_ms": 3000
+  },
+
+  // ── Tmux Integration ───────────────────────────────────────
+  // Spawns background subagents in dedicated tmux panes.
+  // Use .tmux-OmOTeam.conf for custom team-mode tmux styling.
+  "tmux": {
+    "enabled": true,
+    "layout": "main-vertical",
+    "main_pane_size": 60,
+    "main_pane_min_width": 120,
+    "agent_pane_min_width": 40
+  },
+
+  "background_task": {
+    "defaultConcurrency": 8,
+    "providerConcurrency": {
+      "opencode": 15,
+      "opencode-zen": 15,
+      "opencode-go": 8,
+      "groq": 8,
+      "openrouter": 6
+    },
+    "modelConcurrency": {
+      "opencode-go/kimi-k2.6": 3,
+      "opencode-go/deepseek-v4-pro": 2,
+      "opencode-go/deepseek-v4-flash": 15,
+      "opencode-zen/kimi-k2.6": 2
+    }
+  },
+
+  "agents": {
+    // ── Lead Agent ───────────────────────────────────────────
+    "sisyphus": {
+      "model": "opencode-go/kimi-k2.6",
+      "ultrawork": {
+        "model": "opencode-zen/big-pickle",
+        "variant": "xhigh"
+      },
+      "fallback_models": [
+        "opencode-zen/kimi-k2.6",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "google/gemini-2.0-flash"
+      ]
+    },
+
+    // ── Team Members ─────────────────────────────────────────
+    "sisyphus-junior": {
+      "model": "opencode-zen/nemotron-3-super-free",
+      "fallback_models": [
+        "groq/gpt-oss-20b",
+        "cerebras/llama3.3-70b",
+        "huggingface/google/gemma-4-12b-it"
+      ]
+    },
+
+    "hephaestus": {
+      "model": "opencode/gpt-5.3-codex",
+      "permission": {
+        "teammate": "allow"
+      },
+      "fallback_models": [
+        "opencode-go/deepseek-v4-pro",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    // ── Orchestration / Planning ─────────────────────────────
+    "prometheus": {
+      "model": "opencode-zen/big-pickle",
+      "fallback_models": [
+        "opencode-go/kimi-k2.6",
+        "opencode-go/deepseek-v4-pro",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b"
+      ]
+    },
+
+    "metis": {
+      "model": "opencode-go/glm-5.1",
+      "fallback_models": [
+        "groq/llama-3.3-70b-versatile",
+        "cerebras/llama3.3-70b",
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "momus": {
+      "model": "opencode-go/deepseek-v4-pro",
+      "variant": "xhigh",
+      "fallback_models": [
+        "opencode-zen/big-pickle",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    // ── Execution ────────────────────────────────────────────
+    "atlas": {
+      "model": "opencode-go/deepseek-v4-flash",
+      "fallback_models": [
+        "opencode-go/kimi-k2.6",
+        "groq/gpt-oss-120b",
+        "groq/llama-4-scout-17b-16e-instruct",
+        "sambanova/Meta-Llama-3.3-70B-Instruct"
+      ]
+    },
+
+    // ── Analysis / Research ──────────────────────────────────
+    "oracle": {
+      "model": "opencode-go/deepseek-v4-pro",
+      "variant": "xhigh",
+      "fallback_models": [
+        "opencode-zen/big-pickle",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "explore": {
+      "model": "groq/gpt-oss-20b",
+      "fallback_models": [
+        "opencode-zen/nemotron-3-super-free",
+        "opencode-go/deepseek-v4-flash",
+        "cerebras/llama3.3-70b",
+        "huggingface/google/gemma-4-12b-it"
+      ],
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+
+    "librarian": {
+      "model": "groq/llama-3.3-70b-versatile",
+      "fallback_models": [
+        "opencode-zen/nemotron-3-super-free",
+        "opencode-go/deepseek-v4-flash",
+        "cerebras/llama3.3-70b",
+        "google/gemini-2.0-flash",
+        "openrouter/horizon-beta"
+      ]
+    },
+
+    "multimodal-looker": {
+      "model": "huggingface/google/gemma-4-12b-it",
+      "fallback_models": [
+        "opencode-go/mimo-v2.5-pro",
+        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+        "groq/gpt-oss-120b"
+      ]
+    }
+  },
+
+  "categories": {
+    "visual-engineering": {
+      "model": "opencode-go/deepseek-v4-pro",
+      "fallback_models": [
+        "opencode-zen/big-pickle",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "openrouter/qwen/qwen3-coder:free"
+      ]
+    },
+
+    "ultrabrain": {
+      "model": "opencode-go/deepseek-v4-pro",
+      "variant": "xhigh",
+      "fallback_models": [
+        "opencode-zen/big-pickle",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "deep": {
+      "model": "opencode-zen/big-pickle",
+      "fallback_models": [
+        "opencode-go/kimi-k2.6",
+        "groq/llama-3.3-70b-versatile",
+        "groq/gpt-oss-120b",
+        "cerebras/llama3.3-70b",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "artistry": {
+      "model": "huggingface/google/gemma-4-12b-it",
+      "fallback_models": [
+        "opencode-zen/nemotron-3-super-free",
+        "groq/gpt-oss-20b",
+        "cerebras/llama3.3-70b",
+        "openrouter/horizon-beta"
+      ]
+    },
+
+    "quick": {
+      "model": "groq/gpt-oss-20b",
+      "fallback_models": [
+        "opencode-zen/nemotron-3-super-free",
+        "cerebras/llama3.3-70b",
+        "huggingface/google/gemma-4-12b-it"
+      ]
+    },
+
+    "unspecified-low": {
+      "model": "opencode-go/deepseek-v4-flash",
+      "fallback_models": [
+        "groq/gpt-oss-20b",
+        "opencode-zen/nemotron-3-super-free",
+        "cerebras/llama3.3-70b",
+        "huggingface/google/gemma-4-12b-it",
+        "openrouter/horizon-beta"
+      ]
+    },
+
+    "unspecified-high": {
+      "model": "opencode-zen/big-pickle",
+      "fallback_models": [
+        "opencode-go/kimi-k2.6",
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "writing": {
+      "model": "groq/llama-3.3-70b-versatile",
+      "fallback_models": [
+        "opencode-zen/nemotron-3-super-free",
+        "cerebras/llama3.3-70b",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemini-2.0-flash"
+      ]
+    }
+  }
+}
