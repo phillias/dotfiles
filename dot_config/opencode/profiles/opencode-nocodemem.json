@@ -4,7 +4,7 @@
   "provider": {
     "opencode-go": {
       "models": {
-        "kimi-k2.6": { "name": "Kimi K2.6", "limit": { "context": 200000, "output": 32768 } },
+        "kimi-k2.6": { "name": "Kimi K2.6" },
         "kimi-k2.5": { "name": "Kimi K2.5" },
         "deepseek-v4-pro": { "name": "DeepSeek V4 Pro" },
         "deepseek-v4-flash": { "name": "DeepSeek V4 Flash" },
@@ -181,7 +181,6 @@
         "chrome-devtools-mcp@latest"
       ]
     },
-    {{- if eq .chezmoi.hostname "primary" }}
     "google-workspace": {
       "enabled": true,
       "type": "local",
@@ -194,15 +193,6 @@
         "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
         "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
       }
-    },
-    {{- end }}
-    "codemem": {
-      "enabled": true,
-      "type": "local",
-      "command": [
-        "codemem",
-        "mcp"
-      ]
     }
   },
   "plugin": [
