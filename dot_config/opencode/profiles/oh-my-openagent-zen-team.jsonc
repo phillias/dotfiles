@@ -85,7 +85,7 @@
     },
 
     "hephaestus": {
-      "model": "opencode/gpt-5.3-codex",
+      "model": "opencode/gpt-5.5",
       "permission": {
         "teammate": "allow"
       },
