@@ -143,8 +143,7 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "OpenCode Zen",
       "options": {
-        "baseURL": "https://opencode.ai/zen/v1",
-        "apiKey": "{env:OPENCODE_ZEN_API_KEY}"
+        "baseURL": "https://opencode.ai/zen/v1"
       },
       "models": {
         "big-pickle": { "name": "Big Pickle", "limit": { "context": 200000, "output": 32768 } },
