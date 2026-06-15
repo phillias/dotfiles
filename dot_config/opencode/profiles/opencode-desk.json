@@ -173,7 +173,6 @@
         "@modelcontextprotocol/server-everything"
       ]
     },
-    {{- if eq .chezmoi.hostname "primary" }}
     "google-workspace": {
       "enabled": true,
       "type": "local",
@@ -187,7 +186,6 @@
         "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
       }
     },
-    {{- end }}
     "chrome-devtools": {
       "enabled": true,
       "command": "npx",
