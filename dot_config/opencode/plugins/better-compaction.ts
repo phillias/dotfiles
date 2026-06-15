@@ -1,25 +1,267 @@
 import type { Plugin } from "@opencode-ai/plugin";
+import { mkdirSync, writeFileSync, existsSync } from "fs";
+import { join } from "path";
+import { homedir } from "os";
+
+interface Todo {
+  content: string;
+  status: "pending" | "in_progress" | "completed" | "cancelled";
+  priority: "high" | "medium" | "low";
+}
+
+interface TodoUpdatedProperties {
+  sessionID: string;
+  todos: Todo[];
+}
+
+interface CompletedItem {
+  content: string;
+  priority: string;
+  completedAt: number;
+  skillEvaluated: boolean;
+  skillScore?: number;
+}
+
+interface EventInput {
+  event: {
+    type: string;
+    properties?: unknown;
+  };
+}
+
+interface CompactingInput {
+  sessionID: string;
+}
+
+interface CompactingOutput {
+  prompt?: string;
+}
+
+export const BetterCompactionPlugin: Plugin = async () => {
+  const prevTodos = new Map<string, Todo[]>();          // sessionID → previous todo state
+  const completedTodos = new Map<string, CompletedItem[]>(); // sessionID → completed items
+  const sessionContexts = new Map<string, string[]>();
 
 /**
- * Better Compaction Plugin
- *
- * Replaces the default compaction prompt with one that aggressively
- * preserves critical context: exact technical details, user-pasted
- * content, constraints, preferences, and debugging state.
- *
- * Based on: https://github.com/anomalyco/opencode/issues/16512
- *
- * Without this plugin, the default compaction prompt tells the LLM to
- * summarize "what was done, what we're doing, which files we're working
- * on, what we're going to do next" — which causes it to:
- *   - Generalize exact names, paths, values, error messages away
- *   - Summarize user-pasted content into nothing
- *   - Lose user-stated constraints and preferences
- *   - Forget which debugging hypotheses were tested and ruled out
- */
-export const BetterCompactionPlugin: Plugin = async () => {
+   * Assess a completed item against 5 criteria (0-10 each, threshold ≥ 30).
+   * Uses todo content keyword analysis and priority as heuristics.
+   */
+  function evaluateSkillWorthiness(item: CompletedItem): { score: number; reasoning: string } {
+    const content = item.content.toLowerCase();
+    let score = 0;
+    const reasons: string[] = [];
+
+    const noveltyKeywords = ["implement", "create", "build", "design", "architect", "setup", "configure", "migrate", "new"];
+    const noveltyScore = noveltyKeywords.some(k => content.includes(k)) ? 7 : 3;
+    score += noveltyScore;
+    reasons.push(`novelty:${noveltyScore}`);
+
+    const applicabilityKeywords = ["pattern", "workflow", "pipeline", "integration", "service", "api", "config", "template", "skill", "deploy"];
+    const applicabilityScore = applicabilityKeywords.some(k => content.includes(k)) ? 8 :
+      item.priority === "high" ? 6 : 4;
+    score += applicabilityScore;
+    reasons.push(`applicability:${applicabilityScore}`);
+
+    const depthKeywords = ["debug", "investigate", "research", "refactor", "optimize", "migrate", "complex", "analyze", "root cause"];
+    const depthScore = depthKeywords.some(k => content.includes(k)) ? 8 :
+      item.priority === "high" ? 6 : 3;
+    score += depthScore;
+    reasons.push(`depth:${depthScore}`);
+
+    const riskKeywords = ["config", "setup", "integration", "workflow", "pattern", "pipeline", "deploy", "infra", "auth", "permission"];
+    const riskScore = riskKeywords.some(k => content.includes(k)) ? 8 :
+      item.priority === "high" ? 6 : 3;
+    score += riskScore;
+    reasons.push(`contextRisk:${riskScore}`);
+
+    const effortScore = item.priority === "high" ? 8 : item.priority === "medium" ? 5 : 2;
+    score += effortScore;
+    reasons.push(`effort:${effortScore}`);
+
+    return { score, reasoning: reasons.join(", ") };
+  }
+
+  function generateSkillName(content: string): string {
+    return content
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 50);
+  }
+
+  function generateSkillMd(item: CompletedItem, sessionID: string, analysis: { score: number; reasoning: string }): string {
+    const name = generateSkillName(item.content);
+    return `# ${item.content}
+
+## Description
+Auto-generated skill from completed task in session \`${sessionID}\`.
+
+## Trigger
+Completed todo with priority: ${item.priority} | Score: ${analysis.score}/50 | Reasoning: ${analysis.reasoning}
+
+## Summary
+This skill captures the context and approach used to complete: "${item.content}"
+
+## Usage
+When encountering similar tasks, reference this skill for established patterns and workflows.
+
+## Skills
+- \`${name}\`
+`;
+  }
+
+  /**
+   * Parse hierarchical task names using dot-notation.
+   * Example: "auth.login.setup" → parent "auth.login", leaf "setup"
+   */
+  function parseSubtask(content: string): { parent: string | null; leaf: string } {
+    const parts = content.split(".");
+    if (parts.length >= 2) {
+      return { parent: parts.slice(0, -1).join("."), leaf: parts[parts.length - 1] };
+    }
+    return { parent: null, leaf: content };
+  }
+
+  function buildTaskTree(todos: Todo[]): string {
+    const groups = new Map<string, Todo[]>();
+    const roots: Todo[] = [];
+
+    for (const todo of todos) {
+      const { parent, leaf } = parseSubtask(todo.content);
+      if (parent) {
+        const group = groups.get(parent) ?? [];
+        group.push({ ...todo, content: leaf });
+        groups.set(parent, group);
+      } else {
+        roots.push(todo);
+      }
+    }
+
+    const lines: string[] = [];
+    for (const root of roots) {
+      const statusChar = root.status === "in_progress" ? ">" : root.status === "completed" ? "x" : " ";
+      const group = groups.get(root.content);
+      if (group) {
+        lines.push(`- [${statusChar}] ${root.content} (${root.priority})`);
+        for (const sub of group) {
+          const subStatus = sub.status === "in_progress" ? ">" : sub.status === "completed" ? "x" : " ";
+          lines.push(`  - [${subStatus}] ${sub.content} (${sub.priority})`);
+        }
+      } else {
+        lines.push(`- [${statusChar}] ${root.content} (${root.priority})`);
+      }
+    }
+    return lines.join("\n");
+  }
+
+  function captureToolContext(sessionID: string, toolName: string): void {
+    const ctx = sessionContexts.get(sessionID) ?? [];
+    if (!["read", "glob", "lsp_diagnostics"].includes(toolName)) {
+      ctx.push(`[${toolName}]`);
+      if (ctx.length > 50) ctx.shift();
+    }
+    sessionContexts.set(sessionID, ctx);
+  }
+
   return {
-    "experimental.session.compacting": async (_input, output) => {
+    event: async (input: EventInput) => {
+      const ev = input.event;
+
+      if (ev.type === "todo.updated") {
+        const props = ev.properties as TodoUpdatedProperties | undefined;
+        if (!props?.sessionID || !props?.todos) return;
+
+        const { sessionID, todos } = props;
+        const prev = prevTodos.get(sessionID) ?? [];
+
+        const freshCompleted: CompletedItem[] = [];
+        for (const todo of todos) {
+          if (todo.status === "completed") {
+            const wasCompleted = prev.some(
+              (p) => p.content === todo.content && p.status === "completed"
+            );
+            if (!wasCompleted) {
+              freshCompleted.push({
+                content: todo.content,
+                priority: todo.priority,
+                completedAt: Date.now(),
+                skillEvaluated: false,
+              });
+            }
+          }
+        }
+
+        if (freshCompleted.length > 0) {
+          const existing = completedTodos.get(sessionID) ?? [];
+          completedTodos.set(sessionID, [...existing, ...freshCompleted]);
+        }
+
+        prevTodos.set(sessionID, todos);
+      }
+    },
+
+    "tool.execute.after": async (input: { tool: string; sessionID: string; callID: string; args: any }) => {
+      captureToolContext(input.sessionID, input.tool);
+    },
+
+    "experimental.session.compacting": async (input: CompactingInput, output: CompactingOutput) => {
+      const sessionID = input.sessionID;
+      const completed = completedTodos.get(sessionID) ?? [];
+      const currentTodos = prevTodos.get(sessionID) ?? [];
+
+      const skillWorthyItems: Array<{ item: CompletedItem; score: number; reasoning: string }> = [];
+      for (const item of completed) {
+        if (item.skillEvaluated) continue;
+        const { score, reasoning } = evaluateSkillWorthiness(item);
+        item.skillEvaluated = true;
+        item.skillScore = score;
+        if (score >= 30) {
+          skillWorthyItems.push({ item, score, reasoning });
+        }
+      }
+
+      const skillsDir = join(homedir(), ".config", "opencode", "skills");
+      for (const { item, score, reasoning } of skillWorthyItems) {
+        const skillName = generateSkillName(item.content);
+        const skillPath = join(skillsDir, skillName, "SKILL.md");
+        if (!existsSync(skillPath)) {
+          try {
+            mkdirSync(join(skillsDir, skillName), { recursive: true });
+            writeFileSync(skillPath, generateSkillMd(item, sessionID, { score, reasoning }));
+            console.log(`[better-compaction] ✓ Auto-generated skill: ${skillName} (score: ${score}/50)`);
+          } catch (err) {
+            console.error(`[better-compaction] ✗ Failed to create skill ${skillName}:`, err);
+          }
+        }
+      }
+
+      const taskTree = buildTaskTree(currentTodos);
+
+      const completedSummary = completed.length > 0
+        ? completed
+            .map((c, i) => `${i + 1}. ✅ ${c.content} (${c.priority}${c.skillScore ? `, skill score: ${c.skillScore}/50` : ""})`)
+            .join("\n")
+        : "No completed items yet.";
+
+      const activeTodos = currentTodos.filter(
+        (t) => t.status !== "completed" && t.status !== "cancelled"
+      );
+      const todoSection = activeTodos.length > 0
+        ? taskTree
+        : "No active todos.";
+
+      const toolCtx = sessionContexts.get(sessionID) ?? [];
+      const toolSummary = toolCtx.length > 0
+        ? `Recent tools used: ${[...new Set(toolCtx)].join(", ")}`
+        : "";
+
+      const skillSummary = skillWorthyItems.length > 0
+        ? `\n### 🧠 Auto-Generated Skills\n${skillWorthyItems.map(
+            ({ item, score, reasoning }) =>
+              `- "${item.content}" → generated as skill (score: ${score}/50, reasoning: ${reasoning})`
+          ).join("\n")}`
+        : "";
+
       output.prompt = `You are compacting a conversation so it can continue in a new context window. Your job is to produce a continuation prompt that preserves ALL information needed to seamlessly resume work without losing anything important.
 
 ## CRITICAL RULES
@@ -49,8 +291,11 @@ Use this exact structure for the continuation prompt:
 [Verbatim reproduction of critical user-pasted content — error logs, config snippets, conversation output. If the content was large, reproduce the most important sections exactly.]
 
 ## Progress
-### ✅ Completed
-[Specific completed work items with verification details]
+### ✅ Completed Tasks
+${completedSummary}
+
+### 📋 Active Tasks
+${todoSection}
 
 ### ❌ Not Solved / Blocked
 [Unsolved items with the current investigation state — what was tried, what was ruled out, what evidence supports each conclusion]
@@ -60,7 +305,9 @@ Use this exact structure for the continuation prompt:
 
 ## Relevant Files & Resources
 [Files read, modified, or created during this session. Key external references, documentation links, or API endpoints used.]
----`,
+${toolSummary ? `\n${toolSummary}` : ""}
+${skillSummary}
+---`;
     },
   };
 };
