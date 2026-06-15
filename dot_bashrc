@@ -187,3 +187,6 @@ fi
 if [ -f "$HOME/.config/opencode/.together-key" ]; then
     export TOGETHER_API_KEY="$(cat $HOME/.config/opencode/.together-key)"
 fi
+if [ -f "$HOME/.config/opencode/.zen-key" ]; then
+    export OPENCODE_ZEN_API_KEY="$(cat $HOME/.config/opencode/.zen-key)"
+fi
