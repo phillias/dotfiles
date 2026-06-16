@@ -1,5 +1,5 @@
 ---
-name: selfhost-infra-mgmt
+name: selfhost
 description: >
   Selfhost infrastructure management at /home/phillias/docker/ — Godoxy reverse proxy,
   CrowdSec WAF with AppSec, Pocket ID OIDC provider, Tinyauth forward-auth, databases
@@ -78,7 +78,33 @@ Cloudflare (Tunnel/Proxy, SSL Full/Strict)
 
 ---
 
-## 2. Core Proxy Layer (CRITICAL — DO NOT MODIFY WITHOUT APPROVAL)
+## 2. Operations Scope & Approval Gates
+
+### Prime Directive: Service-Scoped Operations Only
+
+- **Every management operation** (`docker compose up`, `docker stop`, `restart`,
+  `rm`, etc.) must target **only the specific service** being acted on.
+- **Never run `docker compose up -d` without service names.** This starts every
+  service including critical path components — see below.
+- **Never run `docker compose down`** — use `docker stop` / `docker rm` for
+  individual containers.
+- **Correct:** `docker compose up -d mariadb` or `docker stop mariadb && docker rm mariadb`
+- **Incorrect:** `docker compose up -d`, `docker compose down`
+
+### Critical Path Components — Approval Gate Required
+
+The following services are **critical path**: all other services depend on them
+for routing, authentication, or security. **Any operation** targeting these
+services — or that might affect them (e.g. full-stack operations) — requires
+**explicit user approval** first. Describe what, why, and the expected impact.
+
+| Service | Role | Sensitivity |
+|---------|------|-------------|
+| **godoxy-proxy** (`app`) | Reverse proxy — all traffic flows through it | Interrupting godoxy drops all routes |
+| **crowdsec** | WAF + AppSec — gates godoxy startup (depends_on health) | Restarting crowdsec may block godoxy from restarting until healthy |
+| **pocketid** (in `pocketid/`) | OIDC provider — all SSO logins | Passkey registration state, OIDC sessions |
+
+### Godoxy Config (CRITICAL — DO NOT MODIFY WITHOUT APPROVAL)
 
 ### PRIME DIRECTIVE
 **Never edit `/home/phillias/docker/selfhost/godoxy/config/config.yml` without explicit user approval.** The YAML formatting requirements are specific and look inconsistent but are required by godoxy's parser:
