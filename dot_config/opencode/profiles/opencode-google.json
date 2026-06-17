@@ -1,0 +1,209 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "small_model": "google/gemini-2.0-flash",
+  "provider": {
+    "opencode-go": {
+      "models": {
+        "kimi-k2.6": { "name": "Kimi K2.6" },
+        "kimi-k2.5": { "name": "Kimi K2.5" },
+        "deepseek-v4-pro": { "name": "DeepSeek V4 Pro" },
+        "deepseek-v4-flash": { "name": "DeepSeek V4 Flash" },
+        "mimo-v2.5-pro": { "name": "MiMo V2.5 Pro" },
+        "mimo-v2.5": { "name": "MiMo V2.5" },
+        "minimax-m2.7": { "name": "MiniMax M2.7" },
+        "minimax-m2.5": { "name": "MiniMax M2.5" },
+        "glm-5": { "name": "GLM-5" },
+        "glm-5.1": { "name": "GLM-5.1" },
+        "qwen3.5-plus": { "name": "Qwen3.5 Plus" },
+        "qwen3.6-plus": { "name": "Qwen3.6 Plus" }
+      }
+    },
+    "groq": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Groq",
+      "options": {
+        "baseURL": "https://api.groq.com/openai/v1",
+        "apiKey": "{env:GROQ_API_KEY}"
+      },
+      "models": {
+        "llama-3.3-70b-versatile": { "name": "Llama 3.3 70B", "limit": { "context": 131072, "output": 8192 } },
+        "gpt-oss-120b": { "name": "GPT-OSS 120B", "limit": { "context": 131072, "output": 8192 } },
+        "gpt-oss-20b": { "name": "GPT-OSS 20B", "limit": { "context": 131072, "output": 8192 } },
+        "llama-4-scout-17b-16e-instruct": { "name": "Llama 4 Scout 17B", "limit": { "context": 131072, "output": 8192 } },
+        "qwen-3-32b": { "name": "Qwen3 32B", "limit": { "context": 131072, "output": 8192 } }
+      }
+    },
+    "openrouter": {
+      "models": {
+        "qwen/qwen3-coder:free": {},
+        "meta-llama/llama-3.3-70b-instruct:free": {},
+        "nvidia/nemotron-3-super-120b-a12b:free": {},
+        "nvidia/nemotron-nano-12b-v2-vl:free": {},
+        "openai/gpt-oss-20b:free": {},
+        "horizon-beta": {},
+        "anthropic/claude-sonnet-4": {},
+        "anthropic/claude-3.5-haiku": {},
+        "openai/gpt-4o": {},
+        "openai/gpt-4o-mini": {},
+        "google/gemini-2.5-flash": {},
+        "google/gemini-2.5-pro": {},
+        "deepseek/deepseek-chat": {},
+        "meta-llama/llama-3.1-70b-instruct": {},
+        "mistralai/mistral-large": {},
+        "qwen/qwen-2.5-72b-instruct": {},
+        "z-ai/glm-5": {},
+        "z-ai/glm-5-turbo": {},
+        "z-ai/glm-4.7-flash": {},
+        "agentica-org/DeepCoder-14B-Preview": {},
+        "Qwen/Qwen3-Coder-Next-80B-A3B-Instruct": {}
+      }
+    },
+    "cerebras": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Cerebras",
+      "options": {
+        "baseURL": "https://api.cerebras.ai/v1",
+        "apiKey": "{env:CEREBRAS_API_KEY}"
+      },
+      "models": {
+        "llama3.3-70b": { "name": "Llama 3.3 70B", "limit": { "context": 8192, "output": 4096 } },
+        "gpt-oss-120b": { "name": "GPT-OSS 120B", "limit": { "context": 8192, "output": 4096 } }
+      }
+    },
+    "mistral": {
+      "npm": "@ai-sdk/mistral",
+      "name": "Mistral",
+      "options": {
+        "apiKey": "{env:MISTRAL_API_KEY}"
+      },
+      "models": {
+        "mistral-large-latest": { "name": "Mistral Large", "limit": { "context": 131072, "output": 8192 } }
+      }
+    },
+    "sambanova": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "SambaNova",
+      "options": {
+        "baseURL": "https://api.sambanova.ai/v1",
+        "apiKey": "{env:SAMBANOVA_API_KEY}"
+      },
+      "models": {
+        "Meta-Llama-3.3-70B-Instruct": { "name": "Llama 3.3 70B", "limit": { "context": 131072, "output": 8192 } }
+      }
+    },
+    "google": {
+      "npm": "@ai-sdk/google",
+      "name": "Google",
+      "options": {
+        "apiKey": "{env:GOOGLE_API_KEY}"
+      },
+      "models": {
+        "gemini-2.0-flash": { "name": "Gemini 2.0 Flash", "limit": { "context": 1048576, "output": 8192 } }
+      }
+    },
+    "together": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Together",
+      "options": {
+        "baseURL": "https://api.together.xyz/v1",
+        "apiKey": "{env:TOGETHER_API_KEY}"
+      },
+      "models": {
+        "deepseek-ai/DeepSeek-R1": { "name": "DeepSeek R1", "limit": { "context": 131072, "output": 8192 } }
+      }
+    },
+    "kilocode": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Kilo Gateway",
+      "options": {
+        "baseURL": "https://api.kilo.ai/api/gateway"
+      },
+      "models": {
+        "kilo-auto/free": { "name": "Kilo Auto Free", "limit": { "context": 131072, "output": 8192 } },
+        "nvidia/nemotron-3-nano-30b-a3b:free": { "name": "Nemotron 3 Nano 30B", "limit": { "context": 131072, "output": 8192 } },
+        "x-ai/grok-code-fast-1:optimized:free": { "name": "Grok Code Fast", "limit": { "context": 131072, "output": 8192 } },
+        "arcee-ai/trinity-large-thinking:free": { "name": "Trinity Large Thinking", "limit": { "context": 131072, "output": 8192 } }
+      }
+    },
+    "huggingface": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "HuggingFace",
+      "options": {
+        "baseURL": "https://router.huggingface.co/v1"
+      },
+      "models": {
+        "deepseek-ai/DeepSeek-R1-0528": { "name": "DeepSeek R1 0528", "limit": { "context": 131072, "output": 8192 } },
+        "Qwen/Qwen3-Coder-480B-A35B-Instruct": { "name": "Qwen3 Coder 480B", "limit": { "context": 131072, "output": 8192 } },
+        "Qwen/Qwen3-235B-A22B-Instruct-2507": { "name": "Qwen3 235B", "limit": { "context": 131072, "output": 8192 } },
+        "Qwen/QwQ-32B": { "name": "QwQ 32B", "limit": { "context": 131072, "output": 8192 } },
+        "google/gemma-4-12b-it": { "name": "Gemma 4 12B", "limit": { "context": 262144, "output": 8192 } }
+      }
+    },
+    "opencode-zen": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenCode Zen",
+      "options": {
+        "baseURL": "https://opencode.ai/zen/v1"
+      },
+      "models": {
+        "big-pickle": { "name": "Big Pickle", "limit": { "context": 200000, "output": 32768 } },
+        "mimo-v2.5-free": { "name": "MiMo V2.5 Free", "limit": { "context": 131072, "output": 8192 } },
+        "nemotron-3-super-free": { "name": "Nemotron 3 Super Free", "limit": { "context": 262144, "output": 8192 } }
+      }
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 50000,
+    "tail_turns": 40
+  },
+  "permission": "allow",
+  "mcp": {
+    "netdata-bylocalhost": {
+      "type": "remote",
+      "url": "http://localhost:19999/mcp",
+      "enabled": true
+    },
+    "mcp_everything": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-everything"
+      ]
+    },
+    "chrome-devtools": {
+      "enabled": true,
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "codemem": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "codemem",
+        "mcp"
+      ]
+    },
+    "google-workspace": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "node",
+        "/home/ubuntu/google-mcp-server/index.js"
+      ],
+      "env": {
+        "GOOGLE_CLIENT_ID": "{env:GOOGLE_CLIENT_ID}",
+        "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
+        "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
+      }
+    }
+  },
+  "plugin": [
+    "oh-my-openagent@latest"
+  ]
+}
