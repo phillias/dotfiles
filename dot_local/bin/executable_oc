@@ -12,6 +12,7 @@ Modes:
   free     OpenCode + Free agents (default OmO)
   go       OpenCode + Go agents (OpenCode Go subscription)
   nogo     Alias for free
+  pure     No OmO
   zen      OpenCode Zen + Zen agents (Zen subscription)
   team     OpenCode Zen + Team agents + tmux OmO layout
   web      OpenCode Google + Free agents (Google-provider focus)
@@ -23,7 +24,7 @@ EOF
 [ -z "${MODE}" ] && usage
 
 case "${MODE}" in
-  free|go|nogo|zen|team|web|desk) ;;
+  pure|free|go|nogo|zen|team|web|desk) ;;
   *) usage ;;
 esac
 
@@ -40,9 +41,26 @@ case "${MODE}" in
     export TMUX_CONF="${HOME}/.config/opencode/.tmux-OmOTeam.conf" ;;
   web)
     PROFILE="web" ;;
+  pure)
+    PROFILE="pure" ;;
   *)
     PROFILE="${MODE}" ;;
 esac
+
+# Load keys from ~/.config/opencode/
+for key_file in "${HOME}/.config/opencode/".*-key; do
+  [ -f "$key_file" ] || continue
+  filename=$(basename "$key_file")
+  provider=${filename#.}
+  provider=${provider%-key}
+
+  case "$provider" in
+    zen) var="OPENCODE_ZEN_API_KEY" ;;
+    *) var="$(echo "$provider" | tr '[:lower:]' '[:upper:]')_API_KEY" ;;
+  esac
+
+  export "$var"=$(cat "$key_file")
+done
 
 PROFILE_DIR="${PROFILES_DIR}/${PROFILE}"
 
