@@ -14,1649 +14,991 @@ metadata:
 
 # Docker Infrastructure Management
 
-Authoritative guide for managing the Docker Compose infrastructure at
-`$HOME/docker/`. This covers patterns and practices shared across
-**all** stacks — secret injection (ordered by preference: compose provider
-for env vars, volume driver for config files, locket-init sidecar as
-fallback only), Godoxy reverse proxy, socket-proxy, OCI Vault integration,
-OCIR registry, restic backup/restore architecture, and Bitwarden SM
-administration.
-
-For **pirate-specific** service management (ARRs, Stremio, VPN proxies,
-ebooks/audiobooks), see the `pirate` skill.
-
----
-
-## 1. Prerequisites & Initial Setup
-
-Before any stack can use the compose provider for secret injection, three
-components must be built and installed. None come pre-packaged — they must
-be compiled from source.
-
-### Go Toolchain
-
-Both `locket` and the patched `docker-compose` are Go projects. Install Go
-1.24+ for local builds:
-
-```bash
-# Install from golang.org or via system package
-go version  # → go version go1.24.X linux/amd64
-```
-
-The locket-compose Dockerfile (see §1.3) fetches Go inside the build container
-so you don't need Go installed on the host just to rebuild compose — but you
-**do** need Go on the host to rebuild locket (or use the locket-init Dockerfile,
-which has its own builder stage).
-
-### locket Binary
-
-The `locket` CLI must be compiled with the `compose` feature to act as a
-Docker Compose provider. It lives at `~/.local/bin/locket`.
-
-**Build it:**
-
-```bash
-# Clone and build with all provider features
-git clone --depth 1 --branch v0.17.3 \
-    https://github.com/softprops/locket.git /tmp/locket
-cd /tmp/locket
-go build -o ~/.local/bin/locket \
-    -ldflags="-s -w" \
-    --features compose,bws,exec
-```
-
-Alternatively, the `locket-init:latest` Dockerfile at
-`$HOME/docker/locket-init/Dockerfile` has a multi-stage builder pattern
-that can be adapted to produce just the binary.
-
-**Install the symlink so Compose discovers it as a provider:**
-
-```bash
-# Required: enables `provider.type: locket` in compose.yaml
-ln -sf ~/.local/bin/locket ~/.docker/cli-plugins/docker-locket
-```
-
-Verify:
-```bash
-locket compose --help  # Must list compose subcommand
-docker info | grep -i locket
-```
-
-### docker-compose CLI Plugin (with rawsetenv)
-
-The stock Docker Compose CLI plugin **prefixes** all provider-injected env
-vars with the provider service name (e.g. `MYSQL_ROOT_PASSWORD` becomes
-`LOCKET_MYSQL_ROOT_PASSWORD`). PR #13742 adds a `rawsetenv` message type
-that lets providers inject env vars **without** the prefix.
-
-The patched binary is built from `$HOME/docker/locket-compose/`:
-
-```bash
-cd ~/docker/locket-compose
-./build.sh
-# → produces ./docker-compose (~55 MB, version v2.40.3-rawsetenv)
-
-# Install it:
-cp docker-compose ~/.docker/cli-plugins/docker-compose
-```
-
-The Dockerfile uses a multi-stage build that:
-1. Clones `docker/compose` at `v2.40.3` (shallow, no repo in build context)
-2. Fetches PR #13742 from GitHub and applies it
-3. Builds with `-trimpath` and version `v2.40.3-rawsetenv`
-
-**Rebuild after:**
-
-```bash
-docker compose version  # → v2.40.3-rawsetenv
-```
-
-> ⚠️ **Every `docker compose` upgrade from upstream will lose the patch.**
-> Re-run `./build.sh` and reinstall `~/.docker/cli-plugins/docker-compose`
-> after upgrading compose. This is a local patch to an unmerged PR.
-
-### Provider Descriptor JSON
-
-Docker Compose discovers compose providers via JSON descriptors in
-`~/.docker/compose/providers/`. Create or verify:
-
-```bash
-mkdir -p ~/.docker/compose/providers/
-```
-
-File `~/.docker/compose/providers/locket.json`:
-
-```json
-{
-  "description": "Materialize secrets from environment or templates",
-  "up": {
-    "parameters": [
-      { "name": "provider", "type": "string", "enum": "bws" },
-      { "name": "bws-token", "type": "string" },
-      { "name": "env", "type": "array" },
-      { "name": "env-file", "type": "string" }
-    ]
-  },
-  "down": { "parameters": [] }
-}
-```
-
-This declares what CLI flags locket accepts for `compose up`. Additional
-parameters (`bws-api-url`, `bws-identity-url`, `log-level`) can be added
-as needed.
-
-### bws CLI & Bitwarden SM Token
-
-The `bws` CLI at `/usr/local/bin/bws` (v2.1.0+) talks to Bitwarden Secrets
-Manager. The machine token lives at `~/.config/bwsh/token` and is mounted
-into init containers as `:ro`.
-
-```bash
-bws version
-bws secret list \
-  --project eb78eee6-0397-420e-8a31-b45f000d2625
-```
-
-### Verification Checklist
-
-Before using the compose provider on any stack, verify all five components:
-
-| # | Component | Check Command |
-|---|-----------|---------------|
-| 1 | locket binary | `locket compose --help` |
-| 2 | Provider symlink | `ls -la ~/.docker/cli-plugins/docker-locket` |
-| 3 | Patched compose | `docker compose version` shows `v2.40.3-rawsetenv` |
-| 4 | Provider descriptor | `ls ~/.docker/compose/providers/locket.json` |
-| 5 | bws + token | `bws secret list --project eb78eee6-0397-420e-8a31-b45f000d2625` |
+> **Audience**: AI agent. Optimized for runtime discovery and decision-tree
+> diagnosis, not static reference. When in doubt, **check the live system**
+> — the compose files, running containers, and Docker state are ground truth.
+>
+> All paths use `$HOME` — resolve at runtime. All UUIDs, project IDs, and
+> registry paths use placeholders — replace with actual values from the
+> live environment or Bitwarden SM.
+>
+> **Companion files**: `$HOME/.config/opencode/skills/docker/ARCHIVE.md`
+> (deprecated patterns), `$HOME/.config/opencode/skills/docker/MIGRATION.md`
+> (migration walkthroughs). Full standalone runbook also at
+> `$HOME/docker/DOCKER_RUNBOOK.md`.
 
 ---
 
-## 2. Infrastructure Overview
+## 1. Stack Map
 
-### Stacks
+### 1.1 Stack Inventory
 
-| Directory | Compose File | Project | Purpose |
-|-----------|-------------|---------|---------|
-| `$HOME/docker/` (root) | `compose.yml` | `selfhost` | Core proxy, socket-proxy, CrowdSec, databases (MariaDB, PostgreSQL/MSSQL/Redis/libSQL/Turso), CloudBeaver |
-| `selfhost/` | `compose.yml` | `selfhost` | Secondary socket-proxy + Godoxy, ntfy, tinyauth, dockhand, apprise |
-| `pirate/` | `compose.yaml` | `pirate` | Media suite — Stremio, ARRs, VPN proxies, ebooks/audiobooks |
-| `hermes/` | `compose.yml` | `hermes` | Hermes AI agent gateway + Telegram bot + dashboard |
-| `linkwarden/` | `compose.yml` | `linkwarden` | Bookmark manager with Meilisearch |
-| `flexget/` | `compose.yml` | `flexget` | Media automation with rclone + Google Drive |
-| `jessalaga/` | `docker-compose.yml` | `jessalaga` | RSS reader |
-| `opencode-telegram-bot/` | `docker-compose.yml` | `opencode-telegram-bot` | Telegram bot for OpenCode |
-| `newrelic/` | `compose.yml` | `newrelic` | New Relic infrastructure monitoring |
-| `mylar3/` | `compose.yml` | `mylar3` | Comic book management |
+Discover the actual stacks at runtime:
 
-### Shared Resources
+```bash
+ls -d $HOME/docker/*/compose.y* $HOME/docker/compose.y* 2>/dev/null
+```
 
-- **Network**: `selfhost_frontnet` (external bridge) — all stacks attach here for Godoxy routing
-- **Godoxy**: Primary reverse proxy, routes to services via Docker labels
-- **socket-proxy**: Restricts Docker API access to whitelisted operations (`127.0.0.1:2375`)
-- **Bitwarden SM**: Central secrets store (project `selfhost-pirate`, ID: `eb78eee6-0397-420e-8a31-b45f000d2625`)
-- **BWS token**: `~/.config/bwsh/token` — mounted into init containers as `:ro`
-- **OCIR registry**: `us-chicago-1.ocir.io/axh7zpa5qpqc/` — custom images (Linkwarden, Meilisearch)
-- **CrowdSec**: WAF + appsec for exposed services
-- **OCI Vault**: Alternative secret source for selfhost init (dual-source reconciliation)
+Known stacks (verify against live):
 
-### Common Conventions
+| Directory | Project Name | Purpose |
+|-----------|-------------|---------|
+| `$HOME/docker/` (root) | `selfhost` | Reverse proxy, databases, CrowdSec, monitoring |
+| `$HOME/docker/selfhost/` | `selfhost` | Secondary proxy, tinyauth, dockhand, apprise |
+| `$HOME/docker/pirate/` | `pirate` | Media suite (Stremio, ARRs, VPN, ebooks) |
+| `$HOME/docker/hermes/` | `hermes` | AI agent gateway + Telegram bot |
+| `$HOME/docker/linkwarden/` | `linkwarden` | Bookmark manager |
+| `$HOME/docker/flexget/` | `flexget` | Media automation |
+| `$HOME/docker/jessalaga/` | `jessalaga` | RSS reader |
+| `$HOME/docker/opencode-telegram-bot/` | `opencode-telegram-bot` | Telegram bot |
+| `$HOME/docker/newrelic/` | `newrelic` | Host monitoring |
+| `$HOME/docker/mylar3/` | `mylar3` | Comic book manager |
 
-- PUID=1001, PGID=998 (root `.env`)
-- TZ=America/New_York
-- Logging: `journald` driver for production services (not default json-file)
-- Secrets and config files: `600` permissions, never committed to git
-- Named volumes follow `{project}_{volume}` pattern (e.g. `pirate_prowlarr-secrets`)
-- Docker Compose profiles for grouping services (e.g. `stremio`, `arrs`, `proxy`, `books`)
-- `deploy.resources` limits on CPU and memory for resource-intensive services
-- `read_only: true` + `tmpfs` for services that don't need writable rootfs
-- `security_opt: no-new-privileges:true` + `cap_drop: [all]` as baseline, add back only needed caps
+### 1.2 Critical Path
+
+Services that must be healthy for everything else to work.
+**Check these first during any outage:**
+
+```
+socket-proxy (127.0.0.1:2375)
+  └── godoxy (reverse proxy, network_mode: host)
+      └── crowdsec (LAPI + AppSec)
+```
+
+- **socket-proxy** restricts Docker API — if down, nothing that needs Docker API works
+- **godoxy** is the HTTP entry point — if down, all web UIs are unreachable
+- **crowdsec** blocks traffic at the proxy level — if unhealthy, godoxy may still route but with degraded security
+
+### 1.3 Shared Resources
+
+Discover at runtime — do not assume static config:
+
+| Resource | Discovery Command | Indicator |
+|----------|------------------|-----------|
+| Shared network | `docker network ls \| grep frontnet` | Should show `selfhost_frontnet` |
+| BWS token | `ls -la $HOME/.config/bwsh/token` | Mode 600, non-empty |
+| locket binary | `locket compose --help 2>&1` | Must list `compose` subcommand |
+| Patched compose | `docker compose version` | Should show `rawsetenv` suffix |
+| Provider descriptor | `ls $HOME/.docker/compose/providers/locket.json` | Must exist |
+| Provider symlink | `ls -la $HOME/.docker/cli-plugins/docker-locket` | Symlink to locket binary |
+| OCIR registry | `docker login $OCIR_REGISTRY 2>&1` | Success = configured |
+| CrowdSec LAPI | `docker exec crowdsec cscli lapi status 2>&1` | Should report healthy |
+
+### 1.4 Common Conventions
+
+Verify these match in live compose files — they're conventions, not guarantees:
+
+| Convention | Typical Value |
+|------------|--------------|
+| PUID | 1001 |
+| PGID | 998 |
+| TZ | America/New_York |
+| Logging driver | `journald` (production), `json-file` (dev) |
+| Secrets permissions | 600, never committed |
+| Named volume pattern | `{project}_{volume}` (e.g. `pirate_prowlarr-secrets`) |
+| Security baseline | `no-new-privileges:true`, `cap_drop: [all]`, `read_only: true` |
 
 ---
 
-## 3. Guiding Principles
+## 2. Operating Principles
 
-These principles govern all secret injection decisions and migration work.
-They must not be bypassed without explicit approval.
+> These guardrails govern ALL decisions and actions. Violating them without
+> explicit user approval is a hard block. They exist because every one of
+> them was learned the hard way.
 
-### Injection Hierarchy
+### 2.1 Injection Hierarchy
 
-1. **Compose Provider (env vars)** — Primary. Injects into container environment at
-   orchestration time. Zero extra containers. Zero disk writes. Env vars in memory only.
-2. **Volume Driver (config files)** — Primary for file-based secrets. Resolves at
-   volume mount time. Zero init containers. Rendered to Docker volume (not host disk).
-3. **locket-init Sidecar (fallback)** — Only after compose provider and volume driver
-   are exhausted AND explicit approval is granted. Renders to host tmpfs.
+```
+Compose Provider (env vars)   → PRIMARY — zero extra containers, memory-only
+Volume Driver (config files)  → PRIMARY — zero init containers, resolves at mount
+locket-init Sidecar           → FALLBACK — only after exhausting above two
+```
 
-### Env Vars Are Memory-Only
+Always try compose provider and volume driver first. If neither works,
+document why, present for approval, then consider locket-init.
 
-- Secrets injected via the compose provider exist only in the container's runtime
-  environment. They are NEVER rendered to `.env` files on disk.
-- For services needing `env_file:` at compose parse time, this is a known limitation
-  of the compose provider. Document and escalate — do not silently fall back to
-  file-based injection.
+### 2.2 Env Vars Are Memory-Only
 
-### No Upstream Modifications
+- Secrets injected via the compose provider exist only in the container's
+  runtime environment. NEVER render them to `.env` files on disk.
+- If a service needs `env_file:` at compose parse time, this is a known
+  limitation. Document and escalate — do NOT silently fall back to file-based
+  injection.
+
+### 2.3 No Upstream Modifications
 
 - **No image rebuilds** — never modify a service's Dockerfile.
 - **No entrypoint changes** — never override or wrap the container entrypoint.
-- **No `command:` overrides** — never use compose `command:` to inject secrets.
-- The consuming service must work with the env var names or config file paths as
-  provided by the upstream image. If the compose provider delivers env vars with
-  exact key names the service expects, no adaptation is needed.
+- **No `command:` overrides** to inject secrets.
+- The service must work with the env var names and config file paths provided
+  by the upstream image. If the compose provider delivers exact key names, no
+  adaptation is needed.
 
-### Operations Must Be Service-Scoped
+### 2.4 Operations Must Be Service-Scoped
 
-- **Restrict all management operations** (`docker compose up`, `down`, `restart`,
-  `stop`, `rm`) to the **specific service being acted on**, not the entire stack.
-- **Never run `docker compose up -d` without service names.** This starts every
-  service in the stack including critical path components (godoxy, pocketid,
-  crowdsec) that should not be disrupted.
-- **Never run `docker compose down`** on a shared stack — use `docker stop` /
-  `docker rm` for individual containers.
-- **Correct:** `docker compose up -d mariadb` or `docker compose restart mariadb`
-- **Incorrect:** `docker compose up -d` (starts everything), `docker compose down`
-- **Full-stack operations require explicit user approval** — describe which
-  services will be affected and why a full-stack operation is necessary first.
+This is the most frequently violated rule. Get it right every time:
 
-### Validation Before Cleanup
+| ✅ Correct | ❌ Incorrect |
+|------------|-------------|
+| `docker compose up -d mariadb` | `docker compose up -d` (starts everything) |
+| `docker compose restart godoxy` | `docker compose down` (kills critical path) |
+| `docker stop <container>` | `docker compose down` on a shared stack |
+| `docker compose logs locket --tail 20` | |
+
+**Full-stack operations require explicit user approval** — describe which
+services will be affected and why it's necessary.
+
+### 2.5 Validate Before Cleanup
 
 - **Never delete** volumes, configs, `.env` files, or compose files until the
-  migrated service is validated as functional.
+  migrated service is confirmed functional.
 - **Always copy with permissions preserved** before making changes:
   ```bash
   cp -a --preserve=mode,ownership,timestamps original.env original.env.bak
-  cp -a --preserve=mode,ownership,timestamps config/ config.bak/
   ```
-- **Defer all cleanup** until you confirm the service is running and healthy.
-- **Test rendering before deploying:**
-  ```bash
-  docker compose config   # Must pass with zero errors
-  ```
+- **Test before deploying:** `docker compose config` must pass with zero errors.
+- **Defer all cleanup** until user confirms.
 
-### Escalation Path
+### 2.6 Escalation Path
 
-If the compose provider (for env vars) and volume driver (for config files) cannot
-meet the requirement within these principles, document the specific constraint
-conflict and present it for approval before proceeding to locket-init.
+If no injection method works within these principles:
+1. Document the specific constraint conflict
+2. Present for user approval
+3. Only then proceed to locket-init or other fallback
 
 ---
 
-## 4. Compose Provider (Env Vars — Primary)
+## 3. Decision Trees
 
-### Overview
+### 3.1 Secret Injection Method
 
-The **compose provider** is the primary mechanism for injecting Bitwarden SM
-secrets as environment variables into Docker Compose services. It integrates
-directly with Docker Compose's provider service API (available since Compose
-v2.36.0+) — no init containers, no tmpfs, no systemd sequencing.
+```
+New service needs secrets
+│
+├── Does the service read secrets from ENVIRONMENT VARIABLES?
+│   │
+│   ├── YES → Does it use `env_file:` at compose parse time?
+│   │   │
+│   │   ├── YES → locket-init sidecar (Play 7)
+│   │   │         Compose reads env_file path before containers start.
+│   │   │         Compose provider and volume driver cannot help here.
+│   │   │
+│   │   └── NO  → Compose provider (Play 2)
+│   │             Declare `provider.type: locket` with `options.env`.
+│   │             Zero extra containers. Env vars injected at compose time.
+│   │
+│   └── NO → Does the service read secrets from CONFIG FILES?
+│       │
+│       ├── YES → Volume driver (Play 4)
+│       │         locket Docker volume plugin. Resolves at mount time.
+│       │         Zero init containers. Works for JSON, YAML, INI, TOML.
+│       │         ⚠️ NOT for env_file at compose parse time.
+│       │
+│       └── NO → No action needed, or evaluate need.
+│
+│   IF BOTH env vars AND config files → Compose provider for env vars
+│   + volume driver for config files. If config file has env_file
+│   requirement, escalate to locket-init.
+│
+│   IF all three fail → Check the Failed Path Archive (Section 6)
+│   for why specific methods were rejected.
+```
 
-The provider works by declaring a `provider.type: locket` service in
-compose.yaml. When `docker compose up` runs, Compose discovers the `locket`
-provider (via the `docker-locket` CLI plugin), invokes `locket compose up`,
-which resolves `{{ UUID }}` secret references against Bitwarden SM and returns
-them via JSON protocol on stdout. Compose then injects the resolved values as
-environment variables into dependent services.
+### 3.2 Service Won't Start
 
-### How It Works
+```
+docker compose ps shows service not running
+│
+├── Check service logs first
+│   docker compose logs <service> --tail 50
+│
+├── Check init container status (if service has depends_on init)
+│   docker compose logs <service>-init --tail 20
+│   docker compose ps -a | grep init
+│
+├── Check compose config is valid
+│   docker compose config
+│   # If fails: YAML error, missing volume, undefined network
+│
+├── Common failures by symptom:
+│   │
+│   ├── "address already in use" → Port conflict
+│   │   ss -tlnp | grep <port>
+│   │   Check if another container or host process has the port
+│   │
+│   ├── "permission denied" on volume mount
+│   │   Check PUID/PGID match between service and file ownership
+│   │   Named volumes: permissions from container user
+│   │   Bind mounts: permissions from host filesystem
+│   │
+│   ├── Init container exited non-zero
+│   │   Check BWS token validity → bws secret list
+│   │   Check template directory is mounted and has files
+│   │   Check output directory is writable (tmpfs or bind mount)
+│   │
+│   ├── locket provider service failed
+│   │   docker compose logs locket
+│   │   Check rawsetenv patch: docker compose version
+│   │   Check provider symlink: ls -la ~/.docker/cli-plugins/docker-locket
+│   │
+│   └── Container OOM killed
+│       docker inspect <container> | grep -i oom
+│       journalctl -u docker | grep -i oom
+│       → Increase deploy.resources.limits.memory
+│
+└── If still stuck → Escalate to full system diagnosis (Section 5)
+```
 
-1. **Compose file declares** a service with `provider.type: locket` and
-   `options.env` listing `KEY={{ UUID }}` entries — one per secret
-2. **Docker Compose discovers** the provider by looking for a CLI plugin named
-   `docker-locket` in `~/.docker/cli-plugins/` (defined in
-   `docker/compose/pkg/compose/plugins.go` — `getPluginBinaryPath` checks CLI
-   plugin dirs first, then falls back to PATH lookup)
-3. **Compose invokes** `locket compose --project-name=<NAME> up --options...`
-4. **locket resolves** each `{{ UUID }}` against Bitwarden SM via the bws
-   provider
-5. **locket emits** JSON line-delimited messages on stdout:
-   - `{"type":"setenv","message":"KEY=value"}` — injects env var into dependent services
-   - `{"type":"info","message":"..."}` — status updates
-   - `{"type":"error","message":"..."}` — failure reporting
-6. **Compose injects** resolved env vars into services that `depends_on: locket`
+### 3.3 Secret Resolution Failure
 
-The env var name is exactly the key you specify in the `env` list — locket emits **no prefix** of its own. For example, `env: ["DATABASE_PASSWORD={{ uuid }}"]` causes locket to emit `DATABASE_PASSWORD=<resolved-value>`. The key name is passed through as-is.
+```
+Secrets not appearing in the container or wrong values
+│
+├── Which injection method?
+│   │
+│   ├── COMPOSE PROVIDER
+│   │   ├── Check locket provider ran: docker compose logs locket
+│   │   │   Look for "rawsetenv" or "setenv" messages
+│   │   ├── Check for prefix problem:
+│   │   │   docker compose exec <service> env | grep -i LOCKET_
+│   │   │   If vars have LOCKET_ prefix → rawsetenv patch missing
+│   │   │   Fix: rebuild patched compose (Play 3)
+│   │   ├── Check BWS token: bws secret list (exit 0 = token valid)
+│   │   └── Check UUIDs in provider options.env match actual BWS secrets
+│   │       bws secret list | grep <expected-key>
+│   │
+│   ├── VOLUME DRIVER
+│   │   ├── Check plugin is running: docker plugin ls | grep locket
+│   │   ├── Check volume exists: docker volume ls | grep locket
+│   │   ├── Check volume details: docker volume inspect <volume>
+│   │   ├── Template path correct?
+│   │   │   Verify ~/.config/bwsh/templates/<service>/ has the file
+│   │   ├── Volume may be stale (secrets resolved once at creation):
+│   │   │   docker volume rm <volume> && docker compose up -d <service>
+│   │   └── Plugin logs: journalctl -u docker.service --since "5 min ago" | grep locket
+│   │
+│   └── LOCKET-INIT SIDECAR
+│       ├── docker logs <service>-init (not docker compose logs!)
+│       ├── BWS token mounted? docker inspect <init> | jq '.[].Mounts'
+│       ├── Template files exist inside container?
+│       │   docker run --rm -it --entrypoint sh <init-image> -c "ls /templates/"
+│       ├── Output dir writable? Check /run/<stack>-secrets/ permissions
+│       └── Idempotency skip? If outputs already exist, init skips.
+│           Touch a template file to force re-render: touch templates/.env
+│
+└── If secrets still wrong → Fall back to manual verify:
+    bws secret get <UUID>
+    # Compare with what's in the container
+```
 
-> **⚠️ Docker Compose prefix constraint (stock):** Stock Docker Compose **prefixes** all provider-injected env vars with the provider service name converted to SCREAMING_SNAKE_CASE. For a provider service named `locket`, an env var `MYSQL_ROOT_PASSWORD` arrives in the container as `LOCKET_MYSQL_ROOT_PASSWORD`. This is Compose's behavior, not locket's.
->
-> **Fix — rawsetenv (patched compose):** PR #13742 (applied in `$HOME/docker/locket-compose/`, see §1.3) adds a `rawsetenv` message type. Providers emit `{"type":"rawsetenv","message":"KEY=val"}` and Compose injects it **without any prefix**. The patched compose binary is required for this to work — stock compose ignores the `rawsetenv` field.
->
-> **Legacy workaround (stock compose only):** The dependent service can expose the unprefixed name by referencing the prefixed value in its `environment:` block, but this must be coordinated — the provider env var `MYSQL_PASSWORD` becomes `LOCKET_MYSQL_PASSWORD` in the container, and the service would need `MYSQL_PASSWORD` exposed as well.
->
-> **When the prefix is a problem and patched compose isn't available:** If the consuming service expects specific env var names and cannot reference the prefixed form, the compose provider may not be suitable for that service. Fall back to `env_file:` from a locket-init sidecar (see §6). This constraint is documented as a finding: Docker Compose providers namespace env vars by service name, which breaks services that expect exact env var names without prefix.
+---
 
-### When to Use
+## 4. Incident Plays
 
-| Scenario | Recommendation |
-|----------|---------------|
-| Services need env vars from Bitwarden SM | **Use compose provider** — no extra containers, no tmpfs |
-| Services need config files from templates | Use volume driver (Section 5) |
-| Complex init or env_file at parse time | Use locket-init sidecar (Section 6) — fallback only after confirmation |
+### Play 1: Reboot Recovery
 
-**Choose the compose provider when:**
-- Your service reads secrets from environment variables (the common case)
-- You want zero extra containers (no init sidecar)
-- You want secrets resolved at compose orchestration time, not at container startup
-- You're using Docker Compose v2.36.0+
+**Symptom**: Host rebooted. Some or all containers failed to start.
 
-### Installation
+**Check order — critical path first:**
 
-Three components are required:
+```
+1. Is Docker running?
+   systemctl is-active docker
 
-**1. Compose-enabled binary**
+2. Is socket-proxy up?
+   docker ps --filter name=socket-proxy --format '{{.Status}}'
 
-The `locket` CLI at `~/.local/bin/locket` must be compiled with the `compose`
-feature. Verify:
+3. Is godoxy up?
+   docker ps --filter name=godoxy --format '{{.Status}}'
+   # If down, check compose: cd $HOME/docker && docker compose up -d godoxy
+
+4. Is crowdsec up?
+   docker ps --filter name=crowdsec --format '{{.Status}}'
+```
+
+**Known reboot breakages:**
+
+| Issue | Indicator | Fix |
+|-------|-----------|-----|
+| tmpfs directories missing | `/run/<stack>-secrets/` does not exist | `mkdir -p /run/<stack>-secrets/` before compose up |
+| locket-init containers need to re-render | Init container logs show "output dir missing" | `docker compose up -d <service>-init` (runs once, exits) |
+| BWS token path changed | `bws secret list` fails | Check `$HOME/.config/bwsh/token` exists (mode 600) |
+| Docker daemon not started | `docker ps` fails | `systemctl start docker` |
+| locket symlink missing | No provider discovery | `ln -sf ~/.local/bin/locket ~/.docker/cli-plugins/docker-locket` |
+| Compose patched binary replaced | No `rawsetenv` support | Rebuild (Play 3) |
+
+**Recovery sequence:**
 
 ```bash
-$ locket compose --help
-Docker Compose provider API
+# 1. Ensure Docker is running
+systemctl start docker
 
-Usage: locket compose --project-name <PROJECT_NAME> <COMMAND>
+# 2. Verify critical infrastructure
+docker ps --filter name=socket-proxy --format '{{.Names}} {{.Status}}'
+docker ps --filter name=godoxy --format '{{.Names}} {{.Status}}'
+docker ps --filter name=crowdsec --format '{{.Names}} {{.Status}}'
 
-Commands:
-  up        Injects secrets into a Docker Compose service environment
-  down      Handler for Docker Compose `down` (no-op)
-  metadata  Handler for Docker Compose `metadata`
-  help      Print this message or the help of the given subcommand(s)
+# 3. Check tmpfs directories exist
+ls -d /run/*-secrets/ 2>/dev/null || echo "MISSING: create tmpfs dirs"
+
+# 4. Start stacks that need BWS/locket (may need init containers to run first)
+docker compose -f $HOME/docker/compose.yml up -d godoxy crowdsec
 ```
 
-If `compose` is not listed as a subcommand, rebuild with the `compose` feature
-flag (see Build Instructions below).
+**Failed Path Note**: Running `docker compose up -d` (no service name) starts
+EVERYTHING in the stack — including critical path components. Always specify
+the service name. Full-start requires explicit approval.
 
-**2. Provider descriptor JSON**
+---
 
-Docker Compose v2 discovers compose providers in
-`~/.docker/compose/providers/*.json`. Create or verify the provider descriptor:
+### Play 2: Secret Rotation Failure
+
+**Symptom**: A secret was rotated in Bitwarden SM but the service still uses
+the old value, or the service fails to start after rotation.
+
+**Diagnosis flow:**
 
 ```bash
-mkdir -p ~/.docker/compose/providers/
+# 1. Check the secret in BWS is what you expect
+bws secret get <UUID>
+
+# 2. Determine injection method for this service
+# Check compose file for provider.type: locket, volume driver, or init container
+grep -A5 'locket\|provider\|init' $HOME/docker/<stack>/compose.yml
+
+# 3. Force re-resolution based on method:
 ```
 
-The file `~/.docker/compose/providers/locket.json` declares the available
-parameters. Minimal content:
+| Method | Force Re-resolution | Notes |
+|--------|-------------------|-------|
+| Compose provider | `docker compose up -d <service>` | Provider resolves on every `compose up` |
+| Volume driver | `docker volume rm <volume> && docker compose up -d <service>` | Volumes cache resolved secrets — must delete volume |
+| locket-init sidecar | `touch templates/<file> && docker compose up -d <service>-init` | Touch triggers idempotency skip bypass |
 
-```json
-{
-  "description": "Materialize secrets from environment or templates",
-  "up": {
-    "parameters": [
-      { "name": "provider", "type": "string", "enum": "bws" },
-      { "name": "bws-token", "type": "string" }
-    ]
-  },
-  "down": { "parameters": [] }
-}
-```
-
-See the installed file for the full parameter set (including `bws-api-url`,
-`bws-identity-url`, `env-file`, `env`, `log-level`, etc.).
-
-**3. CLI plugin symlink**
-
-Docker Compose's provider discovery (`getPluginBinaryPath` in
-`docker/compose/pkg/compose/plugins.go`) resolves the provider type name by
-first looking for a Docker CLI plugin `docker-<type>` in the CLI plugin
-directories. Only one symlink is needed:
+**Validation:**
 
 ```bash
-# Single symlink — enables `provider.type: locket` in compose.yaml
-ln -sf ~/.local/bin/locket ~/.docker/cli-plugins/docker-locket
+# For compose provider:
+docker compose exec <service> env | grep <SECRET_NAME>
 
-# Optional — also enables `docker locket` subcommand (same binary)
+# For config files:
+docker compose exec <service> cat /path/to/config/file
+
+# For init containers:
+docker logs <service>-init --tail 10
 ```
 
-The `docker-compose-locket` naming convention (compose v1 style) is **not
-required**. Docker Compose v2's provider API uses `docker-<type>` resolution.
-
-**4. Verification**
+**Known failure mode**: locket compose provider caches BWS responses in
+`~/.config/bwsh/cache/`. If a secret was rotated but the cache hasn't
+expired, the old value is served. Clear cache:
 
 ```bash
-# Check the compose provider descriptor exists
-ls -la ~/.docker/compose/providers/locket.json
-
-# Check the binary has compose support
-~/.local/bin/locket compose --help
-
-# Verify the CLI plugin is registered
-docker info | grep locket
+rm -rf ~/.config/bwsh/cache/*
 ```
 
-### Compose File Usage
+---
 
-```yaml
-services:
-  locket:
-    provider:
-      type: locket
-      options:
-        provider: bws
-        bws-token: file:$HOME/.config/bwsh/token
-        env:
-          - "DATABASE_PASSWORD={{ 46042c9c-1234-5678-abcd-ef0123456789 }}"
-          - "API_KEY={{ 2bb25ee5-5678-9abc-def0-123456789abc }}"
+### Play 3: Compose Upgrade Broke rawsetenv
 
-  myapp:
-    image: myapp:latest
-    depends_on:
-      - locket
-    # DATABASE_PASSWORD and API_KEY are injected directly
-    # by the compose provider — no prefix, no transformation
-```
+**Symptom**: After a `docker compose` upgrade, provider-injected env vars
+now have the `LOCKET_` prefix. Services fail because they expect unprefixed
+names.
 
-The `env` list under `options` contains `KEY={{ UUID }}` entries. locket
-resolves each UUID against the bws provider and emits `setenv` JSON messages.
-Compose injects them with exactly the key name specified — **no prefix, no
-transformation**. The consuming service sees `DATABASE_PASSWORD` and `API_KEY`
-directly.
+**Root cause**: The patched compose binary (PR #13742) was replaced by the
+upgrade. Stock compose does not support `rawsetenv` messages.
 
-### Two-File Alternative (`.env.locket`)
-
-For stacks where secrets are already defined in a `.env.locket` file (the
-legacy `locket exec` pattern), the compose provider can re-use the same file
-via the `env-file` option:
-
-```yaml
-services:
-  locket:
-    provider:
-      type: locket
-      options:
-        provider: bws
-        bws-token: file:$HOME/.config/bwsh/token
-        env-file: $HOME/docker/stack/.env.locket
-
-  myapp:
-    depends_on:
-      - locket
-```
-
-The `env-file` option points to a file with `KEY={{ UUID }}` lines — the same
-format used by `locket exec -e`. This provides a migration path from
-`locket exec` to the compose provider without reformatting secrets.
-
-Note: `COMPOSE_PROVIDER` is **not a Docker environment variable** — it is a
-Podman-specific variable (`PODMAN_COMPOSE_PROVIDER` in `containers/podman`).
-Docker Compose activates the locket provider through `provider.type: locket`
-in the compose file, not through environment variables. Do not set
-`COMPOSE_PROVIDER=locket`.
-
-### Systemd Service Pattern
-
-For production deployments where the compose provider runs as a **persistent
-service** (rather than one-shot via `docker compose up`), use a user systemd
-unit:
-
-```ini
-[Unit]
-Description=Locket compose provider — <project>
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-ExecStart=$HOME/.local/bin/locket compose \
-    --project-name <project> \
-    --provider bws \
-    --bws-token file:$HOME/.config/bwsh/token \
-    up <service>
-Restart=on-failure
-RestartSec=5s
-TimeoutStopSec=30s
-WorkingDirectory=$HOME/<project-dir>
-
-[Install]
-WantedBy=default.target
-```
+**Check:**
 
 ```bash
-systemctl --user daemon-reload
-systemctl --user enable --now <name>.service
+docker compose version
+# Expected: v2.40.3-rawsetenv
+# Actual (if broken): v2.40.3 (or other, no -rawsetenv suffix)
+
+# Confirm prefix problem:
+docker compose exec <service> env | grep LOCKET_
+# If vars show LOCKET_MYSQL_ROOT_PASSWORD instead of MYSQL_ROOT_PASSWORD → hit
 ```
 
-The `locket compose up` command reads the compose file from the
-`WorkingDirectory`, resolves `{{ UUID }}` secret references, and keeps the
-service running in foreground. On failure, systemd restarts it. On stop,
-locket forwards SIGTERM to the compose process.
-
-### Limitations
-
-| Capability | Compose Provider | Fallback |
-|------------|:----------------:|----------|
-| Environment variable injection | ✅ Primary | |
-| Config file templating (YAML, INI, JSON) | ❌ | Use volume driver (Section 5) |
-| `env_file:` at compose parse time | ❌ | Use locket-init sidecar (Section 6) |
-| Multi-step init (download + inject + chown) | ❌ | Use locket-init sidecar (Section 6) |
-| Auto-clear secrets on reboot (tmpfs) | ❌ | Use locket-init sidecar (Section 6) |
-
-### Build Instructions
-
-Two binaries must be built from source: `locket` (the provider) and
-`docker-compose` (patched with rawsetenv support).
-
-#### locket Binary
-
-locket is compiled from source in a Docker container with host-mounted cargo
-caches. The build environment is documented in
-`selfhost/locket-builder/Dockerfile`:
-
-```dockerfile
-FROM rust:alpine AS builder
-RUN apk add --no-cache musl-dev
-WORKDIR /src/locket
-RUN git clone --branch v0.17.3 --depth 1 \
-    https://github.com/phillipsj/locket.git .
-RUN cargo build --release --no-default-features \
-    --features "bws,exec,compose"
-```
-
-The resulting binary is copied to `~/.local/bin/locket` on the host and also
-baked into the `locket-init:latest` image.
-
-For a quick local rebuild without Docker:
+**Fix:**
 
 ```bash
-git clone --depth 1 --branch v0.17.3 \
-    https://github.com/softprops/locket.git /tmp/locket
-cd /tmp/locket
-go build -o ~/.local/bin/locket \
-    -ldflags="-s -w" \
-    --features compose,bws,exec
-```
-
-#### docker-compose CLI Plugin (Patched with rawsetenv)
-
-Stock Docker Compose prefixes all provider env vars with the service name.
-PR #13742 adds a `rawsetenv` message type that bypasses the prefix. The
-patched binary is built from `$HOME/docker/locket-compose/`:
-
-```bash
-cd ~/docker/locket-compose
+cd $HOME/docker/locket-compose
 ./build.sh
 cp docker-compose ~/.docker/cli-plugins/docker-compose
+docker compose version  # Verify rawsetenv suffix returned
+docker compose up -d <affected-service>
 ```
 
-See §1.3 for full details. The Dockerfile at
-`$HOME/docker/locket-compose/Dockerfile` does a multi-stage build:
-1. Clones `docker/compose` at `v2.40.3`
-2. Fetches and applies PR #13742 from GitHub
-3. Builds with `-trimpath` and version `v2.40.3-rawsetenv`
+**If build fails:**
 
-> ⚠️ **Every compose upgrade loses the patch.** Rebuild and reinstall after
-> updating compose. This is a local patch to an unmerged PR.
+```bash
+# Check Go toolchain
+go version
+
+# Check build script has the right compose version
+cat $HOME/docker/locket-compose/Dockerfile | grep "docker/compose"
+
+# Try manual build:
+cd /tmp
+git clone --depth 1 --branch v2.40.3 https://github.com/docker/compose.git
+cd compose
+# Apply PR #13742 manually (see Dockerfile for patch URL)
+go build -o ~/.docker/cli-plugins/docker-compose ./cmd
+```
+
+**Failed Path Note**: Every `docker compose` upgrade overwrites
+`~/.docker/cli-plugins/docker-compose`. There is no upgrade hook to
+re-apply the patch. This must be done manually. The build script at
+`$HOME/docker/locket-compose/build.sh` is the canonical fix.
 
 ---
 
-## 5. Locket Volume Driver (Config Files — Primary)
+### Play 4: Volume Driver Not Resolving
 
-### Overview
+**Symptom**: Config files inside the container are missing, have `{{ UUID }}`
+verbatim instead of resolved values, or the service can't find its secrets.
 
-The **volume driver** is the primary mechanism for injecting Bitwarden SM
-secrets as **config file contents** (JSON, YAML, INI, env files, etc.) into
-Docker Compose services. It is the config file counterpart to the compose
-provider (Section 4) — use the compose provider for env vars, and the volume
-driver for files.
-
-locket provides a **Docker volume plugin** (`locket:latest`, image:
-`ghcr.io/bpbradley/locket:plugin`) that resolves Bitwarden SM secrets as file
-contents at **volume mount time**, before the consuming container starts. This
-eliminates the need for init containers entirely — secrets are resolved
-transparently when Docker attaches the volume.
-
-The volume driver is a distinct binary from the locket compose/exec CLI. It runs
-as a Docker plugin process (`docker plugin ls` → `locket:latest`), exposing a
-Unix socket at `/run/docker/plugins/locket.sock`.
-
-The plugin mounts the host `~/.config/bwsh/` directory to `/etc/locket/` inside
-its container, giving it access to the BWS token and template files.
-
-### Installation
-
-The volume driver runs as a **Docker plugin** — a separate process from the
-`locket` CLI, managed by the Docker daemon.
-
-**Install from registry:**
+**Diagnosis flow:**
 
 ```bash
-# Install the plugin (enabled by default)  
+# 1. Is the plugin installed and enabled?
+docker plugin ls
+# → locket:latest must show as "enabled" with non-zero plugin ID
+
+# If not listed:
 docker plugin install locket:latest
 
-# Verify it's running
-docker plugin ls
-# → locket:latest  enabled  0
-```
-
-The plugin image comes from `ghcr.io/bpbradley/locket:plugin` (automatically
-pulled by `docker plugin install`). The plugin container mounts
-`~/.config/bwsh/` → `/etc/locket/` for BWS token and template access. See
-`docker plugin inspect locket:latest` for current mount config.
-
-**Update the plugin:**
-
-```bash
-docker plugin disable locket:latest
-docker plugin upgrade locket:latest
+# If disabled:
 docker plugin enable locket:latest
+
+# 2. Check the volume definition in compose
+docker compose config | grep -A10 'driver: locket'
+
+# 3. Check the volume exists and inspect it
+docker volume ls | grep locket
+docker volume inspect locket-<service>
+
+# 4. Check inside the volume (test container)
+docker run --rm -v locket-<service>:/secrets:ro alpine ls -la /secrets/
+docker run --rm -v locket-<service>:/secrets:ro alpine cat /secrets/<file>
+# If cat shows {{ UUID }} → volume not resolving
+# If file missing → template path wrong in driver_opts
+
+# 5. Check plugin logs for errors
+journalctl -u docker.service --since "10 min ago" | grep -i locket
 ```
 
-The upgrade pulls the latest tag from the registry. There is no version pinning
-for Docker plugins.
+**Common fixes:**
 
-**Rebuild from source (for local modifications):**
+| Symptom | Fix |
+|---------|-----|
+| Plugin not installed | `docker plugin install locket:latest` |
+| Volume stale (resolved once, not refreshed) | `docker volume rm <vol> && docker compose up -d` |
+| Template missing from `~/.config/bwsh/templates/` | Check `ls ~/.config/bwsh/templates/<service>/` |
+| BWS token expired | `bws secret list` — if fails, renew token at Bitwarden SM |
+| Plugin logs show connection refused | Restart Docker: `systemctl restart docker` |
 
-locket's volume plugin is a separate binary compiled with the `volume` feature
-flag. The plugin Dockerfile lives at `ghcr.io/bpbradley/locket:plugin` —
-rebuild requires the locket monorepo. For most deployments, the registry
-install is sufficient.
-
-**Troubleshooting:**
-
-- **`docker plugin ls` shows `locket:latest` with no row** → plugin not installed.
-  Run `docker plugin install locket:latest`.
-- **Volume creation hangs** → check the plugin logs:
-  `journalctl -u docker.service --since "5 min ago" | grep locket`
-- **Secrets not resolving** → verify `~/.config/bwsh/token` is valid and
-  templates exist in `~/.config/bwsh/templates/<service>/`.
-
-### When to Use
-
-The volume driver is the **primary choice** for config file rendering. Use it
-whenever a service needs config files from templates:
-
-| Approach | Init Container | Host tmpfs | Config Files | Env Vars |
-|----------|---------------|------------|--------------|----------|
-| **Compose Provider** (Section 4) | Not needed | Not needed | Not supported | Compose-time resolution |
-| **Volume Driver** (this section) | Not needed | Not needed | Volume mount at startup | Not supported |
-| **locket-init** (Section 6) | Required | Required | `locket inject` | Via `.env` template |
-
-**Choose the volume driver when (primary):**
-- The service reads config from files on a known path
-- You want the simplest compose file (no init container, no tmpfs)
-- You don't need `env_file:` at compose parse time
-
-**Fall back to locket-init (Section 6) when:**
-- The service needs `env_file:` at compose parse time
-- You need multi-step init (download + inject + chown)
-- You want secrets to auto-clear on host reboot (tmpfs)
-
-### Template Placement
-
-Templates must live under `~/.config/bwsh/templates/` because the plugin maps
-`~/.config/bwsh` → `/etc/locket`. The plugin reads them from
-`/etc/locket/templates/`.
-
-```
-~/.config/bwsh/
-├── locket.toml          # Plugin configuration
-├── token                # BWS machine token (600)
-├── cache/               # BWS cache directory
-└── templates/           # Template files for the volume driver
-    └── decypharr/
-        ├── config.json  # locket {{ UUID }} template
-        └── auth.json    # locket {{ UUID }} template
-```
-
-Templates use locket's `{{ UUID }}` syntax for Bitwarden SM references, exactly
-as in the locket-init approach (Section 6).
-
-### Compose Configuration
-
-Define a named volume with `driver: locket:latest` and per-file `driver_opts`:
-
-```yaml
-volumes:
-  locket-decypharr-multi:
-    driver: locket:latest
-    driver_opts:
-      provider: bws
-      bws-token: "file:/etc/locket/token"
-      secret.config.json: "@/etc/locket/templates/decypharr/config.json"
-      secret.auth.json: "@/etc/locket/templates/decypharr/auth.json"
-```
-
-**Key format for `driver_opts`:**
-- `provider: bws` — Bitwarden SM is the secret provider
-- `bws-token: "file:/etc/locket/token"` — Path to the BWS token inside the
-  plugin container. On the host this is `~/.config/bwsh/token`, mapped to
-  `/etc/locket/token` inside the plugin
-- `secret.<filename>: "@<template-path>"` — Renders the template at
-  `<template-path>` into a file named `<filename>` inside the volume
-  - The `@` prefix means "read template from this path"
-  - Without `@`, the value is an inline secret string
-  - The `<filename>` becomes the filename inside the mounted volume
-
-Mount in the consuming service:
-
-```yaml
-services:
-  decypharr:
-    volumes:
-      - locket-decypharr-multi:/secrets:ro
-```
-
-The service sees files at `/secrets/config.json` and `/secrets/auth.json`.
-
-### Multi-File Test Example
-
-From `pirate/compose.locket-decypharr-test.yaml` (verified working):
-
-```yaml
-services:
-  verify:
-    image: alpine:latest
-    container_name: decypharr-locket-test
-    command:
-      - sh
-      - -c
-      - |
-        echo "=== Testing locket volume driver (multi-file) ==="
-        echo ""
-        echo "Contents of /secrets/:"
-        ls -la /secrets/
-        echo ""
-        if [ -f /secrets/config.json ] && [ -f /secrets/auth.json ]; then
-          echo "SUCCESS: Both config.json and auth.json exist"
-          echo ""
-          head -10 /secrets/config.json
-          echo ""
-          cat /secrets/auth.json
-        else
-          echo "FAILURE: Missing files"
-          exit 1
-        fi
-    volumes:
-      - locket-decypharr-multi:/secrets:ro
-    restart: "no"
-
-volumes:
-  locket-decypharr-multi:
-    driver: locket:latest
-    driver_opts:
-      provider: bws
-      bws-token: "file:/etc/locket/token"
-      secret.config.json: "@/etc/locket/templates/decypharr/config.json"
-      secret.auth.json: "@/etc/locket/templates/decypharr/auth.json"
-```
-
-### Inline Secret Example
-
-For simple cases where the value is known and no template is needed, pass it
-directly (no `@` prefix):
-
-```yaml
-volumes:
-  locket-single:
-    driver: locket:latest
-    driver_opts:
-      provider: bws
-      bws-token: "file:/etc/locket/token"
-      secret.api-key: "sk-abc123..."
-```
-
-Creates a single file `/secrets/api-key` with content `sk-abc123...`.
-
-### Limitations
-
-1. **No `env_file:` support** — The volume resolves at mount time (container
-   startup), but Docker Compose reads `env_file:` paths at parse time, before
-   any container starts. Services needing compose-time env file resolution
-   should use the locket-init approach (Section 6) with a `.env` template.
-
-2. **Volume lifecycle** — Named volumes persist across `docker compose down`
-   / `up`. To force re-resolution of secrets, remove the volume:
-   `docker volume rm <name>`. The driver resolves secrets when a new volume
-   is created, not on every container start.
-
-3. **Shared namespace** — All templates share `~/.config/bwsh/templates/`.
-   Use subdirectories for organization (e.g., `templates/decypharr/`),
-   referenced by full path in `driver_opts`.
-
-4. **CLI vs plugin** — The `locket` CLI at `~/.local/bin/locket` is compiled
-   with `--features "bws,exec,compose"` and does NOT include the `volume`
-   subcommand. Volume functionality lives only in the Docker plugin image.
-   Troubleshoot volume state via `docker volume inspect` and
-   `docker plugin inspect locket:latest`.
+**Failed Path Note**: The volume driver resolves secrets ONCE when the
+volume is created. Subsequent `docker compose up` (without volume removal)
+use the cached values. If a secret is rotated, the volume driver does NOT
+re-resolve until the volume is deleted and recreated. This is by design —
+do not file as a bug.
 
 ---
 
-## 6. locket-init Sidecar Container (Fallback — Only After Confirmation)
+### Play 5: Backup Restore
 
-### Overview
+**Symptom**: Data loss or corruption. Need to restore from restic.
 
-The **locket-init** sidecar container is the **fallback** approach for secret
-injection. It should only be used when the compose provider (Section 4) and
-volume driver (Section 5) cannot meet the requirement. Before reaching for
-locket-init, confirm that neither the compose provider (for env vars) nor the
-volume driver (for config files) can handle the use case.
+**Source of truth**: `$HOME/docker/pirate/` stack has the restic integration.
+For other stacks, check if they have backup scripts.
 
-locket-init uses the `locket-init:latest` image (built from
-`$HOME/docker/locket-init/Dockerfile`) with a **standardized
-entrypoint** (`/opt/init/locket-init.sh`) that handles both `inject` (config
-file templates) and `exec` (env file + command) modes. All settings are
-controlled via environment variables, eliminating inline bash `command:`
-blocks.
-
-The entrypoint manages the full lifecycle:
-1. Creates output directory (cold boot — tmpfs doesn't persist)
-2. Cleans Docker `create_host_path` directory placeholders
-3. Checks idempotency — skips locket if all outputs already exist
-4. Delegates to `locket inject` or `locket exec`
-
-### When to Fall Back to locket-init
-
-Refer to the decision table below and only use locket-init after verifying
-that Sections 2 and 3 cannot handle the requirement:
-
-| Requirement | Compose Provider (§2) | Volume Driver (§3) | locket-init (§4) |
-|-------------|:---------------------:|:------------------:|:----------------:|
-| Environment variable injection | ✅ **Primary** | ❌ | ✅ (fallback) |
-| Config file templating | ❌ | ✅ **Primary** | ✅ (fallback) |
-| `env_file:` at compose parse time | ❌ | ❌ | ✅ |
-| Multi-step init (download + inject + chown) | ❌ | ❌ | ✅ |
-| Auto-clear secrets on reboot (tmpfs) | ❌ | ❌ | ✅ |
-| Runtime file writes from service (LinuxServer.io) | ❌ | ❌ | ✅ |
-| Secrets shared across multiple output files | ✅ | ✅ | ✅ |
-| Fresh-stack bootstrapping | ✅ | ✅ | ✅ |
-
-**Only use locket-init when:**
-1. **`env_file:` at compose parse time** — Docker Compose validates
-   `env_file:` paths before any container starts. The volume driver resolves at
-   mount time (too late) and the compose provider handles `environment:` block
-   vars only (not `env_file:`). locket-init creates rendered files via an init
-   container that completes before the main service starts.
-2. **Multi-step initialization** — Some services need a sequence: download
-   assets, inject secrets, adjust ownership.
-3. **Secrets that auto-clear on reboot** — Host tmpfs (`/run/<stack>-secrets/`)
-   is cleared on every reboot.
-4. **Services that rewrite their own configs** — Common with LinuxServer.io
-   images. The init renders fresh from canonical templates on each restart.
-5. **Complex permission models** — locket supports `--user PUID:PGID`,
-   `--file-mode`, and `--dir-mode` flags.
-
-### Variant A: Standardized entrypoint — locket inject
-
-The init container runs with environment variables instead of an inline command.
-The entrypoint auto-detects `inject` mode when `TEMPLATES_DIR` and `OUTPUT_DIR`
-are set. The output directory should be on **host tmpfs** (`/run/<stack>-secrets/`).
-
-```yaml
-  service-init:
-    image: locket-init:latest
-    container_name: service-init
-    restart: "no"
-    environment:
-      TEMPLATES_DIR: /templates
-      OUTPUT_DIR: /rendered
-    volumes:
-      - ./templates:/templates:ro
-      - /run/mylar3-secrets:/rendered:rw
-      - ~/.config/bwsh:/root/.config/bwsh:ro
-    networks: []
-
-  service:
-    depends_on:
-      service-init:
-        condition: service_completed_successfully
-    volumes:
-      - /run/mylar3-secrets/config.ini:/config/config.ini:rw
-```
-
-**Key characteristics:**
-- **No `command:` block** — all settings via env vars
-- **Entrypoint handles**: `mkdir -p`, Docker placeholder cleanup, idempotency skip
-- **Host tmpfs** (`/run/<stack>-secrets/`) — not named volumes — so secrets auto-clear on reboot
-- **Bind mounts**: `:rw` if the service entrypoint chowns the file at startup (e.g., linuxserver images), `:ro` otherwise
-- **BWS token**: mounted as `~/.config/bwsh:/root/.config/bwsh:ro` (includes token + cache)
-- **Init runs as root** — short-lived container on root-owned tmpfs, no user data touched
-
-**Customizable env vars (with defaults):**
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TEMPLATES_DIR` | `/templates` | Directory with template files |
-| `OUTPUT_DIR` | `/rendered` | Directory for rendered secrets |
-| `SECRETS_PROVIDER` | `bws` | Secret provider for locket |
-| `BWS_MACHINE_TOKEN` | `file:/root/.config/bwsh/token` | BWS token path |
-| `LOCKET_INJECT_MODE` | `one-shot` | Locket inject mode |
-| `LOCKET_FILE_MODE` | `0644` | File permissions for rendered secrets |
-| `LOCKET_DIR_MODE` | `0755` | Directory permissions |
-
-For **exec mode** (run a command with resolved env vars in a single-entrypoint pattern),
-set `LOCKET_MODE=exec` along with any additional args as the `command:`. Note that
-`LOCKET_ENV_FILE` is accepted for the output env file path but is **not functional**
-in locket v0.17.3 — use `inject` mode with a `.env` template for env_file services instead.
-
-> **Archived variants:** Variants B (key mapping + secrets-entrypoint), C (dual-source OCI Vault + BWSM), and D (single-source BWSM) have been removed. See `pirate/ARCHIVE/README.md` for the archived descriptions and reasoning.
-
-**Key characteristics:**
-- Image size: ~15-20MB (Alpine + locket + bws + entrypoint script)
-- No OCI CLI (saves ~150MB)
-- No bwsh wrapper — locket handles BWS auth directly
-- No inline bash — all configuration via environment variables
-- Template syntax: `{{ UUID }}` via locket inject (not `envsubst`)
-
-**Current locket-init Dockerfile:**
-```dockerfile
-FROM alpine:3.19
-
-RUN apk add --no-cache bash curl openssl
-
-# locket 0.17.3 compiled with compose feature
-COPY locket /usr/local/bin/locket
-
-# bws CLI for Bitwarden SM secret management
-COPY bws /usr/local/bin/bws
-
-# bwsh — shell wrapper for bws (legacy init.ps1-style env injection — retained for compatibility)
-COPY bwsh /usr/local/bin/bwsh
-
-# Standard entrypoint — handles tmpfs lifecycle, Docker placeholder cleanup,
-# idempotency check, and delegates to locket inject/exec
-COPY scripts/locket-init.sh /opt/init/locket-init.sh
-RUN chmod +x /opt/init/locket-init.sh
-
-ENTRYPOINT ["/opt/init/locket-init.sh"]
-```
-
-**Entrypoint: `/opt/init/locket-init.sh`**
-
-The standardized entrypoint handles two modes, auto-detected from env vars:
-
-| Mode | Detection | Purpose |
-|------|-----------|---------|
-| `inject` (default) | `TEMPLATES_DIR` and `OUTPUT_DIR` are set | Render config file templates via `locket inject` |
-| `exec` | `LOCKET_ENV_FILE` or `LOCKET_ENV` is set | Run command with resolved env vars via `locket exec`. ⚠️ `LOCKET_ENV_FILE` not functional in locket v0.17.3 — env_file services should use `inject` mode with `.env` template instead |
-
-**Lifecycle (inject mode):**
-1. Verify `TEMPLATES_DIR` exists and contains files — fail fast if missing
-2. `mkdir -p "$OUTPUT_DIR"` — ensures tmpfs directory exists on cold boot
-3. Check each template file's expected output path for Docker directory placeholders
-   (Compose v2.40+ creates `create_host_path` directories for missing bind-mount targets)
-4. If all outputs already exist as regular files: exit 0 (idempotency skip)
-5. Otherwise: run `locket inject` with `SECRET_MAP=${TEMPLATES_DIR}:${OUTPUT_DIR}`
-
-**Lifecycle (exec mode):**
-1. Set `SECRET_MAP` if both `TEMPLATES_DIR` and `OUTPUT_DIR` are provided
-2. Run `locket exec "$@"` — passes through any `command:` arguments
-3. ⚠️ `LOCKET_ENV_FILE` is NOT functional in locket v0.17.3 — locket does not write env files in exec mode. Use `inject` mode with a `.env` template for services that require `env_file:` in compose.
-
-### Common init container requirements
-
-All init container variants require:
-1. **BWS token directory**: `~/.config/bwsh:/root/.config/bwsh:ro` (includes both `token` and `cache/`)
-2. **Template directory**: mapped into the init container as `:ro` (for inject mode)
-3. **Output directory**: host tmpfs (`/run/<stack>-secrets/`) as `:rw`
-4. **`restart: "no"`** — init runs once and exits
-5. **`networks: []`** — init does not need network access (BWS token is pre-authenticated)
-
-**For the init container:** mount
-`~/.config/bwsh:/root/.config/bwsh:ro` which provides both the token file
-and the bwsh cache directory. No separate token file mount is needed.
-No named volumes — use host tmpfs instead.
-
-### env_file Parse-Time Bootstrap Issue
-
-When a service uses `env_file:` in docker-compose, Compose reads the file **at
-parse time** on the host, **before any containers start**. This creates a
-chicken-and-egg problem: the init container renders the env file into a tmpfs
-volume, but Compose has already tried (and failed) to read it.
-
-**Workaround:** The env file must exist on the host **before** `docker compose up`
-runs. Two strategies:
-
-**Strategy 1 — Template file path (preferred):** Create a `.env` template inside
-the template directory and use `tmpfs` for the output. The env file gets rendered
-by the init container. Compose reads the rendered output from tmpfs, which is
-accessible at parse time because tmpfs bind-mount targets are created by Compose
-v2.40+ as regular directories (via `create_host_path`).
-
-```yaml
-# In the service that needs env_file:
-environment:
-  # init container creates /rendered/.env from /templates/.env
-  LOCKET_FILE_MODE: "0644"
-volumes:
-  - /run/<stack>-secrets/:/rendered:ro
-env_file: /rendered/.env    # ← Compose reads this at parse time from host
-```
-
-However, **template filenames starting with `.` are hidden by shell glob expansion.**
-The `locket-init.sh` script must use `shopt -s dotglob` to include them:
+**Discovery:**
 
 ```bash
-# locket-init.sh — ensures `.env` templates are detected
-shopt -s nullglob dotglob
+# Check for restic config
+ls $HOME/docker/pirate/.restic-env 2>/dev/null
+
+# Check for backup scripts
+find $HOME/docker -name "restore*" -o -name "backup*" 2>/dev/null
+
+# List restic snapshots (if repo accessible)
+source $HOME/docker/pirate/.restic-env 2>/dev/null
+restic snapshots 2>/dev/null
 ```
 
-The script auto-detects this pattern: when a template filename starts with `.`,
-the rendered output path is expected to be a hidden file.
-
-**Strategy 2 — Host-side `.env` file (legacy):** For the **first deploy** of a
-fresh stack where tmpfs doesn't exist yet, you must create a placeholder on the
-host:
+**Standard restore sequence:**
 
 ```bash
-# Before first deploy — creates parse-time target
-mkdir -p /run/<stack>-secrets/
-touch /run/<stack>-secrets/.env
+# 1. Stop the service being restored
+docker stop <service>
+
+# 2. Restore from restic (if configured)
+restic restore <snapshot-id> --target /restore-point/
+
+# 3. For named volumes: restore from volume export
+#    Find .tar.gz exports in the stack directory
+ls $HOME/docker/<stack>/.volume-exports/
+tar xzf .volume-exports/<volume>.tar.gz -C /tmp/restored/
+
+# 4. For bind mounts: directly copy restored data
+cp -a /restore-point/<path>/* /original/path/
+
+# 5. For SQLite databases: restore .backup file
+sqlite3 /path/to/database.db ".restore /path/to/backup.db"
+
+# 6. Restart the service
+docker start <service>
+
+# 7. Validate
+docker compose exec <service> <health-check-command>
 ```
 
-This ensures `docker compose up` can parse the `env_file:` path. The init container
-then overwrites it with the rendered secrets. Subsequent restarts work without
-this step because the tmpfs directory persists on the host filesystem between
-stops.
-
-**Why not `locket exec` with `LOCKET_ENV_FILE`:** locket v0.17.3 does not write
-env files in exec mode — the flag is accepted but ignored. For env_file services,
-always use `inject` mode with a `.env` template.
-
-### Deprecated: OCI CLI vault-init
-
-Older services (`opencode-telegram-bot/`, `linkwarden/`) use `vault-init.sh`
-with the Oracle OCI CLI directly. These are being phased out — prefer the
-compose provider (Section 4) for env vars or volume driver (Section 5) for
-config files.
+**Failed Path Note**: Named volumes must be exported before restic can
+back them up. The export pattern (`docker run --rm alpine tar czf`) must
+be part of the backup routine — if it was never set up, named volume data
+is not in restic. Check the export setup at `$HOME/docker/pirate/backup.sh`.
 
 ---
 
-## 7. Godoxy Reverse Proxy
+### Play 6: Proxy/Certificate Failure
 
-### Architecture
+**Symptom**: Web UIs return connection refused, TLS errors, or godoxy error
+pages. Services reachable directly (port mapping) but not through the proxy.
 
-Godoxy auto-discovers services via Docker labels and routes HTTP/HTTPS traffic.
-The proxy runs in the root `compose.yml` with `network_mode: host`. It connects
-to Docker through `socket-proxy` (not direct socket).
-
-### Registering a Service
-
-Add labels to any container attached to the `selfhost_frontnet` network:
-
-```yaml
-labels:
-  proxy.servicename.port: 3000       # Container port to route to
-  proxy.servicename.healthcheck.disable: true  # Skip health check
-  proxy.servicename.homepage.show: true        # Show on dashboard
-  proxy.aliases: alt-name                     # Alternative hostname
-  proxy.exclude: true                         # Exclude from proxy
-```
-
-### TCP Services
-
-For database proxies (MariaDB, PostgreSQL, MSSQL, Redis):
-
-```yaml
-labels:
-  proxy.hostmariadb.scheme: tcp
-  proxy.hostmariadb.port: 3306
-```
-
-### Middleware
-
-Godoxy supports inline middleware via labels:
-
-```yaml
-  proxy.#1.middlewares.cidr_whitelist: |
-    status: 403
-    allow:
-      - 10.0.0.0/8
-```
-
-### Logging
-
-- Access logs: `godoxy/logs/`
-- Config: `godoxy/config/`
-- Error pages: `godoxy/error_pages/`
-- Certs: `godoxy-certs` named volume
-
----
-
-## 8. socket-proxy
-
-### Purpose
-
-Restricts Docker API access to prevent privilege escalation. Instead of
-mounting `/var/run/docker.sock` directly, containers connect to
-`socket-proxy` at `127.0.0.1:2375`, which only allows whitelisted operations.
-
-### Allowed Operations
-
-`ALLOW_START`, `ALLOW_STOP`, `ALLOW_RESTARTS`, `CONTAINERS`, `EVENTS`,
-`INFO`, `PING`, `POST`, `VERSION`.
-
-### Guidance
-
-- **socket-proxy**: Production services needing limited Docker API access
-- **Direct socket**: Services that need full access (crowdsecmgr, dockhand, godoxy app)
-
----
-
-## 9. OCI Vault Secret Management
-
-### vault-inject.sh (Root-Level)
-
-`$HOME/docker/vault-inject.sh` can inject OCI Vault secrets into the
-current shell or write them to a `.env.vault` file. It caches secrets for
-1 hour in `/tmp/vault-inject-cache.sh`.
+**Diagnosis flow:**
 
 ```bash
-source vault-inject.sh                    # export into shell
-source vault-inject.sh --write-env        # write .env.vault file
-bash vault-inject.sh --audit              # verify only
+# 1. Is godoxy running?
+docker ps --filter name=godoxy --format '{{.Status}}'
+docker logs godoxy --tail 20
+
+# 2. Is socket-proxy running?
+docker ps --filter name=socket-proxy --format '{{.Status}}'
+
+# 3. Check godoxy logs for routing errors
+ls $HOME/docker/godoxy/logs/
+tail -50 $HOME/docker/godoxy/logs/access.log 2>/dev/null
+tail -50 $HOME/docker/godoxy/logs/error.log 2>/dev/null
+
+# 4. Check the target service is on the proxy network
+docker inspect <service> | jq '.[].NetworkSettings.Networks | keys'
+# Should include "selfhost_frontnet"
+
+# 5. Check the service has proxy labels
+docker inspect <service> | jq '.[].Config.Labels | with_entries(select(.key | startswith("proxy")))'
+
+# 6. Check crowdsec is not blocking
+docker exec crowdsec cscli decisions list
+docker exec crowdsec cscli lapi status
 ```
 
-### Per-Stack vault-init.sh
+**Common fixes:**
 
-- `linkwarden/vault-init.sh` — injects into `linkwarden/.env.vault`
-- `opencode-telegram-bot/vault-init.sh` — injects into `opencode-telegram-bot/.env.vault`
+| Symptom | Check | Fix |
+|---------|-------|-----|
+| Service has no proxy labels | `docker inspect` shows no `proxy.*` labels | Add `proxy.<name>.port: <port>` label |
+| Service not on frontnet | Network list missing `selfhost_frontnet` | Add network: `docker network connect selfhost_frontnet <service>` |
+| Crowdsec blocking | `cscli decisions list` shows the IP | `cscli decisions delete --ip <ip>` |
+| Port mapping wrong | `proxy.<name>.port` doesn't match container port | Fix label to match `EXPOSE` or container port |
+| TLS cert expired | Browser shows cert error | Check godoxy cert volume: `docker volume inspect godoxy-certs` |
+| godoxy can't reach socket-proxy | `DOCKER_HOST` env var not set | Ensure `DOCKER_HOST=tcp://127.0.0.1:2375` in godoxy env |
 
-### Migration Path
-
-Prefer the compose provider (Section 4) for env var injection, volume driver
-(Section 5) for config file templating, or locket-init sidecar (Section 6) as a
-fallback — over OCI CLI vault-init for all new services. The locket patterns are
-simpler, faster, and centralized in Bitwarden SM.
-
----
-
-## 10. OCIR Registry
-
-### Custom Images
-
-Custom images are hosted at `us-chicago-1.ocir.io/axh7zpa5qpqc/`:
-
-| Image | Source | Used By |
-|-------|--------|---------|
-| `locket-init:latest` | `$HOME/docker/locket-init/Dockerfile` (local build, not pushed to OCIR) | All stacks |
-| `primary-server/linkwarden:latest` | Linkwarden source | linkwarden/ |
-| `primary-server/meilisearch:v1.12.8` | Meilisearch source | linkwarden/ |
-
-The `locket-init` image is built locally. The build is documented in
-`selfhost/locket-builder/Dockerfile` (see Section 4).
-
-### Authentication
-
-OCIR is accessed via OCI auth token stored in Docker config.
-Do not commit credentials.
+**Failed Path Note**: Godoxy auto-discovers services via Docker labels.
+It does NOT need a static config file — the labels ARE the config. If a
+service is unreachable, it's almost always a missing label or a network
+attachment issue, not a godoxy config issue.
 
 ---
 
-## 11. Restic Backup Architecture
+### Play 7: locket-init Sidecar Fails
 
-### Principles
+**Symptom**: Main service waits on init container, init exits non-zero.
 
-A cross-stack backup pattern using restic with S3-compatible storage.
-Currently deployed in the `pirate/` stack but applicable to any stack.
-
-### Key Components
-
-1. **SQLite hot backups** — Consistent snapshots via `sqlite3 .backup`
-   - Bind-mount services: direct access to `.db` files
-   - Named-volume services: `docker cp` from container → host `sqlite3 .backup`
-
-2. **Named volume exports** — `docker run --rm alpine tar czf` snapshots volume
-   contents to `.volume-exports/*.tar.gz` for restic
-
-3. **Restic snapshots** — S3-compatible backend with 7 daily / 4 weekly / 12 monthly retention
-
-4. **Restore** — `restore.sh` pattern: stop services → restic restore → volume
-   restore → DB overwrite → start services
-
-### Adding a New Stack to Restic Backup
-
-1. Add app data directories and volume export directories to the backup source list
-2. Add init-bws services to the volume export loop
-3. Add SQLite DB paths to the db-backup step
-4. Schedule via crontab
-
-### Credentials
-
-- Stored in `./.restic-env` (NOT in git — `600` permissions)
-- Format: `RESTIC_REPOSITORY`, `RESTIC_PASSWORD`
-
----
-
-## 12. Bitwarden SM Administration
-
-### CLI Tools
-
-- **bws** (`/usr/local/bin/bws`, v2.1.0) — Bitwarden Secrets Manager CLI
-- **bwsh** — Higher-level wrapper for environment variable injection
-
-### Project
-
-- `selfhost-pirate` project ID: `eb78eee6-0397-420e-8a31-b45f000d2625`
-- Server: `https://vault.bitwarden.com`
-
-### Adding a Secret
+**Diagnosis**:
 
 ```bash
-bws secret create \
-  --project eb78eee6-0397-420e-8a31-b45f000d2625 \
-  --key "BWS_SERVICE_KEY_NAME" \
-  --value "<secret-value>"
-```
-
-### Token File
-
-`~/.config/bwsh/token` — mounted into all init containers. Permissions: `600`.
-
----
-
-## 13. Resource Limits & Compute Constraints
-
-### Why It Matters
-
-Without resource limits, a single container can consume all host CPU and memory.
-Real-world example: `protonbyparr` (a byparr indexer proxy through gluetun VPN)
-consumed **52% of all container CPU** and caused load spikes of 10.9 before limits
-were applied.
-
-### Setting Limits
-
-Use `deploy.resources` in compose:
-
-```yaml
-deploy:
-  resources:
-    limits:
-      cpus: "2.0"
-      memory: 2G
-      pids: 512
-    reservations:
-      cpus: "0.25"
-      memory: 256M
-```
-
-### Guidelines
-
-| Service Type | CPU Limit | Memory Limit | Notes |
-|-------------|-----------|-------------|-------|
-| Proxy/VPN (proton, warp) | 2.0 | 512M | Network-bound, but can spike during reconnection |
-| Indexer proxy (byparr, flaresolverr) | 2.0 | 1G | CPU-intensive during search bursts |
-| Database (mariadb, postgres) | 4.0 | 4G | Adjust based on dataset size |
-| Reverse proxy (godoxy) | 1.0 | 256M | Lightweight, mostly I/O |
-| Init containers | 0.5 | 128M | Short-lived, minimal resources |
-| Monitoring (newrelic) | 1.0 | 512M | Host monitoring overhead |
-
-### PIDs Limit
-
-The `pids` limit prevents fork bombs. Set to 512 for most services, higher for
-databases (1024+).
-
----
-
-## 14. Networking
-
-### Network Modes
-
-| Mode | Use Case | Security |
-|------|----------|----------|
-| `bridge` (default) | Most services on `selfhost_frontnet` | Isolated, proxied access |
-| `network_mode: host` | Databases, godoxy app, crowdsec | Full host network access — use sparingly |
-| `network_mode: container:<name>` | Services piggybacking on another container's network (e.g., VPN-routed) | Inherits the target container's network stack |
-
-### Port Mapping
-
-**Only map ports that need direct host or external access.** Services on the same
-Docker network reach each other by container name without mapped ports. Mapped ports
-increase attack surface.
-
-```yaml
-# Only when needed:
-ports:
-  - "127.0.0.1:8080:8080"  # Host-only access (preferred for internal services)
-  - "8080:8080"             # External access (only if needed)
-```
-
-### External Networks
-
-`selfhost_frontnet` is the shared external bridge network. All stacks attach to it
-for Godoxy proxy routing:
-
-```yaml
-networks:
-  frontnet:
-    external: true
-    name: selfhost_frontnet
-```
-
-### DNS
-
-Docker provides internal DNS resolution by container name. Use `container_name`
-for predictable hostnames. For host access from containers, use
-`host.docker.internal` (or `extra_hosts: host.docker.internal:host-gateway` on Linux).
-
----
-
-## 15. Volume Management
-
-### Named Volumes vs Bind Mounts
-
-| Type | Use Case | Backup Method |
-|------|----------|---------------|
-| **Named volumes** | Config, secrets, application state | Volume export via `docker run --rm alpine tar` |
-| **Bind mounts** | Data needing host access, git-tracked config | Direct restic backup of host path |
-
-### Named Volume Export Pattern
-
-Named volumes are not mounted on the host filesystem, so restic cannot back them
-up directly. Export before backup:
-
-```bash
-docker run --rm \
-  -v source_volume:/source:ro \
-  -v /host/output:/output \
-  alpine tar czf /output/volume-name.tar.gz -C /source .
-```
-
-### Stale Volume Cleanup
-
-Stale volumes accumulate from compose changes. List and remove:
-
-```bash
-docker volume ls | grep <project>
-docker volume rm <volume_name>
-```
-
-Common causes of stale volumes:
-- Renamed services (old `{project}_{service}_data` volumes remain)
-- Migrated from bind-mount to named-volume pattern
-- Commented-out services in compose
-
-### Volume Permissions
-
-Init containers should set explicit permissions on rendered secrets.
-With the standardized entrypoint (Variant A), defaults are configured via
-environment variables and the entrypoint script:
-
-```yaml
-environment:
-  LOCKET_FILE_MODE: "0644"   # Default — readable by any UID
-  LOCKET_DIR_MODE: "0755"    # Default — world-traversable for compose CLI
-```
-
-**Why 0644/0755:**
-- `0644` (not `0640`): Services run as various UIDs (MSSQL 10001, mylar3 911, decypharr 1001)
-  — group-based permissions don't work when every service has a different UID
-- `0755` (not `0750`): Docker Compose reads `env_file` paths at parse time as a non-root
-  user — `0750` blocks world traversal, causing parse errors
-
-For legacy patterns (inline bash), set `locket inject` flags explicitly:
-```bash
-locket inject ... --file-mode 0644 --dir-mode 0755
-```
-
----
-
-## 16. Logging
-
-### Driver Selection
-
-| Driver | Use When | Notes |
-|--------|----------|-------|
-| `journald` | Production services | Centralized, structured, survives container restarts |
-| `json-file` (default) | Development only | No rotation by default, fills disk |
-
-```yaml
-logging:
-  driver: journald
-```
-
-### Viewing Logs
-
-```bash
-# journald driver
-journalctl -u docker --grep <container>
-docker logs <container>
-
-# json-file driver
-docker logs <container>
-```
-
-### Log Rotation (json-file)
-
-If you must use json-file, configure rotation:
-
-```yaml
-logging:
-  driver: json-file
-  options:
-    max-size: "10m"
-    max-file: "3"
-```
-
----
-
-## 17. Health Checks & Dependencies
-
-### Health Check Types
-
-```yaml
-# Command-based
-healthcheck:
-  test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 15s
-
-# TCP-based (for databases)
-healthcheck:
-  test: ["CMD-SHELL", "pg_isready -h localhost -U postgres"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-```
-
-### Dependency Conditions
-
-```yaml
-depends_on:
-  service-init:
-    condition: service_completed_successfully  # Init containers
-  database:
-    condition: service_healthy                 # Service dependencies
-  cache:
-    condition: service_started                 # Best-effort startup order
-```
-
-### Key Differences
-
-- `service_started`: Container is running (default, no health check required)
-- `service_healthy`: Health check must pass
-- `service_completed_successfully`: Container exited with code 0 (for init containers)
-
-### Dockerfile vs Compose Healthcheck
-
-Dockerfile `HEALTHCHECK` and compose `healthcheck` use different syntax.
-Prefer compose `healthcheck` for clarity and override capability.
-
----
-
-## 18. Security Hardening
-
-### Baseline for All Containers
-
-```yaml
-security_opt:
-  - no-new-privileges:true
-cap_drop:
-  - all
-read_only: true
-tmpfs:
-  - /tmp:rw
-```
-
-Then add back only the capabilities each service needs:
-
-```yaml
-# For fuse/filesystem mounts (decypharr, rclone)
-cap_add:
-  - SYS_ADMIN
-devices:
-  - /dev/fuse:/dev/fuse
-
-# For network binding (godoxy)
-cap_add:
-  - NET_BIND_SERVICE
-```
-
-### Privileged Containers
-
-Avoid `privileged: true`. Use specific `cap_add` instead. Only `newrelic-infra`
-requires `privileged: true` for host monitoring.
-
-### Secrets in Environment
-
-Never put secrets directly in compose files. Use:
-1. Named volumes from init containers (preferred)
-2. `.env` files (not in git, 600 permissions)
-3. Docker Swarm secrets (not used in this infrastructure)
-
-### Image Pinning
-
-Pin images to specific versions or digests for reproducibility:
-
-```yaml
-# Prefer digest for immutability
-image: docker.io/valkey/valkey:9@sha256:3eeb09785cd61ec8...
-
-# Or at minimum, pin the tag
-image: ghcr.io/yusing/godoxy:latest  # Acceptable for actively maintained internal images
-```
-
-### Docker Socket Access
-
-**Never mount `/var/run/docker.sock` directly** unless the service requires full
-Docker API access. Use `socket-proxy` instead:
-
-```yaml
-# Good: through proxy
-environment:
-  DOCKER_HOST: "tcp://127.0.0.1:2375"
-
-# Avoid: direct socket mount
-volumes:
-  - /var/run/docker.sock:/var/run/docker.sock  # Only for crowdsecmgr, dockhand, godoxy
-```
-
----
-
-## 19. Troubleshooting
-
-### Init Container Fails
-
-```bash
+# 1. Check init container logs
 docker logs <service>-init
+
+# 2. Common failure patterns in logs:
+#    "BWS token not found" → ~/.config/bwsh not mounted correctly
+#    "Templates directory empty" → TEMPLATES_DIR has no files
+#    "Permission denied" → OUTPUT_DIR not writable
+#    "No such file or directory" → template path wrong
+
+# 3. Verify mounts inside the init container
+docker inspect <service>-init | jq '.[].Mounts'
+
+# 4. Manual test: run the init with same mounts
+docker run --rm \
+  -v $HOME/.config/bwsh:/root/.config/bwsh:ro \
+  -v $HOME/docker/<stack>/templates:/templates:ro \
+  -v /run/<stack>-secrets:/rendered \
+  locket-init:latest
+
+# 5. Check BWS token is valid
+docker run --rm -v $HOME/.config/bwsh:/root/.config/bwsh:ro \
+  locket-init:latest bws secret list
 ```
 
-Common causes:
-- BWS token expired or missing → check `~/.config/bwsh/token` exists and is valid
-- Template directory not mapped → check compose volumes: `TEMPLATES_DIR` must exist inside the container
-- `BWS_MACHINE_TOKEN` path wrong → default is `file:/root/.config/bwsh/token` — verify mount path
-- Docker placeholder directory blocking file write → `locket-init.sh` handles this automatically,
-  but if using a custom entrypoint, check for directories where files should be:
-  `ls -la /run/<stack>-secrets/`
-- Permission denied on output dir → host tmpfs directory must be `:rw` mounted; verify with
-  `docker inspect <service>-init | jq '.[].Mounts'`
+**Failed Path Note**: The init container's idempotency check skips
+re-rendering if output files already exist. If a template changed but the
+output file hasn't been updated, `touch` the template file or delete the
+output and re-run the init container. This is a common "gotcha" when
+rotating secrets — the init container exits 0 without doing anything.
 
-### Godoxy Service Unreachable
+---
 
-1. Verify container is in `selfhost_frontnet` network
-2. Check Godoxy labels are correct (`proxy.<name>.port`)
-3. Check `godoxy/logs/` for routing errors
-4. Verify `crowdsec` is healthy (`docker exec crowdsec cscli lapi status`)
+## 5. Diagnosis Toolbox
 
-### Named Volume Missing
+### 5.1 Runtime Discovery Commands
+
+These should be your FIRST tools — they tell you what's actually running,
+not what the config says should be running.
+
+| Goal | Command |
+|------|---------|
+| List running containers | `docker ps` |
+| List ALL containers (including stopped) | `docker ps -a` |
+| Check container health | `docker ps --filter health=healthy` |
+| See container resource usage | `docker stats --no-stream` |
+| Inspect container config | `docker inspect <container>` |
+| View container logs | `docker logs <container> --tail 50` |
+| View compose logs for a service | `docker compose logs <service> --tail 50` |
+| Validate compose config | `docker compose config` |
+| List all compose projects | `docker compose ls` |
+| List networks | `docker network ls` |
+| Inspect network attachments | `docker network inspect selfhost_frontnet` |
+| List volumes | `docker volume ls` |
+| List Docker plugins | `docker plugin ls` |
+| Check Docker daemon health | `docker info` |
+| Check locket provider | `docker info \| grep -i locket` |
+| List BWS secrets | `bws secret list --project $BWS_PROJECT_ID` |
+| Check BWS token | `bws secret list` (exit 0 = valid) |
+
+### 5.2 Healthy vs Unhealthy Indicators
+
+| Component | Healthy Indicator | Unhealthy Indicator |
+|-----------|------------------|-------------------|
+| socket-proxy | `docker ps` shows `Up`, port 2375 reachable | `docker ps` shows `Exited` or port not responding |
+| godoxy | `docker ps` shows `Up (healthy)`, web UIs load | `docker ps` shows unhealthy, logs show connection errors |
+| crowdsec | `cscli lapi status` returns 200 | LAPI unreachable, `cscli decisions list` fails |
+| Compose provider | `docker compose logs locket` shows `rawsetenv` messages | Logs show `error` or empty, env vars have `LOCKET_` prefix |
+| locket volume plugin | `docker plugin ls` shows `locket:latest enabled` | Not listed, or shows `disabled` |
+| locket-init sidecar | Init container exits 0, logs show successful render | Init exits non-zero, logs show BWS/template/perm error |
+| BWS token | `bws secret list` returns data | Exits with auth error |
+| Database container | Health check passes, port responds | `docker ps` shows unhealthy, port not responding |
+
+### 5.3 Log Locations
+
+| Source | Command |
+|--------|---------|
+| Docker daemon | `journalctl -u docker -n 50 --no-pager` |
+| Container logs (journald driver) | `docker logs <container>` or `journalctl -u docker --grep <container>` |
+| Container logs (json-file driver) | `docker logs <container>` |
+| Godoxy access | `cat $HOME/docker/godoxy/logs/access.log` |
+| Godoxy errors | `cat $HOME/docker/godoxy/logs/error.log` |
+| locket volume plugin | `journalctl -u docker.service --since "10 min ago" \| grep locket` |
+| System boot | `journalctl -b -n 100 --no-pager` |
+
+### 5.4 Network Diagnostic Commands
 
 ```bash
+# Check if a port is in use
+ss -tlnp | grep <port>
+
+# Test network connectivity between containers
+docker exec -it <container-a> ping <container-b>
+docker exec -it <container-a> curl -v http://<container-b>:<port>/
+
+# Check container network attachment
+docker inspect <container> | jq '.[].NetworkSettings.Networks | keys'
+
+# List all containers on the shared network
+docker network inspect selfhost_frontnet | jq '.[].Containers | keys'
+```
+
+### 5.5 Volume Diagnostic Commands
+
+```bash
+# List volumes for a project
 docker volume ls | grep <project>
-docker compose run --rm <service>-init
+
+# Inspect volume details
+docker volume inspect <volume>
+
+# Test mount a volume to see its contents
+docker run --rm -v <volume>:/data:ro alpine ls -la /data/
+
+# Check for stale volumes (no longer referenced by any container)
+docker volume ls -f dangling=true
+
+# Export a named volume contents
+docker run --rm -v <volume>:/source:ro alpine tar cz -C /source .
 ```
 
-### Socket Proxy Refusing Connection
-
-Verify socket-proxy is running and the `ALLOW_*` env vars permit the
-operation the downstream service needs.
-
-### Container OOM Killed
-
-Check if memory limits are too tight:
+### 5.6 Resource Diagnostic Commands
 
 ```bash
+# Container resource usage
+docker stats --no-stream
+
+# Check if OOM was triggered
 docker inspect <container> | grep -i oom
 journalctl -u docker | grep -i oom
+
+# Check current deploy.resources on a container
+docker inspect <container> | jq '.[].HostConfig.Resources'
+
+# Check Docker daemon resource usage
+docker system df
 ```
 
-Increase `deploy.resources.limits.memory` or investigate memory leaks.
+---
 
-### High CPU Usage
+## 6. Failed Path Archive
 
-Identify the culprit container:
+> **Purpose**: Summaries of approaches that were tried and rejected, so
+> future debugging doesn't repeat dead ends. If you find yourself
+> considering one of these paths, read the summary first.
+
+### 6.1 locket exec as Entrypoint Wrapper
+
+**Tried**: Using `locket exec` to wrap a service's entrypoint, injecting
+env vars at process startup.
+**Result**: REJECTED. locket exec is a process supervisor (fork+exec via
+`tokio::process::Command::spawn()`), not an init system. It cannot attach
+to already-running PID 1. Wrapping entrypoints broke:
+- s6-overlay (Datadog — full init system managing 8+ services)
+- tini subreaping (New Relic)
+- Shell entrypoints that do user switching (Pocket ID, Grimmory)
+
+**When to revisit**: If locket adds a `docker exec` style injection that
+can attach to running processes without replacing PID 1.
+
+### 6.2 Direct Binary Mounting into Service Containers
+
+**Tried**: Mounting `bws`, `bwsh`, and `locket` binaries from the host
+into service containers and overriding the entrypoint.
+**Result**: REJECTED. Required 3 volume mounts + entrypoint override per
+service. `bwsh` needs bash, which most Alpine-based service containers
+don't have. Violates "no upstream modifications" principle.
+
+**When to revisit**: If a standardized `locket-init` image becomes the
+universal approach and entrypoint wrapping becomes the convention.
+
+### 6.3 Systemd System Service for locket exec --watch
+
+**Tried**: Running `locket exec --watch -- docker compose up <service>`
+as a systemd system service.
+**Result**: REJECTED. Dual lifecycle managers (systemd + Docker Compose)
+caused conflicts. `docker compose down` caused locket to exit with status
+0, and systemd `Restart=on-failure` did NOT trigger — service stayed down
+permanently. Signal forwarding complexity (SIGTERM → locket → compose
+process group) was fragile. Template watching re-rendered files without
+restarting the service, producing stale configs.
+
+**When to revisit**: If locket adds native compose lifecycle management
+that doesn't depend on exec --watch.
+
+### 6.4 locket exec with LOCKET_ENV_FILE
+
+**Tried**: Using `locket exec` with `--env-file` to write rendered env
+vars to a file for services using `env_file:`.
+**Result**: BROKEN. locket v0.17.3 accepts the `LOCKET_ENV_FILE` flag but
+does NOT write env files in exec mode. The flag is parsed and ignored.
+This was confirmed through source code reading and live testing.
+
+**When to revisit**: locket v0.18+ may fix this. Test with a simple
+`locket exec -e "TEST=value" --env-file /tmp/test.env -- true` before
+relying on it.
+
+### 6.5 docker compose down on Shared Stacks
+
+**Tried**: Using `docker compose down` to stop individual services during
+migration of a shared stack (selfhost).
+**Result**: DANGEROUS/KNOWN BAD. `docker compose down` stops ALL services
+in the stack, including critical path (godoxy, crowdsec, socket-proxy).
+Use `docker stop <container>` and `docker rm <container>` instead.
+
+**Never revisit**: Always use service-scoped operations.
+
+### 6.6 Named Volume File Mounting
+
+**Tried**: `volname/file.ini:/path/file.ini:ro` in Docker Compose.
+**Result**: ERROR. Docker volumes mount as whole units, not individual
+files. Compose returns "refers to undefined volume". The workaround is to
+use a host directory bind mount and mount individual files from there.
+
+**When to revisit**: If Docker Compose adds file-level volume mounting
+support.
+
+### 6.7 Compose Provider Without rawsetenv (Stock Compose)
+
+**Tried**: Using the compose provider with stock Docker Compose (without
+PR #13742 patch).
+**Result**: ALL env vars get `LOCKET_` prefix. Only works for services
+that either don't care about exact env var names or can reference the
+prefixed version. This is Docker Compose's behavior, not locket's.
+
+**When to revisit**: If upstream Docker Compose merges PR #13742, the
+patched binary becomes unnecessary.
+
+### 6.8 locket compose Feature — Published Binaries
+
+**Tried**: Finding a prebuilt locket binary with the `compose` feature
+enabled.
+**Result**: NOT AVAILABLE. All published images
+(`ghcr.io/bpbradley/locket:latest`, `:bws`, `:op`, `:connect`, `:infisical`,
+`:aio`, `:plugin`) are compiled without the `compose` feature. The feature
+exists behind `#[cfg(feature = "compose")]` and requires building from
+source.
+
+**When to revisit**: If the upstream publishes a binary with `compose`
+in the default feature set.
+
+### 6.9 OCI Vault vault-init.sh (Legacy)
+
+**Tried**: Using `vault-init.sh` with OCI CLI for secret injection.
+**Result**: SUPERSEDED. OCI Vault approach is being phased out in favor
+of Bitwarden SM + locket. The OCI CLI is ~150MB, slow, and requires
+complex IAM policies. Remaining legacy services (opencode-telegram-bot,
+linkwarden) should be migrated to BWS.
+
+**When to revisit**: Only if BWS becomes unavailable.
+
+### 6.10 locket exec from Host via docker exec
+
+**Tried**: `docker exec -e VAR=value container command` to inject secrets
+into a running container.
+**Result**: DOES NOT WORK. `docker exec -e` sets env vars for the exec'd
+process only — they don't persist in PID 1 and disappear when the exec
+process exits.
+
+**Never revisit**: This is a fundamental Docker limitation.
+
+### 6.11 Multiple Init Containers (One Per Service)
+
+**Tried**: One init container per service, each with its own BWS token
+mount and template directory.
+**Result**: SUPERSEDED. The standardized locket-init entrypoint uses env
+vars instead of inline bash `command:` blocks, reducing boilerplate.
+The current pattern uses stack-level init containers (one per stack, not
+one per service).
+
+---
+
+## 7. Quick Reference
+
+### Canonical Commands (No Prose)
 
 ```bash
-docker stats --no-stream
+# Start a single service
+docker compose -f compose.yml up -d <service>
+
+# Restart a single service (without stopping dependencies)
+docker compose restart <service>
+
+# Stop a single service (never use compose down on shared stacks)
+docker stop <container> && docker rm <container>
+
+# View service logs
+docker compose logs <service> --tail 50 -f
+
+# Check compose config validity
+docker compose config
+
+# Check locket provider status
+docker info | grep locket
+docker compose logs locket
+
+# Check locket volume plugin
+docker plugin ls | grep locket
+docker volume ls | grep locket
+
+# Test BWS token
+bws secret list --project $BWS_PROJECT_ID
+
+# Rebuild patched compose
+cd $HOME/docker/locket-compose && ./build.sh && cp docker-compose ~/.docker/cli-plugins/docker-compose
+
+# Force init container re-render
+touch $HOME/docker/<stack>/templates/<service>/.env
+docker compose up -d <stack>-init
+
+# Check container mounts
+docker inspect <container> | jq '.[].Mounts'
+
+# List containers on shared network
+docker network inspect selfhost_frontnet | jq '.[].Containers | keys'
+
+# Reset stale volume driver secrets
+docker volume rm locket-<service> && docker compose up -d <service>
 ```
 
-If a container consistently exceeds its CPU limit, the kernel throttles it.
-Either increase the limit or investigate the workload. Real-world example:
-`protonbyparr` consumed 52% of all container CPU and caused load spikes of 10.9
-before `deploy.resources.limits.cpus` was added.
+### Injection Method Selection (One-Line)
 
-### Container Won't Start — Port Conflict
+```
+env vars only (no env_file) → compose provider
+config files only → volume driver
+env_file at parse time or complex init → locket-init sidecar
+```
+
+### Boot Sequence Check
+
+```
+1. Docker daemon         → systemctl is-active docker
+2. socket-proxy          → docker ps --filter name=socket-proxy
+3. godoxy                → docker ps --filter name=godoxy
+4. crowdsec              → docker ps --filter name=crowdsec
+5. Databases             → docker ps --filter name=mariadb --filter name=postgres
+6. Stacks                → docker compose ls
+```
+
+---
+
+## 8. Reference: Secret Inventory
+
+> Placeholder section — populate with actual service-to-secret mappings
+> as services are onboarded. This prevents "which UUID goes with which
+> service" confusion during rotation.
+
+| Service | Secret Name | BWS Key | Injection Method |
+|---------|------------|---------|-----------------|
+| _Add services here_ | _env var name_ | _BWS key_ | _compose provider / volume driver / locket-init_ |
+
+**How to discover current secrets (runtime):**
 
 ```bash
-# Error: "address already in use"
-ss -tlnp | grep <port>
+# For compose provider services:
+docker compose exec <service> env | sort
+
+# For env_file services:
+cat /run/<stack>-secrets/<service>/.env
+
+# For config file services:
+docker compose exec <service> cat /path/to/config.file
 ```
 
-Remove the conflicting port mapping from compose or stop the competing service.
-Remember: services on the same Docker network don't need mapped ports to reach
-each other — mapped ports are only for host/external access.
+---
 
-### Container Won't Start — Volume Mount Error
+## Appendix: Sensitive Data Map
 
-```bash
-# Error: "permission denied" on volume
-```
+The following identifiers appear in the companion files and have been
+**masked** in this runbook. When migrating content from the skill to the
+runbook, ensure these are never exposed:
 
-Check volume permissions. Named volumes inherit permissions from the container's
-user. Bind mounts use host filesystem permissions — ensure PUID/PGID match.
+| Data Type | Actual Value (masked) | Used In |
+|-----------|----------------------|---------|
+| BWS Project ID | `$BWS_PROJECT_ID` | bws commands |
+| OCIR Registry | `$OCIR_REGISTRY` | docker pull/push |
+| BWS Token Path | `$HOME/.config/bwsh/token` | All mounts |
+| Secret UUIDs | `$BWS_UUID` or `{{ UUID }}` | Compose files, templates |
+| BWS Server URL | `https://vault.bitwarden.com` | bws config |
+| PUID/PGID | `$PUID:$PGID` | Compose files |
+| OCIR auth token | _not stored in files_ | Docker login |
 
-### Network Connectivity Between Containers
-
-```bash
-# Test from inside a container
-docker exec -it <container> ping <other-container>
-docker exec -it <container> curl http://<other-container>:<port>/health
-```
-
-If DNS resolution fails, verify both containers are on the same network:
-
-```bash
-docker inspect <container> | grep -A 10 "Networks"
-```
-
-### Image Pull Errors (OCIR)
-
-```bash
-docker login us-chicago-1.ocir.io
-# Use OCI auth token as password
-docker pull us-chicago-1.ocir.io/axh7zpa5qpqc/<image>:tag
-```
-
-### Stale Volumes Accumulating
-
-List all volumes for a project:
-
-```bash
-docker volume ls | grep <project>
-```
-
-Remove stale volumes after verifying they're no longer needed:
-
-```bash
-docker volume rm <volume_name>
-```
-
-Stale volumes commonly result from renaming services, migrating bind-mounts to
-named volumes, or commenting out services in compose files.
+**Never hardcode any of these in compose files, scripts, or documentation.**
+All identifiers should be referenced via environment variables, BWS secret
+lookups, or runtime discovery.
