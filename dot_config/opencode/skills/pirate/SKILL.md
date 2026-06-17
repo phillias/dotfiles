@@ -48,6 +48,10 @@ docker compose --profile all ps --all | grep -E "(unhealthy|exit)"
 docker compose --profile all logs --tail=10 2>/dev/null | \
   grep -E "(Error|ERROR|Fatal|WARN)"
 
+# For services using journald driver (most pirate services):
+# Fall back to journalctl when docker logs returns nothing
+journalctl -u docker --grep "<service>" --since "5 min ago"
+
 # Check expected named volumes exist
 docker volume ls | grep pirate
 
@@ -116,6 +120,13 @@ docker compose run --rm <service>-init
 **To check if an init ran successfully:** verify the corresponding named
 volume exists (`docker volume ls | grep <service>`) and check the init
 container's exit code in `docker compose ps --all`.
+
+**When an init container fails,** common causes:
+- `bwstoken` file missing or expired → check `~/.config/bwsh/token`
+- Template files incorrect → check `./templates/<service>/`
+- Named volume missing → init recreates it automatically on re-run
+- locket binary or backing secrets service unreachable → check the
+  locket service (see `docker` skill)
 
 Most compose environment variables live in `./.env`. Secrets are never
 committed to git. If a container fails with "variable not set" on startup,
@@ -554,6 +565,9 @@ gracefully. Recreate with `docker compose run --rm <service>-init`.
 ---
 
 ## 4. Migration Notes
+
+See also `MIGRATION.md` in this directory for detailed migration
+procedures, OCI vault configuration, and legacy volume cleanup.
 
 ### 4.1 Bind Mount → Named Volume (init-locket pattern)
 
