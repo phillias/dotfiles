@@ -1,0 +1,58 @@
+#!/bin/bash
+set -euo pipefail
+
+SOURCE_DIR="$(chezmoi source-path)"
+cd "$SOURCE_DIR"
+
+echo ""
+echo "=== Pulling latest changes from origin ==="
+echo ""
+
+PULL_OUTPUT="$(git pull --autostash --rebase 2>&1)"
+echo "$PULL_OUTPUT"
+
+CHANGED_FILES="$(git diff --name-only @'{1}'..HEAD 2>/dev/null || true)"
+
+if [ -z "$CHANGED_FILES" ]; then
+    echo ""
+    echo "No new changes to apply."
+    echo ""
+    exit 0
+fi
+
+echo ""
+echo "=== Files changed since last pull ==="
+echo ""
+
+for file in $CHANGED_FILES; do
+    if [ -f "$file" ]; then
+        STATS="$(git diff --stat @'{1}'..HEAD -- "$file" 2>/dev/null | tail -n 1 || true)"
+        if [ -n "$STATS" ]; then
+            echo "  $STATS"
+        fi
+    fi
+done
+
+echo ""
+echo "=== Commit history for these changes ==="
+echo ""
+
+git log --oneline --no-merges @'{1}'..HEAD -- $CHANGED_FILES 2>/dev/null | while read -r line; do
+    HASH="${line%% *}"
+    MSG="${line#* }"
+    AUTHOR="$(git log -1 --format='%an' "$HASH" 2>/dev/null || true)"
+    DATE="$(git log -1 --format='%ar' "$HASH" 2>/dev/null || true)"
+    printf "  [%s] %s - %s (%s)\n" "$HASH" "$AUTHOR" "$MSG" "$DATE"
+done
+
+echo ""
+echo "=== Detailed diff statistics ==="
+echo ""
+
+git diff --stat @'{1}'..HEAD -- $CHANGED_FILES 2>/dev/null || true
+
+echo ""
+echo "=== Running chezmoi apply ==="
+echo ""
+
+chezmoi apply "$@"
