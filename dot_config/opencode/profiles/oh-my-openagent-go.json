@@ -3,9 +3,8 @@
 
   /*
    * ── DISABLED HOOKS ──
-   * no-hephaestus-non-gpt: Hephaestus is deliberately configured with DS-V4-Pro
-   * (non-GPT) as a documented Dangerous override. This hook's error toast and
-   * force-switch to Sisyphus is counterproductive — we know the trade-off.
+   * no-hephaestus-non-gpt: Hephaestus uses GPT-5.5 (satisfying the GPT requirement).
+   * The hook is disabled to avoid redundant error toasts.
    */
   "disabled_hooks": [
     "no-hephaestus-non-gpt"
@@ -49,7 +48,10 @@
       "opencode-go/kimi-k2.6": 2,
       "opencode-go/deepseek-v4-pro": 2,
       "opencode-go/deepseek-v4-flash": 10,
-      "opencode-go/mimo-v2.5-pro": 3
+      "opencode-go/mimo-v2.5-pro": 3,
+      "opencode-go/big-pickle": 2,
+      "opencode-go/gpt-5.5": 2,
+      "opencode-go/gpt-5.4": 2
     }
   },
 
@@ -64,17 +66,15 @@
   "agents": {
     // ═══ PRIMARY ORCHESTRATOR ═══
     // Communicators class — needs strong instruction-following for 1,100+ line prompt.
-    // Guide recommends "Kimi K2.5/GLM 5/Sonnet" as safe overrides for Sisyphus.
-    // K2.6 selected over K2.5 for superior benchmarks (SWE-Bench 80.2% vs 77.8%).
+    // Big Pickle is the best available model for infrastructure management in the Go pool.
     "sisyphus": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "opencode-go/big-pickle",
       /*
        * ultrawork: "turbo button" for harder tasks.
-       * Typing "ultrawork"/"ulw" in a message temporarily upgrades to DS-V4-Pro
-       * for that turn only, without making every message expensive.
+       * Big Pickle is the best available model for infrastructure management.
        */
       "ultrawork": {
-        "model": "opencode-go/deepseek-v4-pro",
+        "model": "opencode-go/big-pickle",
         "variant": "xhigh"
       },
       "fallback_models": [
@@ -98,8 +98,9 @@
 
     // ═══ PLANNING LAYER ═══
     // Prometheus: Dual-Prompt, planning layer — requires highest quality.
+    // Big Pickle is the best available model for planning in the Go pool.
     "prometheus": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "opencode-go/big-pickle",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",
@@ -142,13 +143,12 @@
 
     // ═══ PROJECT EXECUTION ═══
     // Hephaestus: Deep Specialist.
-    // ⚠️ DANGEROUS OVERRIDE per official guide — no GPT-5.4 in Go pool.
-    // DS-V4-Pro is the best available substitute for principle-driven autonomous work.
+    // GPT-5.5 is the best available model for principle-driven autonomous work in the Go pool.
     "hephaestus": {
-      "model": "opencode-go/deepseek-v4-pro",
+      "model": "opencode-go/gpt-5.5",
       "fallback_models": [
+        "opencode-go/gpt-5.4",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
@@ -211,10 +211,10 @@
   "categories": {
     // UI/UX work needs good instruction-following for code generation.
     "visual-engineering": {
-      "model": "opencode-go/kimi-k2.5",
+      "model": "opencode-go/gpt-5.3-codex",
       "fallback_models": [
+        "opencode-go/claude-sonnet-4-6",
         "openrouter/qwen/qwen3-coder:free",
-        "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/deepseek/deepseek-v4-flash:free"
       ]
     },
@@ -230,9 +230,9 @@
       ]
     },
 
-    // Deep exploration benefits from 1M context (MiMo).
+    // Deep exploration benefits from large context (Big Pickle).
     "deep": {
-      "model": "opencode-go/mimo-v2.5-pro",
+      "model": "opencode-go/big-pickle",
       "fallback_models": [
         "openrouter/deepseek/deepseek-v4-flash:free",
         "openrouter/qwen/qwen3-coder:free",

@@ -1,0 +1,8 @@
+encryption = "age"
+[age]
+    identity = "~/.config/chezmoi/key.txt"
+    recipient = "age1p5cu2lhvhjxq2rkzxlgk9ekknr3ang7n5nla5pst94ckm8jmmq9sp66mc5"
+
+[hooks.apply.post]
+    command = "bash"
+    args = ["~/.local/bin/chezmoi-post-apply-summary"]
