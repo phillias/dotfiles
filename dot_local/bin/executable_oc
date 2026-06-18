@@ -54,5 +54,19 @@ fi
 
 export OPENCODE_CONFIG_DIR="${PROFILE_DIR}"
 
+# Load API keys from key files (only when running opencode, not in shell env)
+KEYS_DIR="${HOME}/.config/opencode"
+_load_key() { [ -f "${KEYS_DIR}/$1" ] && export "$2"="$(cat "${KEYS_DIR}/$1")"; }
+_load_key .groq-key              GROQ_API_KEY
+_load_key .cerebras-key          CEREBRAS_API_KEY
+_load_key .mistral-key           MISTRAL_API_KEY
+_load_key .sambanova-key         SAMBANOVA_API_KEY
+_load_key .google-key            GOOGLE_API_KEY
+_load_key .together-key          TOGETHER_API_KEY
+_load_key .zen-key               OPENCODE_ZEN_API_KEY
+_load_key .google-client-id      GOOGLE_CLIENT_ID
+_load_key .google-client-secret  GOOGLE_CLIENT_SECRET
+unset -v KEYS_DIR
+
 shift 1
 exec opencode "$@"
