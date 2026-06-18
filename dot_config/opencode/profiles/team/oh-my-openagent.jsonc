@@ -67,7 +67,7 @@
       },
       "fallback_models": [
         "opencode-zen/kimi-k2.6",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "google/gemini-2.0-flash"
@@ -78,7 +78,7 @@
     "sisyphus-junior": {
       "model": "opencode-zen/nemotron-3-super-free",
       "fallback_models": [
-        "groq/gpt-oss-20b",
+        "groq/openai/gpt-oss-20b",
         "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it"
       ]
@@ -91,7 +91,7 @@
       },
       "fallback_models": [
         "opencode-go/deepseek-v4-pro",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "together/deepseek-ai/DeepSeek-R1"
       ]
@@ -103,7 +103,7 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-pro",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b"
       ]
     },
@@ -123,7 +123,7 @@
       "variant": "xhigh",
       "fallback_models": [
         "opencode-zen/big-pickle",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "together/deepseek-ai/DeepSeek-R1"
       ]
@@ -134,8 +134,8 @@
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "groq/gpt-oss-120b",
-        "groq/llama-4-scout-17b-16e-instruct",
+        "groq/openai/gpt-oss-120b",
+        "groq/meta-llama/llama-4-scout-17b-16e-instruct",
         "sambanova/Meta-Llama-3.3-70B-Instruct"
       ]
     },
@@ -146,7 +146,7 @@
       "variant": "xhigh",
       "fallback_models": [
         "opencode-zen/big-pickle",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "together/deepseek-ai/DeepSeek-R1"
@@ -154,7 +154,7 @@
     },
 
     "explore": {
-      "model": "groq/gpt-oss-20b",
+      "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
         "opencode-zen/nemotron-3-super-free",
         "opencode-go/deepseek-v4-flash",
@@ -183,7 +183,7 @@
       "fallback_models": [
         "opencode-go/mimo-v2.5-pro",
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
-        "groq/gpt-oss-120b"
+        "groq/openai/gpt-oss-120b"
       ]
     }
   },
@@ -193,7 +193,7 @@
       "model": "opencode-go/deepseek-v4-pro",
       "fallback_models": [
         "opencode-zen/big-pickle",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "openrouter/qwen/qwen3-coder:free"
       ]
@@ -204,7 +204,7 @@
       "variant": "xhigh",
       "fallback_models": [
         "opencode-zen/big-pickle",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "together/deepseek-ai/DeepSeek-R1"
@@ -216,7 +216,7 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "groq/llama-3.3-70b-versatile",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/llama3.3-70b",
         "together/deepseek-ai/DeepSeek-R1"
       ]
@@ -226,14 +226,14 @@
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
         "opencode-zen/nemotron-3-super-free",
-        "groq/gpt-oss-20b",
+        "groq/openai/gpt-oss-20b",
         "cerebras/llama3.3-70b",
         "openrouter/horizon-beta"
       ]
     },
 
     "quick": {
-      "model": "groq/gpt-oss-20b",
+      "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
         "opencode-zen/nemotron-3-super-free",
         "cerebras/llama3.3-70b",
@@ -244,7 +244,7 @@
     "unspecified-low": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
-        "groq/gpt-oss-20b",
+        "groq/openai/gpt-oss-20b",
         "opencode-zen/nemotron-3-super-free",
         "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it",
@@ -256,7 +256,7 @@
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
         "opencode-go/kimi-k2.6",
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
