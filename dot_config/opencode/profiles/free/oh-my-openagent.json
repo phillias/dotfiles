@@ -29,11 +29,11 @@
     "sisyphus": {
       "model": "opencode-zen/big-pickle",
       "ultrawork": {
-        "model": "groq/gpt-oss-120b",
+        "model": "groq/openai/gpt-oss-120b",
         "variant": "xhigh"
       },
       "fallback_models": [
-        "groq/gpt-oss-120b",
+        "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "google/gemini-2.0-flash"
@@ -41,7 +41,7 @@
     },
 
     "sisyphus-junior": {
-      "model": "groq/gpt-oss-20b",
+      "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "sambanova/Meta-Llama-3.3-70B-Instruct"
@@ -49,7 +49,7 @@
     },
 
     "prometheus": {
-      "model": "groq/gpt-oss-120b",
+      "model": "groq/openai/gpt-oss-120b",
       "fallback_models": [
         "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
@@ -78,7 +78,7 @@
     },
 
     "atlas": {
-      "model": "groq/llama-4-scout-17b-16e-instruct",
+      "model": "groq/meta-llama/llama-4-scout-17b-16e-instruct",
       "fallback_models": [
         "sambanova/Meta-Llama-3.3-70B-Instruct",
         "cerebras/llama3.3-70b",
@@ -88,7 +88,7 @@
     },
 
     "hephaestus": {
-      "model": "groq/gpt-oss-120b",
+      "model": "groq/openai/gpt-oss-120b",
       "fallback_models": [
         "opencode-zen/big-pickle",
         "cerebras/gpt-oss-120b",
@@ -99,7 +99,7 @@
     },
 
     "oracle": {
-      "model": "groq/gpt-oss-120b",
+      "model": "groq/openai/gpt-oss-120b",
       "variant": "xhigh",
       "fallback_models": [
         "cerebras/gpt-oss-120b",
@@ -110,7 +110,7 @@
     },
 
     "explore": {
-      "model": "groq/gpt-oss-20b",
+      "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "sambanova/Meta-Llama-3.3-70B-Instruct"
@@ -122,7 +122,7 @@
     },
 
     "librarian": {
-      "model": "groq/gpt-oss-20b",
+      "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "google/gemini-2.0-flash",
@@ -134,14 +134,14 @@
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
-        "groq/gpt-oss-120b"
+        "groq/openai/gpt-oss-120b"
       ]
     }
   },
 
   "categories": {
     "visual-engineering": {
-      "model": "groq/gpt-oss-120b",
+      "model": "groq/openai/gpt-oss-120b",
       "fallback_models": [
         "cerebras/gpt-oss-120b",
         "openrouter/qwen/qwen3-coder:free",
@@ -150,7 +150,7 @@
     },
 
     "ultrabrain": {
-      "model": "groq/gpt-oss-120b",
+      "model": "groq/openai/gpt-oss-120b",
       "variant": "xhigh",
       "fallback_models": [
         "cerebras/gpt-oss-120b",
@@ -171,13 +171,13 @@
     "artistry": {
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
-        "groq/gpt-oss-20b",
+        "groq/openai/gpt-oss-20b",
         "cerebras/llama3.3-70b"
       ]
     },
 
     "quick": {
-      "model": "groq/gpt-oss-20b",
+      "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it"
@@ -185,7 +185,7 @@
     },
 
     "unspecified-low": {
-      "model": "groq/gpt-oss-20b",
+      "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
         "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it",
