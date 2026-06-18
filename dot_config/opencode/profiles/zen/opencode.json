@@ -27,10 +27,10 @@
       },
       "models": {
         "llama-3.3-70b-versatile": { "name": "Llama 3.3 70B", "limit": { "context": 131072, "output": 8192 } },
-        "gpt-oss-120b": { "name": "GPT-OSS 120B", "limit": { "context": 131072, "output": 8192 } },
-        "gpt-oss-20b": { "name": "GPT-OSS 20B", "limit": { "context": 131072, "output": 8192 } },
-        "llama-4-scout-17b-16e-instruct": { "name": "Llama 4 Scout 17B", "limit": { "context": 131072, "output": 8192 } },
-        "qwen-3-32b": { "name": "Qwen3 32B", "limit": { "context": 131072, "output": 8192 } }
+        "openai/gpt-oss-120b": { "name": "GPT-OSS 120B", "limit": { "context": 131072, "output": 8192 } },
+        "openai/gpt-oss-20b": { "name": "GPT-OSS 20B", "limit": { "context": 131072, "output": 8192 } },
+        "meta-llama/llama-4-scout-17b-16e-instruct": { "name": "Llama 4 Scout 17B", "limit": { "context": 131072, "output": 8192 } },
+        "qwen/qwen3-32b": { "name": "Qwen3 32B", "limit": { "context": 131072, "output": 8192 } }
       }
     },
     "openrouter": {
@@ -234,6 +234,18 @@
         "codemem",
         "mcp"
       ]
+    },
+    "google-tasks-calendar": {
+      "enabled": true,
+      "type": "local",
+      "command": [
+        "node",
+        "/home/ubuntu/google-mcp-minimal/index.js"
+      ],
+      "env": {
+"GOOGLE_CLIENT_ID": "{env:GOOGLE_CLIENT_ID}",
+        "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}"
+      }
     }
   },
   "plugin": [
