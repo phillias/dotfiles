@@ -206,47 +206,49 @@
   },
   "permission": "allow",
   "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "grep_app": {
+      "type": "remote",
+      "url": "https://mcp.grep.app"
+    },
+    "websearch": {
+      "type": "remote",
+      "url": "https://mcp.websearch.exa.ai/mcp",
+      "oauth": false,
+      "headers": {
+        "x-api-key": "{env:EXA_API_KEY}"
+      }
+    },
+    "mcp_everything": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
+    },
     "netdata-bylocalhost": {
       "type": "remote",
       "url": "http://localhost:19999/mcp",
       "enabled": true
     },
-    "mcp_everything": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-everything"
-      ]
-    },
     "chrome-devtools": {
-      "enabled": true,
-      "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest"
-      ]
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
     },
     "codemem": {
-      "enabled": true,
       "type": "local",
-      "command": [
-        "codemem",
-        "mcp"
-      ]
+      "command": ["codemem", "mcp"],
+      "enabled": true
     },
     "google-workspace": {
-      "enabled": true,
       "type": "local",
-      "command": [
-        "node",
-        "/home/ubuntu/google-mcp-server/index.js"
-      ],
-      "env": {
+      "command": ["node", "/home/ubuntu/google-mcp-server/index.js"],
+      "environment": {
         "GOOGLE_CLIENT_ID": "{env:GOOGLE_CLIENT_ID}",
         "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
         "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
-      }
+      },
+      "enabled": true
     }
   },
   "plugin": [

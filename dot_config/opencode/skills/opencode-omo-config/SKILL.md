@@ -48,7 +48,7 @@ This means:
 
 1. **Never symlink.** Profile switching is done via `oc <profile>`, which sets `OPENCODE_CONFIG_DIR`. There are no symlinks involved.
 2. **Global config has empty model lists.** Profiles fill in the models they need. The global config only provides provider connection details (baseURL, apiKey) so profiles don't have to repeat them.
-3. **Profile configs are self-contained.** Since opencode doesn't deep-merge, each profile must declare its full `provider` block with all models it uses.
+3. **Profile configs are self-contained for `mcp` and `provider`.** Since opencode doesn't deep-merge nested keys, each profile must declare its full `mcp` block (including the 4 global baseline MCPs) and `provider` block with all models it uses.
 4. **`pure` profile has no oh-my-openagent config.** It runs vanilla opencode without the OmO plugin.
 
 ### Profile Switching
@@ -60,7 +60,7 @@ oc free         # Free providers only (default)
 oc go           # Go subscription as primary
 oc team         # Team mode with tmux layout
 oc web          # Google-provider focus
-oc desk         # Alias for free
+oc desk         # Desktop (no server deps, no netdata/codemem)
 oc pure         # Vanilla opencode, no OmO plugin
 
 # The team profile also exports TMUX_CONF
@@ -71,13 +71,13 @@ oc team         # → also sets TMUX_CONF=~/.config/opencode/.tmux-OmOTeam.conf
 
 | Profile | OmO Plugin | Compaction `auto` | MCPs beyond global | Special |
 |---|---|---|---|---|
-| **free** | yes | true | codemem, google-workspace | Default |
-| **desk** | yes | true | google-workspace | Alias for free, different MCP set |
-| **go** | yes | true | codemem | Go subscription primary |
-| **zen** | yes | **false** | codemem, google-tasks-calendar | Zen primary, manual compaction |
-| **team** | yes | **false** | codemem | Team mode + tmux, JSONC omo config |
-| **web** | yes | true | codemem, google-workspace | Google focus |
-| **pure** | no | true | codemem, google-workspace | Vanilla, no OmO |
+| **free** | yes | true | netdata-bylocalhost, chrome-devtools, codemem | Default |
+| **desk** | yes | true | chrome-devtools | Desktop, no server deps |
+| **go** | yes | true | netdata-bylocalhost, chrome-devtools, codemem | Go subscription primary |
+| **zen** | yes | **false** | netdata-bylocalhost, chrome-devtools, codemem, google-tasks-calendar | Zen primary, manual compaction |
+| **team** | yes | **false** | netdata-bylocalhost, chrome-devtools, codemem | Team mode + tmux, JSONC omo config |
+| **web** | yes | true | netdata-bylocalhost, chrome-devtools, codemem, google-workspace | Google focus |
+| **pure** | no | true | netdata-bylocalhost, chrome-devtools, codemem | Vanilla, no OmO |
 
 ### Provider Stack (11 providers)
 
@@ -131,9 +131,9 @@ Both use the same key files. The `oc` launcher's `_load_key` function is the can
 
 | MCP | Type | URL / Command | Purpose |
 |---|---|---|---|
-| **context7** | http | `https://mcp.context7.com/mcp` | Library documentation lookup |
-| **grep_app** | http | `https://mcp.grep.app` | Code search across GitHub |
-| **websearch** | http | `https://mcp.websearch.exa.ai/mcp` | Web search (Exa, `{env:EXA_API_KEY}`) |
+| **context7** | remote | `https://mcp.context7.com/mcp` | Library documentation lookup |
+| **grep_app** | remote | `https://mcp.grep.app` | Code search across GitHub |
+| **websearch** | remote | `https://mcp.websearch.exa.ai/mcp` (oauth: false, `x-api-key: {env:EXA_API_KEY}`) | Web search (Exa) |
 | **mcp_everything** | local | `npx -y @modelcontextprotocol/server-everything` | Test/debug MCP |
 
 ### Profile-Specific MCP Servers
@@ -142,11 +142,11 @@ These are declared in profile configs, not global:
 
 | MCP | Type | Profiles | Purpose |
 |---|---|---|---|
-| **codemem** | local | free, go, pure, team, web, zen | Memory/context management for OmO |
-| **netdata-bylocalhost** | remote | all | Server monitoring |
+| **netdata-bylocalhost** | remote | all except desk | Server monitoring |
 | **chrome-devtools** | local | all | Browser automation |
-| **google-workspace** | local | desk, free, pure, web | Google Calendar/Docs/Tasks (`{env:GOOGLE_CLIENT_ID}`, `{env:GOOGLE_CLIENT_SECRET}`) |
-| **google-tasks-calendar** | local | zen | Minimal Google Tasks MCP |
+| **codemem** | local | all except desk | Memory/context management for OmO |
+| **google-workspace** | local | web | Google Calendar/Docs/Tasks (`{env:GOOGLE_CLIENT_ID}`, `{env:GOOGLE_CLIENT_SECRET}`) |
+| **google-tasks-calendar** | local | zen | Minimal Google Tasks MCP (`{env:GOOGLE_CLIENT_ID}`, `{env:GOOGLE_CLIENT_SECRET}`) |
 
 ## Model Selection Priorities
 
