@@ -2,19 +2,8 @@
   "$schema": "https://opencode.ai/config.json",
   "small_model": "google/gemini-2.0-flash",
   "provider": {
-    "opencode": {
-      "name": "OpenCode"
-    },
     "opencode-go": {
-      "name": "OpenCode Go"
-    },
-    "opencode-zen": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "OpenCode Zen",
-      "options": {
-        "baseURL": "https://opencode.ai/zen/v1",
-        "apiKey": "{env:OPENCODE_ZEN_API_KEY}"
-      }
+      "models": {}
     },
     "groq": {
       "npm": "@ai-sdk/openai-compatible",
@@ -22,10 +11,11 @@
       "options": {
         "baseURL": "https://api.groq.com/openai/v1",
         "apiKey": "{env:GROQ_API_KEY}"
-      }
+      },
+      "models": {}
     },
     "openrouter": {
-      "name": "OpenRouter"
+      "models": {}
     },
     "cerebras": {
       "npm": "@ai-sdk/openai-compatible",
@@ -33,14 +23,16 @@
       "options": {
         "baseURL": "https://api.cerebras.ai/v1",
         "apiKey": "{env:CEREBRAS_API_KEY}"
-      }
+      },
+      "models": {}
     },
     "mistral": {
       "npm": "@ai-sdk/mistral",
       "name": "Mistral",
       "options": {
         "apiKey": "{env:MISTRAL_API_KEY}"
-      }
+      },
+      "models": {}
     },
     "sambanova": {
       "npm": "@ai-sdk/openai-compatible",
@@ -48,14 +40,16 @@
       "options": {
         "baseURL": "https://api.sambanova.ai/v1",
         "apiKey": "{env:SAMBANOVA_API_KEY}"
-      }
+      },
+      "models": {}
     },
     "google": {
       "npm": "@ai-sdk/google",
       "name": "Google",
       "options": {
         "apiKey": "{env:GOOGLE_API_KEY}"
-      }
+      },
+      "models": {}
     },
     "together": {
       "npm": "@ai-sdk/openai-compatible",
@@ -63,30 +57,41 @@
       "options": {
         "baseURL": "https://api.together.xyz/v1",
         "apiKey": "{env:TOGETHER_API_KEY}"
-      }
+      },
+      "models": {}
     },
     "kilocode": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Kilo Gateway",
       "options": {
         "baseURL": "https://api.kilo.ai/api/gateway"
-      }
+      },
+      "models": {}
     },
     "huggingface": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "HuggingFace",
       "options": {
         "baseURL": "https://router.huggingface.co/v1"
-      }
+      },
+      "models": {}
+    },
+    "opencode-zen": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenCode Zen",
+      "options": {
+        "baseURL": "https://opencode.ai/zen/v1",
+        "apiKey": "{env:OPENCODE_ZEN_API_KEY}"
+      },
+      "models": {}
     }
   },
   "compaction": {
-    "auto": true,
+    "auto": false,
     "prune": true,
     "reserved": 50000,
     "tail_turns": 40
   },
-  "permission": "allow",
   "mcp": {
     "context7": {
       "type": "remote",
@@ -107,20 +112,7 @@
     "mcp_everything": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
-    },
-    "netdata-bylocalhost": {
-      "type": "remote",
-      "url": "http://localhost:19999/mcp",
-      "enabled": true
-    },
-    "chrome-devtools": {
-      "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
-    },
-    "codemem": {
-      "type": "local",
-      "command": ["codemem", "mcp"],
-      "enabled": true
     }
-  }
+  },
+  "lsp": true
 }

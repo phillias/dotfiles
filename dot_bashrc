@@ -166,12 +166,10 @@ export PATH=/home/phillias/.opencode/bin:$PATH
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-# Groq API key for OpenCode
+# OpenCode provider API keys (also loaded by ~/.local/bin/oc)
 if [ -f "$HOME/.config/opencode/.groq-key" ]; then
     export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
 fi
-
-# Additional provider API keys
 if [ -f "$HOME/.config/opencode/.cerebras-key" ]; then
     export CEREBRAS_API_KEY="$(cat $HOME/.config/opencode/.cerebras-key)"
 fi
@@ -189,4 +187,10 @@ if [ -f "$HOME/.config/opencode/.together-key" ]; then
 fi
 if [ -f "$HOME/.config/opencode/.zen-key" ]; then
     export OPENCODE_ZEN_API_KEY="$(cat $HOME/.config/opencode/.zen-key)"
+fi
+if [ -f "$HOME/.config/opencode/.google-client-id" ]; then
+    export GOOGLE_CLIENT_ID="$(cat $HOME/.config/opencode/.google-client-id)"
+fi
+if [ -f "$HOME/.config/opencode/.google-client-secret" ]; then
+    export GOOGLE_CLIENT_SECRET="$(cat $HOME/.config/opencode/.google-client-secret)"
 fi

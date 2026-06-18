@@ -27,10 +27,10 @@
       },
       "models": {
         "llama-3.3-70b-versatile": { "name": "Llama 3.3 70B", "limit": { "context": 131072, "output": 8192 } },
-        "gpt-oss-120b": { "name": "GPT-OSS 120B", "limit": { "context": 131072, "output": 8192 } },
-        "gpt-oss-20b": { "name": "GPT-OSS 20B", "limit": { "context": 131072, "output": 8192 } },
-        "llama-4-scout-17b-16e-instruct": { "name": "Llama 4 Scout 17B", "limit": { "context": 131072, "output": 8192 } },
-        "qwen-3-32b": { "name": "Qwen3 32B", "limit": { "context": 131072, "output": 8192 } }
+        "openai/gpt-oss-120b": { "name": "GPT-OSS 120B", "limit": { "context": 131072, "output": 8192 } },
+        "openai/gpt-oss-20b": { "name": "GPT-OSS 20B", "limit": { "context": 131072, "output": 8192 } },
+        "meta-llama/llama-4-scout-17b-16e-instruct": { "name": "Llama 4 Scout 17B", "limit": { "context": 131072, "output": 8192 } },
+        "qwen/qwen3-32b": { "name": "Qwen3 32B", "limit": { "context": 131072, "output": 8192 } }
       }
     },
     "openrouter": {
@@ -206,34 +206,39 @@
   },
   "permission": "allow",
   "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "grep_app": {
+      "type": "remote",
+      "url": "https://mcp.grep.app"
+    },
+    "websearch": {
+      "type": "remote",
+      "url": "https://mcp.websearch.exa.ai/mcp",
+      "oauth": false,
+      "headers": {
+        "x-api-key": "{env:EXA_API_KEY}"
+      }
+    },
+    "mcp_everything": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
+    },
     "netdata-bylocalhost": {
       "type": "remote",
       "url": "http://localhost:19999/mcp",
       "enabled": true
     },
-    "mcp_everything": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-everything"
-      ]
-    },
     "chrome-devtools": {
-      "enabled": true,
-      "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest"
-      ]
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
     },
     "codemem": {
-      "enabled": true,
       "type": "local",
-      "command": [
-        "codemem",
-        "mcp"
-      ]
+      "command": ["codemem", "mcp"],
+      "enabled": true
     }
   },
   "plugin": [
