@@ -1,0 +1,218 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-openagent.schema.json",
+
+  "disabled_hooks": [
+    "no-hephaestus-non-gpt"
+  ],
+
+  "model_fallback": true,
+  "runtime_fallback": {
+    "enabled": true,
+    "retry_on_errors": [401, 402, 429, 500, 502, 503, 504, 529],
+    "max_fallback_attempts": 2,
+    "cooldown_seconds": 120,
+    "timeout_seconds": 180,
+    "notify_on_fallback": true
+  },
+
+  "background_task": {
+    "defaultConcurrency": 5,
+    "providerConcurrency": {
+      "opencode": 10,
+      "openrouter": 5,
+      "groq": 5
+    },
+    "modelConcurrency": {}
+  },
+
+  "agents": {
+    "sisyphus": {
+      "model": "opencode-zen/big-pickle",
+      "ultrawork": {
+        "model": "groq/gpt-oss-120b",
+        "variant": "xhigh"
+      },
+      "fallback_models": [
+        "groq/gpt-oss-120b",
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "google/gemini-2.0-flash"
+      ]
+    },
+
+    "sisyphus-junior": {
+      "model": "groq/gpt-oss-20b",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "sambanova/Meta-Llama-3.3-70B-Instruct"
+      ]
+    },
+
+    "prometheus": {
+      "model": "groq/gpt-oss-120b",
+      "fallback_models": [
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "google/gemini-2.0-flash"
+      ]
+    },
+
+    "metis": {
+      "model": "groq/llama-3.3-70b-versatile",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "momus": {
+      "model": "groq/llama-3.3-70b-versatile",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "mistral/mistral-large-latest",
+        "google/gemini-2.0-flash",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+      ]
+    },
+
+    "atlas": {
+      "model": "groq/llama-4-scout-17b-16e-instruct",
+      "fallback_models": [
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "cerebras/llama3.3-70b",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "hephaestus": {
+      "model": "groq/gpt-oss-120b",
+      "fallback_models": [
+        "opencode-zen/big-pickle",
+        "cerebras/gpt-oss-120b",
+        "openrouter/qwen/qwen3-coder:free",
+        "mistral/mistral-large-latest",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "oracle": {
+      "model": "groq/gpt-oss-120b",
+      "variant": "xhigh",
+      "fallback_models": [
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "together/deepseek-ai/DeepSeek-R1",
+        "google/gemini-2.0-flash"
+      ]
+    },
+
+    "explore": {
+      "model": "groq/gpt-oss-20b",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "sambanova/Meta-Llama-3.3-70B-Instruct"
+      ],
+      "permission": {
+        "edit": "allow",
+        "bash": "allow"
+      }
+    },
+
+    "librarian": {
+      "model": "groq/gpt-oss-20b",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "google/gemini-2.0-flash",
+        "openrouter/horizon-beta"
+      ]
+    },
+
+    "multimodal-looker": {
+      "model": "huggingface/google/gemma-4-12b-it",
+      "fallback_models": [
+        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+        "groq/gpt-oss-120b"
+      ]
+    }
+  },
+
+  "categories": {
+    "visual-engineering": {
+      "model": "groq/gpt-oss-120b",
+      "fallback_models": [
+        "cerebras/gpt-oss-120b",
+        "openrouter/qwen/qwen3-coder:free",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free"
+      ]
+    },
+
+    "ultrabrain": {
+      "model": "groq/gpt-oss-120b",
+      "variant": "xhigh",
+      "fallback_models": [
+        "cerebras/gpt-oss-120b",
+        "mistral/mistral-large-latest",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "deep": {
+      "model": "groq/llama-3.3-70b-versatile",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "together/deepseek-ai/DeepSeek-R1"
+      ]
+    },
+
+    "artistry": {
+      "model": "huggingface/google/gemma-4-12b-it",
+      "fallback_models": [
+        "groq/gpt-oss-20b",
+        "cerebras/llama3.3-70b"
+      ]
+    },
+
+    "quick": {
+      "model": "groq/gpt-oss-20b",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "huggingface/google/gemma-4-12b-it"
+      ]
+    },
+
+    "unspecified-low": {
+      "model": "groq/gpt-oss-20b",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "huggingface/google/gemma-4-12b-it",
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "openrouter/horizon-beta"
+      ]
+    },
+
+    "unspecified-high": {
+      "model": "opencode-zen/big-pickle",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "sambanova/Meta-Llama-3.3-70B-Instruct",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "together/deepseek-ai/DeepSeek-R1",
+        "openrouter/horizon-beta"
+      ]
+    },
+
+    "writing": {
+      "model": "groq/llama-3.3-70b-versatile",
+      "fallback_models": [
+        "cerebras/llama3.3-70b",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+        "google/gemini-2.0-flash"
+      ]
+    }
+  }
+}

@@ -4,18 +4,29 @@
   "provider": {
     "opencode-go": {
       "models": {
-        "kimi-k2.6": { "name": "Kimi K2.6" },
-        "kimi-k2.5": { "name": "Kimi K2.5" },
-        "deepseek-v4-pro": { "name": "DeepSeek V4 Pro" },
+        "glm-5.1":       { "name": "GLM-5.1" },
+        "glm-5":         { "name": "GLM-5" },
+        "kimi-k2.7":     { "name": "Kimi K2.7" },
+        "kimi-k2.6":     { "name": "Kimi K2.6" },
+        "deepseek-v4-pro":   { "name": "DeepSeek V4 Pro" },
         "deepseek-v4-flash": { "name": "DeepSeek V4 Flash" },
-        "mimo-v2.5-pro": { "name": "MiMo V2.5 Pro" },
-        "mimo-v2.5": { "name": "MiMo V2.5" },
-        "minimax-m2.7": { "name": "MiniMax M2.7" },
-        "minimax-m2.5": { "name": "MiniMax M2.5" },
-        "glm-5": { "name": "GLM-5" },
-        "glm-5.1": { "name": "GLM-5.1" },
-        "qwen3.5-plus": { "name": "Qwen3.5 Plus" },
-        "qwen3.6-plus": { "name": "Qwen3.6 Plus" }
+        "mimo-v2.5":         { "name": "MiMo V2.5" },
+        "mimo-v2.5-pro":     { "name": "MiMo V2.5 Pro" },
+        "minimax-m3":    { "name": "MiniMax M3" },
+        "minimax-m2.7":  { "name": "MiniMax M2.7" },
+        "minimax-m2.5":  { "name": "MiniMax M2.5" },
+        "qwen3.7-max":   { "name": "Qwen3.7 Max" },
+        "qwen3.7-plus":  { "name": "Qwen3.7 Plus" },
+        "qwen3.6-plus":  { "name": "Qwen3.6 Plus" },
+        "big-pickle":      { "name": "Big Pickle" },
+        "gpt-5.5":         { "name": "GPT-5.5" },
+        "gpt-5.4":         { "name": "GPT-5.4" },
+        "gpt-5.3-codex":   { "name": "GPT-5.3 Codex" },
+        "gpt-5.2":         { "name": "GPT-5.2" },
+        "gpt-5.1":         { "name": "GPT-5.1" },
+        "gpt-5":           { "name": "GPT-5" },
+        "claude-sonnet-4-6": { "name": "Claude Sonnet 4.6" },
+        "claude-opus-4-5":   { "name": "Claude Opus 4.5" }
       }
     },
     "groq": {
@@ -73,9 +84,7 @@
     "mistral": {
       "npm": "@ai-sdk/mistral",
       "name": "Mistral",
-      "options": {
-        "apiKey": "{env:MISTRAL_API_KEY}"
-      },
+      "options": { "apiKey": "{env:MISTRAL_API_KEY}" },
       "models": {
         "mistral-large-latest": { "name": "Mistral Large", "limit": { "context": 131072, "output": 8192 } }
       }
@@ -94,9 +103,7 @@
     "google": {
       "npm": "@ai-sdk/google",
       "name": "Google",
-      "options": {
-        "apiKey": "{env:GOOGLE_API_KEY}"
-      },
+      "options": { "apiKey": "{env:GOOGLE_API_KEY}" },
       "models": {
         "gemini-2.0-flash": { "name": "Gemini 2.0 Flash", "limit": { "context": 1048576, "output": 8192 } }
       }
@@ -115,9 +122,7 @@
     "kilocode": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Kilo Gateway",
-      "options": {
-        "baseURL": "https://api.kilo.ai/api/gateway"
-      },
+      "options": { "baseURL": "https://api.kilo.ai/api/gateway" },
       "models": {
         "kilo-auto/free": { "name": "Kilo Auto Free", "limit": { "context": 131072, "output": 8192 } },
         "nvidia/nemotron-3-nano-30b-a3b:free": { "name": "Nemotron 3 Nano 30B", "limit": { "context": 131072, "output": 8192 } },
@@ -128,9 +133,7 @@
     "huggingface": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "HuggingFace",
-      "options": {
-        "baseURL": "https://router.huggingface.co/v1"
-      },
+      "options": { "baseURL": "https://router.huggingface.co/v1" },
       "models": {
         "deepseek-ai/DeepSeek-R1-0528": { "name": "DeepSeek R1 0528", "limit": { "context": 131072, "output": 8192 } },
         "Qwen/Qwen3-Coder-480B-A35B-Instruct": { "name": "Qwen3 Coder 480B", "limit": { "context": 131072, "output": 8192 } },
@@ -143,7 +146,8 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "OpenCode Zen",
       "options": {
-        "baseURL": "https://opencode.ai/zen/v1"
+        "baseURL": "https://opencode.ai/zen/v1",
+        "apiKey": "{env:OPENCODE_ZEN_API_KEY}"
       },
       "models": {
         "big-pickle": { "name": "Big Pickle", "limit": { "context": 200000, "output": 32768 } },
@@ -212,43 +216,18 @@
     },
     "mcp_everything": {
       "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-everything"
-      ]
+      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
     },
     "chrome-devtools": {
       "enabled": true,
       "command": "npx",
-      "args": [
-        "-y",
-        "chrome-devtools-mcp@latest"
-      ]
+      "args": ["-y", "chrome-devtools-mcp@latest"]
     },
     "codemem": {
       "enabled": true,
       "type": "local",
-      "command": [
-        "codemem",
-        "mcp"
-      ]
-    },
-    "google-workspace": {
-      "enabled": true,
-      "type": "local",
-      "command": [
-        "node",
-        "/home/ubuntu/google-mcp-server/index.js"
-      ],
-      "env": {
-        "GOOGLE_CLIENT_ID": "{env:GOOGLE_CLIENT_ID}",
-        "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
-        "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
-      }
+      "command": ["codemem", "mcp"]
     }
   },
-  "plugin": [
-    "oh-my-openagent@latest"
-  ]
+  "plugin": ["oh-my-openagent@latest"]
 }
