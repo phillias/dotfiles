@@ -190,3 +190,9 @@ fi
 if [ -f "$HOME/.config/opencode/.zen-key" ]; then
     export OPENCODE_ZEN_API_KEY="$(cat $HOME/.config/opencode/.zen-key)"
 fi
+if [ -f "$HOME/.config/opencode/.google-client-id" ]; then
+    export GOOGLE_CLIENT_ID="$(cat $HOME/.config/opencode/.google-client-id)"
+fi
+if [ -f "$HOME/.config/opencode/.google-client-secret" ]; then
+    export GOOGLE_CLIENT_SECRET="$(cat $HOME/.config/opencode/.google-client-secret)"
+fi
