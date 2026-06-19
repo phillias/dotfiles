@@ -133,7 +133,7 @@ Both use the same key files. The `oc` launcher's `_load_key` function is the can
 |---|---|---|---|
 | **context7** | remote | `https://mcp.context7.com/mcp` | Library documentation lookup |
 | **grep_app** | remote | `https://mcp.grep.app` | Code search across GitHub |
-| **websearch** | remote | `https://mcp.websearch.exa.ai/mcp` (oauth: false, `x-api-key: {env:EXA_API_KEY}`) | Web search (Exa) |
+| **websearch** | remote | `https://mcp.exa.ai/mcp` (oauth: false, `x-api-key: {env:EXA_API_KEY}`) | Web search (Exa) |
 | **mcp_everything** | local | `npx -y @modelcontextprotocol/server-everything` | Test/debug MCP |
 
 ### Profile-Specific MCP Servers
