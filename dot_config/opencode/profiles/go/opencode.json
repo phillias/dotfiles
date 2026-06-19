@@ -133,7 +133,10 @@
     "huggingface": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "HuggingFace",
-      "options": { "baseURL": "https://router.huggingface.co/v1" },
+      "options": {
+        "baseURL": "https://router.huggingface.co/v1",
+        "apiKey": "{env:HF_API_KEY}"
+      },
       "models": {
         "deepseek-ai/DeepSeek-R1-0528": { "name": "DeepSeek R1 0528", "limit": { "context": 131072, "output": 8192 } },
         "Qwen/Qwen3-Coder-480B-A35B-Instruct": { "name": "Qwen3 Coder 480B", "limit": { "context": 131072, "output": 8192 } },
