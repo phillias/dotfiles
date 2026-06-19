@@ -76,11 +76,11 @@
 
     // ── Team Members ─────────────────────────────────────────
     "sisyphus-junior": {
-      "model": "opencode-zen/nemotron-3-super-free",
+      "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
         "groq/openai/gpt-oss-20b",
         "cerebras/llama3.3-70b",
-        "huggingface/google/gemma-4-12b-it"
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
@@ -156,10 +156,9 @@
     "explore": {
       "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/nemotron-3-ultra-free",
         "opencode-go/deepseek-v4-flash",
-        "cerebras/llama3.3-70b",
-        "huggingface/google/gemma-4-12b-it"
+        "cerebras/llama3.3-70b"
       ],
       "permission": {
         "edit": "allow",
@@ -170,7 +169,7 @@
     "librarian": {
       "model": "groq/llama-3.3-70b-versatile",
       "fallback_models": [
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/nemotron-3-ultra-free",
         "opencode-go/deepseek-v4-flash",
         "cerebras/llama3.3-70b",
         "google/gemini-2.0-flash",
@@ -179,7 +178,7 @@
     },
 
     "multimodal-looker": {
-      "model": "huggingface/google/gemma-4-12b-it",
+      "model": "google/gemini-2.0-flash",
       "fallback_models": [
         "opencode-go/mimo-v2.5-pro",
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
@@ -223,9 +222,9 @@
     },
 
     "artistry": {
-      "model": "huggingface/google/gemma-4-12b-it",
+      "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/nemotron-3-ultra-free",
         "groq/openai/gpt-oss-20b",
         "cerebras/llama3.3-70b",
         "openrouter/horizon-beta"
@@ -235,9 +234,9 @@
     "quick": {
       "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/nemotron-3-ultra-free",
         "cerebras/llama3.3-70b",
-        "huggingface/google/gemma-4-12b-it"
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
@@ -245,9 +244,8 @@
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
         "groq/openai/gpt-oss-20b",
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/nemotron-3-ultra-free",
         "cerebras/llama3.3-70b",
-        "huggingface/google/gemma-4-12b-it",
         "openrouter/horizon-beta"
       ]
     },
@@ -267,7 +265,7 @@
     "writing": {
       "model": "groq/llama-3.3-70b-versatile",
       "fallback_models": [
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/nemotron-3-ultra-free",
         "cerebras/llama3.3-70b",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "google/gemini-2.0-flash"

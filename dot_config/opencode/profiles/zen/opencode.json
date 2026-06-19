@@ -213,7 +213,8 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "HuggingFace",
       "options": {
-        "baseURL": "https://router.huggingface.co/v1"
+        "baseURL": "https://router.huggingface.co/v1",
+        "apiKey": "{env:HF_API_KEY}"
       },
       "models": {
         "deepseek-ai/DeepSeek-R1-0528": {
@@ -442,7 +443,7 @@
     },
     "websearch": {
       "type": "remote",
-      "url": "https://mcp.websearch.exa.ai/mcp",
+      "url": "https://mcp.exa.ai/mcp",
       "oauth": false,
       "headers": {
         "x-api-key": "{env:EXA_API_KEY}"
