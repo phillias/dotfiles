@@ -64,6 +64,7 @@ _load_key .sambanova-key         SAMBANOVA_API_KEY
 _load_key .google-key            GOOGLE_API_KEY
 _load_key .together-key          TOGETHER_API_KEY
 _load_key .zen-key               OPENCODE_ZEN_API_KEY
+_load_key .hf-key                HF_API_KEY
 _load_key .exa-key               EXA_API_KEY
 _load_key .google-client-id      GOOGLE_CLIENT_ID
 _load_key .google-client-secret  GOOGLE_CLIENT_SECRET
