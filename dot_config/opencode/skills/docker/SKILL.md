@@ -29,6 +29,95 @@ metadata:
 
 ---
 
+## 0. Prerequisites — Stock Docker Setup
+
+To run this infrastructure on a stock Docker system, the following components
+must be built and installed. None come pre-packaged — they are built from
+source in this repo.
+
+### 0.1 locket Binary
+
+The `locket` binary must be compiled with the `compose`, `bws`, and `exec`
+features. Published images (`ghcr.io/bpbradley/locket:*`) do NOT include the
+`compose` feature — you must build from source.
+
+```bash
+# Build from source (requires Go):
+git clone https://github.com/bpbradley/locket.git
+cd locket
+go build -tags compose,bws,exec -o ~/.local/bin/locket ./cmd/locket
+
+# Or use the locket-init Dockerfile (which includes a pre-built binary):
+# Binary already at $HOME/docker/locket-init/locket
+```
+
+### 0.2 patched Docker Compose (rawsetenv)
+
+Stock `docker compose` prefixes provider-injected env vars with `LOCKET_`.
+PR #13742 adds a `rawsetenv` message type that injects vars without a prefix.
+The patched binary must be built and installed:
+
+```bash
+cd $HOME/docker/locket-compose
+./build.sh                       # produces docker-compose (~55 MB)
+cp docker-compose ~/.docker/cli-plugins/docker-compose
+docker compose version           # should show "v2.40.3-rawsetenv"
+```
+
+> ⚠️ **Every `docker compose` upgrade overwrites the patched binary.**
+> Re-run `build.sh` and reinstall after any compose upgrade.
+
+### 0.3 locket Volume Driver Plugin
+
+```bash
+docker plugin install locket:latest
+docker plugin disable locket:latest
+docker plugin set locket:latest config.source=$HOME/docker/selfhost/bwsh
+docker plugin enable locket:latest
+docker plugin ls                  # should show "locket:latest enabled"
+```
+
+### 0.4 locket Compose Provider
+
+```bash
+# Symlink the locket binary so `docker compose` discovers the provider:
+ln -sf $HOME/.local/bin/locket $HOME/.docker/cli-plugins/docker-locket
+# The provider descriptor at $HOME/.docker/compose/providers/locket.json
+# is created by the locket binary on first run.
+```
+
+### 0.5 locket-init Image
+
+Used by services that need init containers (CrowdSec, future locket-inject
+services). Build from the project's Dockerfile:
+
+```bash
+docker build -t locket-init:latest $HOME/docker/locket-init
+```
+
+### 0.6 bwsh Directory (Secrets + Templates)
+
+Holds the BWS access token and all secret templates. This directory lives in
+the project repo so templates are version-controllable. The token is gitignored.
+
+```bash
+# The directory structure:
+#   $HOME/docker/selfhost/bwsh/
+#     ├── token           ← BWS machine token (gitignored, mode 600)
+#     ├── state.json      ← Volume driver state (gitignored)
+#     └── templates/      ← Template files with {{ UUID }} refs (committed)
+#         ├── mylar3/config.ini
+#         ├── crowdsec/*.yaml
+#         └── ...
+
+# Symlink for bws CLI compatibility:
+ln -sf $HOME/docker/selfhost/bwsh $HOME/.config/bwsh
+export BWS_ACCESS_TOKEN=$(cat $HOME/docker/selfhost/bwsh/token)
+bws secret list                # should return data
+```
+
+---
+
 ## 1. Stack Map
 
 ### 1.1 Stack Inventory
@@ -76,7 +165,11 @@ Discover at runtime — do not assume static config:
 | Resource | Discovery Command | Indicator |
 |----------|------------------|-----------|
 | Shared network | `docker network ls \| grep frontnet` | Should show `selfhost_frontnet` |
-| BWS token | `ls -la $HOME/.config/bwsh/token` | Mode 600, non-empty |
+| BWS token | `ls -la $HOME/docker/selfhost/bwsh/token` | Mode 600, non-empty |
+| bwsh symlink | `ls -la $HOME/.config/bwsh` | Symlink to `$HOME/docker/selfhost/bwsh` |
+| locket-init image | `docker images locket-init --format '{{.Repository}}'` | Should show `locket-init` |
+| Volume plugin source | `docker plugin inspect locket:latest -f '{{(index .Settings.Mounts 0).Source}}'` | Should show `$HOME/docker/selfhost/bwsh` |
+| Templates dir | `ls $HOME/docker/selfhost/bwsh/templates/*/` | Should list service template dirs |
 | locket binary | `locket compose --help 2>&1` | Must list `compose` subcommand |
 | Patched compose | `docker compose version` | Should show `rawsetenv` suffix |
 | Provider descriptor | `ls $HOME/.docker/compose/providers/locket.json` | Must exist |
@@ -272,7 +365,7 @@ Secrets not appearing in the container or wrong values
 │   │   ├── Check volume exists: docker volume ls | grep locket
 │   │   ├── Check volume details: docker volume inspect <volume>
 │   │   ├── Template path correct?
-│   │   │   Verify ~/.config/bwsh/templates/<service>/ has the file
+│   │   │   Verify $HOME/docker/selfhost/bwsh/templates/<service>/ has the file
 │   │   ├── Volume may be stale (secrets resolved once at creation):
 │   │   │   docker volume rm <volume> && docker compose up -d <service>
 │   │   └── Plugin logs: journalctl -u docker.service --since "5 min ago" | grep locket
@@ -494,7 +587,7 @@ journalctl -u docker.service --since "10 min ago" | grep -i locket
 |---------|-----|
 | Plugin not installed | `docker plugin install locket:latest` |
 | Volume stale (resolved once, not refreshed) | `docker volume rm <vol> && docker compose up -d` |
-| Template missing from `~/.config/bwsh/templates/` | Check `ls ~/.config/bwsh/templates/<service>/` |
+| Template missing from `$HOME/docker/selfhost/bwsh/templates/` | Check `ls $HOME/docker/selfhost/bwsh/templates/<service>/` |
 | BWS token expired | `bws secret list` — if fails, renew token at Bitwarden SM |
 | Plugin logs show connection refused | Restart Docker: `systemctl restart docker` |
 
@@ -622,7 +715,7 @@ attachment issue, not a godoxy config issue.
 docker logs <service>-init
 
 # 2. Common failure patterns in logs:
-#    "BWS token not found" → ~/.config/bwsh not mounted correctly
+#    "BWS token not found" → ./bwsh not mounted correctly (project-relative)
 #    "Templates directory empty" → TEMPLATES_DIR has no files
 #    "Permission denied" → OUTPUT_DIR not writable
 #    "No such file or directory" → template path wrong
@@ -966,7 +1059,14 @@ env_file at parse time or complex init → locket-init sidecar
 
 | Service | Secret Name | BWS Key | Injection Method |
 |---------|------------|---------|-----------------|
-| _Add services here_ | _env var name_ | _BWS key_ | _compose provider / volume driver / locket-init_ |
+| godoxy (env) | GODOXY_API_JWT_SECRET | BWS_SELFHOST_GODOXY_API_JWT_SECRET | compose provider (`raw-env`) |
+| godoxy (env) | GODOXY_API_PASSWORD | BWS_SELFHOST_GODOXY_API_PASSWORD | compose provider (`raw-env`) |
+| godoxy (env) | GODOXY_OIDC_CLIENT_SECRET | BWS_SELFHOST_GODOXY_OIDC_CLIENT_SECRET | compose provider (`raw-env`) |
+| godoxy (config) | `config.yml` Cloudflare auth_token | BWS_SELFHOST_GODOXY_CLOUDFLARE_AUTH_TOKEN | locket-init (inject mode) |
+| godoxy (config) | `config.yml` CrowdSec api_key | BWS_SELFHOST_GODOXY_CROWDSEC_API_KEY | locket-init (inject mode) |
+| godoxy (config) | `config.yml` MaxMind account_id | BWS_SELFHOST_GODOXY_MAXMIND_ACCOUNT_ID | locket-init (inject mode) |
+| godoxy (config) | `config.yml` MaxMind license_key | BWS_SELFHOST_GODOXY_MAXMIND_LICENSE_KEY | locket-init (inject mode) |
+| godoxy (config) | `config.yml` ntfy token | BWS_SELFHOST_GODOXY_NTFY_TOKEN | locket-init (inject mode) |
 
 **How to discover current secrets (runtime):**
 
