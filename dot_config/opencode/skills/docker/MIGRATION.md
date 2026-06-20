@@ -106,7 +106,6 @@ confirmation.**
 | Service | Stack | Config Files | Recommended Pattern |
 |---------|-------|-------------|-------------------|
 | crowdsec | selfhost | 8 YAML files | **Volume Driver** (if supported) or **locket-init** |
-| godoxy | selfhost | config.yml | **Volume Driver** (if supported) or **locket-init** |
 | cloudbeaver | selfhost | .cloudbeaver.runtime.conf | **Volume Driver** (if supported) or **locket-init** |
 | mylar3 | mylar3 | config.ini | **Volume Driver** (if supported) or **locket-init** |
 | restic | selfhost | .restic-env | **Volume Driver** (if supported) or **locket-init** |
@@ -116,6 +115,7 @@ confirmation.**
 | Service | Stack | Template Files | Pattern |
 |---------|-------|---------------|---------|
 | decypharr | pirate | config.json, auth.json | locket-init (inject mode) |
+| godoxy | selfhost | config.yml | locket-init (inject mode) ✅ |
 
 ---
 
