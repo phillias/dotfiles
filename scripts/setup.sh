@@ -28,13 +28,17 @@ fi
 
 echo "=== phillias/dotfiles bootstrap ($(hostname)) ==="
 
-# Ensure ~/bin is in PATH permanently for future shells
-if ! grep -q 'HOME/bin' "$HOME/.bashrc" 2>/dev/null; then
-    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
-fi
-if ! grep -q 'HOME/bin' "$HOME/.zshrc" 2>/dev/null; then
-    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.zshrc"
-fi
+# Ensure user-local bin directories are in PATH permanently for future shells
+PATH_EXPORT='export PATH="$HOME/.opencode/bin:$HOME/.local/bin:$HOME/bin:$PATH"'
+
+for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ -f "$shell_rc" ]; then
+        if ! grep -q '$HOME/.local/bin' "$shell_rc" 2>/dev/null; then
+            echo "$PATH_EXPORT" >> "$shell_rc"
+            echo "==> Updated PATH in $(basename "$shell_rc")"
+        fi
+    fi
+done
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase 1 — Tool installation
@@ -99,6 +103,33 @@ if ! command -v chezmoi &>/dev/null; then
     fi
 fi
 echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
+
+# ── 2b. Update chezmoi if outdated ───────────────────────────────
+CHEZMOI_CURRENT=$(chezmoi --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+CHEZMOI_LATEST=$(curl -fsSL https://api.github.com/repos/twpayne/chezmoi/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null | sed 's/^v//')
+if [ -n "$CHEZMOI_LATEST" ] && [ "$CHEZMOI_CURRENT" != "$CHEZMOI_LATEST" ]; then
+    echo "==> Updating chezmoi ${CHEZMOI_CURRENT} → ${CHEZMOI_LATEST}..."
+    TMP=$(mktemp -d)
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64)  CZ_ARCH="amd64" ;;
+        aarch64) CZ_ARCH="arm64" ;;
+        *)       CZ_ARCH="amd64" ;;
+    esac
+    CZ_DEB="chezmoi_${CHEZMOI_LATEST}_linux_${CZ_ARCH}.deb"
+    if curl -fsSL -o "$TMP/chezmoi.deb" "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_LATEST}/${CZ_DEB}" 2>/dev/null; then
+        if command -v sudo &>/dev/null; then
+            sudo dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
+        else
+            dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || apt-get install -f -y 2>/dev/null
+        fi
+    fi
+    if ! command -v chezmoi &>/dev/null; then
+        BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)" 2>/dev/null
+    fi
+    rm -rf "$TMP"
+    echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
+fi
 
 # ── 3. Install GitHub CLI ────────────────────────────────────────
 if ! command -v gh &>/dev/null; then
@@ -256,6 +287,41 @@ if ! command -v cloudflared &>/dev/null; then
         fi
     fi
     echo "cloudflared: $(cloudflared --version 2>&1 | head -1)"
+fi
+
+# ── 6. Install opencode (user-local, not OS package manager) ──────
+if ! command -v opencode &>/dev/null; then
+    echo "==> Installing opencode (user-local)..."
+    mkdir -p "$HOME/.opencode"
+    if command -v bun &>/dev/null; then
+        echo "  Using bun..."
+        cd "$HOME/.opencode" && bun add @opencode-ai/plugin
+    elif command -v npm &>/dev/null; then
+        echo "  Using npm..."
+        cd "$HOME/.opencode" && npm install @opencode-ai/plugin
+    else
+        echo "WARN: Neither bun nor npm found. Skipping opencode install."
+        echo "      Install Node.js or Bun first, then run:"
+        echo "        npm install -g @opencode-ai/plugin"
+    fi
+    # Create wrapper script in ~/.opencode/bin
+    mkdir -p "$HOME/.opencode/bin"
+    cat > "$HOME/.opencode/bin/opencode" << 'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$ROOT_DIR"
+if [ -f "$ROOT_DIR/node_modules/.bin/opencode" ]; then
+    exec "$ROOT_DIR/node_modules/.bin/opencode" "$@"
+else
+    echo "ERROR: opencode not found in $ROOT_DIR/node_modules/.bin/"
+    echo "Run: cd $ROOT_DIR && npm install"
+    exit 1
+fi
+EOF
+    chmod +x "$HOME/.opencode/bin/opencode"
+    echo "opencode: installed to ~/.opencode/bin/opencode"
 fi
 
 # ═══════════════════════════════════════════════════════════════════
