@@ -26,6 +26,15 @@
       },
       "models": {}
     },
+    "fireworks-ai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Fireworks",
+      "options": {
+        "baseURL": "https://api.fireworks.ai/inference/v1",
+        "apiKey": "{env:FIREWORKS_API_KEY}"
+      },
+      "models": {}
+    },
     "mistral": {
       "npm": "@ai-sdk/mistral",
       "name": "Mistral",
