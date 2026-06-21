@@ -34,6 +34,53 @@ chezmoi managed
 
 ---
 
+## Bootstrap a New Machine
+
+**Use this when**: Setting up dotfiles on a fresh server or VM.
+
+**One-liner** (installs chezmoi, tools, decrypts secrets, applies dotfiles):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/setup.sh | bash
+```
+
+**What the script does:**
+1. Installs chezmoi (latest version, updates if outdated)
+2. Installs GitHub CLI (`gh`)
+3. Installs Bitwarden CLI (`bw`)
+4. Installs cloudflared
+5. Installs opencode (user-local to `~/.opencode`, via npm/bun — NOT OS package manager)
+6. Sets up PATH in `.bashrc` and `.zshrc` (`~/.opencode/bin`, `~/.local/bin`, `~/bin`)
+7. Generates SSH deploy key and registers it on GitHub
+8. Prompts for profile branch (master/personal/work)
+9. Clones dotfiles repo
+10. Authenticates Bitwarden and decrypts age key
+11. Applies dotfiles
+12. Sets up cron auto-sync every 30 min
+
+**Interactive prompts you'll answer:**
+- GitHub token (if `gh` not authenticated)
+- Profile branch choice
+- Bitwarden master password + 2FA
+- Bitwarden API key (optional, for cron)
+- Age key passphrase (auto-fetched from Bitwarden if available)
+
+**Prerequisites:**
+- `curl`, `python3`, `ssh-keygen`
+- Node.js or Bun (for opencode install)
+- `sudo` (optional — falls back to user-local installs)
+
+**After bootstrap:**
+```bash
+# Verify everything is applied
+chezmoi verify
+
+# Check installed tools
+chezmoi managed | head -20
+```
+
+---
+
 ## What are you trying to do?
 
 | Situation | Go to |
@@ -166,6 +213,46 @@ To preview without applying:
 chezmoi diff
 ```
 
+**Note**: `chezmoi diff` compares local source state against installed files. It does NOT show changes on the remote git repository that haven't been pulled yet.
+
+---
+
+### Preview remote changes before applying
+
+**Use this when**: You want to see what changes exist on the remote before pulling them down.
+
+`chezmoi update` does `git pull` + `chezmoi apply` in one shot. To inspect what's coming first:
+
+```bash
+# 1. Fetch remote without changing anything
+chezmoi git -- fetch origin
+
+# 2. See commits on remote master that you don't have
+chezmoi git -- log --oneline HEAD..origin/master
+
+# 3. See what files changed
+chezmoi git -- diff --stat HEAD origin/master
+
+# 4. See actual diff content
+chezmoi git -- diff HEAD origin/master
+```
+
+**To preview how those changes would affect installed files:**
+
+```bash
+# Fast-forward source state only (safe, doesn't touch installed files)
+chezmoi git -- merge --ff-only origin/master
+
+# Now chezmoi diff shows remote vs installed
+chezmoi diff
+
+# If happy, apply:
+chezmoi apply
+
+# If not, undo the fast-forward:
+chezmoi git -- reset --hard HEAD
+```
+
 ---
 
 ### Remove a file
@@ -213,13 +300,27 @@ This is the standard way to commit and push source state changes. Used by most p
 
 ```bash
 cd ~/.local/share/chezmoi
-git status                    # review what changed
-git add <changed-file(s)>     # stage changes
-git commit -m "Update <description>"
-git push origin master        # push to shared branch
+
+# 1. Review changes
+git status
+git diff --stat
+
+# 2. Stage and commit
+git add <changed-file(s)>
+git commit -m "<type>(<scope>): <description>"
+
+# 3. Create a feature branch and push
+git checkout -b update-$(date +%Y%m%d-%H%M%S)
+git push -u origin $(git branch --show-current)
+
+# 4. Open a pull request
+gh pr create \
+  --title "$(git log -1 --pretty=%s)" \
+  --body "$(git log -1 --pretty=%b)" \
+  --base master
 ```
 
-> **Note**: The repo is at `~/.local/share/chezmoi`. Other machines pick up changes on their next `chezmoi update` (cron runs every 30 min).
+> **Note**: The repo is at `~/.local/share/chezmoi`. Other machines pick up changes on their next `chezmoi update` (cron runs every 30 min). Prefer PRs for traceability; if branch protection prevents direct push, the agent should handle it flexibly.
 
 ---
 

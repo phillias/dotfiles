@@ -34,9 +34,9 @@ When pushing changes intended for a pull request:
 
 1. **Before pushing**, check if a PR already exists from the current branch using `gh pr view --json title,body,state,baseRefName` or check the branch's upstream status.
 2. **If a PR already exists**: push new commits, then update the PR body/description with `gh pr edit` to reflect the new changes.
-3. **If no PR exists**: push to the branch, then **ask the user** if they want a PR created and what base branch to target. Do not create a PR automatically.
+3. **If no PR exists**: create a feature branch, push it, and open a pull request via `gh pr create --base master`.
 
-To infer the base branch (when asked): compare `git merge-base` against `master` and `develop` and any other likely upstream branches, then pick the closest one (smallest divergence).
+To infer the base branch: compare `git merge-base` against `master` and `develop` and any other likely upstream branches, then pick the closest one (smallest divergence).
 
 ## Safety Guardrails
 
