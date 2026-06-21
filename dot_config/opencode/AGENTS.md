@@ -1,5 +1,7 @@
 # Global OpenCode Rules
 
+> **Note for team profiles:** When `OPENCODE_CONFIG_DIR` is set (e.g., running `oc team`), OpenCode loads the profile's own `AGENTS.md` instead of this global file. Team-specific rules (including Compound Engineering skill instructions) are defined in `~/.config/opencode/profiles/<profile>/AGENTS.md`.
+
 ## Git Commit Identity
 
 Before any `git commit`, the agent **must** set the commit author identity dynamically:
