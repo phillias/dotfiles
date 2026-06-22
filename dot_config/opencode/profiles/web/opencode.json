@@ -254,5 +254,22 @@
   },
   "plugin": [
     "oh-my-openagent@latest"
-  ]
+  ],
+  "formatter": {
+    "prettier": {
+      "extensions": [
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".css",
+        ".scss",
+        ".html",
+        ".json",
+        ".md",
+        ".yml",
+        ".yaml"
+      ]
+    }
+  }
 }

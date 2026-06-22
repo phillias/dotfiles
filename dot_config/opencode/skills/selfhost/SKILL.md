@@ -114,6 +114,40 @@ services — or that might affect them (e.g. full-stack operations) — requires
 
 The godoxy config is at `/home/phillias/docker/selfhost/godoxy/config/config.yml` and is bind-mounted to `/app/config` inside the container.
 
+### Godoxy Config Change Safety
+
+**Why past manual edits have been reset:** The Godoxy WebUI (`godoxy.phillias.cc`) has a **Config Editor** that loads, parses, and re-serializes `config.yml` when someone clicks **Save**. Any manual formatting, comments, or syntax that the editor doesn't preserve gets overwritten. This is a known pattern — GitHub issue [#149](https://github.com/yusing/godoxy/issues/149) shows users habitually click **Save Config** in the WebUI to force route discovery.
+
+**The reset scenario:**
+1. Manual edit is made to `config.yml` (e.g., adding a header, changing middleware).
+2. Later, someone opens the Godoxy WebUI Config Editor and clicks **Save** — perhaps to fix routing or out of habit.
+3. The WebUI parses the file into its internal representation, then writes it back. Manual changes are lost.
+
+**Safe manual edit process (verified working):**
+```bash
+# 1. Back up before any edit
+cp ~/docker/selfhost/godoxy/config/config.yml \
+   ~/docker/selfhost/godoxy/config/config.yml.bak.$(date +%s)
+
+# 2. Make the surgical edit (one line at a time, preserve formatting)
+# Use Edit tool or sed — never rewrite the whole file
+
+# 3. Validate the file is still valid YAML
+docker compose -f ~/docker/selfhost/compose.yml config > /dev/null
+
+# 4. Restart godoxy to apply
+docker compose -f ~/docker/selfhost/compose.yml restart app
+
+# 5. Verify the header/middleware is active
+curl -sI https://<service>.phillias.cc | grep -i <header-name>
+```
+
+**Rules to avoid losing edits:**
+- **Never use the WebUI Config Editor** after manual edits. Use it only for WebUI-managed state (homepage overrides live in `data/.homepage.json`).
+- **Always back up** before editing. The backup timestamp lets you prove when the manual edit was made.
+- **Make surgical edits** — change one line, preserve all surrounding whitespace and comments.
+- **Track changes**: After editing, note the timestamp. If the file gets reset, compare `stat` timestamps to identify when the WebUI overwrote it.
+
 ### Godoxy Key Configuration
 
 See `selfhost/.env` for all godoxy env vars:
@@ -157,6 +191,119 @@ Defined in `/home/phillias/docker/selfhost/godoxy/config/hostapps.yml` for servi
 |-----|---------|-------|
 | `godoxy.phillias.us` | Godoxy frontend dashboard | All proxied services listed |
 | `crowdsecmgr.phillias.us` | CrowdSec Manager | Port 8287 |
+
+### Cloudflare Zone Security Audit (phillias.cc)
+
+**Last audited:** 2026-06-19 via Cloudflare API
+
+**Zone Plan:** Free Website
+
+**Critical Findings:**
+
+| Setting | Current Value | Risk | Recommendation |
+|---------|--------------|------|----------------|
+| **SSL/TLS** | `flexible` | 🔴 **CRITICAL** | Change to `Full (Strict)`. Flexible mode encrypts edge-to-browser but sends HTTP from Cloudflare to origin, exposing traffic and breaking OIDC redirects. |
+| **Always Use HTTPS** | `off` | 🔴 **HIGH** | Enable to redirect all HTTP to HTTPS. Currently HTTP requests are accepted. |
+| **Min TLS Version** | `1.0` | 🔴 **HIGH** | Upgrade to `1.2`. TLS 1.0/1.1 are deprecated and vulnerable to POODLE/BEAST. |
+| **Browser Check** | `on` | 🟡 **MEDIUM** | May challenge API clients and bots. Monitor if services break. |
+
+**WAF & DDoS:**
+- **Cloudflare Managed Free Ruleset:** Active (26 rules) — blocks Log4j, Shellshock, WordPress CVEs
+- **DDoS L7 Ruleset:** Active (automatic HTTP DDoS mitigation)
+- **Custom Firewall Rules:** None configured
+- **Rate Limiting:** None configured
+- **Bot Management:** Not available on Free plan
+
+**Headers:**
+- **HSTS at Cloudflare:** Disabled — Godoxy is the sole HSTS source
+- **Automatic HTTPS Rewrites:** ON (rewrites HTTP links in HTML responses)
+- **Opportunistic Encryption:** ON (serves HTTPS on HTTP subdomains)
+
+**DNS:**
+- **DNSSEC:** Disabled
+- **Wildcard:** `*.phillias.cc` → origin IP
+
+### Godoxy Response Middleware Audit
+
+The global `response` middleware in `config.yml` sets security headers on **all** proxied traffic. These headers overlap with Cloudflare protections and can break services if misconfigured.
+
+**Current header stack:**
+```yaml
+- use: response
+  set_headers:
+    Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD
+    Access-Control-Allow-Headers: "*"
+    Access-Control-Allow-Origin: "*"          # ⚠️ SECURITY: globally permissive CORS
+    Access-Control-Max-Age: 180
+    Vary: "*"
+    X-XSS-Protection: 1; mode=block           # ℹ️ Deprecated (Chromium removed in 2019)
+    Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; object-src 'self'; frame-ancestors 'self'; connect-src 'self' https://api.github.com;
+    X-Content-Type-Options: nosniff
+    X-Frame-Options: SAMEORIGIN               # ⚠️ Can break iframe embeds
+    Referrer-Policy: same-origin              # ⚠️ Can break OAuth callbacks
+    Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+```
+
+**Known breakage incidents:**
+| Date | Service | Symptom | Cause | Fix |
+|------|---------|---------|-------|-----|
+| 2026-06-19 | AIOStreams | "Failed to load changelogs" | CSP `default-src 'self'` blocked `fetch()` to `api.github.com` | Added `connect-src 'self' https://api.github.com;` |
+
+**Cloudflare + Godoxy protection overlap:**
+
+| Protection | Cloudflare Layer | Godoxy Layer | Recommendation |
+|------------|-----------------|--------------|----------------|
+| **SSL/TLS** | `flexible` (broken) → forwards HTTP to origin | Listens on `:80`/`:443`, handles autocert | **URGENT:** Change Cloudflare to `Full (Strict)`. Origin traffic is currently unencrypted between Cloudflare and server. |
+| **DDoS** | Always-on DDoS mitigation + L7 ruleset | None | Cloudflare absorbs volumetric attacks before they reach Godoxy. |
+| **WAF** | Managed Free Ruleset (26 rules) | CrowdSec AppSec on `127.0.0.1:7422` | CrowdSec provides origin-layer WAF; Cloudflare provides edge WAF. Both active = defense in depth. |
+| **Bot Management** | Not available on Free plan | None | Browser Check is ON — may interfere with API clients. |
+| **CORS** | No global CORS set | `Access-Control-Allow-Origin: *` globally | **Redundant and risky.** Godoxy sends `*` on every response. Any malicious website can call your APIs. |
+| **HSTS** | `max-age=2592000; includeSubDomains` | Removed from Godoxy | Cloudflare handles HSTS at the edge. Godoxy no longer sends the header to avoid duplication. |
+| **CSP** | Not set | `Content-Security-Policy` globally | Godoxy CSP is the active layer. Keep but expand `connect-src` as services break. |
+| **IP Reputation** | No custom firewall rules | ACL in `config.yml` + CrowdSec decisions | CrowdSec blocks at origin only. No edge-layer IP blocking. |
+| **Rate Limiting** | None | None | No brute-force or scraping protection at either layer. |
+
+**Recommendations (prioritized):**
+
+1. **🔴 Change Cloudflare SSL to Full (Strict)** — This is the biggest issue. Flexible mode:
+   - Sends unencrypted HTTP from Cloudflare to your origin
+   - Breaks OIDC redirect URIs (documented in Lessons Learned)
+   - Exposes traffic to interception between Cloudflare and server
+   ```bash
+   # Fix via API (or use dashboard)
+   curl -X PATCH "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/settings/ssl" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"value":"strict"}'
+   ```
+
+2. **🔴 Enable Always Use HTTPS in Cloudflare** — Redirects HTTP to HTTPS at the edge.
+
+3. **🔴 Raise Min TLS Version to 1.2** — TLS 1.0 is deprecated and insecure.
+
+4. **🟡 Remove global CORS headers from Godoxy.** `Access-Control-Allow-Origin: *` on every response is a security risk. Options:
+   - Let each service handle its own CORS
+   - Use Cloudflare Transform Rules for targeted CORS (Pro plan)
+   - Add per-route Godoxy middleware for services that need CORS
+
+5. **🟡 Add rate limiting.** Free plan doesn't support Cloudflare Rate Limiting rules. Consider:
+   - CrowdSec rate limiting scenarios
+   - Godoxy per-IP connection limits
+   - Fail2ban on the host
+
+6. **🟡 Monitor for more CSP breaks.** `default-src 'self'` is strict. Any service fetching external APIs or loading CDN assets will break. Consider:
+   - `connect-src 'self' https: wss:;` (broader, fewer incidents)
+   - Or maintain per-service allowlists
+
+7. **🟡 Consider enabling HSTS at Cloudflare too** — Redundancy is good. If Godoxy is bypassed, HSTS still protects.
+
+8. **🟡 X-Frame-Options audit.** `SAMEORIGIN` blocks framing. If any service needs embeds, it will fail.
+
+9. **🟡 Referrer-Policy audit.** `same-origin` strips cross-origin referrer. OAuth flows validating `Referer` may break.
+
+10. **🟢 X-XSS-Protection is dead weight.** Deprecated since 2019. Safe to remove.
+
+11. **🟢 HSTS** is handled by Cloudflare (`max-age=2592000; includeSubDomains`). Godoxy no longer sends the header.
 
 ### Godoxy Label Convention (Docker)
 
@@ -654,12 +801,16 @@ labels:
 ## 9. Lessons Learned
 
 ### Cloudflare SSL Mode Affects OIDC
-Cloudflare's **Flexible SSL** mode sends `X-Forwarded-Proto: https` even though the connection to origin is HTTP. This breaks godoxy's OIDC redirect — it produces `https:///` (empty host). Fixes:
-- Cloudflare SSL → **Full** or **Full (Strict)**
+Cloudflare's **Flexible SSL** mode sends `X-Forwarded-Proto: https` even though the connection to origin is HTTP. This breaks godoxy's OIDC redirect — it produces `https:///` (empty host). **The zone is currently set to Flexible SSL, which is incorrect and insecure.**
+
+**Fixes:**
+- Cloudflare SSL → **Full (Strict)** (urgent)
+- Enable **Always Use HTTPS**
+- Raise **Min TLS Version** to 1.2
 - Or use a Transform Rule to strip `X-Forwarded-Proto`
 - Or per-route, set header to empty via middleware
 
-Currently using **Full (Strict)** for all selfhost domains.
+**Why this matters:** Flexible mode encrypts browser-to-Cloudflare but sends plaintext HTTP from Cloudflare to your origin. This exposes traffic and breaks OIDC redirect URI validation.
 
 ### GODOXY_OIDC_REDIRECT_URL Fix
 Without this env var, godoxy's OIDC callback generates a `redirect_uri` with an empty host (`https:///auth/callback`). Setting `GODOXY_OIDC_REDIRECT_URL=https://app.phillias.us/auth/callback` fixes it. Documented in godoxy wiki/issue #66.
@@ -759,7 +910,7 @@ ls -la ~/docker/selfhost/godoxy/config/
 3. Verify OIDC client is created in Pocket ID with correct callback URL
 4. Check godoxy logs for OIDC errors: `docker compose logs app | grep -i oidc`
 5. If redirect_uri shows empty host, add `GODOXY_OIDC_REDIRECT_URL`
-6. Check Cloudflare SSL is **Full** or **Full (Strict)**, not Flexible
+6. Check Cloudflare SSL is **Full (Strict)**. Currently it is set to **Flexible** which breaks OIDC.
 
 ### CrowdSec Issues
 
