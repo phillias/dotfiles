@@ -50,3 +50,18 @@ The agent **must not** perform the following without explicit user confirmation:
 - `git rebase --onto` against shared branches
 - Deleting files outside the project scope
 - Modifying files in `~/.config/opencode/` without being asked to
+
+## Stale Branch Cleanup
+
+At the start of each session, check for local branches whose remote
+tracking branch no longer exists on origin:
+
+```bash
+git branch -vv | grep ': gone]'
+```
+
+- **Protected** (never deleted): `master`, `personal`, `work`
+- **Always safe**: git history is preserved in reflog for 30 days
+- **Local delete only**: `git branch -d <branch>` (safe — refuses if
+  unmerged). Never use `-D`.
+- Ask before deleting. Present the list of stale branches and confirm.
