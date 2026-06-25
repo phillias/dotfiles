@@ -123,5 +123,15 @@
       "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
     }
   },
-  "lsp": true
+  "lsp": true,
+  "formatter": {
+    "prettier-json": {
+      "command": ["npx", "prettier", "--write", "--parser", "json"],
+      "extensions": [".json", ".jsonc"]
+    },
+    "prettier-yaml": {
+      "command": ["npx", "prettier", "--write", "--parser", "yaml"],
+      "extensions": [".yaml", ".yml"]
+    }
+  }
 }
