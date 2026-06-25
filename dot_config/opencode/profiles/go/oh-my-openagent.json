@@ -19,9 +19,7 @@
 
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-openagent.schema.json",
 
-  "disabled_hooks": [
-    "no-hephaestus-non-gpt"
-  ],
+  "disabled_hooks": ["no-hephaestus-non-gpt"],
 
   "model_fallback": true,
 
@@ -37,21 +35,21 @@
   "background_task": {
     "defaultConcurrency": 5,
     "providerConcurrency": {
-      "opencode-go":    5,
-      "opencode-zen":   15,
-      "opencode":       15,
-      "groq":           8,
-      "openrouter":     6
+      "opencode-go": 5,
+      "opencode-zen": 15,
+      "opencode": 15,
+      "groq": 8,
+      "openrouter": 6
     },
     "modelConcurrency": {
-      "opencode-zen/big-pickle":          2,
-      "opencode-go/deepseek-v4-pro":     2,
-      "opencode-go/gpt-5.5":             2,
-      "opencode-go/gpt-5.4":             2,
-      "opencode-go/gpt-5.3-codex":       2,
-      "opencode-go/glm-5.1":             2,
-      "opencode-go/deepseek-v4-flash":   8,
-      "opencode-go/kimi-k2.6":           2
+      "opencode-zen/big-pickle": 2,
+      "opencode-go/deepseek-v4-pro": 2,
+      "opencode-go/gpt-5.5": 2,
+      "opencode-go/gpt-5.4": 2,
+      "opencode-go/gpt-5.3-codex": 2,
+      "opencode-go/glm-5.1": 2,
+      "opencode-go/deepseek-v4-flash": 8,
+      "opencode-go/kimi-k2.6": 2
     }
   },
 
@@ -81,10 +79,7 @@
 
     "prometheus": {
       "model": "opencode-zen/big-pickle",
-      "fallback_models": [
-        "opencode-zen/nemotron-3-ultra-free",
-        "openrouter/qwen/qwen3-coder:free"
-      ]
+      "fallback_models": ["opencode-zen/nemotron-3-ultra-free", "openrouter/qwen/qwen3-coder:free"]
     },
 
     "metis": {
@@ -241,18 +236,12 @@
 
     "deep": {
       "model": "opencode-zen/big-pickle",
-      "fallback_models": [
-        "opencode-zen/nemotron-3-ultra-free",
-        "openrouter/qwen/qwen3-coder:free"
-      ]
+      "fallback_models": ["opencode-zen/nemotron-3-ultra-free", "openrouter/qwen/qwen3-coder:free"]
     },
 
     "artistry": {
       "model": "huggingface/google/gemma-4-12b-it",
-      "fallback_models": [
-        "opencode-zen/nemotron-3-ultra-free",
-        "openrouter/qwen/qwen3-coder:free"
-      ]
+      "fallback_models": ["opencode-zen/nemotron-3-ultra-free", "openrouter/qwen/qwen3-coder:free"]
     },
 
     "quick": {
@@ -275,18 +264,12 @@
 
     "unspecified-high": {
       "model": "opencode-zen/big-pickle",
-      "fallback_models": [
-        "opencode-zen/nemotron-3-ultra-free",
-        "openrouter/qwen/qwen3-coder:free"
-      ]
+      "fallback_models": ["opencode-zen/nemotron-3-ultra-free", "openrouter/qwen/qwen3-coder:free"]
     },
 
     "writing": {
       "model": "groq/llama-3.3-70b-versatile",
-      "fallback_models": [
-        "opencode-zen/nemotron-3-ultra-free",
-        "openrouter/qwen/qwen3-coder:free"
-      ]
+      "fallback_models": ["opencode-zen/nemotron-3-ultra-free", "openrouter/qwen/qwen3-coder:free"]
     }
   }
 }
