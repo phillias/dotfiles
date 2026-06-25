@@ -1,9 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-openagent.schema.json",
 
-  "disabled_hooks": [
-    "no-hephaestus-non-gpt"
-  ],
+  "disabled_hooks": ["no-hephaestus-non-gpt"],
 
   "model_fallback": true,
   "runtime_fallback": {
@@ -42,10 +40,7 @@
 
     "sisyphus-junior": {
       "model": "groq/openai/gpt-oss-20b",
-      "fallback_models": [
-        "cerebras/llama3.3-70b",
-        "sambanova/Meta-Llama-3.3-70B-Instruct"
-      ]
+      "fallback_models": ["cerebras/llama3.3-70b", "sambanova/Meta-Llama-3.3-70B-Instruct"]
     },
 
     "prometheus": {
@@ -111,10 +106,7 @@
 
     "explore": {
       "model": "groq/openai/gpt-oss-20b",
-      "fallback_models": [
-        "cerebras/llama3.3-70b",
-        "sambanova/Meta-Llama-3.3-70B-Instruct"
-      ],
+      "fallback_models": ["cerebras/llama3.3-70b", "sambanova/Meta-Llama-3.3-70B-Instruct"],
       "permission": {
         "edit": "allow",
         "bash": "allow"
@@ -170,18 +162,12 @@
 
     "artistry": {
       "model": "huggingface/google/gemma-4-12b-it",
-      "fallback_models": [
-        "groq/openai/gpt-oss-20b",
-        "cerebras/llama3.3-70b"
-      ]
+      "fallback_models": ["groq/openai/gpt-oss-20b", "cerebras/llama3.3-70b"]
     },
 
     "quick": {
       "model": "groq/openai/gpt-oss-20b",
-      "fallback_models": [
-        "cerebras/llama3.3-70b",
-        "huggingface/google/gemma-4-12b-it"
-      ]
+      "fallback_models": ["cerebras/llama3.3-70b", "huggingface/google/gemma-4-12b-it"]
     },
 
     "unspecified-low": {
