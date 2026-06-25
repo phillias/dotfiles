@@ -44,7 +44,7 @@
       "openrouter":     6
     },
     "modelConcurrency": {
-      "opencode-go/big-pickle":          2,
+      "opencode-zen/big-pickle":          2,
       "opencode-go/deepseek-v4-pro":     2,
       "opencode-go/gpt-5.5":             2,
       "opencode-go/gpt-5.4":             2,
@@ -67,9 +67,9 @@
 
   "agents": {
     "sisyphus": {
-      "model": "opencode-go/big-pickle",
+      "model": "opencode-zen/big-pickle",
       "ultrawork": {
-        "model": "opencode-go/big-pickle",
+        "model": "opencode-zen/big-pickle",
         "variant": "xhigh"
       },
       "fallback_models": [
@@ -80,9 +80,8 @@
     },
 
     "prometheus": {
-      "model": "opencode-go/big-pickle",
+      "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-zen/big-pickle",
         "opencode-zen/nemotron-3-ultra-free",
         "openrouter/qwen/qwen3-coder:free"
       ]
@@ -102,7 +101,7 @@
       "variant": "xhigh",
       "fallback_models": [
         "opencode-zen/deepseek-v4-pro",
-        "opencode-go/big-pickle",
+        "opencode-zen/big-pickle",
         "opencode-zen/nemotron-3-ultra-free",
         "openrouter/qwen/qwen3-coder:free"
       ]
@@ -241,9 +240,8 @@
     },
 
     "deep": {
-      "model": "opencode-go/big-pickle",
+      "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-zen/big-pickle",
         "opencode-zen/nemotron-3-ultra-free",
         "openrouter/qwen/qwen3-coder:free"
       ]
@@ -276,9 +274,8 @@
     },
 
     "unspecified-high": {
-      "model": "opencode-go/big-pickle",
+      "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-zen/big-pickle",
         "opencode-zen/nemotron-3-ultra-free",
         "openrouter/qwen/qwen3-coder:free"
       ]

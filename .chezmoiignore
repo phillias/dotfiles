@@ -10,6 +10,5 @@ age-key.txt.age
 # Profile build artifacts — npm state varies per machine
 .config/opencode/profiles/*/node_modules
 .config/opencode/profiles/*/node_modules/**
-.config/opencode/profiles/*/package.json
 .config/opencode/profiles/*/package-lock.json
 .config/opencode/profiles/*/bun.lock
