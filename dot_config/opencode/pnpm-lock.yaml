@@ -6,7 +6,14 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    dependencies:
+      '@opencode-ai/plugin':
+        specifier: ^1.17.6
+        version: 1.17.9(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))
+      oh-my-openagent:
+        specifier: ^4.11.1
+        version: 4.13.0(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
 
   plugins:
     dependencies:
@@ -26,17 +33,23 @@ importers:
   profiles/go:
     dependencies:
       '@opencode-ai/plugin':
-        specifier: 1.17.7
-        version: 1.17.7(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))
+        specifier: 1.17.9
+        version: 1.17.9(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))
       oh-my-openagent:
         specifier: latest
         version: 4.13.0(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
+
+  profiles/pure:
+    dependencies:
+      '@opencode-ai/plugin':
+        specifier: 1.17.7
+        version: 1.17.7(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))
 
   profiles/team:
     dependencies:
       '@opencode-ai/plugin':
         specifier: 1.17.8
-        version: 1.17.8
+        version: 1.17.8(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))
       oh-my-openagent:
         specifier: latest
         version: 4.13.0(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
@@ -45,7 +58,7 @@ importers:
     dependencies:
       '@opencode-ai/plugin':
         specifier: 1.17.8
-        version: 1.17.8
+        version: 1.17.8(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))
       oh-my-openagent:
         specifier: latest
         version: 4.13.0(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
@@ -346,6 +359,20 @@ packages:
       '@opentui/solid':
         optional: true
 
+  '@opencode-ai/plugin@1.17.9':
+    resolution: {integrity: sha512-RvYsX2k90ew0P3c0R/Jrt6UOdA5CYf4GmYuREDKHx31GSJ25WKg9hrTzkcwCfvPPCpaBc53Qq6Fon9aWr+58ag==}
+    peerDependencies:
+      '@opentui/core': '>=0.3.4'
+      '@opentui/keymap': '>=0.3.4'
+      '@opentui/solid': '>=0.3.4'
+    peerDependenciesMeta:
+      '@opentui/core':
+        optional: true
+      '@opentui/keymap':
+        optional: true
+      '@opentui/solid':
+        optional: true
+
   '@opencode-ai/sdk@1.14.39':
     resolution: {integrity: sha512-hguOA5huhys7zwCR3ESbSHyQNuJBNtfrxUxYZF/s/6trRW+imqGmDtC/RsOSNuk7GE06ZnvOTwb4T2WhXYIBxw==}
 
@@ -360,6 +387,9 @@ packages:
 
   '@opencode-ai/sdk@1.17.8':
     resolution: {integrity: sha512-6MKmsj2ujZyL44jy+12dpwWYDYKPS9fUr+0wVQxaIlPYQ/eAt8T8T3QrybplJ5ZtHfZUX+esXZ02x2UYYm7oEw==}
+
+  '@opencode-ai/sdk@1.17.9':
+    resolution: {integrity: sha512-MHmXEpGPHkg14v1p+cUlIOUxd6DQdSElfau9nqY7tcDI0x5r4Y8D0dKXcyAh0Gc73ptaGW67Vg84nkcV6O27Pw==}
 
   '@opentui/core-darwin-arm64@0.2.16':
     resolution: {integrity: sha512-aFb2Yp+oqDu3h6VCWi7xpQ9yjpKSQcROzGGfHgqC6Nd3U+uiLfPJBkmiI87iK0opCggCFj5TkKI004050DmGjg==}
@@ -418,11 +448,11 @@ packages:
     peerDependencies:
       solid-js: 1.9.12
 
-  '@posthog/core@1.37.2':
-    resolution: {integrity: sha512-qq9ASrhqxEcfzMQ/kc7dC00pibIcSbQ57FwVHxOGQOeSHr+uN18LA01ESsQX+UcgJ1beFvM6goa8SMxW99OLUw==}
+  '@posthog/core@1.37.1':
+    resolution: {integrity: sha512-KRBuxF/XBm3tNpqWlXpWE82XxsYsJb0jSyEic14LMXMvqDv5iApK1jfV0+seikDb9SpPs3tPkWUfHdwaUtFBtQ==}
 
-  '@posthog/types@1.391.1':
-    resolution: {integrity: sha512-ASwd7Nf4pViqdYRYaNRyPYRVKWa1CcHUAUWR0XeQJLGdNnsWACBwe0sSieb/cHnKsRXjRwO/23KIY83lm/Ccpw==}
+  '@posthog/types@1.391.0':
+    resolution: {integrity: sha512-oJ6jkqVMq+T4ax9F0rUllJc0KHpSgpaMwTNYWkE70iBiyXDVyhcNBmYnNKzSODgpzsaQNI6VfK8JrRYbkSJZZw==}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -870,8 +900,8 @@ packages:
     resolution: {integrity: sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw==}
     hasBin: true
 
-  node-releases@2.0.49:
-    resolution: {integrity: sha512-f06bl1D+8ZDkn2oOQQKAh5/otFWqVnM1Q5oerA8Pex7UfT66Tx4IPHIqVVFKqFT3FUtaDstdgkM7yT7JWhqxfw==}
+  node-releases@2.0.48:
+    resolution: {integrity: sha512-1uz8041X6LoI6ZSdZacM9lVY28vuzDlSKitnpbSNK0RfKoIJkX29NBPVEFXhnuSuEOA9Ww0xnPJ+ILWbGAv8DA==}
     engines: {node: '>=18'}
 
   object-assign@4.1.1:
@@ -1521,11 +1551,25 @@ snapshots:
       '@opentui/keymap': 0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
       '@opentui/solid': 0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
 
-  '@opencode-ai/plugin@1.17.8':
+  '@opencode-ai/plugin@1.17.8(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))':
     dependencies:
       '@opencode-ai/sdk': 1.17.8
       effect: 4.0.0-beta.74
       zod: 4.1.8
+    optionalDependencies:
+      '@opentui/core': 0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10)
+      '@opentui/keymap': 0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
+      '@opentui/solid': 0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
+
+  '@opencode-ai/plugin@1.17.9(@opentui/core@0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/keymap@0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))':
+    dependencies:
+      '@opencode-ai/sdk': 1.17.9
+      effect: 4.0.0-beta.74
+      zod: 4.1.8
+    optionalDependencies:
+      '@opentui/core': 0.2.16(typescript@5.9.3)(web-tree-sitter@0.25.10)
+      '@opentui/keymap': 0.2.16(@opentui/solid@0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10))(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
+      '@opentui/solid': 0.2.16(solid-js@1.9.12)(typescript@5.9.3)(web-tree-sitter@0.25.10)
 
   '@opencode-ai/sdk@1.14.39':
     dependencies:
@@ -1544,6 +1588,10 @@ snapshots:
       cross-spawn: 7.0.6
 
   '@opencode-ai/sdk@1.17.8':
+    dependencies:
+      cross-spawn: 7.0.6
+
+  '@opencode-ai/sdk@1.17.9':
     dependencies:
       cross-spawn: 7.0.6
 
@@ -1609,11 +1657,11 @@ snapshots:
       - typescript
       - web-tree-sitter
 
-  '@posthog/core@1.37.2':
+  '@posthog/core@1.37.1':
     dependencies:
-      '@posthog/types': 1.391.1
+      '@posthog/types': 1.391.0
 
-  '@posthog/types@1.391.1': {}
+  '@posthog/types@1.391.0': {}
 
   '@standard-schema/spec@1.1.0': {}
 
@@ -1688,7 +1736,7 @@ snapshots:
       baseline-browser-mapping: 2.10.38
       caniuse-lite: 1.0.30001799
       electron-to-chromium: 1.5.378
-      node-releases: 2.0.49
+      node-releases: 2.0.48
       update-browserslist-db: 1.2.3(browserslist@4.28.4)
 
   bun-ffi-structs@0.2.2(typescript@5.9.3):
@@ -2076,7 +2124,7 @@ snapshots:
       detect-libc: 2.1.2
     optional: true
 
-  node-releases@2.0.49: {}
+  node-releases@2.0.48: {}
 
   object-assign@4.1.1: {}
 
@@ -2210,7 +2258,7 @@ snapshots:
 
   posthog-node@5.38.4:
     dependencies:
-      '@posthog/core': 1.37.2
+      '@posthog/core': 1.37.1
 
   proxy-addr@2.0.7:
     dependencies:
