@@ -37,30 +37,10 @@ interface CompactingOutput {
   prompt?: string;
 }
 
-/** Tracks a single file's read history within a session */
-interface FileReadInfo {
-  path: string;
-  shortPath: string;
-  readCount: number;
-  firstTurn: number;
-  lastTurn: number;
-}
-
-/** Arguments shape for Read tool calls */
-interface ReadArgs {
-  filePath?: string;
-  path?: string;
-  file_path?: string;
-  /** Some integrations nest args under an `input` key */
-  input?: { filePath?: string; path?: string; file_path?: string };
-}
-
 export const BetterCompactionPlugin: Plugin = async () => {
   const prevTodos = new Map<string, Todo[]>();          // sessionID → previous todo state
   const completedTodos = new Map<string, CompletedItem[]>(); // sessionID → completed items
   const sessionContexts = new Map<string, string[]>();
-  const sessionReads = new Map<string, Map<string, FileReadInfo>>();
-  let turnCounter = 0;
 
 /**
    * Assess a completed item against 5 criteria (0-10 each, threshold ≥ 30).
@@ -183,53 +163,6 @@ When encountering similar tasks, reference this skill for established patterns a
     sessionContexts.set(sessionID, ctx);
   }
 
-  const estimatedTokensPerRead = 5000;
-
-  function generateReadOptimizationReport(sessionID: string): string {
-    const reads = sessionReads.get(sessionID);
-    if (!reads || reads.size === 0) return "";
-
-    const entries = Array.from(reads.values())
-      .filter(r => r.readCount > 1)
-      .sort((a, b) => b.readCount - a.readCount);
-
-    if (entries.length === 0) return "";
-
-    const totalReads = Array.from(reads.values()).reduce((s, r) => s + r.readCount, 0);
-    const totalFiles = reads.size;
-    const redundantReads = entries.reduce((s, r) => s + (r.readCount - 1), 0);
-    const estWastedTokens = redundantReads * estimatedTokensPerRead;
-
-    const top = entries.slice(0, 10).map(r =>
-      `  ${r.readCount}x  ${r.shortPath}  (${r.readCount - 1} redundant)`
-    ).join("\n");
-
-    const report = [
-      "## ⚡ Context Optimization Notes",
-      "",
-      "The following files were read multiple times without modification between reads.",
-      "Consider caching content or reading once for efficiency in the next session.",
-      "",
-      "```",
-      `  Reads  File`,
-      `  ${"─".repeat(50)}`,
-      top,
-      "```",
-      "",
-      `**Summary**: ${totalReads} total reads of ${totalFiles} files, ~${redundantReads} redundant reads`,
-      `(~${(estWastedTokens / 1000).toFixed(0)}K wasted tokens).`,
-      "",
-    ].join("\n");
-
-    console.log(`[better-compaction] Optimization report for ${sessionID}:`);
-    console.log(`  ${totalReads} reads, ${totalFiles} files, ${redundantReads} redundant, ~${(estWastedTokens / 1000).toFixed(0)}K wasted tokens`);
-    for (const r of entries.slice(0, 5)) {
-      console.log(`  - ${r.readCount}x ${r.shortPath}`);
-    }
-
-    return report;
-  }
-
   return {
     event: async (input: EventInput) => {
       const ev = input.event;
@@ -269,25 +202,6 @@ When encountering similar tasks, reference this skill for established patterns a
 
     "tool.execute.after": async (input: { tool: string; sessionID: string; callID: string; args: any }) => {
       captureToolContext(input.sessionID, input.tool);
-      turnCounter++;
-
-      if (input.tool.toLowerCase() === "read") {
-        const args: ReadArgs = input.args || {};
-        const filePath = args.filePath || args.path || args.file_path || args.input?.filePath || args.input?.path || args.input?.file_path || "";
-        if (filePath) {
-          const reads = sessionReads.get(input.sessionID) ?? new Map();
-          const existing = reads.get(filePath);
-          if (existing) {
-            existing.readCount++;
-            existing.lastTurn = turnCounter;
-          } else {
-            const home = homedir();
-            const shortPath = filePath.startsWith(home) ? "~" + filePath.slice(home.length) : filePath;
-            reads.set(filePath, { path: filePath, shortPath, readCount: 1, firstTurn: turnCounter, lastTurn: turnCounter });
-          }
-          sessionReads.set(input.sessionID, reads);
-        }
-      }
     },
 
     "experimental.session.compacting": async (input: CompactingInput, output: CompactingOutput) => {
@@ -348,8 +262,6 @@ When encountering similar tasks, reference this skill for established patterns a
           ).join("\n")}`
         : "";
 
-      const optimizationReport = generateReadOptimizationReport(sessionID);
-
       output.prompt = `You are compacting a conversation so it can continue in a new context window. Your job is to produce a continuation prompt that preserves ALL information needed to seamlessly resume work without losing anything important.
 
 ## CRITICAL RULES
@@ -395,7 +307,6 @@ ${todoSection}
 [Files read, modified, or created during this session. Key external references, documentation links, or API endpoints used.]
 ${toolSummary ? `\n${toolSummary}` : ""}
 ${skillSummary}
-${optimizationReport ? `\n${optimizationReport}` : ""}
 ---`;
     },
   };
