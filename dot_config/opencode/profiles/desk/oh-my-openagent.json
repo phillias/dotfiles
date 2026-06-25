@@ -6,7 +6,7 @@
   "model_fallback": true,
   "runtime_fallback": {
     "enabled": true,
-    "retry_on_errors": [401, 402, 429, 500, 502, 503, 504, 529],
+    "retry_on_errors": [401, 402, 403, 429, 500, 502, 503, 504, 529],
     "max_fallback_attempts": 2,
     "cooldown_seconds": 120,
     "timeout_seconds": 180,
