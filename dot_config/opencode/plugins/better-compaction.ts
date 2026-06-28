@@ -55,12 +55,34 @@ interface ReadArgs {
   input?: { filePath?: string; path?: string; file_path?: string };
 }
 
-export const BetterCompactionPlugin: Plugin = async () => {
+/** Arguments shape for task() / delegate-task calls */
+interface TaskArgs {
+  prompt?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+/** Arguments shape for chat.message events */
+interface ChatMessageArgs {
+  message?: string;
+  content?: string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+export const BetterCompactionPlugin: Plugin = async (input) => {
+  const projectName = input.directory.split("/").pop() || "default";
+  const shell = input.$;
   const prevTodos = new Map<string, Todo[]>();          // sessionID → previous todo state
   const completedTodos = new Map<string, CompletedItem[]>(); // sessionID → completed items
   const sessionContexts = new Map<string, string[]>();
   const sessionReads = new Map<string, Map<string, FileReadInfo>>();
+  const injectedSessions = new Set<string>();            // sessionID → already got auto-context injection
   let turnCounter = 0;
+  // Active per-todo tool diversity (tool names seen while in_progress)
+  const activeTodoTools = new Map<string, Set<string>>();
+  // Active per-todo start time (ms epoch) → time investment
+  const activeTodoStart = new Map<string, number>();
 
 /**
    * Assess a completed item against 5 criteria (0-10 each, threshold ≥ 30).
@@ -172,6 +194,27 @@ When encountering similar tasks, reference this skill for established patterns a
       }
     }
     return lines.join("\n");
+  }
+
+  function inferMemoryKind(content: string): string {
+    const c = content.toLowerCase();
+    if (c.includes("debug") || c.includes("investigate") || c.includes("root cause") || c.includes("analyze") || c.includes("trace")) return "discovery";
+    if (c.includes("fix") || c.includes("bug") || c.includes("patch") || c.includes("hotfix")) return "bugfix";
+    if (c.includes("implement") || c.includes("create") || c.includes("build") || c.includes("design") || c.includes("add ") || c.includes("new ")) return "feature";
+    if (c.includes("refactor") || c.includes("optimize") || c.includes("clean") || c.includes("restructure") || c.includes("simplify")) return "refactor";
+    if (c.includes("config") || c.includes("setup") || c.includes("configure") || c.includes("migrate") || c.includes("deploy")) return "decision";
+    return "exploration";
+  }
+
+  async function rememberInCodemem(item: CompletedItem, sessionID: string, score: number): Promise<void> {
+    try {
+      const kind = inferMemoryKind(item.content);
+      const body = `Completed with priority: ${item.priority}, skill score: ${score}/50\nSession: ${sessionID}`;
+      await shell`codemem memory remember -k ${kind} -t ${item.content} -b ${body} --project ${projectName}`.quiet().nothrow();
+      console.log(`[better-compaction] ✓ Remembered in codemem: "${item.content}" (kind: ${kind}, project: ${projectName})`);
+    } catch (err) {
+      console.error(`[better-compaction] ✗ Failed to remember in codemem: "${item.content}"`, err);
+    }
   }
 
   function captureToolContext(sessionID: string, toolName: string): void {
@@ -290,6 +333,16 @@ When encountering similar tasks, reference this skill for established patterns a
       }
     },
 
+    "experimental.chat.system.transform": async (input: { sessionID?: string }, output: { system: string[] }) => {
+      if (!input.sessionID || injectedSessions.has(input.sessionID)) return;
+      injectedSessions.add(input.sessionID);
+
+      const result = await shell`codemem pack "active context" --project ${projectName} --budget 600 --compact --compact-detail 2 --limit 5`.quiet().nothrow().text();
+      if (result.trim().length > 50) {
+        output.system.push(`\n## Previous Context (${projectName})\n${result}`);
+      }
+    },
+
     "experimental.session.compacting": async (input: CompactingInput, output: CompactingOutput) => {
       const sessionID = input.sessionID;
       const completed = completedTodos.get(sessionID) ?? [];
@@ -320,6 +373,9 @@ When encountering similar tasks, reference this skill for established patterns a
           }
         }
       }
+
+      // Persist skill-worthy completions to codemem for searchable cross-session memory
+      await Promise.all(skillWorthyItems.map(({ item, score }) => rememberInCodemem(item, sessionID, score)));
 
       const taskTree = buildTaskTree(currentTodos);
 

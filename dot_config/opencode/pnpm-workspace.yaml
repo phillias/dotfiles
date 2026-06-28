@@ -7,7 +7,6 @@ allowBuilds:
   '-': true
   /: true
   '@': true
-  '@code-yeongyu/comment-checker': set this to true or false
   '[': true
   ']': true
   a: true
@@ -18,10 +17,8 @@ allowBuilds:
   h: true
   k: true
   m: true
-  msgpackr-extract: set this to true or false
   n: true
   o: true
-  oh-my-openagent: set this to true or false
   p: true
   r: true
   s: true
