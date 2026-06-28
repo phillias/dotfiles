@@ -1,4 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin";
+import { tool } from "@opencode-ai/plugin";
+import { z } from "zod";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
@@ -206,12 +208,60 @@ When encountering similar tasks, reference this skill for established patterns a
     return "exploration";
   }
 
-  async function rememberInCodemem(item: CompletedItem, sessionID: string, score: number): Promise<void> {
+  function inferTags(content: string): string[] {
+    const tags: string[] = [];
+    const c = content.toLowerCase();
+    if (c.includes("godoxy") || c.includes("proxy") || c.includes("reverse")) tags.push("godoxy");
+    if (c.includes("crowdsec") || c.includes("waf") || c.includes("appsec")) tags.push("crowdsec");
+    if (c.includes("pocket") || c.includes("oidc")) tags.push("pocketid");
+    if (c.includes("tinyauth") || c.includes("forward-auth")) tags.push("tinyauth");
+    if (c.includes("docker") || c.includes("compose") || c.includes("container")) tags.push("docker");
+    if (c.includes("cert") || c.includes("tls") || c.includes("ssl") || c.includes("https") || c.includes("cloudflare")) tags.push("networking");
+    if (c.includes("kali") || c.includes("sync") || c.includes("codemem") || c.includes("dotfiles")) tags.push("sync");
+    if (c.includes("ci") || c.includes("cd") || c.includes("github") || c.includes("action")) tags.push("ci");
+    if (c.includes("db") || c.includes("database") || c.includes("postgres") || c.includes("mysql") || c.includes("sqlite") || c.includes("mariadb")) tags.push("database");
+    if (c.includes("infra") || c.includes("vm") || c.includes("server") || c.includes("deploy") || c.includes("provision")) tags.push("infrastructure");
+    if (c.includes("secret") || c.includes("vault") || c.includes("token") || c.includes("key") || c.includes("credential")) tags.push("security");
+    if (c.includes("restic") || c.includes("backup") || c.includes("restore")) tags.push("backup");
+    if (c.includes("monitor") || c.includes("alert") || c.includes("metric") || c.includes("netdata")) tags.push("monitoring");
+    return tags.length > 0 ? tags : ["general"];
+  }
+
+  function inferProject(content: string, defaultProject: string): string {
+    const c = content.toLowerCase();
+    if (c.includes("godoxy") || c.includes("proxy")) return "godoxy";
+    if (c.includes("crowdsec") || c.includes("waf") || c.includes("appsec")) return "crowdsec";
+    if (c.includes("pocket") || c.includes("oidc")) return "pocketid";
+    if (c.includes("tinyauth") || c.includes("forward-auth")) return "tinyauth";
+    if (c.includes("pirate") || c.includes("stremio") || c.includes("prowlarr") || c.includes("jackett") || c.includes("shelfmark") || c.includes("decypharr")) return "pirate";
+    if (c.includes("kali") || c.includes("sync") || c.includes("codemem") || c.includes("dotfiles")) return "dotfiles";
+    return defaultProject;
+  }
+
+  async function rememberInCodemem(item: CompletedItem, sessionID: string, score: number, skillName?: string): Promise<void> {
     try {
       const kind = inferMemoryKind(item.content);
-      const body = `Completed with priority: ${item.priority}, skill score: ${score}/50\nSession: ${sessionID}`;
-      await shell`codemem memory remember -k ${kind} -t ${item.content} -b ${body} --project ${projectName}`.quiet().nothrow();
-      console.log(`[better-compaction] ✓ Remembered in codemem: "${item.content}" (kind: ${kind}, project: ${projectName})`);
+      const tags = inferTags(item.content);
+      const effectiveProject = inferProject(item.content, projectName);
+
+      // Dedup: skip if memory with similar title already exists for this project
+      const existing = await shell`codemem search "${item.content}" --project ${effectiveProject} --limit 1`.quiet().nothrow().text();
+      if (existing.trim().length > 0) {
+        console.log(`[better-compaction] ∼ Skipped duplicate codemem: "${item.content}"`);
+        return;
+      }
+
+      // Body: link to full SKILL.md if one was generated, otherwise just the content
+      const body = skillName
+        ? `See: ~/.config/opencode/skills/${skillName}/SKILL.md` +
+          `\n${item.content}`
+        : item.content;
+
+      // Metadata goes into tags, not body (keeps vector embeddings clean)
+      const allTags = [...tags, `priority:${item.priority}`, `score:${score}`];
+
+      await shell`codemem memory remember -k ${kind} -t ${item.content} -b ${body} --tags ${allTags} --project ${effectiveProject}`.quiet().nothrow();
+      console.log(`[better-compaction] ✓ Remembered in codemem: "${item.content}" (kind: ${kind}, project: ${effectiveProject}, tags: ${allTags.join(",")})`);
     } catch (err) {
       console.error(`[better-compaction] ✗ Failed to remember in codemem: "${item.content}"`, err);
     }
@@ -310,6 +360,24 @@ When encountering similar tasks, reference this skill for established patterns a
       }
     },
 
+    tool: {
+      "codemem-search": tool({
+        description: "Search project memories and skills via codemem. Returns relevant context from past sessions. Use this when you need to recall past decisions, patterns, or solutions for the current project.",
+        args: {
+          query: z.string().describe("The search query to find relevant memories"),
+          project: z.string().optional().describe("Project scope (defaults to current project)"),
+        },
+        execute: async (args, ctx) => {
+          const project = args.project ?? projectName;
+          const result = await shell`codemem pack "${args.query}" --project ${project} --budget 500 --compact --compact-detail 2 --limit 5`.quiet().nothrow().text();
+          if (result.trim().length === 0) {
+            return { output: `No memories found for "${args.query}" in project "${project}".` };
+          }
+          return { output: `Previous context for "${args.query}" (${project}):\n${result}` };
+        },
+      }),
+    },
+
     "tool.execute.after": async (input: { tool: string; sessionID: string; callID: string; args: any }) => {
       captureToolContext(input.sessionID, input.tool);
       turnCounter++;
@@ -375,7 +443,10 @@ When encountering similar tasks, reference this skill for established patterns a
       }
 
       // Persist skill-worthy completions to codemem for searchable cross-session memory
-      await Promise.all(skillWorthyItems.map(({ item, score }) => rememberInCodemem(item, sessionID, score)));
+      await Promise.all(skillWorthyItems.map(({ item, score }) => {
+        const skillName = generateSkillName(item.content);
+        return rememberInCodemem(item, sessionID, score, skillName);
+      }));
 
       const taskTree = buildTaskTree(currentTodos);
 
