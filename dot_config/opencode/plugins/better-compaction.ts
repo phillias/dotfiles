@@ -20,6 +20,9 @@ interface CompletedItem {
   content: string;
   priority: string;
   completedAt: number;
+  startedAt?: number;      // when the todo entered in_progress
+  toolCount?: number;       // unique tools used while this todo was active
+  userBoosted?: boolean;    // true if user said "remember that" etc.
   skillEvaluated: boolean;
   skillScore?: number;
 }
@@ -80,15 +83,15 @@ export const BetterCompactionPlugin: Plugin = async (input) => {
   const sessionContexts = new Map<string, string[]>();
   const sessionReads = new Map<string, Map<string, FileReadInfo>>();
   const injectedSessions = new Set<string>();            // sessionID → already got auto-context injection
-  let turnCounter = 0;
-  // Active per-todo tool diversity (tool names seen while in_progress)
+let turnCounter = 0;
+  const activeTodo = new Map<string, string>();          // sessionID → current in_progress todo content
   const activeTodoTools = new Map<string, Set<string>>();
-  // Active per-todo start time (ms epoch) → time investment
   const activeTodoStart = new Map<string, number>();
+  const todoMeta = new Map<string, { startedAt: number; tools: Set<string>; boosted: boolean }>();
 
 /**
-   * Assess a completed item against 5 criteria (0-10 each, threshold ≥ 30).
-   * Uses todo content keyword analysis and priority as heuristics.
+   * Assess a completed item against 5 base criteria (0-10 each) plus 3 bonus signals.
+   * Base threshold ≥ 30. User boost (+15) forces inclusion regardless of score.
    */
   function evaluateSkillWorthiness(item: CompletedItem): { score: number; reasoning: string } {
     const content = item.content.toLowerCase();
@@ -122,6 +125,22 @@ export const BetterCompactionPlugin: Plugin = async (input) => {
     score += effortScore;
     reasons.push(`effort:${effortScore}`);
 
+    // Bonus 1: tool diversity (0-10) — more tools = more complex task
+    const toolDiversityScore = Math.min(item.toolCount ?? 0, 10);
+    score += toolDiversityScore;
+    reasons.push(`tools:${toolDiversityScore}`);
+
+    // Bonus 2: time investment (0-10) — tasks that took longer are more significant
+    const elapsedMinutes = item.startedAt ? (item.completedAt - item.startedAt) / 60000 : 0;
+    const timeScore = Math.min(Math.floor(elapsedMinutes / 5), 10);
+    score += timeScore;
+    reasons.push(`time:${timeScore}`);
+
+    // Bonus 3: user boost (+15) — explicit "remember that" request
+    const userBoostScore = item.userBoosted ? 15 : 0;
+    score += userBoostScore;
+    if (item.userBoosted) reasons.push("user_boost:15");
+
     return { score, reasoning: reasons.join(", ") };
   }
 
@@ -141,7 +160,7 @@ export const BetterCompactionPlugin: Plugin = async (input) => {
 Auto-generated skill from completed task in session \`${sessionID}\`.
 
 ## Trigger
-Completed todo with priority: ${item.priority} | Score: ${analysis.score}/50 | Reasoning: ${analysis.reasoning}
+Completed todo with priority: ${item.priority} | Score: ${analysis.score} | Reasoning: ${analysis.reasoning}
 
 ## Summary
 This skill captures the context and approach used to complete: "${item.content}"
@@ -334,6 +353,16 @@ When encountering similar tasks, reference this skill for established patterns a
         const { sessionID, todos } = props;
         const prev = prevTodos.get(sessionID) ?? [];
 
+        // Track current in_progress todo for tool attribution
+        const currentActive = todos.find(t => t.status === "in_progress");
+        if (currentActive) {
+          activeTodo.set(sessionID, currentActive.content);
+          const key = `${sessionID}::${currentActive.content}`;
+          if (!todoMeta.has(key)) {
+            todoMeta.set(key, { startedAt: Date.now(), tools: new Set(), boosted: false });
+          }
+        }
+
         const freshCompleted: CompletedItem[] = [];
         for (const todo of todos) {
           if (todo.status === "completed") {
@@ -341,12 +370,18 @@ When encountering similar tasks, reference this skill for established patterns a
               (p) => p.content === todo.content && p.status === "completed"
             );
             if (!wasCompleted) {
+              const key = `${sessionID}::${todo.content}`;
+              const meta = todoMeta.get(key);
               freshCompleted.push({
                 content: todo.content,
                 priority: todo.priority,
                 completedAt: Date.now(),
+                startedAt: meta?.startedAt,
+                toolCount: meta?.tools.size ?? 0,
+                userBoosted: meta?.boosted ?? false,
                 skillEvaluated: false,
               });
+              todoMeta.delete(key);
             }
           }
         }
@@ -378,9 +413,35 @@ When encountering similar tasks, reference this skill for established patterns a
       }),
     },
 
+    "chat.message": async (input: { sessionID: string }, output: { parts: Array<{ text?: string }> }) => {
+      const text = output.parts.map(p => p.text ?? "").join(" ");
+      const boostPhrases = ["remember that", "keep that one", "save that", "remember this", "keep this", "worth remembering", "note that", "remember", "worked", "perfect", "that's it", "fixed"];
+      if (boostPhrases.some(p => text.toLowerCase().includes(p))) {
+        const currentTodo = activeTodo.get(input.sessionID);
+        if (currentTodo) {
+          const key = `${input.sessionID}::${currentTodo}`;
+          const meta = todoMeta.get(key) ?? { startedAt: Date.now(), tools: new Set(), boosted: false };
+          meta.boosted = true;
+          todoMeta.set(key, meta);
+          console.log(`[better-compaction] 🔖 User boost for: "${currentTodo}"`);
+        }
+      }
+    },
+
     "tool.execute.after": async (input: { tool: string; sessionID: string; callID: string; args: any }) => {
       captureToolContext(input.sessionID, input.tool);
-      turnCounter++;
+turnCounter++;
+      captureToolContext(input.sessionID, input.tool);
+
+      // Attribute tool usage to the active todo
+      const currentTodo = activeTodo.get(input.sessionID);
+      if (currentTodo) {
+        const key = `${input.sessionID}::${currentTodo}`;
+        const meta = todoMeta.get(key);
+        if (meta) {
+          meta.tools.add(input.tool);
+        }
+      }
 
       if (input.tool.toLowerCase() === "read") {
         const args: ReadArgs = input.args || {};
@@ -422,7 +483,7 @@ When encountering similar tasks, reference this skill for established patterns a
         const { score, reasoning } = evaluateSkillWorthiness(item);
         item.skillEvaluated = true;
         item.skillScore = score;
-        if (score >= 30) {
+        if (score >= 30 || item.userBoosted) {
           skillWorthyItems.push({ item, score, reasoning });
         }
       }
@@ -452,7 +513,7 @@ When encountering similar tasks, reference this skill for established patterns a
 
       const completedSummary = completed.length > 0
         ? completed
-            .map((c, i) => `${i + 1}. ✅ ${c.content} (${c.priority}${c.skillScore ? `, skill score: ${c.skillScore}/50` : ""})`)
+            .map((c, i) => `${i + 1}. ✅ ${c.content} (${c.priority}${c.skillScore ? `, score: ${c.skillScore}` : ""}${c.userBoosted ? ", 🔖 boosted" : ""})`)
             .join("\n")
         : "No completed items yet.";
 
@@ -471,7 +532,7 @@ When encountering similar tasks, reference this skill for established patterns a
       const skillSummary = skillWorthyItems.length > 0
         ? `\n### 🧠 Auto-Generated Skills\n${skillWorthyItems.map(
             ({ item, score, reasoning }) =>
-              `- "${item.content}" → generated as skill (score: ${score}/50, reasoning: ${reasoning})`
+              `- "${item.content}" → generated as skill (score: ${score}, reasoning: ${reasoning})`
           ).join("\n")}`
         : "";
 
