@@ -1,21 +1,28 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-openagent.schema.json",
-
-  "disabled_hooks": ["no-hephaestus-non-gpt"],
-
+  "disabled_hooks": [
+    "no-hephaestus-non-gpt"
+  ],
   "model_fallback": true,
   "runtime_fallback": {
     "enabled": true,
-    "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
+    "retry_on_errors": [
+      400,
+      401,
+      402,
+      403,
+      429,
+      500,
+      502,
+      503,
+      504,
+      529
+    ],
     "max_fallback_attempts": 2,
     "cooldown_seconds": 120,
     "timeout_seconds": 180,
     "notify_on_fallback": true
   },
-
-  // ── Team Mode ──────────────────────────────────────────────
-  // Parallel multi-agent coordination via 12 team_* tools.
-  // Lead agent (sisyphus) delegates to up to 4 parallel members.
   "team_mode": {
     "enabled": true,
     "max_parallel_members": 4,
@@ -28,10 +35,6 @@
     "recipient_unread_max_bytes": 262144,
     "mailbox_poll_interval_ms": 3000
   },
-
-  // ── Tmux Integration ───────────────────────────────────────
-  // Spawns background subagents in dedicated tmux panes.
-  // Use .tmux-OmOTeam.conf for custom team-mode tmux styling.
   "tmux": {
     "enabled": true,
     "layout": "main-vertical",
@@ -39,7 +42,6 @@
     "main_pane_min_width": 120,
     "agent_pane_min_width": 40
   },
-
   "background_task": {
     "defaultConcurrency": 8,
     "providerConcurrency": {
@@ -61,9 +63,7 @@
       "opencode-zen/kimi-k2.6": 2
     }
   },
-
   "agents": {
-    // ── Lead Agent ───────────────────────────────────────────
     "sisyphus": {
       "model": "opencode-zen/big-pickle",
       "ultrawork": {
@@ -79,8 +79,6 @@
         "google/gemini-2.0-flash"
       ]
     },
-
-    // ── Team Members ─────────────────────────────────────────
     "sisyphus-junior": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
@@ -89,7 +87,6 @@
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
-
     "hephaestus": {
       "model": "opencode-go/gpt-5.5",
       "permission": {
@@ -102,8 +99,6 @@
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
-
-    // ── Orchestration / Planning ─────────────────────────────
     "prometheus": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -113,7 +108,6 @@
         "cerebras/gpt-oss-120b"
       ]
     },
-
     "metis": {
       "model": "opencode-go/glm-5.1",
       "fallback_models": [
@@ -122,7 +116,6 @@
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
-
     "momus": {
       "model": "opencode/gpt-5.5",
       "variant": "xhigh",
@@ -133,8 +126,6 @@
         "opencode-zen/kimi-k2.6"
       ]
     },
-
-    // ── Execution ────────────────────────────────────────────
     "atlas": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
@@ -144,8 +135,6 @@
         "sambanova/Meta-Llama-3.3-70B-Instruct"
       ]
     },
-
-    // ── Analysis / Research ──────────────────────────────────
     "oracle": {
       "model": "opencode/gpt-5.5",
       "variant": "xhigh",
@@ -156,7 +145,6 @@
         "together/deepseek-ai/DeepSeek-R1"
       ]
     },
-
     "explore": {
       "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
@@ -170,7 +158,6 @@
         "bash": "allow"
       }
     },
-
     "librarian": {
       "model": "groq/llama-3.3-70b-versatile",
       "fallback_models": [
@@ -181,7 +168,6 @@
         "openrouter/horizon-beta"
       ]
     },
-
     "multimodal-looker": {
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
@@ -190,8 +176,6 @@
         "opencode-zen/nemotron-3-ultra-free"
       ]
     },
-
-    // ── Utility Agents (from Go merge) ────────────────────────────
     "quick": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
@@ -200,7 +184,6 @@
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
-
     "unspecified-low": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
@@ -210,7 +193,6 @@
       ]
     }
   },
-
   "categories": {
     "visual-engineering": {
       "model": "opencode/gpt-5.3-codex",
@@ -221,7 +203,6 @@
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
-
     "ultrabrain": {
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
@@ -233,7 +214,6 @@
         "together/deepseek-ai/DeepSeek-R1"
       ]
     },
-
     "deep": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -244,7 +224,6 @@
         "together/deepseek-ai/DeepSeek-R1"
       ]
     },
-
     "artistry": {
       "model": "huggingface/google/gemma-4-12b-it",
       "fallback_models": [
@@ -254,7 +233,6 @@
         "openrouter/horizon-beta"
       ]
     },
-
     "quick": {
       "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
@@ -263,7 +241,6 @@
         "huggingface/google/gemma-4-12b-it"
       ]
     },
-
     "unspecified-low": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
@@ -272,7 +249,6 @@
         "openrouter/qwen/qwen3-coder:free"
       ]
     },
-
     "unspecified-high": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -284,7 +260,6 @@
         "together/deepseek-ai/DeepSeek-R1"
       ]
     },
-
     "writing": {
       "model": "groq/llama-3.3-70b-versatile",
       "fallback_models": [

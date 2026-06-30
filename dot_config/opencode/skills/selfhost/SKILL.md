@@ -1,8 +1,19 @@
-# Selfhost Skill
+---
+name: selfhost
+description: >
+  Selfhost infrastructure management at /home/phillias/docker/ — Godoxy reverse proxy,
+  CrowdSec WAF with AppSec, Pocket ID OIDC provider, Tinyauth forward-auth, databases
+  (MariaDB, PostgreSQL, MSSQL, Redis, libSQL/Turso), CloudBeaver, Dockhand, CrowdSec Manager,
+  ntfy/apprise notifications, and restic backup to OCI Object Storage.
+compatibility: opencode
+metadata:
+  stacks: selfhost,pocketid,tinyauth
+  services: godoxy,crowdsec,crowdsecmgr,socket-proxy,mariadb,postgres,mssql,redis,libsql,turso,cloudbeaver,dockhand,ntfy,apprise,pocketid,tinyauth
+  tools: docker,docker compose,cscli,restic
+---
 
-This skill has moved to `~/docker/selfhost/.opencode/skills/selfhost/SKILL.md`.
+# Selfhost Infrastructure Management
 
-<<<<<<< Updated upstream
 Authoritative guide for the selfhost Docker Compose stack at `/home/phillias/docker/`.
 This covers the selfhost directory plus tightly coupled auth services (pocketid, tinyauth)
 that live in their own directories. This is one stack among several — it does not cover
@@ -1983,11 +1994,4 @@ Complete list of Docker label properties for godoxy service configuration:
 ```
 
 ---
-=======
-The selfhost skill was consolidated into the selfhost repo during the June 2026
-infrastructure reorganization. Its canonical home is the selfhost git repository
-at `~/docker/selfhost/`.
->>>>>>> Stashed changes
 
-Load it by path when working with selfhost infrastructure, or run opencode from
-`~/docker/selfhost/` where `.opencode/opencode.json` discovers it automatically.
