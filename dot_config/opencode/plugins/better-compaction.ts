@@ -1,4 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin";
+import { tool } from "@opencode-ai/plugin";
+import { z } from "zod";
 import { mkdirSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
@@ -18,6 +20,9 @@ interface CompletedItem {
   content: string;
   priority: string;
   completedAt: number;
+  startedAt?: number;      // when the todo entered in_progress
+  toolCount?: number;       // unique tools used while this todo was active
+  userBoosted?: boolean;    // true if user said "remember that" etc.
   skillEvaluated: boolean;
   skillScore?: number;
 }
@@ -55,16 +60,38 @@ interface ReadArgs {
   input?: { filePath?: string; path?: string; file_path?: string };
 }
 
-export const BetterCompactionPlugin: Plugin = async () => {
+/** Arguments shape for task() / delegate-task calls */
+interface TaskArgs {
+  prompt?: string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+/** Arguments shape for chat.message events */
+interface ChatMessageArgs {
+  message?: string;
+  content?: string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+export const BetterCompactionPlugin: Plugin = async (input) => {
+  const projectName = input.directory.split("/").pop() || "default";
+  const shell = input.$;
   const prevTodos = new Map<string, Todo[]>();          // sessionID → previous todo state
   const completedTodos = new Map<string, CompletedItem[]>(); // sessionID → completed items
   const sessionContexts = new Map<string, string[]>();
   const sessionReads = new Map<string, Map<string, FileReadInfo>>();
-  let turnCounter = 0;
+  const injectedSessions = new Set<string>();            // sessionID → already got auto-context injection
+let turnCounter = 0;
+  const activeTodo = new Map<string, string>();          // sessionID → current in_progress todo content
+  const activeTodoTools = new Map<string, Set<string>>();
+  const activeTodoStart = new Map<string, number>();
+  const todoMeta = new Map<string, { startedAt: number; tools: Set<string>; boosted: boolean }>();
 
 /**
-   * Assess a completed item against 5 criteria (0-10 each, threshold ≥ 30).
-   * Uses todo content keyword analysis and priority as heuristics.
+   * Assess a completed item against 5 base criteria (0-10 each) plus 3 bonus signals.
+   * Base threshold ≥ 30. User boost (+15) forces inclusion regardless of score.
    */
   function evaluateSkillWorthiness(item: CompletedItem): { score: number; reasoning: string } {
     const content = item.content.toLowerCase();
@@ -98,6 +125,22 @@ export const BetterCompactionPlugin: Plugin = async () => {
     score += effortScore;
     reasons.push(`effort:${effortScore}`);
 
+    // Bonus 1: tool diversity (0-10) — more tools = more complex task
+    const toolDiversityScore = Math.min(item.toolCount ?? 0, 10);
+    score += toolDiversityScore;
+    reasons.push(`tools:${toolDiversityScore}`);
+
+    // Bonus 2: time investment (0-10) — tasks that took longer are more significant
+    const elapsedMinutes = item.startedAt ? (item.completedAt - item.startedAt) / 60000 : 0;
+    const timeScore = Math.min(Math.floor(elapsedMinutes / 5), 10);
+    score += timeScore;
+    reasons.push(`time:${timeScore}`);
+
+    // Bonus 3: user boost (+15) — explicit "remember that" request
+    const userBoostScore = item.userBoosted ? 15 : 0;
+    score += userBoostScore;
+    if (item.userBoosted) reasons.push("user_boost:15");
+
     return { score, reasoning: reasons.join(", ") };
   }
 
@@ -117,7 +160,7 @@ export const BetterCompactionPlugin: Plugin = async () => {
 Auto-generated skill from completed task in session \`${sessionID}\`.
 
 ## Trigger
-Completed todo with priority: ${item.priority} | Score: ${analysis.score}/50 | Reasoning: ${analysis.reasoning}
+Completed todo with priority: ${item.priority} | Score: ${analysis.score} | Reasoning: ${analysis.reasoning}
 
 ## Summary
 This skill captures the context and approach used to complete: "${item.content}"
@@ -172,6 +215,75 @@ When encountering similar tasks, reference this skill for established patterns a
       }
     }
     return lines.join("\n");
+  }
+
+  function inferMemoryKind(content: string): string {
+    const c = content.toLowerCase();
+    if (c.includes("debug") || c.includes("investigate") || c.includes("root cause") || c.includes("analyze") || c.includes("trace")) return "discovery";
+    if (c.includes("fix") || c.includes("bug") || c.includes("patch") || c.includes("hotfix")) return "bugfix";
+    if (c.includes("implement") || c.includes("create") || c.includes("build") || c.includes("design") || c.includes("add ") || c.includes("new ")) return "feature";
+    if (c.includes("refactor") || c.includes("optimize") || c.includes("clean") || c.includes("restructure") || c.includes("simplify")) return "refactor";
+    if (c.includes("config") || c.includes("setup") || c.includes("configure") || c.includes("migrate") || c.includes("deploy")) return "decision";
+    return "exploration";
+  }
+
+  function inferTags(content: string): string[] {
+    const tags: string[] = [];
+    const c = content.toLowerCase();
+    if (c.includes("godoxy") || c.includes("proxy") || c.includes("reverse")) tags.push("godoxy");
+    if (c.includes("crowdsec") || c.includes("waf") || c.includes("appsec")) tags.push("crowdsec");
+    if (c.includes("pocket") || c.includes("oidc")) tags.push("pocketid");
+    if (c.includes("tinyauth") || c.includes("forward-auth")) tags.push("tinyauth");
+    if (c.includes("docker") || c.includes("compose") || c.includes("container")) tags.push("docker");
+    if (c.includes("cert") || c.includes("tls") || c.includes("ssl") || c.includes("https") || c.includes("cloudflare")) tags.push("networking");
+    if (c.includes("kali") || c.includes("sync") || c.includes("codemem") || c.includes("dotfiles")) tags.push("sync");
+    if (c.includes("ci") || c.includes("cd") || c.includes("github") || c.includes("action")) tags.push("ci");
+    if (c.includes("db") || c.includes("database") || c.includes("postgres") || c.includes("mysql") || c.includes("sqlite") || c.includes("mariadb")) tags.push("database");
+    if (c.includes("infra") || c.includes("vm") || c.includes("server") || c.includes("deploy") || c.includes("provision")) tags.push("infrastructure");
+    if (c.includes("secret") || c.includes("vault") || c.includes("token") || c.includes("key") || c.includes("credential")) tags.push("security");
+    if (c.includes("restic") || c.includes("backup") || c.includes("restore")) tags.push("backup");
+    if (c.includes("monitor") || c.includes("alert") || c.includes("metric") || c.includes("netdata")) tags.push("monitoring");
+    return tags.length > 0 ? tags : ["general"];
+  }
+
+  function inferProject(content: string, defaultProject: string): string {
+    const c = content.toLowerCase();
+    if (c.includes("godoxy") || c.includes("proxy")) return "godoxy";
+    if (c.includes("crowdsec") || c.includes("waf") || c.includes("appsec")) return "crowdsec";
+    if (c.includes("pocket") || c.includes("oidc")) return "pocketid";
+    if (c.includes("tinyauth") || c.includes("forward-auth")) return "tinyauth";
+    if (c.includes("pirate") || c.includes("stremio") || c.includes("prowlarr") || c.includes("jackett") || c.includes("shelfmark") || c.includes("decypharr")) return "pirate";
+    if (c.includes("kali") || c.includes("sync") || c.includes("codemem") || c.includes("dotfiles")) return "dotfiles";
+    return defaultProject;
+  }
+
+  async function rememberInCodemem(item: CompletedItem, sessionID: string, score: number, skillName?: string): Promise<void> {
+    try {
+      const kind = inferMemoryKind(item.content);
+      const tags = inferTags(item.content);
+      const effectiveProject = inferProject(item.content, projectName);
+
+      // Dedup: skip if memory with similar title already exists for this project
+      const existing = await shell`codemem search "${item.content}" --project ${effectiveProject} --limit 1`.quiet().nothrow().text();
+      if (existing.trim().length > 0) {
+        console.log(`[better-compaction] ∼ Skipped duplicate codemem: "${item.content}"`);
+        return;
+      }
+
+      // Body: link to full SKILL.md if one was generated, otherwise just the content
+      const body = skillName
+        ? `See: ~/.config/opencode/skills/${skillName}/SKILL.md` +
+          `\n${item.content}`
+        : item.content;
+
+      // Metadata goes into tags, not body (keeps vector embeddings clean)
+      const allTags = [...tags, `priority:${item.priority}`, `score:${score}`];
+
+      await shell`codemem memory remember -k ${kind} -t ${item.content} -b ${body} --tags ${allTags} --project ${effectiveProject}`.quiet().nothrow();
+      console.log(`[better-compaction] ✓ Remembered in codemem: "${item.content}" (kind: ${kind}, project: ${effectiveProject}, tags: ${allTags.join(",")})`);
+    } catch (err) {
+      console.error(`[better-compaction] ✗ Failed to remember in codemem: "${item.content}"`, err);
+    }
   }
 
   function captureToolContext(sessionID: string, toolName: string): void {
@@ -241,6 +353,16 @@ When encountering similar tasks, reference this skill for established patterns a
         const { sessionID, todos } = props;
         const prev = prevTodos.get(sessionID) ?? [];
 
+        // Track current in_progress todo for tool attribution
+        const currentActive = todos.find(t => t.status === "in_progress");
+        if (currentActive) {
+          activeTodo.set(sessionID, currentActive.content);
+          const key = `${sessionID}::${currentActive.content}`;
+          if (!todoMeta.has(key)) {
+            todoMeta.set(key, { startedAt: Date.now(), tools: new Set(), boosted: false });
+          }
+        }
+
         const freshCompleted: CompletedItem[] = [];
         for (const todo of todos) {
           if (todo.status === "completed") {
@@ -248,12 +370,18 @@ When encountering similar tasks, reference this skill for established patterns a
               (p) => p.content === todo.content && p.status === "completed"
             );
             if (!wasCompleted) {
+              const key = `${sessionID}::${todo.content}`;
+              const meta = todoMeta.get(key);
               freshCompleted.push({
                 content: todo.content,
                 priority: todo.priority,
                 completedAt: Date.now(),
+                startedAt: meta?.startedAt,
+                toolCount: meta?.tools.size ?? 0,
+                userBoosted: meta?.boosted ?? false,
                 skillEvaluated: false,
               });
+              todoMeta.delete(key);
             }
           }
         }
@@ -267,9 +395,53 @@ When encountering similar tasks, reference this skill for established patterns a
       }
     },
 
+    tool: {
+      "codemem-search": tool({
+        description: "Search project memories and skills via codemem. Returns relevant context from past sessions. Use this when you need to recall past decisions, patterns, or solutions for the current project.",
+        args: {
+          query: z.string().describe("The search query to find relevant memories"),
+          project: z.string().optional().describe("Project scope (defaults to current project)"),
+        },
+        execute: async (args, ctx) => {
+          const project = args.project ?? projectName;
+          const result = await shell`codemem pack "${args.query}" --project ${project} --budget 500 --compact --compact-detail 2 --limit 5`.quiet().nothrow().text();
+          if (result.trim().length === 0) {
+            return { output: `No memories found for "${args.query}" in project "${project}".` };
+          }
+          return { output: `Previous context for "${args.query}" (${project}):\n${result}` };
+        },
+      }),
+    },
+
+    "chat.message": async (input: { sessionID: string }, output: { parts: Array<{ text?: string }> }) => {
+      const text = output.parts.map(p => p.text ?? "").join(" ");
+      const boostPhrases = ["remember that", "keep that one", "save that", "remember this", "keep this", "worth remembering", "note that", "remember", "worked", "perfect", "that's it", "fixed"];
+      if (boostPhrases.some(p => text.toLowerCase().includes(p))) {
+        const currentTodo = activeTodo.get(input.sessionID);
+        if (currentTodo) {
+          const key = `${input.sessionID}::${currentTodo}`;
+          const meta = todoMeta.get(key) ?? { startedAt: Date.now(), tools: new Set(), boosted: false };
+          meta.boosted = true;
+          todoMeta.set(key, meta);
+          console.log(`[better-compaction] 🔖 User boost for: "${currentTodo}"`);
+        }
+      }
+    },
+
     "tool.execute.after": async (input: { tool: string; sessionID: string; callID: string; args: any }) => {
       captureToolContext(input.sessionID, input.tool);
-      turnCounter++;
+turnCounter++;
+      captureToolContext(input.sessionID, input.tool);
+
+      // Attribute tool usage to the active todo
+      const currentTodo = activeTodo.get(input.sessionID);
+      if (currentTodo) {
+        const key = `${input.sessionID}::${currentTodo}`;
+        const meta = todoMeta.get(key);
+        if (meta) {
+          meta.tools.add(input.tool);
+        }
+      }
 
       if (input.tool.toLowerCase() === "read") {
         const args: ReadArgs = input.args || {};
@@ -290,6 +462,16 @@ When encountering similar tasks, reference this skill for established patterns a
       }
     },
 
+    "experimental.chat.system.transform": async (input: { sessionID?: string }, output: { system: string[] }) => {
+      if (!input.sessionID || injectedSessions.has(input.sessionID)) return;
+      injectedSessions.add(input.sessionID);
+
+      const result = await shell`codemem pack "active context" --project ${projectName} --budget 600 --compact --compact-detail 2 --limit 5`.quiet().nothrow().text();
+      if (result.trim().length > 50) {
+        output.system.push(`\n## Previous Context (${projectName})\n${result}`);
+      }
+    },
+
     "experimental.session.compacting": async (input: CompactingInput, output: CompactingOutput) => {
       const sessionID = input.sessionID;
       const completed = completedTodos.get(sessionID) ?? [];
@@ -301,7 +483,7 @@ When encountering similar tasks, reference this skill for established patterns a
         const { score, reasoning } = evaluateSkillWorthiness(item);
         item.skillEvaluated = true;
         item.skillScore = score;
-        if (score >= 30) {
+        if (score >= 30 || item.userBoosted) {
           skillWorthyItems.push({ item, score, reasoning });
         }
       }
@@ -321,11 +503,17 @@ When encountering similar tasks, reference this skill for established patterns a
         }
       }
 
+      // Persist skill-worthy completions to codemem for searchable cross-session memory
+      await Promise.all(skillWorthyItems.map(({ item, score }) => {
+        const skillName = generateSkillName(item.content);
+        return rememberInCodemem(item, sessionID, score, skillName);
+      }));
+
       const taskTree = buildTaskTree(currentTodos);
 
       const completedSummary = completed.length > 0
         ? completed
-            .map((c, i) => `${i + 1}. ✅ ${c.content} (${c.priority}${c.skillScore ? `, skill score: ${c.skillScore}/50` : ""})`)
+            .map((c, i) => `${i + 1}. ✅ ${c.content} (${c.priority}${c.skillScore ? `, score: ${c.skillScore}` : ""}${c.userBoosted ? ", 🔖 boosted" : ""})`)
             .join("\n")
         : "No completed items yet.";
 
@@ -344,7 +532,7 @@ When encountering similar tasks, reference this skill for established patterns a
       const skillSummary = skillWorthyItems.length > 0
         ? `\n### 🧠 Auto-Generated Skills\n${skillWorthyItems.map(
             ({ item, score, reasoning }) =>
-              `- "${item.content}" → generated as skill (score: ${score}/50, reasoning: ${reasoning})`
+              `- "${item.content}" → generated as skill (score: ${score}, reasoning: ${reasoning})`
           ).join("\n")}`
         : "";
 
