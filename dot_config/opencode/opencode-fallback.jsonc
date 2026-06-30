@@ -1,0 +1,16 @@
+{
+  // Global free-tier fallback chain — used by any profile running
+  // opencode-runtime-fallback that doesn't have its own per-agent
+  // fallback_models in opencode.json. Per-agent chains override this.
+  "enabled": true,
+  "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
+  "max_fallback_attempts": 2,
+  "cooldown_seconds": 120,
+  "timeout_seconds": 180,
+  "notify_on_fallback": true,
+  "fallback_models": [
+    "groq/openai/gpt-oss-120b",
+    "cerebras/gpt-oss-120b",
+    "google/gemini-2.0-flash"
+  ]
+}
