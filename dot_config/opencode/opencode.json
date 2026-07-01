@@ -102,14 +102,6 @@
     "tail_turns": 40
   },
   "mcp": {
-    "context7": {
-      "type": "remote",
-      "url": "https://mcp.context7.com/mcp"
-    },
-    "grep_app": {
-      "type": "remote",
-      "url": "https://mcp.grep.app"
-    },
     "websearch": {
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp",
@@ -118,9 +110,10 @@
         "x-api-key": "{env:EXA_API_KEY}"
       }
     },
-    "mcp_everything": {
+    "codemem": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
+      "command": ["codemem", "mcp"],
+      "enabled": true
     }
   },
   "lsp": true,
