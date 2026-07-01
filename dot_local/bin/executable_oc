@@ -12,7 +12,6 @@ Modes:
   free     OpenCode + Free agents (default OmO)
   go       OpenCode + Go agents (OpenCode Go subscription)
   nogo     Alias for free
-  zen      OpenCode Zen + Zen agents (Zen subscription)
   team     OpenCode Zen + Team agents + tmux OmO layout
   web      OpenCode Google + Free agents (Google-provider focus)
   desk     Alias for free
@@ -25,7 +24,7 @@ EOF
 [ -z "${MODE}" ] && usage
 
 case "${MODE}" in
-  free|go|nogo|zen|team|web|desk|pure|test) ;;
+  free|go|nogo|team|web|desk|pure|test) ;;
   *) usage ;;
 esac
 
@@ -35,8 +34,6 @@ case "${MODE}" in
     PROFILE="free" ;;
   go)
     PROFILE="go" ;;
-  zen)
-    PROFILE="zen" ;;
   team)
     PROFILE="team"
     export TMUX_CONF="${HOME}/.config/opencode/.tmux-OmOTeam.conf" ;;
