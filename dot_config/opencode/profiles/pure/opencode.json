@@ -89,14 +89,6 @@
   },
   "permission": "allow",
   "mcp": {
-    "context7": {
-      "type": "remote",
-      "url": "https://mcp.context7.com/mcp"
-    },
-    "grep_app": {
-      "type": "remote",
-      "url": "https://mcp.grep.app"
-    },
     "websearch": {
       "type": "remote",
       "url": "https://mcp.exa.ai/mcp",
@@ -104,19 +96,6 @@
       "headers": {
         "x-api-key": "{env:EXA_API_KEY}"
       }
-    },
-    "mcp_everything": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
-    },
-    "netdata-bylocalhost": {
-      "type": "remote",
-      "url": "http://localhost:19999/mcp",
-      "enabled": true
-    },
-    "chrome-devtools": {
-      "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
     },
     "codemem": {
       "type": "local",
