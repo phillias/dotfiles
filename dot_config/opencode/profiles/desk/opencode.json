@@ -276,14 +276,6 @@
       "headers": {
         "x-api-key": "{env:EXA_API_KEY}"
       }
-    },
-    "mcp_everything": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
-    },
-    "chrome-devtools": {
-      "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
     }
   },
   "plugin": ["oh-my-openagent@latest"]
