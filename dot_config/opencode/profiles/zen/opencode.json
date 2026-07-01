@@ -277,19 +277,6 @@
         "x-api-key": "{env:EXA_API_KEY}"
       }
     },
-    "mcp_everything": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
-    },
-    "netdata-bylocalhost": {
-      "type": "remote",
-      "url": "http://localhost:19999/mcp",
-      "enabled": true
-    },
-    "chrome-devtools": {
-      "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
-    },
     "codemem": {
       "type": "local",
       "command": ["codemem", "mcp"],

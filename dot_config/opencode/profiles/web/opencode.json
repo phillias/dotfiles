@@ -277,32 +277,9 @@
         "x-api-key": "{env:EXA_API_KEY}"
       }
     },
-    "mcp_everything": {
-      "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-everything"]
-    },
-    "netdata-bylocalhost": {
-      "type": "remote",
-      "url": "http://localhost:19999/mcp",
-      "enabled": true
-    },
-    "chrome-devtools": {
-      "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
-    },
     "codemem": {
       "type": "local",
       "command": ["codemem", "mcp"],
-      "enabled": true
-    },
-    "google-workspace": {
-      "type": "local",
-      "command": ["node", "/home/ubuntu/google-mcp-server/index.js"],
-      "environment": {
-        "GOOGLE_CLIENT_ID": "{env:GOOGLE_CLIENT_ID}",
-        "GOOGLE_CLIENT_SECRET": "{env:GOOGLE_CLIENT_SECRET}",
-        "GOOGLE_TOKEN_PATH": "/home/ubuntu/.google-mcp/credentials.json"
-      },
       "enabled": true
     }
   },
