@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@opencode-ai/plugin": "1.17.10",
+    "@opencode-ai/plugin": "1.17.12",
     "context-metry": "^1.0.0",
     "oh-my-openagent": "^4.11.1",
     "opencode-token-monitor": "^0.5.0"
