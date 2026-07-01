@@ -318,6 +318,12 @@ gh pr create \
   --title "$(git log -1 --pretty=%s)" \
   --body "$(git log -1 --pretty=%b)" \
   --base master
+
+# 5. Switch branch back to masster
+git checkout master
+
+# 6. Delete local branch
+git branch -d update-$(date +%Y%m%d-%H%M%S)
 ```
 
 > **Note**: The repo is at `~/.local/share/chezmoi`. Other machines pick up changes on their next `chezmoi update` (cron runs every 30 min). Prefer PRs for traceability; if branch protection prevents direct push, the agent should handle it flexibly.
