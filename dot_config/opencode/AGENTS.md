@@ -40,6 +40,34 @@ When pushing changes intended for a pull request:
 
 To infer the base branch: compare `git merge-base` against `master` and `develop` and any other likely upstream branches, then pick the closest one (smallest divergence).
 
+## Compound-Engineering Integration (OmO + CE)
+
+When the compound-engineering plugin is installed (skills present at `~/.config/opencode/skills/ce-*`), route planning and execution through CE skills instead of the built-in OmO plan agent:
+
+### Routing Matrix
+
+| Request Type | Route To |
+|---|---|
+| **Trivial** (1-2 files, no behavioral change, typo, config) | Execute directly — no plan needed |
+| **Clear feature/fix** (multi-step, well-understood scope) | `/ce-plan` → plan → `/ce-work` → execute → `/ce-code-review` → ship |
+| **Ambiguous/complex** (WHAT is unclear, product decisions needed) | `/ce-brainstorm` → requirements doc → `/ce-plan` → `/ce-work` |
+| **Bug report / error** | `/ce-debug` → fix → `/ce-compound` (optional) |
+
+### Plan Storage
+
+CE plans are written to `docs/plans/` by default. When `.omo/` exists at the repo root (OmO project), ce-plan auto-detects it and writes to `.omo/plans/` instead — this triggers the OmO built-in Momus review hook.
+
+### Execution
+
+After ce-plan produces a plan, execute with `/ce-work <plan-path>`. The shipping workflow (code review → PR) runs within ce-work's Phase 3-4.
+
+### Review Chain
+
+1. **ce-doc-review** runs automatically after ce-plan writes the plan (headless mode)
+2. **Momus** reviews plans written to `.omo/plans/` (built-in OmO hook)
+3. **ce-code-review** runs after ce-work completes implementation
+4. **ce-resolve-pr-feedback** handles review threads post-PR
+
 ## Safety Guardrails
 
 The agent **must not** perform the following without explicit user confirmation:
