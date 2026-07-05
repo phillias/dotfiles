@@ -329,3 +329,9 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME/bin:$PATH" ;;
 esac
 # pnpm end
+
+# oh-my-pi (omp) — DAP debugger libraries
+export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
+
+# User-local binaries (chezmoi, omp, lldb-dap, dlv, etc.)
+export PATH="$HOME/.local/bin:$HOME/go/bin:$PATH"
