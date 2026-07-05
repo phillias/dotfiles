@@ -231,5 +231,5 @@ After shipping a non-trivial bug fix or notable learning:
 | Plan saved to `docs/plans/` but `.omo/plans/` expected | `.omo/` directory doesn't exist | Either create `.omo/` in the repo root, or set `OMO_PLANS_DIR` env var. Plan location is cosmetic — execution works from either path |
 | `ce-work` can't read plan | Plan lacks CE frontmatter (old OmO format) | ce-work reads any plan format. Pass the plan path explicitly |
 | Momus review doesn't fire | Plan wasn't written to `.omo/plans/` | Review still happens via ce-doc-review. Momus is an additional pass, not the only one |
-| `grill-with-docs` skill not found | Matt Pocock's skills not installed | Install via `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`. Also installs `grilling` and `domain-modeling` as dependencies. Skip domain alignment gate until installed |
+| `grill-with-docs` skill not found | Matt Pocock's skills not deployed | Run `chezmoi apply` to restore from dotfiles, or install via `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`. Skip domain alignment gate until present |
 | ce-doc-review or ce-code-review slow | Large diff or many findings | Tier 1 (harness-native) is faster for small changes. Escalate to Tier 2 only when warranted |
