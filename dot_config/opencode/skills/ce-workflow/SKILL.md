@@ -38,11 +38,13 @@ If `CE_MISSING`, fall back to the standard OmO workflow (generic plan agent, dir
 Evaluate the user's incoming request against this routing matrix:
 
 | Signal | Classification | Route | Example |
-|---|---|---|---|
+|---|---|---|---|---|
 | 1-2 files, no behavioral change, typo, config-only, rename | **Trivial** | Execute directly | "Fix the typo in login.ts" |
 | Single-file change with clear behavior | **Trivial** | Execute directly or use ce-work with bare prompt | "Add validation to email field" |
-| Multi-step feature, clear scope, known patterns | **Feature** | ce-plan → ce-work | "Add user authentication with JWT" |
-| WHAT is unclear, product decisions needed, multiple possible approaches | **Ambiguous** | ce-brainstorm → ce-plan → ce-work | "We need a notification system" |
+| Multi-step feature, clear scope, known patterns, no CONTEXT.md | **Feature** | ce-plan → ce-work | "Add user authentication with JWT" |
+| Multi-step feature, clear scope, CONTEXT.md or ADRs exist | **Feature + Domain** | grill-with-docs → ce-plan → ce-work | "Add notification preferences UI" |
+| WHAT is unclear, product decisions needed, no CONTEXT.md | **Ambiguous** | ce-brainstorm → ce-plan → ce-work | "We need a notification system" |
+| WHAT is unclear, CONTEXT.md or ADRs exist | **Ambiguous + Domain** | grill-with-docs → ce-brainstorm → ce-plan → ce-work | "We need a notification system" |
 | Bug report, error trace, regression, "doesn't work" | **Bug** | ce-debug → fix → (optional) ce-compound | "Users get 500 on checkout" |
 | Large cross-cutting change, 10+ files, architectural decisions | **Large** | Offer ce-brainstorm first; respect user choice | "Migrate from REST to GraphQL" |
 
@@ -66,6 +68,46 @@ else:
 
 Announce the resolved path once: `Using {plan_dir} for plan storage.`
 
+### Phase 0.5a: Domain Alignment Gate (grill-with-docs)
+
+Before routing to a CE skill, check whether the project has existing domain documentation
+that the request should align with:
+
+```bash
+ls CONTEXT.md docs/adr/ CONTEXT-MAP.md BRAND.md 2>/dev/null | head -5
+```
+
+**When to run grill-with-docs:**
+- `CONTEXT.md`, `BRAND.md`, `CONTEXT-MAP.md`, or `docs/adr/` exists at repo root **AND** the request is non-trivial (Feature, Ambiguous, or Large classification)
+- The request uses overloaded/fuzzy terminology ("user", "session", "account", "workspace", "agent", "tenant") even without existing docs — offer as optional
+- Large greenfield work with no existing docs — offer to establish a fresh CONTEXT.md
+- User explicitly says "grill me" or "stress-test this"
+
+**When to skip:**
+- No CONTEXT.md, BRAND.md, CONTEXT-MAP.md, or ADRs exist (greenfield) **AND** request terminology is precise **AND** scope is bounded
+- Request is classified Trivial
+
+**Execution:**
+
+grill-with-docs has `disable-model-invocation: true` — it runs in the orchestrator's own context,
+not as a subagent. Sisyphus loads the grill-with-docs protocol directly:
+
+1. **Propose** the session: "This project has [CONTEXT.md|ADRs] — want to run a quick grill-with-docs
+   session to align terminology before we plan? Takes ~10-15 minutes."
+2. **If accepted**: follow the `/grilling` protocol (one question at a time, using the platform's
+   blocking question tool), using the `/domain-modeling` skill for doc updates:
+   - Challenge the user's language against existing CONTEXT.md glossary
+   - Sharpen fuzzy/overloaded terms and propose canonical alternatives
+   - Cross-reference claims against code where possible
+   - Update CONTEXT.md inline as terms get resolved
+   - Offer ADRs sparingly (hard-to-reverse, surprising, real trade-off)
+3. **After session**: CONTEXT.md has been updated with resolved terms. Proceed to Phase 1.
+4. **If declined**: skip and proceed to Phase 1 directly.
+
+**Note:** grill-with-docs is a user-facing deliberation skill (one question per turn), not a
+batch-processing tool. The side-effect (updated CONTEXT.md, optional ADRs) compounds across
+sessions — each grill leaves the project's domain model slightly more precise.
+
 ### Phase 1: Route to CE Skill
 
 #### 1a. Trivial — Execute Directly
@@ -74,34 +116,45 @@ No CE skills needed. Execute the change, run diagnostics, and report done.
 
 Do NOT create todos for single-step trivial work. Do NOT load additional skills.
 
-#### 1b. Feature — ce-plan → ce-work
+#### 1b. Feature — (grill-with-docs →) ce-plan → ce-work
 
-1. Invoke `ce-plan` with the feature description as `<feature_description>` input
+If Phase 0.5a determined that domain alignment is needed, run the grill-with-docs session first.
+Otherwise proceed directly to ce-plan:
+
+1. If the **Feature + Domain** variant was classified: run grill-with-docs per Phase 0.5a protocol
+2. Invoke `ce-plan` with the feature description as `<feature_description>` input
    - Use: `task(category="unspecified-high", load_skills=["ce-plan"], prompt="Plan: {request}")`
    - Or invoke via platform skill primitive: `skill: ce-plan` with the description
-2. ce-plan writes a CE-format plan to `{plan_dir}/YYYY-MM-DD-NNN-<type>-<name>-plan.md`
-3. After plan is written:
+   - If a grill-with-docs session was run, the context already contains sharpened terminology —
+     reference the updated CONTEXT.md glossary in the plan prompt
+3. ce-plan writes a CE-format plan to `{plan_dir}/YYYY-MM-DD-NNN-<type>-<name>-plan.md`
+4. After plan is written:
    a. **ce-doc-review** runs automatically (headless mode) via ce-plan's Phase 5.3.8
    b. **Momus** reviews the plan if it was written to `.omo/plans/` (built-in OmO hook)
-4. Present the post-generation handoff menu (ce-plan's Phase 5.4):
+5. Present the post-generation handoff menu (ce-plan's Phase 5.4):
    - Default the first option to `Start ce-work` with the plan path
    - Other options: deeper doc review, create issue, open in Proof, done for now
-5. If the user selects `Start ce-work`:
+6. If the user selects `Start ce-work`:
    ```bash
    skill: ce-work {plan_dir}/YYYY-MM-DD-NNN-<type>-<name>-plan.md
    ```
 
-#### 1c. Ambiguous — ce-brainstorm → ce-plan → ce-work
+#### 1c. Ambiguous — (grill-with-docs →) ce-brainstorm → ce-plan → ce-work
 
-1. Invoke `ce-brainstorm` with the topic as `<feature_description>` input
+If Phase 0.5a determined that domain alignment is needed, drill terminology first so the brainstorm
+works with the project's established language:
+
+1. If the **Ambiguous + Domain** variant was classified: run grill-with-docs per Phase 0.5a protocol
+2. Invoke `ce-brainstorm` with the topic as `<feature_description>` input
    - Use: `task(category="unspecified-high", load_skills=["ce-brainstorm"], prompt="Brainstorm: {request}")`
    - Or invoke via platform skill primitive
-2. ce-brainstorm produces a requirements doc in `docs/brainstorms/YYYY-MM-DD-<topic>-requirements.md`
-3. After the requirements doc is written, ce-brainstorm's Phase 4 handoff offers next steps:
+   - If a grill-with-docs session was run, reference the updated CONTEXT.md glossary during brainstorming
+3. ce-brainstorm produces a requirements doc in `docs/brainstorms/YYYY-MM-DD-<topic>-requirements.md`
+4. After the requirements doc is written, ce-brainstorm's Phase 4 handoff offers next steps:
    - If the user selects "Proceed to plan", route to Phase 1b (ce-plan) with the requirements doc path
    - If the user wants to continue refining, loop back into brainstorming
-4. ce-plan consumes the requirements doc as its origin document
-5. Continue with ce-plan → ce-work → review per Phase 1b steps 3-5
+5. ce-plan consumes the requirements doc as its origin document
+6. Continue with ce-plan → ce-work → review per Phase 1b steps 3-5
 
 #### 1d. Bug — ce-debug → fix → (optional) ce-compound
 
@@ -158,7 +211,8 @@ After shipping a non-trivial bug fix or notable learning:
 ## Quick Reference: Skill Invocation Map
 
 | Action | Invocation |
-|---|---|
+|---|---|---|
+| Domain alignment (terminology sharpening) | `grill-with-docs` (interactive, one question at a time, updates CONTEXT.md inline) |
 | Plan a feature | `ce-plan` with description |
 | Run a brainstorm | `ce-brainstorm` with topic |
 | Debug an error | `ce-debug` with error details |
@@ -177,4 +231,5 @@ After shipping a non-trivial bug fix or notable learning:
 | Plan saved to `docs/plans/` but `.omo/plans/` expected | `.omo/` directory doesn't exist | Either create `.omo/` in the repo root, or set `OMO_PLANS_DIR` env var. Plan location is cosmetic — execution works from either path |
 | `ce-work` can't read plan | Plan lacks CE frontmatter (old OmO format) | ce-work reads any plan format. Pass the plan path explicitly |
 | Momus review doesn't fire | Plan wasn't written to `.omo/plans/` | Review still happens via ce-doc-review. Momus is an additional pass, not the only one |
+| `grill-with-docs` skill not found | Matt Pocock's skills not installed | Install via `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`. Also installs `grilling` and `domain-modeling` as dependencies. Skip domain alignment gate until installed |
 | ce-doc-review or ce-code-review slow | Large diff or many findings | Tier 1 (harness-native) is faster for small changes. Escalate to Tier 2 only when warranted |

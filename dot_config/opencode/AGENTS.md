@@ -44,14 +44,30 @@ To infer the base branch: compare `git merge-base` against `master` and `develop
 
 When the compound-engineering plugin is installed (skills present at `~/.config/opencode/skills/ce-*`), route planning and execution through CE skills instead of the built-in OmO plan agent:
 
+### Pre-Planning Domain Alignment
+
+Before routing to ce-plan or ce-brainstorm, check whether the project has existing domain
+documentation (`CONTEXT.md`, `docs/adr/`, `BRAND.md`, or `CONTEXT-MAP.md` at repo root).
+
+When domain docs exist **AND** the request is non-trivial (Feature, Ambiguous, or Large), offer a
+`/grill-with-docs` session to align the request's terminology with the project's established language.
+This runs interactively (one question at a time) and updates `CONTEXT.md` inline.
+
+- `CONTEXT.md` exists + non-trivial scope → Offer grill-with-docs before planning
+- No CONTEXT.md + fuzzy terminology → Offer grill-with-docs optionally
+- Greenfield + large feature → Offer to establish initial CONTEXT.md via grill-with-docs
+- Trivial scope → Skip domain alignment
+
+Installation: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`
+
 ### Routing Matrix
 
-| Request Type | Route To |
-|---|---|
-| **Trivial** (1-2 files, no behavioral change, typo, config) | Execute directly — no plan needed |
-| **Clear feature/fix** (multi-step, well-understood scope) | `/ce-plan` → plan → `/ce-work` → execute → `/ce-code-review` → ship |
-| **Ambiguous/complex** (WHAT is unclear, product decisions needed) | `/ce-brainstorm` → requirements doc → `/ce-plan` → `/ce-work` |
-| **Bug report / error** | `/ce-debug` → fix → `/ce-compound` (optional) |
+| Request Type | Route To | Domain Variant |
+|---|---|---|
+| **Trivial** (1-2 files, no behavioral change, typo, config) | Execute directly — no plan needed | — |
+| **Clear feature/fix** (multi-step, well-understood scope) | `/ce-plan` → plan → `/ce-work` → execute → `/ce-code-review` → ship | With CONTEXT.md: `/grill-with-docs` → plan → execute |
+| **Ambiguous/complex** (WHAT is unclear, product decisions needed) | `/ce-brainstorm` → requirements doc → `/ce-plan` → `/ce-work` | With CONTEXT.md: `/grill-with-docs` → brainstorm → plan → execute |
+| **Bug report / error** | `/ce-debug` → fix → `/ce-compound` (optional) | — |
 
 ### Plan Storage
 
