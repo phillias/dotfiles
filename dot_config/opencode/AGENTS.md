@@ -58,7 +58,7 @@ This runs interactively (one question at a time) and updates `CONTEXT.md` inline
 - Greenfield + large feature → Offer to establish initial CONTEXT.md via grill-with-docs
 - Trivial scope → Skip domain alignment
 
-Installation: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`
+Deployment: tracked in dotfiles via `chezmoi apply`. To install manually: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`
 
 ### Routing Matrix
 
