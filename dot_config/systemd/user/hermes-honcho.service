@@ -1,0 +1,15 @@
+[Unit]
+Description=Honcho job scheduler daemon
+Documentation=https://github.com/phillias/dotfiles
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/honcho scheduler --config %h/.config/honcho/jobs.yaml
+EnvironmentFile=%h/.hermes-env
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=default.target

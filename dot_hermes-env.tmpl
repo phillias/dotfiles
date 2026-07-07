@@ -1,0 +1,31 @@
+# ~/.hermes-env — chezmoi-managed
+# Hermes+Honcho environment variables.
+# Source this file in systemd service units or shell.
+
+# ── mybrain paths ──────────────────────────────────────────────
+export MYBRAIN_HOME="{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}"
+export MYBRAIN_DB_PATH="${MYBRAIN_HOME}/data/brain.db"
+export MYBRAIN_RUNNER_IMAGE="{{ dig "mybrain" "runnerImage" "python:3.11-slim" . }}"
+
+# ── Hermes ─────────────────────────────────────────────────────
+export HERMES_HOME="${HOME}/.local/share/hermes"
+export HERMES_CONFIG="${HOME}/.config/hermes/config.yaml"
+export HERMES_CRON_JOBS="${HERMES_HOME}/cron/jobs.json"
+export HERMES_IMAGE_CACHE_DIR="${HERMES_HOME}/cache/images"
+export HERMES_DOCUMENT_CACHE_DIR="${HERMES_HOME}/cache/documents"
+export HERMES_AUDIO_CACHE_DIR="${HERMES_HOME}/cache/audio"
+export HERMES_LOG_LEVEL="{{ dig "hermes" "logLevel" "info" . }}"
+
+# ── Honcho ─────────────────────────────────────────────────────
+export HONCHO_CONFIG="${HOME}/.config/honcho/jobs.yaml"
+
+# ── API Keys (secrets come from age-encrypted dotfiles) ────────
+# These are populated from ~/.config/hermes/env (chezmoi-managed, age-encrypted).
+# If the file exists, source it for the secret values.
+_HERMES_SECRETS="${HOME}/.config/hermes/env"
+if [ -f "$_HERMES_SECRETS" ]; then
+  set -a
+  source "$_HERMES_SECRETS"
+  set +a
+fi
+unset _HERMES_SECRETS
