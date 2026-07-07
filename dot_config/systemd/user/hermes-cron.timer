@@ -1,0 +1,11 @@
+[Unit]
+Description=Hermes cron scheduler — triggers due jobs every 5 minutes
+Documentation=https://github.com/phillias/dotfiles
+
+[Timer]
+OnCalendar=*-*-* *:0/5:00
+Persistent=true
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

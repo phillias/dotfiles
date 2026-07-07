@@ -1,0 +1,29 @@
+# ~/.config/hermes/config.yaml — chezmoi-managed
+# Hermes CLI runtime configuration
+
+api:
+  listen: "{{ dig "hermes" "listenAddr" "127.0.0.1:8443" . }}"
+  tls_enabled: false
+
+paths:
+  mybrain: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}"
+  data: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/data"
+  wiki: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/wiki"
+  scripts: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes"
+  env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+cron:
+  jobs_file: "{{ .chezmoi.homeDir }}/.local/share/hermes/cron/jobs.json"
+
+mcp:
+  servers:
+    - name: mybrain-brain
+      command: python3
+      args:
+        - "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-mcp-server.py"
+      env:
+        MYBRAIN_DB_PATH: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/data/brain.db"
+
+logging:
+  level: "{{ dig "hermes" "logLevel" "info" . }}"
+  directory: "{{ .chezmoi.homeDir }}/.local/share/hermes/logs"
