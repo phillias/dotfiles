@@ -1,0 +1,63 @@
+# ~/.config/honcho/jobs.yaml — chezmoi-managed
+# Honcho scheduler job definitions.
+#
+# Each job is invocable by either hermes (via cron) or hermes+honcho (via scheduler).
+# The dual-engine architecture: hermes runs management/maintenance,
+# hermes+honcho runs the daily engine.
+
+jobs:
+
+  - name: mybrain-daily
+    description: "Daily pipeline: finance sync, classify, diary, recommend, research, standup, wiki, gambits"
+    schedule: "0 8 * * *"
+    command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-daily.sh"
+    timeout: 3600
+    env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+  - name: mybrain-signal-poll
+    description: "Poll RSS sources for high-signal content (5x/day)"
+    schedule: "0 9,12,15,18,21 * * *"
+    command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-signal-poll.sh"
+    timeout: 600
+    env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+  - name: mybrain-weekly
+    description: "Weekly review and report"
+    schedule: "0 9 * * 1"
+    command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-weekly.sh"
+    timeout: 1800
+    env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+  - name: mybrain-monthly
+    description: "Monthly financial snapshot and deep review"
+    schedule: "0 10 1 * *"
+    command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-monthly.sh"
+    timeout: 3600
+    env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+  - name: mybrain-education
+    description: "Education pipeline (Wed, Fri)"
+    schedule: "0 7 * * 3,5"
+    command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-education.sh"
+    timeout: 1800
+    env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+  - name: mybrain-loans
+    description: "Loan tracking and reminders"
+    schedule: "0 6 * * *"
+    command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-loans.sh"
+    timeout: 300
+    env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+  - name: photo-ocr-pipeline
+    description: "OCR new photos for wiki enrichment"
+    schedule: "30 */4 * * *"
+    command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/photo-ocr-pipeline.sh --incremental"
+    timeout: 900
+    env_file: "{{ .chezmoi.homeDir }}/.hermes-env"
+
+  - name: hermes-env-check
+    description: "Daily health check of hermes+honcho installation"
+    schedule: "0 5 * * *"
+    command: "{{ .chezmoi.homeDir }}/.local/bin/hermes-env-check.sh"
+    timeout: 60
