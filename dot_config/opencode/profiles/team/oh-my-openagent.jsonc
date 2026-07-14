@@ -7,9 +7,9 @@
   "runtime_fallback": {
     "enabled": true,
     "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
-    "max_fallback_attempts": 2,
-    "cooldown_seconds": 120,
-    "timeout_seconds": 180,
+    "max_fallback_attempts": 1,
+    "cooldown_seconds": 30,
+    "timeout_seconds": 60,
     "notify_on_fallback": true
   },
 
@@ -84,9 +84,10 @@
     "sisyphus-junior": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
-        "opencode-go/deepseek-v4-flash",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
         "opencode-zen/deepseek-v4-flash-free",
-        "openrouter/qwen/qwen3-coder:free"
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
@@ -116,10 +117,12 @@
 
     "metis": {
       "model": "opencode-go/glm-5.1",
+      "temperature": 0.3,
       "fallback_models": [
         "opencode-zen/glm-5.1",
-        "opencode-zen/nemotron-3-ultra-free",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "opencode-zen/deepseek-v4-flash-free",
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
@@ -158,12 +161,12 @@
     },
 
     "explore": {
-      "model": "groq/openai/gpt-oss-20b",
+      "model": "groq/llama-3.3-70b-versatile",
+      "temperature": 0.1,
       "fallback_models": [
-        "opencode-zen/nemotron-3-super-free",
-        "opencode-go/deepseek-v4-flash",
-        "cerebras/llama3.3-70b",
-        "huggingface/google/gemma-4-12b-it"
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "opencode-zen/deepseek-v4-flash-free",
+        "opencode-go/deepseek-v4-flash"
       ],
       "permission": {
         "edit": "allow",
@@ -173,12 +176,12 @@
 
     "librarian": {
       "model": "groq/llama-3.3-70b-versatile",
+      "temperature": 0.1,
       "fallback_models": [
-        "opencode-zen/nemotron-3-super-free",
-        "opencode-go/deepseek-v4-flash",
-        "cerebras/llama3.3-70b",
-        "google/gemini-2.0-flash",
-        "openrouter/horizon-beta"
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "opencode-zen/deepseek-v4-flash-free",
+        "opencode-go/qwen3.5-plus",
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
@@ -195,18 +198,20 @@
     "quick": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
-        "opencode-go/deepseek-v4-flash",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
         "opencode-zen/deepseek-v4-flash-free",
-        "openrouter/qwen/qwen3-coder:free"
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
     "unspecified-low": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
-        "opencode-go/deepseek-v4-flash",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
         "opencode-zen/deepseek-v4-flash-free",
-        "openrouter/qwen/qwen3-coder:free"
+        "opencode-go/deepseek-v4-flash"
       ]
     }
   },
@@ -216,9 +221,9 @@
       "model": "opencode/gpt-5.3-codex",
       "fallback_models": [
         "opencode-zen/gpt-5.3-codex",
-        "opencode/deepseek-v4-pro",
-        "opencode-zen/big-pickle",
-        "openrouter/qwen/qwen3-coder:free"
+        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+        "opencode-zen/deepseek-v4-flash-free",
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
@@ -267,9 +272,10 @@
     "unspecified-low": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
-        "opencode-go/deepseek-v4-flash",
+        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
         "opencode-zen/deepseek-v4-flash-free",
-        "openrouter/qwen/qwen3-coder:free"
+        "opencode-go/deepseek-v4-flash"
       ]
     },
 
