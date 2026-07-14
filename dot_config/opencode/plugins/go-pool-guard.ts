@@ -5,10 +5,12 @@ const GO_USAGE_URL = "https://opencode.ai/zen/go/v1/usage";
 
 const FREE_MODEL: Record<string, string> = {
   "opencode-go/kimi-k2.6":   "openrouter/deepseek/deepseek-v4-flash:free",
-  "opencode-go/kimi-k2.5":   "openrouter/qwen/qwen3-coder:free",
+  "opencode-go/kimi-k2.5":   "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
   "opencode-go/deepseek-v4-pro": "openrouter/deepseek/deepseek-v4-flash:free",
   "opencode-go/deepseek-v4-flash": "openrouter/deepseek/deepseek-v4-flash:free",
   "opencode-go/mimo-v2.5-pro": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+  "opencode-go/qwen3.5-plus": "groq/qwen/qwen3-32b",
+  "opencode-go/qwen3.6-plus": "groq/qwen/qwen3-32b",
 };
 
 async function isGoPoolExhausted(): Promise<boolean> {

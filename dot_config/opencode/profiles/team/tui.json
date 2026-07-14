@@ -1,0 +1,20 @@
+{
+  "plugin": [
+    "oh-my-openagent@latest"
+  ],
+  "status_line": {
+    "templates": {
+      "terminal_title": "{project_name} | {shell:branch}",
+      "session_footer": "{cwd:basename} | {model_id} | ctx {context_used_pct}% | {total_tokens:k} tok | ${total_cost}",
+      "home_footer": "{project_name} on {shell:branch}"
+    },
+    "interval": 5,
+    "commands": {
+      "branch": "git branch --show-current 2>/dev/null || echo 'no-git'",
+      "short_cwd": "echo $PWD | sed \"s|$HOME|~|\" | rev | cut -d/ -f1-3 | rev"
+    }
+  },
+  "sidebar": {
+    "default_open": false
+  }
+}

@@ -60,14 +60,14 @@
         "openai/gpt-oss-120b": {
           "name": "GPT-OSS 120B",
           "limit": {
-            "context": 131072,
+            "context": 98304,
             "output": 8192
           }
         },
         "openai/gpt-oss-20b": {
           "name": "GPT-OSS 20B",
           "limit": {
-            "context": 131072,
+            "context": 98304,
             "output": 8192
           }
         },
@@ -92,6 +92,7 @@
         "qwen/qwen3-coder:free": {},
         "meta-llama/llama-3.3-70b-instruct:free": {},
         "nvidia/nemotron-3-super-120b-a12b:free": {},
+        "nvidia/nemotron-3-nano-30b-a3b:free": {},
         "nvidia/nemotron-nano-12b-v2-vl:free": {},
         "openai/gpt-oss-20b:free": {},
         "horizon-beta": {},
@@ -102,6 +103,7 @@
         "google/gemini-2.5-flash": {},
         "google/gemini-2.5-pro": {},
         "deepseek/deepseek-chat": {},
+        "deepseek/deepseek-v4-flash": {},
         "meta-llama/llama-3.1-70b-instruct": {},
         "mistralai/mistral-large": {},
         "qwen/qwen-2.5-72b-instruct": {},
@@ -109,7 +111,9 @@
         "z-ai/glm-5-turbo": {},
         "z-ai/glm-4.7-flash": {},
         "agentica-org/DeepCoder-14B-Preview": {},
-        "Qwen/Qwen3-Coder-Next-80B-A3B-Instruct": {}
+        "Qwen/Qwen3-Coder-Next-80B-A3B-Instruct": {},
+        "qwen/qwen3-coder:free": {},
+        "qwen/qwen3-next-80b-a3b-instruct:free": {}
       }
     },
     "cerebras": {
@@ -130,7 +134,7 @@
         "gpt-oss-120b": {
           "name": "GPT-OSS 120B",
           "limit": {
-            "context": 8192,
+            "context": 6144,
             "output": 4096
           }
         }
@@ -438,9 +442,6 @@
         },
         "deepseek-v4-flash-free": {
           "name": "DeepSeek V4 Flash Free"
-        },
-        "qwen3.6-plus-free": {
-          "name": "Qwen3.6 Plus Free"
         },
         "minimax-m3-free": {
           "name": "MiniMax M3 Free"
