@@ -319,6 +319,9 @@ fi
 if [ -f "$HOME/.config/opencode/.google-client-secret" ]; then
     export GOOGLE_CLIENT_SECRET="$(cat $HOME/.config/opencode/.google-client-secret)"
 fi
+if [ -f "$HOME/.config/opencode/.composio-key" ]; then
+    export COMPOSIO_API_KEY="$(cat $HOME/.config/opencode/.composio-key)"
+fi
 
 export PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright
 
