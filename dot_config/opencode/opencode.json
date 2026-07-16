@@ -93,6 +93,31 @@
         "apiKey": "{env:OPENCODE_ZEN_API_KEY}"
       },
       "models": {}
+    },
+    "cloudflare": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Cloudflare Workers AI",
+      "options": {
+        "baseURL": "https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai/v1",
+        "apiKey": "{file:~/.config/opencode/.cloudflare-key}"
+      },
+      "models": {
+        "cloudflare/llama-3.3-70b": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "cloudflare/llama-4-scout": "@cf/meta/llama-4-scout-17b-16e-instruct",
+        "cloudflare/llama-3.2-3b": "@cf/meta/llama-3.2-3b-instruct",
+        "cloudflare/llama-3.1-8b": "@cf/meta/llama-3.1-8b-instruct-fp8",
+        "cloudflare/deepseek-r1-32b": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+        "cloudflare/qwen-coder-32b": "@cf/qwen/qwen2.5-coder-32b-instruct",
+        "cloudflare/qwen3-30b": "@cf/qwen/qwen3-30b-a3b-fp8",
+        "cloudflare/gpt-oss-120b": "@cf/openai/gpt-oss-120b",
+        "cloudflare/gpt-oss-20b": "@cf/openai/gpt-oss-20b",
+        "cloudflare/kimi-k2.6": "@cf/moonshotai/kimi-k2.6",
+        "cloudflare/kimi-k2.7-code": "@cf/moonshotai/kimi-k2.7-code",
+        "cloudflare/glm-4.7-flash": "@cf/zai-org/glm-4.7-flash",
+        "cloudflare/glm-5.2": "@cf/zai-org/glm-5.2",
+        "cloudflare/mistral-small-24b": "@cf/mistralai/mistral-small-3.1-24b-instruct",
+        "cloudflare/qwq-32b": "@cf/qwen/qwq-32b"
+      }
     }
   },
   "compaction": {

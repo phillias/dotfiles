@@ -157,6 +157,8 @@ fi
 
 alias dockernetmap='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/muratovas/docker-network-graph:latest -u'
 alias carb='docker run -it --rm --network host fathyb/carbonyl'
+export BROWSER=carb
+alias wrangler='wrangler --browser false'
 
 # opencode
 export PATH=$HOME/.npm-global/bin:$PATH
@@ -193,7 +195,4 @@ if [ -f "$HOME/.config/opencode/.google-client-id" ]; then
 fi
 if [ -f "$HOME/.config/opencode/.google-client-secret" ]; then
     export GOOGLE_CLIENT_SECRET="$(cat $HOME/.config/opencode/.google-client-secret)"
-fi
-if [ -f "$HOME/.config/opencode/.composio-key" ]; then
-    export COMPOSIO_API_KEY="$(cat $HOME/.config/opencode/.composio-key)"
 fi
