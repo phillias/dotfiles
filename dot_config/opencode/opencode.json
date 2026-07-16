@@ -114,6 +114,11 @@
       "type": "local",
       "command": ["codemem", "mcp"],
       "enabled": true
+    },
+    "composio": {
+      "type": "remote",
+      "url": "https://connect.composio.dev/mcp",
+      "enabled": true
     }
   },
   "lsp": true,
