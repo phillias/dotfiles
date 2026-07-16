@@ -47,7 +47,8 @@
       "opencode-zen": 15,
       "opencode-go": 8,
       "groq": 8,
-      "openrouter": 6
+      "openrouter": 6,
+      "cloudflare": 10
     },
     "modelConcurrency": {
       "opencode-zen/big-pickle": 2,
@@ -58,7 +59,10 @@
       "opencode-go/gpt-5.3-codex": 2,
       "opencode-go/glm-5.1": 2,
       "opencode-go/deepseek-v4-flash": 15,
-      "opencode-zen/kimi-k2.6": 2
+      "opencode-zen/kimi-k2.6": 2,
+      "cloudflare/llama-3.3-70b": 5,
+      "cloudflare/gpt-oss-120b": 2,
+      "cloudflare/qwen-coder-32b": 3
     }
   },
 
@@ -119,6 +123,7 @@
       "model": "opencode-go/glm-5.1",
       "temperature": 0.3,
       "fallback_models": [
+        "cloudflare/glm-5.2",
         "opencode-zen/glm-5.1",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "opencode-zen/deepseek-v4-flash-free",
@@ -141,6 +146,7 @@
     "atlas": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
+        "cloudflare/qwen-coder-32b",
         "opencode-go/kimi-k2.6",
         "groq/openai/gpt-oss-120b",
         "groq/meta-llama/llama-4-scout-17b-16e-instruct",
@@ -164,6 +170,7 @@
       "model": "groq/llama-3.3-70b-versatile",
       "temperature": 0.1,
       "fallback_models": [
+        "cloudflare/llama-3.3-70b",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-go/deepseek-v4-flash"
@@ -178,6 +185,7 @@
       "model": "groq/llama-3.3-70b-versatile",
       "temperature": 0.1,
       "fallback_models": [
+        "cloudflare/llama-3.3-70b",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-go/qwen3.5-plus",
@@ -231,6 +239,7 @@
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
+        "cloudflare/deepseek-r1-32b",
         "opencode-zen/big-pickle",
         "groq/openai/gpt-oss-120b",
         "cerebras/gpt-oss-120b",
@@ -242,6 +251,7 @@
     "deep": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
+        "cloudflare/gpt-oss-120b",
         "opencode-go/kimi-k2.6",
         "groq/llama-3.3-70b-versatile",
         "groq/openai/gpt-oss-120b",
@@ -263,6 +273,7 @@
     "quick": {
       "model": "groq/openai/gpt-oss-20b",
       "fallback_models": [
+        "cloudflare/gpt-oss-20b",
         "opencode-zen/nemotron-3-super-free",
         "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it"
@@ -294,6 +305,7 @@
     "writing": {
       "model": "groq/llama-3.3-70b-versatile",
       "fallback_models": [
+        "cloudflare/llama-3.3-70b",
         "opencode-zen/nemotron-3-super-free",
         "cerebras/llama3.3-70b",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",

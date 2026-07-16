@@ -454,6 +454,121 @@
           }
         }
       }
+    },
+    "cloudflare": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Cloudflare Workers AI",
+      "options": {
+        "baseURL": "https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai/v1",
+        "apiKey": "{file:~/.config/opencode/.cloudflare-key}"
+      },
+      "models": {
+        "llama-3.3-70b": {
+          "name": "Llama 3.3 70B",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "llama-4-scout": {
+          "name": "Llama 4 Scout 17B",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "llama-3.2-3b": {
+          "name": "Llama 3.2 3B",
+          "limit": {
+            "context": 131072,
+            "output": 4096
+          }
+        },
+        "llama-3.1-8b": {
+          "name": "Llama 3.1 8B",
+          "limit": {
+            "context": 131072,
+            "output": 4096
+          }
+        },
+        "deepseek-r1-32b": {
+          "name": "DeepSeek R1 32B",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "qwen-coder-32b": {
+          "name": "Qwen Coder 32B",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "qwen3-30b": {
+          "name": "Qwen3 30B",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "gpt-oss-120b": {
+          "name": "GPT-OSS 120B",
+          "limit": {
+            "context": 98304,
+            "output": 8192
+          }
+        },
+        "gpt-oss-20b": {
+          "name": "GPT-OSS 20B",
+          "limit": {
+            "context": 98304,
+            "output": 8192
+          }
+        },
+        "kimi-k2.6": {
+          "name": "Kimi K2.6",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "kimi-k2.7-code": {
+          "name": "Kimi K2.7 Code",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "glm-4.7-flash": {
+          "name": "GLM 4.7 Flash",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "glm-5.2": {
+          "name": "GLM 5.2",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "mistral-small-24b": {
+          "name": "Mistral Small 24B",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        },
+        "qwq-32b": {
+          "name": "QwQ 32B",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          }
+        }
+      }
     }
   },
   "compaction": {
