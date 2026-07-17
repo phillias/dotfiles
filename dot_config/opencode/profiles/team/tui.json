@@ -13,5 +13,8 @@
       "branch": "git branch --show-current 2>/dev/null || echo 'no-git'",
       "short_cwd": "echo $PWD | sed \"s|$HOME|~|\" | rev | cut -d/ -f1-3 | rev"
     }
+  },
+  "sidebar": {
+    "default_open": false
   }
 }
