@@ -246,6 +246,8 @@ alias la='ls -A'
 alias l='ls -CF'
 alias dockernetmap='docker run --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/muratovas/docker-network-graph:latest -u'
 alias carb='docker run -it --rm --network host fathyb/carbonyl'
+export BROWSER=carb
+alias wrangler='wrangler --browser false'
 function dockmod() { docker compose down "$1"; vi compose.yml; docker compose up "$1" -d; docker logs "$1" -f }
 function dockrestart() { docker compose down "$1"; docker compose up "$1" -d; docker logs "$1" -f }
 
