@@ -1,33 +1,37 @@
 #!/bin/bash
-# run_once_install-hermes-honcho.sh.tmpl — chezmoi run-once script
-# Installs Hermes CLI + Honcho scheduler on first `chezmoi apply` on a new machine.
-# Tracked in chezmoi state — only runs once per machine.
+# install-hermes-honcho.sh — Manual installer for Hermes CLI + Honcho scheduler
+# NOT auto-executed by chezmoi. Run explicitly: ./scripts/install-hermes-honcho.sh
 #
 # Prerequisites:
 #   1. Run the audit steps on the live machine first to discover the actual
 #      Hermes binary source and version.
-#   2. Set chezmoi data: hermes.githubOwner, hermes.githubRepo, hermes.version.
+#   2. Set environment variables or edit defaults below.
 #
-# Template data keys:
-#   hermes.sourceType, hermes.githubOwner, hermes.githubRepo, hermes.version
-#   honcho.pipPackage, honcho.version
-#   mybrain.repoUrl
+# Environment variables (with defaults):
+#   HERMES_SOURCE       github-release | local-build  (default: github-release)
+#   HERMES_GITHUB_OWNER                                  (default: your-org)
+#   HERMES_GITHUB_REPO                                   (default: hermes)
+#   HERMES_VERSION                                       (default: latest)
+#   HERMES_LOCAL_REPO                                    (default: empty)
+#   HONCHO_PIP_PACKAGE                                   (default: honcho)
+#   HONCHO_VERSION                                       (default: latest)
+#   MYBRAIN_REPO_URL                                     (default: git@github.com:phillias/mybrain.git)
 set -euo pipefail
 
 # ═══════════════════════════════════════════════════════════════════
-# Configuration (from chezmoi data, with fallbacks)
+# Configuration (env vars with fallbacks)
 # ═══════════════════════════════════════════════════════════════════
 
-HERMES_SOURCE="{{ dig "hermes" "sourceType" "github-release" . }}"
-HERMES_GITHUB_OWNER="{{ dig "hermes" "githubOwner" "your-org" . }}"
-HERMES_GITHUB_REPO="{{ dig "hermes" "githubRepo" "hermes" . }}"
-HERMES_VERSION="{{ dig "hermes" "version" "latest" . }}"
-HERMES_LOCAL_REPO="{{ dig "hermes" "localRepo" "" . }}"
+HERMES_SOURCE="${HERMES_SOURCE:-github-release}"
+HERMES_GITHUB_OWNER="${HERMES_GITHUB_OWNER:-your-org}"
+HERMES_GITHUB_REPO="${HERMES_GITHUB_REPO:-hermes}"
+HERMES_VERSION="${HERMES_VERSION:-latest}"
+HERMES_LOCAL_REPO="${HERMES_LOCAL_REPO:-}"
 
-HONCHO_PIP_PACKAGE="{{ dig "honcho" "pipPackage" "honcho" . }}"
-HONCHO_VERSION="{{ dig "honcho" "version" "latest" . }}"
+HONCHO_PIP_PACKAGE="${HONCHO_PIP_PACKAGE:-honcho}"
+HONCHO_VERSION="${HONCHO_VERSION:-latest}"
 
-MYBRAIN_REPO_URL="{{ dig "mybrain" "repoUrl" "git@github.com:phillias/mybrain.git" . }}"
+MYBRAIN_REPO_URL="${MYBRAIN_REPO_URL:-git@github.com:phillias/mybrain.git}"
 MYBRAIN_DIR="${MYBRAIN_HOME:-$HOME/mybrain}"
 
 # Paths
@@ -46,7 +50,7 @@ esac
 
 echo ""
 echo "╔══════════════════════════════════════════════════╗"
-echo "║     Hermes+Honcho Installer (run-once)          ║"
+echo "║     Hermes+Honcho Installer (manual)            ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
 echo "  OS:        $OS/$ARCH"
@@ -86,7 +90,7 @@ install_hermes() {
       ;;
     *)
       echo "    ERROR: Unknown HERMES_SOURCE: $HERMES_SOURCE"
-      echo "    Set to 'github-release' or 'local-build' in chezmoi data."
+      echo "    Set to 'github-release' or 'local-build' via env var."
       exit 1
       ;;
   esac
