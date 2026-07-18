@@ -9,7 +9,6 @@
   "timeout_seconds": 180,
   "notify_on_fallback": true,
   "fallback_models": [
-    "groq/openai/gpt-oss-120b",
     "cerebras/gpt-oss-120b",
     "google/gemini-2.0-flash"
   ]
