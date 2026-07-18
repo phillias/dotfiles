@@ -50,7 +50,7 @@ if [ ! -d "${PROFILE_DIR}" ]; then
   exit 1
 fi
 
-export OPENCODE_CONFIG_DIR="${PROFILE_DIR}"
+export OPENCODE_CONFIG="${PROFILE_DIR}/opencode.json"
 
 # Load API keys from key files (only when running opencode, not in shell env)
 KEYS_DIR="${HOME}/.config/opencode"
