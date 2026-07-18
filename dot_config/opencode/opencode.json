@@ -439,13 +439,6 @@
             "output": 4096
           }
         },
-        "llama-3.1-8b": {
-          "name": "Llama 3.1 8B",
-          "limit": {
-            "context": 131072,
-            "output": 4096
-          }
-        },
         "deepseek-r1-32b": {
           "name": "DeepSeek R1 32B",
           "limit": {
@@ -484,14 +477,14 @@
         "kimi-k2.6": {
           "name": "Kimi K2.6",
           "limit": {
-            "context": 131072,
+            "context": 262144,
             "output": 8192
           }
         },
         "kimi-k2.7-code": {
           "name": "Kimi K2.7 Code",
           "limit": {
-            "context": 131072,
+            "context": 262144,
             "output": 8192
           }
         },
@@ -505,7 +498,7 @@
         "glm-5.2": {
           "name": "GLM 5.2",
           "limit": {
-            "context": 131072,
+            "context": 262144,
             "output": 8192
           }
         },
@@ -520,6 +513,20 @@
           "name": "QwQ 32B",
           "limit": {
             "context": 131072,
+            "output": 8192
+          }
+        },
+        "gemma-4-26b-a4b-it": {
+          "name": "Gemma 4 26B MoE",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          }
+        },
+        "nemotron-3-120b-a12b": {
+          "name": "Nemotron 3 Super 120B",
+          "limit": {
+            "context": 1048576,
             "output": 8192
           }
         }
