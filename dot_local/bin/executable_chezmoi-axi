@@ -1,0 +1,536 @@
+#!/usr/bin/env bash
+# chezmoi-axi — Agent-ergonomic chezmoi wrapper with TOON output
+# Follows AXI 10 principles: token-efficient, minimal schemas, structured errors
+set -euo pipefail
+
+BIN_PATH="${BASH_SOURCE[0]}"
+DESCRIPTION="Agent-ergonomic chezmoi wrapper for dotfiles management"
+CHEZMOI_SRC="${HOME}/.local/share/chezmoi"
+
+# --- Helpers ---
+
+die() {
+  echo "error: $1"
+  [[ -n "${2:-}" ]] && echo "help: $2"
+  exit 1
+}
+
+help_hint() {
+  local hints=("$@")
+  if [[ ${#hints[@]} -gt 0 ]]; then
+    echo "help[${#hints[@]}]:"
+    for h in "${hints[@]}"; do
+      echo "  $h"
+    done
+  fi
+}
+
+toon_list() {
+  # $1 = header label, $2 = fields spec, then data lines
+  local label="$1" fields="$2"
+  shift 2
+  echo "${label}[$#]{${fields}}:"
+  for item in "$@"; do
+    echo "  $item"
+  done
+}
+
+# --- Commands ---
+
+cmd_status() {
+  local managed_count changed_count encrypted_count last_sync="never"
+
+  managed_count=$(chezmoi managed 2>/dev/null | wc -l)
+  changed_count=$(chezmoi diff 2>/dev/null | grep '^diff --git' | wc -l)
+  encrypted_count=$(find "$CHEZMOI_SRC" -name 'encrypted_*' -type f 2>/dev/null | wc -l)
+
+  # Last sync: most recent commit in chezmoi source
+  if [[ -d "$CHEZMOI_SRC/.git" ]]; then
+    local last_epoch
+    last_epoch=$(chezmoi git -- log -1 --format=%ct 2>/dev/null || echo 0)
+    if [[ "$last_epoch" -gt 0 ]]; then
+      local now diff_s
+      now=$(date +%s)
+      diff_s=$(( now - last_epoch ))
+      if (( diff_s < 3600 )); then
+        last_sync="$(( diff_s / 60 ))m ago"
+      elif (( diff_s < 86400 )); then
+        last_sync="$(( diff_s / 3600 ))h ago"
+      else
+        last_sync="$(( diff_s / 86400 ))d ago"
+      fi
+    fi
+  fi
+
+  echo "chezmoi:"
+  echo "  bin: ${BIN_PATH/#$HOME/~}"
+  echo "  description: ${DESCRIPTION}"
+  echo "  managed: ${managed_count}"
+  echo "  changed: ${changed_count}"
+  echo "  encrypted: ${encrypted_count}"
+  echo "  last_sync: ${last_sync}"
+
+  local hints=()
+  if (( changed_count > 0 )); then
+    hints+=("Run \`chezmoi-axi list --changed\` to see pending changes")
+    hints+=("Run \`chezmoi-axi diff\` to review diffs")
+  fi
+  hints+=("Run \`chezmoi-axi list\` to see all managed files")
+  help_hint "${hints[@]}"
+}
+
+cmd_list() {
+  local filter="all"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --changed)  filter="changed"; shift ;;
+      --encrypted) filter="encrypted"; shift ;;
+      -h|--help)
+        echo "Usage: chezmoi-axi list [--changed] [--encrypted]"
+        echo "  --changed    Show only files with pending diffs"
+        echo "  --encrypted  Show only encrypted files"
+        exit 0 ;;
+      *) die "unknown flag: $1" "chezmoi-axi list [--changed] [--encrypted]" ;;
+    esac
+  done
+
+  local files=()
+  case "$filter" in
+    changed)
+      while IFS= read -r line; do
+        local f
+        f=$(echo "$line" | sed 's|^diff --git a/.* b/||')
+        files+=("$f")
+      done < <(chezmoi diff 2>/dev/null | grep '^diff --git')
+      ;;
+    encrypted)
+      while IFS= read -r f; do
+        local target
+        target=$(basename "$f" | sed 's/^encrypted_//' | sed 's/\.age$//' | sed 's/^private_//')
+        # Map source name back to target path
+        local relpath="${f#$CHEZMOI_SRC/}"
+        relpath=$(echo "$relpath" | sed 's|^dot_|.|' | sed 's|^encrypted_||' | sed 's|\.age$||' | sed 's|^private_|.|')
+        files+=("~/${relpath}")
+      done < <(find "$CHEZMOI_SRC" -name 'encrypted_*' -type f 2>/dev/null)
+      ;;
+    all)
+      while IFS= read -r f; do
+        local relpath="${f#$CHEZMOI_SRC/}"
+        relpath=$(echo "$relpath" | sed 's|^dot_|.|' )
+        files+=("~/${relpath}")
+      done < <(chezmoi managed 2>/dev/null)
+      ;;
+  esac
+
+  local count=${#files[@]}
+  local total
+  total=$(chezmoi managed 2>/dev/null | wc -l)
+
+  if (( count == 0 )); then
+    echo "files: 0 ${filter} files found"
+    help_hint "Run \`chezmoi-axi list\` to see all managed files"
+    return 0
+  fi
+
+  # Truncate if >50 files (Principle 3)
+  local display_files=("${files[@]}")
+  local truncated=false
+  if (( count > 50 )); then
+    display_files=("${files[@]:0:50}")
+    truncated=true
+  fi
+
+  echo "files[${count}]{path,type,encrypted}:"
+  for f in "${display_files[@]}"; do
+    local enc="no"
+    [[ "$f" == *"secret"* || "$f" == *"key"* || "$f" == *".env"* ]] && enc="maybe"
+    # Determine type from extension
+    local ext="${f##*.}"
+    local ftype="file"
+    [[ "$ext" == "sh" || "$ext" == "bash" || "$ext" == "zsh" ]] && ftype="shell"
+    [[ "$ext" == "json" ]] && ftype="json"
+    [[ "$ext" == "yaml" || "$ext" == "yml" ]] && ftype="yaml"
+    [[ "$ext" == "toml" ]] && ftype="toml"
+    [[ "$ext" == "conf" || "$ext" == "cfg" ]] && ftype="config"
+    [[ "$ext" == "age" ]] && ftype="encrypted"
+    echo "  ${f},${ftype},${enc}"
+  done
+
+  if (( count != total )); then
+    echo "count: ${count} of ${total} total"
+  fi
+  if [[ "$truncated" == "true" ]]; then
+    echo "  ... (${count} total, showing first 50)"
+    echo "help[1]: Run \`chezmoi-axi list\` for all ${count} files"
+  fi
+
+  local hints=()
+  hints+=("Run \`chezmoi-axi add <file>\` to track a new file")
+  [[ "$filter" == "all" ]] && hints+=("Run \`chezmoi-axi diff\` to review changes")
+  help_hint "${hints[@]}"
+}
+
+cmd_diff() {
+  local target="${1:-}"
+  local raw_diff
+
+  if [[ -n "$target" ]]; then
+    # Diff specific file
+    local src_path
+    src_path=$(chezmoi managed --include files 2>/dev/null | grep -i "$(basename "$target")" | head -1)
+    if [[ -z "$src_path" ]]; then
+      die "file not managed by chezmoi: $target" "Run \`chezmoi-axi add $target\` to start tracking it"
+    fi
+    raw_diff=$(chezmoi diff -- "$target" 2>/dev/null || true)
+  else
+    raw_diff=$(chezmoi diff 2>/dev/null || true)
+  fi
+
+  if [[ -z "$raw_diff" ]]; then
+    echo "diffs: 0 files with changes"
+    help_hint "Run \`chezmoi-axi list\` to see all managed files"
+    return 0
+  fi
+
+  # Parse diff into TOON summary
+  local files_changed=0
+  local total_add=0
+  local total_del=0
+  echo "diffs:"
+  while IFS= read -r line; do
+    if [[ "$line" == diff\ --git* ]]; then
+      (( files_changed++ )) || true
+      local path
+      path=$(echo "$line" | sed 's|^diff --git a/.* b/||')
+      echo "  ${path}"
+    elif [[ "$line" == @@* ]]; then
+      local stats
+      stats=$(echo "$line" | grep -oP '[+-]\d+' | paste -sd' ' || true)
+      local adds dels
+      adds=$(echo "$stats" | grep -oP '\+\d+' | tr -d '+' | paste -sd'+' | bc 2>/dev/null || echo 0)
+      dels=$(echo "$stats" | grep -oP '-\d+' | tr -d '-' | paste -sd'+' | bc 2>/dev/null || echo 0)
+      (( total_add += adds )) || true
+      (( total_del += dels )) || true
+    fi
+  done <<< "$raw_diff"
+
+  echo "summary: ${files_changed} files, +${total_add} -${total_del}"
+
+  local hints=()
+  (( files_changed > 0 )) && hints+=("Run \`chezmoi-axi apply\` to apply these changes")
+  hints+=("Run \`chezmoi-axi apply --preview\` to dry-run first")
+  help_hint "${hints[@]}"
+}
+
+cmd_add() {
+  local encrypt=false
+  local files=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --encrypt|-e) encrypt=true; shift ;;
+      -h|--help)
+        echo "Usage: chezmoi-axi add [--encrypt] <file>..."
+        echo "  --encrypt  Encrypt the file with age before adding"
+        exit 0 ;;
+      -*) die "unknown flag: $1" "chezmoi-axi add [--encrypt] <file>..." ;;
+      *)  files+=("$1"); shift ;;
+    esac
+  done
+
+  [[ ${#files[@]} -eq 0 ]] && die "no files specified" "chezmoi-axi add [--encrypt] <file>..."
+
+  local added=0 skipped=0
+  for f in "${files[@]}"; do
+    # Expand ~ if present
+    f="${f/#\~/$HOME}"
+    if [[ ! -f "$f" ]]; then
+      echo "error: file not found: $f"
+      (( skipped++ )) || true
+      continue
+    fi
+
+    local args=()
+    [[ "$encrypt" == "true" ]] && args+=(--encrypt)
+
+    if chezmoi add "${args[@]}" "$f" 2>/dev/null; then
+      echo "added: ${f/#$HOME/~}"
+      (( added++ )) || true
+    else
+      # Check if already managed
+      if chezmoi managed 2>/dev/null | grep -q "$(basename "$f")"; then
+        echo "already managed: ${f/#$HOME/~}"
+        (( skipped++ )) || true
+      else
+        echo "error: failed to add ${f/#$HOME/~}"
+        (( skipped++ )) || true
+      fi
+    fi
+  done
+
+  echo "summary: ${added} added, ${skipped} skipped"
+  local hints=()
+  (( added > 0 )) && hints+=("Run \`chezmoi-axi diff\` to verify no drift")
+  (( added > 0 )) && hints+=("Run \`chezmoi-axi commit\` to commit and push")
+  (( added == 0 )) && hints+=("Run \`chezmoi-axi list\` to see what's managed")
+  help_hint "${hints[@]}"
+}
+
+cmd_readd() {
+  local add_all=false
+  local files=()
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --all|-a) add_all=true; shift ;;
+      -h|--help)
+        echo "Usage: chezmoi-axi re-add [--all] [file]..."
+        echo "  --all  Re-add all changed files"
+        exit 0 ;;
+      -*) die "unknown flag: $1" "chezmoi-axi re-add [--all] [file]..." ;;
+      *)  files+=("$1"); shift ;;
+    esac
+  done
+
+  if [[ "$add_all" == "true" ]]; then
+    # Re-add all changed files
+    local changed_files=()
+    while IFS= read -r line; do
+      local f
+      f=$(echo "$line" | sed 's|^diff --git a/.* b/||')
+      changed_files+=("$f")
+    done < <(chezmoi diff 2>/dev/null | grep '^diff --git')
+
+    if [[ ${#changed_files[@]} -eq 0 ]]; then
+      echo "re-added: 0 files (no changes detected)"
+      help_hint "Run \`chezmoi-axi list\` to see all managed files"
+      return 0
+    fi
+
+    local readded=0
+    for f in "${changed_files[@]}"; do
+      if chezmoi re-add "$f" 2>/dev/null; then
+        echo "re-added: ${f/#$HOME/~}"
+        (( readded++ )) || true
+      else
+        echo "error: failed to re-add ${f/#$HOME/~}"
+      fi
+    done
+    echo "summary: ${readded} files re-added"
+  else
+    [[ ${#files[@]} -eq 0 ]] && die "no files specified" "chezmoi-axi re-add [--all] [file]..."
+
+    local readded=0
+    for f in "${files[@]}"; do
+      f="${f/#\~/$HOME}"
+      if chezmoi re-add "$f" 2>/dev/null; then
+        echo "re-added: ${f/#$HOME/~}"
+        (( readded++ )) || true
+      else
+        echo "error: failed to re-add ${f/#$HOME/~}"
+      fi
+    done
+    echo "summary: ${readded} files re-added"
+  fi
+
+  local hints=()
+  hints+=("Run \`chezmoi-axi diff\` to verify clean state")
+  hints+=("Run \`chezmoi-axi commit\` to commit and push")
+  help_hint "${hints[@]}"
+}
+
+cmd_apply() {
+  local preview=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --preview|-n) preview=true; shift ;;
+      -h|--help)
+        echo "Usage: chezmoi-axi apply [--preview]"
+        echo "  --preview  Show what would change without applying"
+        exit 0 ;;
+      *) die "unknown flag: $1" "chezmoi-axi apply [--preview]" ;;
+    esac
+  done
+
+  if [[ "$preview" == "true" ]]; then
+    cmd_diff
+    return
+  fi
+
+  local output
+  if output=$(chezmoi apply 2>&1); then
+    echo "applied: changes applied successfully"
+    help_hint "Run \`chezmoi-axi verify\` to confirm state"
+  else
+    echo "error: chezmoi apply failed"
+    echo "$output" | head -5
+    help_hint "Run \`chezmoi-axi diff\` to review what failed"
+  fi
+}
+
+cmd_verify() {
+  local drift_count=0
+  local output
+
+  # chezmoi verify exits 1 for untracked files too; use diff for actual drift detection
+  output=$(chezmoi verify 2>&1 || true)
+  drift_count=$(echo "$output" | grep -c 'has changed' || true)
+
+  # Also check if verify failed but produced no "has changed" lines (untracked files)
+  if (( drift_count > 0 )); then
+    echo "verify: ${drift_count} files have drifted from source state"
+    echo "$output" | head -10
+    help_hint "Run \`chezmoi-axi diff\` to see what changed" \
+              "Run \`chezmoi-axi re-add --all\` to capture changes"
+    return 1
+  fi
+
+  # Check for untracked files (files on disk not in source state)
+  local untracked
+  untracked=$(chezmoi managed --include files 2>/dev/null | wc -l)
+  local target_files
+  target_files=$(find "${HOME}" -maxdepth 1 -name '.*' -type f 2>/dev/null | wc -l)
+
+  echo "verify: all tracked files match source state"
+  help_hint "Run \`chezmoi-axi list\` to see managed files" \
+            "Run \`chezmoi-axi diff\` to check for pending changes"
+  return 0
+}
+
+cmd_sync() {
+  local preview=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --preview|-n) preview=true; shift ;;
+      -h|--help)
+        echo "Usage: chezmoi-axi sync [--preview]"
+        echo "  --preview  Fetch remote and show diff without applying"
+        exit 0 ;;
+      *) die "unknown flag: $1" "chezmoi-axi sync [--preview]" ;;
+    esac
+  done
+
+  echo "syncing: fetching remote changes..."
+  chezmoi git -- fetch origin 2>/dev/null || true
+
+  local remote_commits
+  remote_commits=$(chezmoi git -- log --oneline HEAD..origin/master 2>/dev/null | wc -l || echo 0)
+
+  if [[ "$remote_commits" -eq 0 ]]; then
+    echo "sync: already up to date"
+    help_hint "Run \`chezmoi-axi status\` for current state"
+    return 0
+  fi
+
+  echo "found: ${remote_commits} new commits on remote"
+
+  if [[ "$preview" == "true" ]]; then
+    echo "diffs:"
+    chezmoi git -- diff --stat HEAD origin/master 2>/dev/null || true
+    help_hint "Run \`chezmoi-axi sync\` to apply these changes"
+    return 0
+  fi
+
+  chezmoi update 2>/dev/null
+  echo "sync: pulled and applied ${remote_commits} commits"
+  help_hint "Run \`chezmoi-axi verify\` to confirm state"
+}
+
+cmd_commit() {
+  local message="${1:-}"
+
+  cd "$CHEZMOI_SRC" || die "chezmoi source dir not found: $CHEZMOI_SRC"
+
+  local changes
+  changes=$(git diff --name-only 2>/dev/null || true)
+  local untracked
+  untracked=$(git ls-files --others --exclude-standard 2>/dev/null || true)
+
+  if [[ -z "$changes" && -z "$untracked" ]]; then
+    echo "commit: nothing to commit"
+    help_hint "Run \`chezmoi-axi status\` for current state"
+    return 0
+  fi
+
+  # Auto-generate message if not provided
+  if [[ -z "$message" ]]; then
+    local file_count
+    file_count=$(echo -e "${changes}\n${untracked}" | grep -c '[^[:space:]]' || true)
+    message="chore(dotfiles): update ${file_count} managed files"
+  fi
+
+  # Stage all changes
+  git add -A 2>/dev/null
+  git commit -m "$message" 2>/dev/null
+
+  # Create branch and push
+  local branch="update-$(date +%Y%m%d-%H%M%S)"
+  git checkout -b "$branch" 2>/dev/null
+  git push -u origin "$branch" 2>/dev/null
+
+  # Open PR
+  local pr_url
+  pr_url=$(gh pr create \
+    --title "$message" \
+    --body "Auto-generated by chezmoi-axi" \
+    --base master 2>/dev/null || echo "")
+
+  if [[ -n "$pr_url" ]]; then
+    echo "commit: pushed and PR created"
+    echo "pr: ${pr_url}"
+  else
+    echo "commit: pushed to branch ${branch}"
+    echo "  Run \`gh pr create --base master\` to open a PR"
+  fi
+
+  # Return to master
+  git checkout master 2>/dev/null
+  git branch -d "$branch" 2>/dev/null || true
+
+  help_hint "Run \`chezmoi-axi status\` to verify state"
+}
+
+cmd_help() {
+  echo "chezmoi-axi — ${DESCRIPTION}"
+  echo ""
+  echo "Commands:"
+  echo "  status       Show current state at a glance"
+  echo "  list         List managed files [--changed] [--encrypted]"
+  echo "  diff         Show diffs between source and installed"
+  echo "  add          Add file to source state [--encrypt]"
+  echo "  re-add       Capture on-disk changes [--all]"
+  echo "  apply        Apply source state to installed files"
+  echo "  verify       Check files match source state"
+  echo "  sync         Pull remote and apply [--preview]"
+  echo "  commit       Commit, push, and open PR"
+  echo "  help         Show this help"
+  echo ""
+  echo "Run \`chezmoi-axi <command> --help\` for command-specific help"
+}
+
+# --- Main ---
+
+main() {
+  local cmd="${1:-status}"
+  shift || true
+
+  case "$cmd" in
+    status)   cmd_status "$@" ;;
+    list|ls)  cmd_list "$@" ;;
+    diff)     cmd_diff "$@" ;;
+    add)      cmd_add "$@" ;;
+    re-add)   cmd_readd "$@" ;;
+    apply)    cmd_apply "$@" ;;
+    verify)   cmd_verify "$@" ;;
+    sync)     cmd_sync "$@" ;;
+    commit)   cmd_commit "$@" ;;
+    help|-h|--help) cmd_help "$@" ;;
+    *)
+      echo "error: unknown command: $cmd"
+      echo "help: valid commands: status, list, diff, add, re-add, apply, verify, sync, commit, help"
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"
