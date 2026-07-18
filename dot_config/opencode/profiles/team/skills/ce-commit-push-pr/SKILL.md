@@ -35,6 +35,9 @@ description: Commit, push, and open a PR with an adaptive, value-first descripti
 **Existing PR check:**
 !`gh pr view --json url,title,state 2>/dev/null || echo 'NO_OPEN_PR'`
 
+**Branch drift detection:**
+!`BRANCH=$(git branch --show-current); if [ -n "$BRANCH" ]; then git fetch origin --quiet 2>/dev/null; LOCAL=$(git rev-parse HEAD); REMOTE=$(git rev-parse "origin/$BRANCH" 2>/dev/null); if [ "$LOCAL" = "$REMOTE" ]; then echo "SYNCHRONIZED"; elif git merge-base --is-ancestor HEAD "origin/$BRANCH" 2>/dev/null; then echo "BEHIND (fast-forward possible)"; elif git merge-base --is-ancestor "origin/$BRANCH" HEAD 2>/dev/null; then echo "AHEAD (safe to push)"; else echo "DIVERGED (local: ${LOCAL:0:8}, remote: ${REMOTE:0:8})"; fi; else echo "NO_UPSTREAM"; fi`
+
 ### Context fallback
 
 ```bash
@@ -70,6 +73,33 @@ export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
 ```
 
 If `opencode debug config` is unavailable, fall back to `$OPENCODE_MODEL` env var or a placeholder. The format is always `<model>@<hostname>` (e.g., `big-pickle@nasbox`).
+
+**Drift detection before push** — if the branch has an upstream, check for drift before committing:
+
+```bash
+# Fetch remote state without mutating working tree
+git fetch origin
+
+# Check if local is behind remote
+LOCAL_SHA=$(git rev-parse HEAD)
+REMOTE_SHA=$(git rev-parse origin/$(git branch --show-current) 2>/dev/null)
+
+if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
+  # Check if we're behind (fast-forward possible)
+  if git merge-base --is-ancestor HEAD origin/$(git branch --show-current); then
+    echo "Branch is behind remote. Fast-forwarding..."
+    git merge --ff-only origin/$(git branch --show-current)
+  else
+    echo "WARNING: Local and remote have diverged."
+    echo "Local:  $LOCAL_SHA"
+    echo "Remote: $REMOTE_SHA"
+    echo "Rebase or resolve before pushing."
+    exit 1
+  fi
+fi
+```
+
+If drift is detected and cannot be resolved automatically, **stop and report**. Never force-push without explicit user confirmation.
 
 If on the default branch, branch creation needs to handle stale local `<base>`, unpushed commits on local `<base>`, and uncommitted changes that collide with the fresh remote base. Read `references/branch-creation.md` and follow its decision flow before continuing.
 
@@ -121,6 +151,50 @@ Then continue with the rest of the reference (Steps A through G) to compose the 
 - **Yes** — run Step 4 if not already done, then preview and apply (see below).
 
 **Description update mode, or existing-PR rewrite confirmed** — preview before applying. Ask: "New title: `<title>` (`<N>` chars). Summary leads with: `<first two sentences>`. Total body: `<L>` lines. Apply?" If declined, the user may pass focus text back for a regenerate; do not apply. If confirmed, apply per "Applying via gh" below using `gh pr edit` and report the URL.
+
+## Step 6: Post-PR cleanup
+
+After PR creation or update, clean up the local branch state.
+
+**If PR was just created (full workflow):**
+
+1. **Switch to default branch** — return to a clean baseline:
+   ```bash
+   git checkout <default_branch>
+   ```
+
+2. **Delete the local feature branch** — it's now tracked by the PR:
+   ```bash
+   git branch -d <feature_branch>
+   ```
+   Use `-D` only if the branch has unpushed commits (shouldn't happen after Step 3).
+
+3. **Prune stale remote-tracking refs** — clean up references to branches that no longer exist on remote:
+   ```bash
+   git fetch origin --prune
+   ```
+
+**If PR already existed and new commits were pushed:**
+
+No branch cleanup needed — the user may continue working on the branch.
+
+**If user is on a branch that was merged (detected at Step 1):**
+
+Offer to clean up:
+```bash
+# Check if branch is fully merged
+git branch --merged origin/<default_branch> | grep -v "^\*" | grep -v "<default_branch>"
+
+# If present, offer to delete
+git branch -d <merged_branch>
+```
+
+**Remote branch deletion** — after PR merge, GitHub may auto-delete the remote branch. If not:
+```bash
+gh pr close <pr_number> --delete-branch  # only if PR was merged, not just closed
+```
+
+Do NOT auto-delete remote branches without user confirmation.
 
 ---
 
