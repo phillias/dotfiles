@@ -62,6 +62,15 @@ Match repo style for commit messages and PR titles (project instructions in cont
 
 ## Step 3: Commit and push
 
+**Set commit identity** before any commits. The author/committer name must be `<model>@<hostname>`:
+
+```bash
+export GIT_AUTHOR_NAME="$(opencode debug config 2>/dev/null | grep '"model"' | head -1 | grep -oP ':\s*"[^"]*"' | sed 's/.*"\(.*\)".*/\1/' || echo "unknown")@$(hostname -s)"
+export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+```
+
+If `opencode debug config` is unavailable, fall back to `$OPENCODE_MODEL` env var or a placeholder. The format is always `<model>@<hostname>` (e.g., `big-pickle@nasbox`).
+
 If on the default branch, branch creation needs to handle stale local `<base>`, unpushed commits on local `<base>`, and uncommitted changes that collide with the fresh remote base. Read `references/branch-creation.md` and follow its decision flow before continuing.
 
 Scan changed files for naturally distinct concerns. If they clearly group into separate logical changes, create separate commits (2-3 max). Group at file level only — no `git add -p`. When ambiguous, one commit is fine.
