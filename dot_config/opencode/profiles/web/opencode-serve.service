@@ -11,9 +11,9 @@
 #   systemctl enable --now opencode-serve
 #
 # The service expects:
-#   /home/ubuntu/.config/opencode/profiles/web/service.env     — API keys & credentials
-#   /home/ubuntu/.config/opencode/profiles/web/opencode.json   — profile config
-#   /home/ubuntu/.opencode/bin/opencode                        — opencode binary
+#   ~/.config/opencode/profiles/web/service.env     — API keys & credentials
+#   ~/.config/opencode/profiles/web/opencode.json   — profile config
+#   ~/.opencode/bin/opencode                        — opencode binary
 #
 # Logs: journalctl -u opencode-serve -f
 
@@ -25,17 +25,17 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=ubuntu
-WorkingDirectory=/home/ubuntu
+WorkingDirectory=%h
 
 # Environment variables (API keys, OAuth secrets) — keep this alongside the
 # profile configs so the web profile is self-contained.
-EnvironmentFile=/home/ubuntu/.config/opencode/profiles/web/service.env
+EnvironmentFile=%h/.config/opencode/profiles/web/service.env
 
 # Tells opencode to read its config from the "web" profile directory instead of
 # the default ~/.config/opencode/opencode.json.
-Environment=OPENCODE_CONFIG_DIR=/home/ubuntu/.config/opencode/profiles/web
+Environment=OPENCODE_CONFIG_DIR=%h/.config/opencode/profiles/web
 
-ExecStart=/home/ubuntu/.opencode/bin/opencode web --port 38889 --hostname 0.0.0.0
+ExecStart=%h/.opencode/bin/opencode web --port 38889 --hostname 0.0.0.0
 Restart=on-failure
 RestartSec=5s
 
