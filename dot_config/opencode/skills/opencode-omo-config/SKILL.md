@@ -30,7 +30,7 @@ Opencode merges a **global config** with a **profile config**. The global config
 │   ├── go-pool-fallback.ts                    # Auto-loaded: Go pool exhaustion detection
 │   └── go-pool-guard.ts                       # Auto-loaded: redirect to free when Go exhausted
 ├── AGENTS.md                                  # Agent behavioral rules
-├── .groq-key, .cerebras-key, ...             # API key files (secret)
+├── .cerebras-key, ...                           # API key files (secret)
 ├── .tmux-OmOTeam.conf                        # tmux layout for team profile
 └── skills/                                    # OpenCode skills directory
 ```
@@ -79,13 +79,12 @@ oc team / oc go # → also sets TMUX_CONF=~/.config/opencode/.tmux-OmOTeam.conf
 | **pure** | none | true | netdata-bylocalhost, chrome-devtools, codemem | Vanilla, no plugins |
 | **test** | none | true | netdata-bylocalhost, chrome-devtools, codemem | Experimental models |
 
-### Provider Stack (11 providers)
+### Provider Stack (10 providers)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
 | **OpenCode Zen** | 49+ (GPT-5.x, Claude-4.x, Gemini-3.x, DS-V4, GLM-5, Big Pickle, free tier) | Zen sub | Quality primary |
 | **OpenCode Go** | 24 (K2.6/2.7, DS-V4-Pro/Flash, GPT-5.x, Claude-4.x, Qwen3.x, etc.) | $10/mo | Quality pool, merged into team profile |
-| **Groq** | 5 (GPT-OSS 120B/20B, Llama 3.3/4, Qwen3) | Free (14.4K req/day) | Fast fallback (LPU, 394-1000 t/s) |
 | **OpenRouter** | 22+ (DS-V4-Flash, Qwen3-Coder, GLM-5, etc.) | Free/Paid | Broadest model selection |
 | **Cerebras** | 2 (Llama 3.3 70B, GPT-OSS 120B) | Free (1M tok/day) | Fast 70B backup |
 | **Mistral** | 1 (Mistral Large) | Free (1 req/s) | Reasoning, multilingual |
@@ -101,7 +100,6 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 
 **1. `oc` launcher** (`~/.local/bin/oc`) — loads at opencode startup only:
 ```
-.groq-key              → GROQ_API_KEY
 .cerebras-key          → CEREBRAS_API_KEY
 .mistral-key           → MISTRAL_API_KEY
 .sambanova-key         → SAMBANOVA_API_KEY
@@ -129,7 +127,7 @@ Both use the same key files. The `oc` launcher's `_load_key` function is the can
 
 `~/.config/opencode/opencode-fallback.jsonc` provides the global fallback chain for profiles using `opencode-runtime-fallback`:
 
-- Free-tier fallback chain: `groq/gpt-oss-120b → cerebras/gpt-oss-120b → google/gemini-2.0-flash`
+- Free-tier fallback chain: `cerebras/gpt-oss-120b → google/gemini-2.0-flash`
 - Only applies to agents without per-agent `fallback_models` in their profile's `opencode.json`
 - First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global)
 
@@ -160,13 +158,13 @@ These are declared in profile configs, not global:
 
 | Agent | Primary | Fallback Chain | Rationale |
 |---|---|---|---|
-| **Sisyphus** | `opencode-zen/big-pickle` | `opencode-go/kimi-k2.6` → `zen/kimi-k2.6` → groq → cerebras → mistral → gemini | 200K ctx, tool calling, reasoning |
-| **Prometheus** | `opencode-zen/big-pickle` | `opencode-go/kimi-k2.6` → `go/deepseek-v4-pro` → groq → cerebras | Planner needs strong reasoning |
+| **Sisyphus** | `opencode-zen/big-pickle` | `opencode-go/kimi-k2.6` → `zen/kimi-k2.6` → cerebras → mistral → gemini | 200K ctx, tool calling, reasoning |
+| **Prometheus** | `opencode-zen/big-pickle` | `opencode-go/kimi-k2.6` → `go/deepseek-v4-pro` → cerebras | Planner needs strong reasoning |
 | **Metis** | `opencode-go/glm-5.1` | `opencode-zen/glm-5.1` → `zen/nemotron-ultra-free` → openrouter/qwen-free | SWE-bench 77.8% |
 | **Momus** (xhigh) | `opencode/gpt-5.5` | `opencode-zen/gpt-5.5-pro` → `zen/big-pickle` → `opencode/deepseek-v4-pro` → `zen/kimi-k2.6` | Critic needs frontier reasoning |
 | **Oracle** (xhigh) | `opencode/gpt-5.5` | `opencode-zen/gpt-5.5-pro` → `zen/big-pickle` → `opencode/deepseek-v4-pro` → together | Deep reasoning, xhigh variant |
 | **Hephaestus** | `opencode/gpt-5.5` | `opencode-zen/gpt-5.5-pro` → `zen/gpt-5.4` → `zen/nemotron-ultra-free` → openrouter/qwen-free | Principle-driven autonomous work |
-| **Ultrabrain** (xhigh) | `opencode-go/deepseek-v4-pro` | `opencode-zen/big-pickle` → groq → cerebras → mistral → together | Hard logic category |
+| **Ultrabrain** (xhigh) | `opencode-go/deepseek-v4-pro` | `opencode-zen/big-pickle` → cerebras → mistral → together | Hard logic category |
 | **Visual-Engineering** | `opencode/gpt-5.3-codex` | `opencode-zen/gpt-5.3-codex` → `opencode/deepseek-v4-pro` → `zen/big-pickle` → openrouter/qwen-free | Codex model for code work |
 
 ### Tier 2 — High-Volume Utility Agents (free primary, Go pool fallback)
@@ -174,9 +172,9 @@ These are declared in profile configs, not global:
 | Agent | Primary | Fallback Chain |
 |---|---|---|
 | **Sisyphus-Junior** | `opencode-zen/nemotron-3-ultra-free` | `opencode-go/deepseek-v4-flash` → `zen/deepseek-v4-flash-free` → openrouter/qwen-free |
-| **Atlas** | `opencode-go/deepseek-v4-flash` | `opencode-go/kimi-k2.6` → groq/gpt-oss-120b → groq/llama-4-scout → sambanova |
-| **Explore** | `groq/openai/gpt-oss-20b` | `opencode-zen/nemotron-3-super-free` → `opencode-go/deepseek-v4-flash` → cerebras → gemma-4 |
-| **Librarian** | `groq/llama-3.3-70b-versatile` | `opencode-zen/nemotron-3-super-free` → `opencode-go/deepseek-v4-flash` → cerebras → gemini |
+| **Atlas** | `opencode-go/deepseek-v4-flash` | `opencode-go/kimi-k2.6` → sambanova |
+| **Explore** | `cloudflare/llama-3.3-70b` | `opencode-zen/nemotron-3-super-free` → `opencode-go/deepseek-v4-flash` → cerebras → gemma-4 |
+| **Librarian** | `cloudflare/llama-3.3-70b` | `opencode-zen/nemotron-3-super-free` → `opencode-go/deepseek-v4-flash` → cerebras → gemini |
 | **Quick** | `opencode-zen/nemotron-3-ultra-free` | `opencode-go/deepseek-v4-flash` → `zen/deepseek-v4-flash-free` → openrouter/qwen-free |
 | **Unspecified-Low** | `opencode-zen/nemotron-3-ultra-free` | `opencode-go/deepseek-v4-flash` → `zen/deepseek-v4-flash-free` → openrouter/qwen-free |
 
@@ -186,13 +184,13 @@ These are declared in profile configs, not global:
 |---|---|---|
 | **Multimodal-Looker** | `huggingface/google/gemma-4-12b-it` | Vision-specific, encoder-free multimodal |
 | **Artistry** | `huggingface/google/gemma-4-12b-it` | Non-conventional, creative approaches |
-| **Writing** | `groq/llama-3.3-70b-versatile` | Fast, good prose, no Go dependency |
+| **Writing** | `cloudflare/llama-3.3-70b` | Fast, good prose, no Go dependency |
 
 ## Key Decisions
 
 1. **Big Pickle as Sisyphus primary**: 200K context, tool calling, reasoning, structured output. Free on OpenCode Zen (limited time).
 2. **Gemma 4 12B for Multimodal-Looker**: Encoder-free architecture, 256K context, beats Gemma 3 27B at half the size.
-3. **Free-only global fallback**: The global `opencode-fallback.jsonc` chain is free-tier only (`groq → cerebras → gemini`). Profiles needing different chains use per-agent `fallback_models` in their `opencode.json`.
+3. **Free-only global fallback**: The global `opencode-fallback.jsonc` chain is free-tier only (`cerebras → gemini`). Profiles needing different chains use per-agent `fallback_models` in their `opencode.json`.
 4. **Lightweight profiles use `opencode-runtime-fallback`** (desk, web) instead of OmO to save ~204 lines of system prompt overhead. Model fallback is preserved; agent routing, concurrency management, and hooks are not. Skills from `~/.config/opencode/skills/` are still available — they're loaded by OpenCode core, not by OmO.
 5. **Go pool merged into team profile** (Jun 2026): The `go` and `zen` profiles were consolidated into `team`. `oc go` is now an alias for `oc team`. Team gets 24 Go pool models, Zen-aligned critics (gpt-5.4), and the `no-hephaestus-non-gpt` hook.
 6. **MoE preference**: All selected models use Mixture of Experts for efficiency.
@@ -316,7 +314,6 @@ Profiles using `opencode-runtime-fallback` (desk, web) get model fallback via th
   "timeout_seconds": 180,
   "notify_on_fallback": true,
   "fallback_models": [
-    "groq/openai/gpt-oss-120b",
     "cerebras/gpt-oss-120b",
     "google/gemini-2.0-flash"
   ]
@@ -342,7 +339,6 @@ Profiles with OmO (free, team) use OmO's built-in `runtime_fallback` in `oh-my-o
     "opencode": 15,
     "opencode-zen": 15,
     "opencode-go": 8,
-    "groq": 8,
     "openrouter": 6
   },
   "modelConcurrency": {
@@ -366,14 +362,9 @@ Profiles with OmO (free, team) use OmO's built-in `runtime_fallback` in `oh-my-o
   "defaultConcurrency": 5,
   "providerConcurrency": {
     "opencode": 10,
-    "openrouter": 5,
-    "groq": 5
+    "openrouter": 5
   },
-  "modelConcurrency": {
-    "groq/openai/gpt-oss-120b": 3,
-    "groq/llama-3.3-70b-versatile": 5,
-    "groq/openai/gpt-oss-20b": 8
-  }
+  "modelConcurrency": {}
 }
 ```
 

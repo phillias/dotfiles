@@ -5,15 +5,6 @@
     "opencode-go": {
       "models": {}
     },
-    "groq": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Groq",
-      "options": {
-        "baseURL": "https://api.groq.com/openai/v1",
-        "apiKey": "{env:GROQ_API_KEY}"
-      },
-      "models": {}
-    },
     "openrouter": {
       "models": {}
     },

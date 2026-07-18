@@ -42,51 +42,6 @@
         }
       }
     },
-    "groq": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Groq",
-      "options": {
-        "baseURL": "https://api.groq.com/openai/v1",
-        "apiKey": "{env:GROQ_API_KEY}"
-      },
-      "models": {
-        "llama-3.3-70b-versatile": {
-          "name": "Llama 3.3 70B",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          }
-        },
-        "openai/gpt-oss-120b": {
-          "name": "GPT-OSS 120B",
-          "limit": {
-            "context": 98304,
-            "output": 8192
-          }
-        },
-        "openai/gpt-oss-20b": {
-          "name": "GPT-OSS 20B",
-          "limit": {
-            "context": 98304,
-            "output": 8192
-          }
-        },
-        "meta-llama/llama-4-scout-17b-16e-instruct": {
-          "name": "Llama 4 Scout 17B",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          }
-        },
-        "qwen/qwen3-32b": {
-          "name": "Qwen3 32B",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          }
-        }
-      }
-    },
     "openrouter": {
       "models": {
         "qwen/qwen3-coder:free": {},
