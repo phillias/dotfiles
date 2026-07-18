@@ -45,6 +45,11 @@ Examples: `ABS`, `WARP`, `Edge`, `Data`, `Mgmt`
 
 ## Output
 
-- `<basename>.png` — static preview
+- `<basename>.png` — static preview only (no animation)
 - `<basename>.gif` — animated with glow dots and pulsing borders
-- Use the GIF in READMEs: `![title](path/to/diagram.gif)`
+
+**IMPORTANT**: The PNG is static with no animation. Always use the GIF in READMEs and documentation — the glow dots, pulsing borders, and motion only exist in the GIF. GitHub renders animated GIFs inline.
+
+```markdown
+![Diagram Title](path/to/diagram.gif)
+```
