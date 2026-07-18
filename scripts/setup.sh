@@ -405,6 +405,11 @@ if [ ! -d "$CHEZMOI_DIR" ]; then
     GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" chezmoi init git@github.com:phillias/dotfiles.git
 fi
 
+# ── 10b. Pin deploy key for all future git operations ────────────
+# Without this, chezmoi update / git fetch falls back to SSH config
+# defaults which may use a different key without push access.
+git -C "$CHEZMOI_DIR" config core.sshCommand "ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes"
+
 # ── 11. Register deploy key for SSH access ───────────────────────
 DEPLOY_PUB=$(cat "${DEPLOY_KEY}.pub")
 if ! grep -qF "$DEPLOY_PUB" ~/.ssh/authorized_keys 2>/dev/null; then
