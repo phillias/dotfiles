@@ -94,3 +94,57 @@ The agent **must not** perform the following without explicit user confirmation:
 - `git rebase --onto` against shared branches
 - Deleting files outside the project scope
 - Modifying files in `~/.config/opencode/` without being asked to
+
+## Compound Engineering Skills
+
+The following CE skills are available and should be used automatically when the task matches their purpose:
+
+- **`/ce-plan`** — Structured planning with confidence gating. Use when the user says "plan this", "how should we build", or when a brainstorm doc is ready. Produces durable plans in `docs/plans/`.
+- **`/ce-code-review`** — Parallel multi-agent code review with tiered personas. Use when reviewing code changes before creating a PR. Supports `mode:autofix` for hands-off fixing and `mode:report-only` for read-only review.
+- **`/ce-debug`** — Systematic root cause analysis with test-first fixes. Use when debugging errors, investigating test failures, or tracing causal chains.
+- **`/ce-compound`** — Document solved problems to compound team knowledge. Use after fixing a non-trivial issue to capture context in `docs/solutions/`.
+- **`/ce-brainstorm`** — Interactive requirements exploration. Use when scope is unclear or the user presents a vague feature request. Outputs a requirements document for `/ce-plan`.
+- **`/ce-optimize`** — Iterative optimization loops with measurement gates. Use for performance tuning or systematic improvement.
+- **`/ce-strategy`** — Create or maintain `STRATEGY.md`. Use when establishing or updating product strategy.
+
+**Invocation:** Use the `skill` tool with `name: ce-<skill>`. Each CE skill spawns specialized sub-agents pre-configured with budget-optimized models (GLM-5.1 for code review, Kimi K2.6 for architecture, Nemotron free for research, Big Pickle for document review).
+
+**Do not use** `/lfg` (removed — token-heavy autonomous pipeline that conflicts with ultrawork discipline of manual QA and scenario contracts).
+
+## Ultrawork Discipline
+
+When in ultrawork mode (`/ulw`), follow the strict RED → GREEN → SURFACE cycle with scenario contracts and manual QA. Do not delegate CE skills inside ultrawork — the protocol is hands-on. CE skills may be used *before* entering ultrawork (e.g., `/ce-plan` to create a plan, then `/ulw` to execute it with TDD discipline).
+
+## Model Budget Awareness
+
+All CE sub-agents are pinned to budget-optimized models. Do not override their model assignments. The session model (Sisyphus's current model) is used for skill entry points only; sub-agents use their own pinned models.
+
+## Token Budget Discipline
+
+Token budget is a first-class design constraint. Every tool output, API response format, and skill
+instruction must minimize token consumption without sacrificing signal.
+
+The authoritative source for this discipline is the **AXI skill** (`~/.agents/skills/axi/SKILL.md`),
+which defines 10 design principles for building agent-ergonomic CLIs. Load it when designing or
+reviewing any tool, CLI, or structured output that an agent will consume.
+
+**The 10 AXI Principles (index):**
+
+1. Token-efficient output (TOON format — ~40% fewer tokens than JSON)
+2. Minimal default schemas (3-4 fields, not 10)
+3. Content truncation (large output with size hints + `--full`)
+4. Pre-computed aggregates (total counts in list output)
+5. Definitive empty states (state the zero with context)
+6. Structured errors and exit codes (errors to stdout, no interactive prompts)
+7. Ambient context (session hooks before skills)
+8. Content first (no args = live data, not usage text)
+9. Contextual disclosure (next-step suggestions after output)
+10. Consistent help (`--help` per subcommand)
+
+**Directive:** When building or reviewing agent-facing tools, CLIs, or skill outputs, treat token
+count as a measurable cost. Prefer TOON over JSON. Default to 3-4 fields, not 10. Truncate large
+output with size hints. Include aggregate counts. Fail with structure, not noise.
+
+**When to load the full AXI skill:** Any task involving CLI design, tool output formatting,
+AXI compliance review, or agent-facing tooling. Do NOT load it for general coding, debugging,
+infrastructure, or code review — it would be noise.
