@@ -13,6 +13,45 @@ description: >
 
 Runbook for maintaining a chezmoi-managed dotfiles repo across multiple machines.
 
+## Agent-Friendly Interface: chezmoi-axi
+
+For agent contexts, use `chezmoi-axi` — an AXI-compliant wrapper around chezmoi that provides token-efficient TOON output (~40% savings over plain text) with structured errors and contextual help hints.
+
+```bash
+# Quick status check
+chezmoi-axi status
+
+# List managed files (minimal schema)
+chezmoi-axi list
+chezmoi-axi list --changed   # only files with pending diffs
+chezmoi-axi list --encrypted # only encrypted files
+
+# Review diffs
+chezmoi-axi diff
+chezmoi-axi diff ~/.bashrc   # specific file
+
+# Add/re-add files
+chezmoi-axi add ~/.config/app/config.json
+chezmoi-axi add --encrypt ~/.config/app/secret.key
+chezmoi-axi re-add ~/.bashrc
+chezmoi-axi re-add --all     # re-add all changed files
+
+# Apply and verify
+chezmoi-axi apply
+chezmoi-axi apply --preview  # dry run
+chezmoi-axi verify
+
+# Sync remote changes
+chezmoi-axi sync
+chezmoi-axi sync --preview   # fetch + diff, no apply
+
+# Commit, push, and open PR
+chezmoi-axi commit
+chezmoi-axi commit "feat(app): add new config"
+```
+
+The script is at `~/.local/bin/chezmoi-axi`. All output uses TOON format per [AXI principles](https://axi.md).
+
 ## Health Check
 
 Before any operation, assess current state:
@@ -95,6 +134,7 @@ chezmoi managed | head -20
 | `chezmoi init` or `git push` fails with permission denied | → [Troubleshoot: SSH deploy key](#troubleshoot-ssh-deploy-key) |
 | Bitwarden template variables aren't rendering | → [Troubleshoot: Bitwarden session](#troubleshoot-bitwarden-session) |
 | I just want a quick overview of what chezmoi manages | → [View managed files](#view-managed-files) |
+| I want agent-friendly output for chezmoi operations | → [Agent-Friendly Interface: chezmoi-axi](#agent-friendly-interface-chezmoi-axi) |
 
 ---
 
@@ -297,6 +337,14 @@ chezmoi verify  # exits 0 if everything matches
 ## Standard commit flow
 
 This is the standard way to commit and push source state changes. Used by most procedures above.
+
+**Quick alternative**: `chezmoi-axi commit` automates this entire flow — stages all changes, commits, pushes to a feature branch, and opens a PR:
+
+```bash
+chezmoi-axi commit "feat(app): add new config"
+```
+
+**Manual flow** (when you need more control):
 
 ```bash
 cd ~/.local/share/chezmoi
