@@ -1,0 +1,39 @@
+# OpenCode web server — systemd service unit
+#
+# Canonical definition for the opencode-serve service. Runs opencode in "web"
+# mode (API + Web UI) using the global config at ~/.config/opencode/opencode.json.
+#
+# Installation (as root or with sudo):
+#   cp opencode-serve.service /etc/systemd/system/
+#   systemctl daemon-reload
+#   systemctl enable --now opencode-serve
+#
+# Service expects:
+#   ~/.config/opencode/opencode.json    — global opencode config (referenced via OPENCODE_CONFIG)
+#   ~/.config/opencode/opencode-serve.env — API keys & OAuth secrets (EnvironmentFile)
+#   ~/.opencode/bin/opencode            — opencode binary
+#
+# Logs: journalctl -u opencode-serve -f
+
+[Unit]
+Description=OpenCode web server (API + Web UI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+
+# API keys and OAuth secrets
+EnvironmentFile=/home/ubuntu/.config/opencode/opencode-serve.env
+
+# Pin config file explicitly (idiomatic opencode env var)
+Environment=OPENCODE_CONFIG=/home/ubuntu/.config/opencode/opencode.json
+
+ExecStart=/home/ubuntu/.opencode/bin/opencode web --port 38889 --hostname 0.0.0.0
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
