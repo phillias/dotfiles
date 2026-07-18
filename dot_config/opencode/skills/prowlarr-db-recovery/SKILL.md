@@ -21,7 +21,7 @@ Before ANY destructive operation on the Prowlarr DB, create a timestamped backup
 
 ```bash
 # Stop Prowlarr first
-cd /home/ubuntu/docker/pirate && docker compose --profile stremio stop prowlarr
+cd ~/docker/pirate && docker compose --profile stremio stop prowlarr
 
 # Backup the live DB
 sudo cp /var/lib/docker/volumes/pirate_prowlarr-secrets/_data/prowlarr.db \
@@ -146,7 +146,7 @@ PYEOF
 
 ```bash
 # Stop Prowlarr
-cd /home/ubuntu/docker/pirate && docker compose --profile stremio stop prowlarr
+cd ~/docker/pirate && docker compose --profile stremio stop prowlarr
 
 # Copy fixed DB to volume
 sudo cp /tmp/prowlarr_recovered.db \
@@ -190,10 +190,10 @@ curl -s -H "X-Api-Key: $API_KEY" http://localhost:9696/api/v1/health
 | Resource | Path |
 |----------|------|
 | Active Prowlarr DB | `/var/lib/docker/volumes/pirate_prowlarr-secrets/_data/prowlarr.db` |
-| Stale bind-mount DB | `/home/ubuntu/docker/pirate/prowlarr/data/prowlarr.db` (do not use) |
+| Stale bind-mount DB | `~/docker/pirate/prowlarr/data/prowlarr.db` (do not use) |
 | Config file | `/var/lib/docker/volumes/pirate_prowlarr-secrets/_data/config.xml` |
 | Backups | `/var/lib/docker/volumes/pirate_prowlarr-secrets/_data/prowlarr.db.YYYYMMDD_HHMMSS*` |
-| Compose file | `/home/ubuntu/docker/pirate/compose.yaml` |
+| Compose file | `~/docker/pirate/compose.yaml` |
 
 ### Useful queries
 ```sql

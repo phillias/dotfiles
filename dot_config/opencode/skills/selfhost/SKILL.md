@@ -1,7 +1,7 @@
 ---
 name: selfhost
 description: >
-  Selfhost infrastructure management at /home/phillias/docker/ — Godoxy reverse proxy,
+  Selfhost infrastructure management at ~/docker/ — Godoxy reverse proxy,
   CrowdSec WAF with AppSec, Pocket ID OIDC provider, Tinyauth forward-auth, databases
   (MariaDB, PostgreSQL, MSSQL, Redis, libSQL/Turso), CloudBeaver, Dockhand, CrowdSec Manager,
   ntfy/apprise notifications, and restic backup to OCI Object Storage.
@@ -14,7 +14,7 @@ metadata:
 
 # Selfhost Infrastructure Management
 
-Authoritative guide for the selfhost Docker Compose stack at `/home/phillias/docker/`.
+Authoritative guide for the selfhost Docker Compose stack at `~/docker/`.
 This covers the selfhost directory plus tightly coupled auth services (pocketid, tinyauth)
 that live in their own directories. This is one stack among several — it does not cover
 custom Go applications (llpoa, miaction, myastrology) or media/pirate services.
@@ -68,7 +68,7 @@ Cloudflare (Tunnel/Proxy, SSL Full/Strict)
 
 ### Common Conventions
 
-- **PUID=1000, PGID=984** (set in `/home/phillias/docker/.env` and `selfhost/.env`)
+- **PUID=1000, PGID=984** (set in `~/docker/.env` and `selfhost/.env`)
 - **TZ=America/New_York** for most services (selfhost services use `ETC/UTC`)
 - **Secrets in `.env` files** — never committed (`.gitignore` includes `.env`)
 - **`restart: unless-stopped`** on all services
@@ -107,12 +107,12 @@ services — or that might affect them (e.g. full-stack operations) — requires
 ### Godoxy Config (CRITICAL — DO NOT MODIFY WITHOUT APPROVAL)
 
 ### PRIME DIRECTIVE
-**Never edit `/home/phillias/docker/selfhost/godoxy/config/config.yml` without explicit user approval.** The YAML formatting requirements are specific and look inconsistent but are required by godoxy's parser:
+**Never edit `~/docker/selfhost/godoxy/config/config.yml` without explicit user approval.** The YAML formatting requirements are specific and look inconsistent but are required by godoxy's parser:
 - Bare IPv4 (unquoted, no space): `- ip:162.120.186.139`
 - IPv4 with special chars (quoted, space): `- "ip: 147.224.164.153"`
 - IPv6 (quoted, space — colons would break unquoted YAML): `- "ip: 2600:6c4a:53f:8285:9c5d:c409:1251:b53b"`
 
-The godoxy config is at `/home/phillias/docker/selfhost/godoxy/config/config.yml` and is bind-mounted to `/app/config` inside the container.
+The godoxy config is at `~/docker/selfhost/godoxy/config/config.yml` and is bind-mounted to `/app/config` inside the container.
 
 ### Godoxy Config Change Safety
 
@@ -182,7 +182,7 @@ Key config.yml features:
 
 ### Godoxy Hostapps
 
-Defined in `/home/phillias/docker/selfhost/godoxy/config/hostapps.yml` for services not managed via Docker labels. Currently:
+Defined in `~/docker/selfhost/godoxy/config/hostapps.yml` for services not managed via Docker labels. Currently:
 - **netdata**: Host `172.17.0.1:19999`, HTTP scheme, `forward_auth: {}` placeholder (not yet configured)
 
 ### Godoxy Web UI / Management UIs
@@ -351,7 +351,7 @@ Defined via `COLLECTIONS` env var in compose.yml:
 - `crowdsecurity/appsec-crs`
 
 ### AppSec Acquisition Config
-Located at `/home/phillias/docker/selfhost/crowdsec/acquis.d/appsec.yaml`:
+Located at `~/docker/selfhost/crowdsec/acquis.d/appsec.yaml`:
 ```yaml
 source: appsec
 listen_addr: 0.0.0.0:7422
@@ -363,7 +363,7 @@ labels:
 
 **Note**: `crowdsecurity/virtual-patching` and `crowdsecurity/generic-rules` are NOT included in the current acquis config due to `id:100` rule conflicts with `appsec-default`. The original setup notes reference them as commented out.
 
-The full setup with comments is documented in `/home/phillias/docker/selfhost/crowdsec-godoxy-setup-notes.txt`:
+The full setup with comments is documented in `~/docker/selfhost/crowdsec-godoxy-setup-notes.txt`:
 ```
 appsec_configs: 
   - crowdsecurity/appsec-default
@@ -438,8 +438,8 @@ docker compose -f ~/docker/selfhost/compose.yml logs crowdsec -f
 - **Port**: 1411 (`127.0.0.1` only — proxied through godoxy)
 - **Image**: `ghcr.io/pocket-id/pocket-id:v2` (v2.7.0+)
 - **Data**: SQLite database in named volume `pocketid_data`
-- **Compose**: `/home/phillias/docker/pocketid/compose.yml`
-- **Config**: `/home/phillias/docker/pocketid/.env`
+- **Compose**: `~/docker/pocketid/compose.yml`
+- **Config**: `~/docker/pocketid/.env`
 - **Healthcheck**: `/app/pocket-id healthcheck`, 1m30s interval, 15s start period
 - **Resource limits**: 0.5 CPU / 256M max, 0.1 CPU / 64M reserved
 - **Docker labels**: `proxy.pocketid.port: 1411`, `proxy.pocketid.alias: pocketid`
@@ -503,7 +503,7 @@ POCKETID_TRUST_PROXY=true
 ### Tinyauth (Forward Auth Fallback)
 
 - **URL**: `tinyauth.phillias.us`
-- **Config**: `/home/phillias/docker/tinyauth/compose.yml` + `selfhost/.env`
+- **Config**: `~/docker/tinyauth/compose.yml` + `selfhost/.env`
 - **Image**: `ghcr.io/steveiliop56/tinyauth:v5`
 - **Data**: SQLite DB at `./tinyauth/tinyauth.db`
 
@@ -610,13 +610,13 @@ This JDBC URL is used by applications connecting to MariaDB. For other databases
 - Image: `dbeaver/cloudbeaver:latest`
 - Port: 8978
 - Volume: `cloudbeaver:/opt/cloudbeaver/workspace`
-- Extra volume: `/home/phillias/docker/:/docker` — mounts the entire docker directory for file access
+- Extra volume: `~/docker/:/docker` — mounts the entire docker directory for file access
 - No authentication configured (web UI only)
 
 ### Dockhand
 - Port: 7299
 - Docker management via socket-proxy
-- Note: Dockhand service is defined in its own directory at `/home/phillias/docker/dockhand/`, not in the selfhost compose
+- Note: Dockhand service is defined in its own directory at `~/docker/dockhand/`, not in the selfhost compose
 
 ### ntfy
 - Port: 3930
@@ -729,10 +729,10 @@ cd ~/docker/tinyauth && docker compose down
 
 | File | Purpose |
 |------|---------|
-| `/home/phillias/docker/.env` | Root-level shared: `PUID`, `PGID`, `TZ` |
-| `/home/phillias/docker/selfhost/.env` | Main config — godoxy, crowdsec, databases, OIDC, Pocket ID, Tinyauth, ntfy |
-| `/home/phillias/docker/pocketid/.env` | Pocket ID: `APP_URL`, `ENCRYPTION_KEY`, `TRUST_PROXY` |
-| `/home/phillias/docker/selfhost/.restic-env` | Restic backup: repo URL, password, AWS credentials |
+| `~/docker/.env` | Root-level shared: `PUID`, `PGID`, `TZ` |
+| `~/docker/selfhost/.env` | Main config — godoxy, crowdsec, databases, OIDC, Pocket ID, Tinyauth, ntfy |
+| `~/docker/pocketid/.env` | Pocket ID: `APP_URL`, `ENCRYPTION_KEY`, `TRUST_PROXY` |
+| `~/docker/selfhost/.restic-env` | Restic backup: repo URL, password, AWS credentials |
 
 All `.env` files are in `.gitignore` and never committed.
 
@@ -862,7 +862,7 @@ Godoxy's OIDC callback path is always `/auth/callback`. When creating an OIDC cl
 Docker Compose uses `$` as its variable expansion prefix. To pass a literal `$` in a Tinyauth bcrypt hash, double it: `$$2a$$10$$...`. At runtime, Docker Compose down-converts `$$` → `$`, producing the correct hash.
 
 ### Retired Services (in `.retired/`)
-The `.retired/` directory in `/home/phillias/docker/` contains previously tried selfhost-related services:
+The `.retired/` directory in `~/docker/` contains previously tried selfhost-related services:
 - **Pangolin**: Alternative reverse proxy — godoxy chosen instead
 - **Portainer, Dockge**: Docker management — Dockhand chosen instead
 - **watchtower, cupdate**: Auto-updaters — intentionally not used to avoid unexpected breakage
@@ -968,7 +968,7 @@ docker volume rm selfhost_crowdsec-db
 ## 11. Backup & Recovery (Restic)
 
 ### Configuration
-Restic backs up to Oracle Cloud Infrastructure Object Storage (S3-compatible). Configuration is in `/home/phillias/docker/selfhost/.restic-env`:
+Restic backs up to Oracle Cloud Infrastructure Object Storage (S3-compatible). Configuration is in `~/docker/selfhost/.restic-env`:
 
 ```bash
 export RESTIC_REPOSITORY='s3:https://axh7zpa5qpqc.compat.objectstorage.us-chicago-1.oraclecloud.com/<bucket-ocid>'
@@ -1051,7 +1051,7 @@ Or add a logrotate config:
 
 ```bash
 sudo tee /etc/logrotate.d/godoxy-logs << 'EOF'
-/home/phillias/docker/selfhost/godoxy/logs/*.log {
+~/docker/selfhost/godoxy/logs/*.log {
     weekly
     rotate 4
     compress
@@ -1080,7 +1080,7 @@ When enabled, godoxy logs additional debug information including detailed routin
 
 ### CrowdSec Logging
 
-CrowdSec logs to journald via stdout. Its config at `/home/phillias/docker/selfhost/crowdsec/config/user.yaml` sets `log_media: stdout`, `log_level: info`, `log_dir: /var/log/`.
+CrowdSec logs to journald via stdout. Its config at `~/docker/selfhost/crowdsec/config/user.yaml` sets `log_media: stdout`, `log_level: info`, `log_dir: /var/log/`.
 
 ```bash
 # View CrowdSec logs
@@ -1100,13 +1100,13 @@ docker exec crowdsec cscli parsers list           # Loaded parsers
 docker exec crowdsec cscli hub list              # Hub items
 ```
 
-**CrowdSec log level**: Change from `info` to `debug` in `/home/phillias/docker/selfhost/crowdsec/config/user.yaml` (`log_level: debug`) for verbose WAF troubleshooting. Restart crowdsec after changing.
+**CrowdSec log level**: Change from `info` to `debug` in `~/docker/selfhost/crowdsec/config/user.yaml` (`log_level: debug`) for verbose WAF troubleshooting. Restart crowdsec after changing.
 
-**CrowdSec simulation mode**: Available at `/home/phillias/docker/selfhost/crowdsec/config/simulation.yaml` but currently **disabled** (commented out). When enabled, triggered alerts do NOT result in decisions — useful for testing new rules without affecting traffic.
+**CrowdSec simulation mode**: Available at `~/docker/selfhost/crowdsec/config/simulation.yaml` but currently **disabled** (commented out). When enabled, triggered alerts do NOT result in decisions — useful for testing new rules without affecting traffic.
 
-**CrowdSec notifications**: The ntfy notification plugin at `/home/phillias/docker/selfhost/crowdsec/config/notifications/ntfy.yaml` sends alerts to `https://ntfy.phillias.cc/SelfHostNetSec` with `log_level: info`.
+**CrowdSec notifications**: The ntfy notification plugin at `~/docker/selfhost/crowdsec/config/notifications/ntfy.yaml` sends alerts to `https://ntfy.phillias.cc/SelfHostNetSec` with `log_level: info`.
 
-**Decision profiles**: Default profile at `/home/phillias/docker/selfhost/crowdsec/config/profiles.yaml` — ban for 4h when `Alert.Remediation == true`.
+**Decision profiles**: Default profile at `~/docker/selfhost/crowdsec/config/profiles.yaml` — ban for 4h when `Alert.Remediation == true`.
 
 CrowdSec collection installations and parser errors appear in its logs. The acquis config at `/etc/crowdsec/acquis.d/appsec.yaml` controls AppSec log ingestion — if CrowdSec isn't analyzing web requests, check that the acquis config is loaded:
 

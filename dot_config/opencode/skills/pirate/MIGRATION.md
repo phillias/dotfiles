@@ -1,7 +1,7 @@
 # Pirate Stack – Migration & System-Specific Reference
 
 > This file captures migration procedures and configuration unique to this
-> **system** (host: `ubuntu`, base path: `/home/ubuntu/docker/pirate/`).
+> **system** (host: `ubuntu`, base path: `~/docker/pirate/`).
 > It is **not** part of the long-term runbook — it exists so that the
 > runbook (`SKILL.md`) can stay portable and drift-resistant.
 >
@@ -133,7 +133,7 @@ new machine.
 
 | Item | Value |
 |------|-------|
-| Base path | `/home/ubuntu/docker/pirate/` |
+| Base path | `~/docker/pirate/` |
 | User | `ubuntu` (UID 1000) |
 | Docker group | `998` |
 | Timezone | `America/New_York` |
