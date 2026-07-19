@@ -2,7 +2,9 @@
 title: "Remove Groq Provider from OpenCode/OmO Configuration"
 type: refactor
 created: 2026-07-18
-status: pending
+status: completed
+closed: 2026-07-18
+closed_by: PR #102 — https://github.com/phillias/dotfiles/pull/102
 ---
 
 # Remove Groq Provider
@@ -194,3 +196,49 @@ After implementation:
 4. OpenCode should start without errors using team profile
 5. Explore/Librarian agents should use Cloudflare models
 6. `profiles/free/` and `profiles/desk/` directories should not exist
+
+## Closure Addendum (2026-07-18)
+
+**Status**: completed. Scope was widened substantially during execution; results are tracked in [PR #102](https://github.com/phillias/dotfiles/pull/102) plus the follow-up commit on the same branch.
+
+### Unit status
+
+| Unit | Plan called for | Actual outcome |
+|---|---|---|
+| U1 team oh-my-openagent.jsonc | Replace Groq refs with Cloudflare equivalents | Superseded — entire `profiles/` directory deleted (full profile teardown). Root `oh-my-openagent.jsonc` (which did not reference Groq) was cleaned instead. |
+| U2 remove groq provider from opencode.json files | Remove from global / team / web | Root `opencode.json` never declared Groq (confirm via grep). Team and web profiles deleted entirely. |
+| U3 rewrite global fallback chain | Drop Groq entry, keep 2-entry chain | Done **plus** rewritten as 10-entry free→subsidized→pay progressive chain (`cloudflare/@cf/...` free → openrouter free → opencode-zen free → opencode-go flash → `google/gemini-2.0-flash` last resort). |
+| U4 update skill docs | Mark groq defunct in opencode-omo-config + dotfiles | **opencode-omo-config**: removed all cerebras refs (was out-of-original-plan size); agent fallback table rows updated with current real chains; new "Defunct Providers" subsection added. **dotfiles**: replaced `.groq-key` code examples with `.cloudflare-key` (still tracked); defunct note added. |
+| U5 delete free + desk profiles | Delete two profile directories | Done **plus** all 8 profiles deleted (`desk`, `free`, `go`, `pure`, `team`, `test`, `web`, `zen`). Root config is authoritative. |
+| U6 update web profile | Replace Groq refs | N/A — web profile deleted. |
+| U7 commit / push / PR | Standard commit flow | Done — PR #102 opened on `feat/fleet-state-wire-dispatch-rules-*` branch with 64 file changes. This closure addendum is part of a follow-up commit on the same branch. |
+
+### Out-of-scope items that were actually done
+
+The plan explicitly excluded three items that were completed during execution:
+
+1. **`.groq-key` deletion** — plan said "retained chezmoi encrypted for potential future use." Actually deleted from disk and chezmoi source state (`encrypted_private_dot_groq-key.age` removed). Reason: keeping an orphan key file adds maintenance surface and confusion; cleaner to remove entirely. Dans l'event Groq returns to the stack, the key can be re-added from Bitwarden.
+2. **Go pool guard groq redirect** — plan said "separate concern." Actually fixed in the same session: `go-pool-guard.ts` qwen3.x-plus redirects now target `cloudflare/@cf/qwen/qwen3-30b-a3b-fp8` instead of dead `groq/qwen/qwen3-32b`. Empirical verification: opencode core schema audit confirmed zero native `fallback`/`retry` keys across `$defs`, so `go-pool-guard` is the only safety net for bare-opencode runs (no OmO loaded) — kept dormant, not deleted.
+3. **Cerebras removal** — not in original plan. Actually removed from 8 fallback chains in `oh-my-openagent.jsonc`. Reason: account lacked model access. Verified empirically: 3× consecutive `Not Found: Model does not exist or you do not have access to it` against `cerebras/llama3.3-70b` and `cerebras/gpt-oss-120b` retry attempts during the session. Provider block + `.cerebras-key` file retained as dormant for potential re-enablement.
+
+### Extras not anticipated by the plan
+
+The session also delivered infrastructure work adjacent to but not described by this plan:
+
+- `plugins/fleet-state-writer.ts` — zero-token state wire for background-task status (new)
+- `plugins/tmux-patch-keeper.ts` — auto-reapplies tmux attach patch on `session.created` (new)
+- `scripts/fleet-digest.sh` — pure-bash reader for the state wire (new)
+- `dispatch-rules.json` — 26 rules translating task shape to `task(category=..., load_skills=[...])` at intent-gate time (new)
+- `skills/axi/SKILL.md` section 11 — Native bash whitelist overseer (15 predicates, zero-token Mode A)
+- `AGENTS.md` — Dispatch Rules + Fleet State Communications sections appended (+108 lines)
+
+These belong to the broader "build-vs-adapt Option B" architecting work that produced this PR; they are not claims of this plan's completion.
+
+### Verification re-check (post-execution)
+
+1. ✓ `chezmoi diff` clean after final re-add (`chezmoi-axi status` reports only unrelated `.bashrc`/`.zshrc` drift)
+2. ✓ Grep `groq` in `profiles/team/` — directory deleted, grep is trivially empty
+3. ✓ Grep `groq` in `profiles/web/` — directory deleted, grep is trivially empty
+4. ⚠ "OpenCode should start without errors using team profile" — N/A, no team profile. Equivalent: opencode with root config + OmO runs clean (this very session is the proof — we executed ~30+ tool turns without config crashes after the profile removal).
+5. ✓ Explore/Librarian run on `cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast` (root `oh-my-openagent.jsonc` lines 173, 188)
+6. ✓ `profiles/free/` and `profiles/desk/` deleted — in fact `profiles/` directory is fully gone
