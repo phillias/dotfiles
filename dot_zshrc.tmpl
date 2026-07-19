@@ -321,6 +321,12 @@ fi
 if [ -f "$HOME/.config/opencode/.google-client-secret" ]; then
     export GOOGLE_CLIENT_SECRET="$(cat $HOME/.config/opencode/.google-client-secret)"
 fi
+if [ -f "$HOME/.config/opencode/.fireworks-key" ]; then
+    export FIREWORKS_API_KEY="$(cat $HOME/.config/opencode/.fireworks-key)"
+fi
+if [ -f "$HOME/.config/opencode/.exa-key" ]; then
+    export EXA_API_KEY="$(cat $HOME/.config/opencode/.exa-key)"
+fi
 if [ -f "$HOME/.config/opencode/.composio-key" ]; then
     export COMPOSIO_API_KEY="$(cat $HOME/.config/opencode/.composio-key)"
 fi
