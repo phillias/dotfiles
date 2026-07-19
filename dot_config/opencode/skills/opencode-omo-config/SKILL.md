@@ -2,89 +2,54 @@
 
 ## Purpose
 
-This skill documents the architecture, decisions, and maintenance procedures for the OpenCode and Oh-My-OpenAgent (OmO) configuration across all profiles.
+This skill documents the architecture, decisions, and maintenance procedures for the OpenCode and Oh-My-OpenAgent (OmO) configuration. As of 2026-07-18, this is a single-root config — profiles were phased out after they were identified as the source of the `cloudflare/` vs `@cf/` prefix bug (root config was correct, profiles shadowed it with bare model names).
 
 ## Architecture Overview
 
-### Two-Layer Config System
+### Single-Root Config System
 
-Opencode merges a **global config** with a **profile config**. The global config provides defaults; the profile config overrides them.
+All config lives directly under `~/.config/opencode/`. No profile subdirectories. There is exactly one `opencode.json`, one `oh-my-openagent.jsonc`, one `opencode-fallback.jsonc` — each is the authoritative source for its concern.
 
 ```
 ~/.config/opencode/
-├── opencode.json                              # Global defaults (providers, MCPs, compaction)
-├── opencode-fallback.jsonc                    # Global fallback chain (free-tier, for opencode-runtime-fallback)
-├── profiles/
-│   ├── free/opencode.json                     # Free profile config
-│   ├── free/oh-my-openagent.json              # Free OmO agent/category config
-│   ├── team/opencode.json                     # Team profile config (Go pool merged in)
-│   ├── team/oh-my-openagent.jsonc             # Team OmO config (JSONC — multi-user, comments)
-│   ├── team/tui.json                          # Team theme override
-│   ├── web/opencode.json                      # Web profile config (no OmO)
-│   ├── web/opencode-serve.service             # Web systemd service
-│   ├── web/service.env                        # Web service environment
-│   ├── desk/opencode.json                     # Desk profile (no OmO, lightweight)
-│   └── pure/opencode.json                     # Pure profile (no OmO plugin)
+├── opencode.json                              # Providers (Cloudflare, OpenRouter, OpenCode Zen, OpenCode Go, Google, Mistral, SambaNova, Together, Kilo, HuggingFace), MCPs, compaction defaults
+├── oh-my-openagent.jsonc                      # OmO agent and category routing (sisyphus, prometheus, oracle, metis, momus, atlas, ultrabrain, deep, quick, writing, artistry, explore, librarian, sisyphus-junior, etc.) + fallback_models chains
+├── opencode-fallback.jsonc                    # Global 10-entry free→subsidized→pay fallback chain (cloudflare Workers AI free → openrouter free → opencode-zen free → opencode-go flash → google gemini last resort)
+├── dispatch-rules.json                        # 26 starter rules mapping task shape → task(category=..., load_skills=[...]) at Sisyphus intent-gate time
 ├── plugins/
 │   ├── better-compaction.ts                   # Auto-loaded: todo tracking, skill generation, codemem
-│   ├── go-pool-fallback.ts                    # Auto-loaded: Go pool exhaustion detection
-│   └── go-pool-guard.ts                       # Auto-loaded: redirect to free when Go exhausted
-├── AGENTS.md                                  # Agent behavioral rules
-├── .cerebras-key, ...                           # API key files (secret)
-├── .tmux-OmOTeam.conf                        # tmux layout for team profile
-└── skills/                                    # OpenCode skills directory
+│   ├── fleet-state-writer.ts                  # Auto-loaded: zero-LLM-cost state wire (writes ~/.local/state/opencode-fleet/{state.json,wake.log,digest.txt})
+│   ├── fleet-digest.sh                        # (in scripts/, not plugins/) — pure bash reader for fleet state
+│   ├── go-pool-fallback.ts                    # Auto-loaded: Go pool exhaustion compaction note
+│   ├── go-pool-guard.ts                       # Auto-loaded: redirect to free when Go exhausted (only safety net for bare-opencode runs; no-op when OmO loads)
+│   └── tmux-patch-keeper.ts                   # Auto-loaded: re-applies tmux attach patch on session.created when upstream fingerprint detected
+├── scripts/
+│   ├── fleet-digest.sh                        # Pure bash reader for fleet state (terse TSV summary)
+│   ├── go-pool-check.sh                       # Go pool usage probe helper
+│   └── go-pool-switch.sh                      # Switch Go pool off if exhausted
+├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
+├── docs/plans/                                # Plan archive (not actively consumed at runtime)
+├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .kilo-key, .exa-key  # API keys (secret; .groq-key + any other defunct-key files removed)
+├── .tmux-OmOTeam.conf                         # tmux layout for team mode
+├── .google-client-id, .google-client-secret   # OAuth creds for Google Workspace MCP
+└── skills/                                    # OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, etc.)
 ```
-
-### How Profiles Work
-
-The `~/.local/bin/oc` launcher sets `OPENCODE_CONFIG_DIR` to point at a profile directory. Opencode merges `~/.config/opencode/opencode.json` (global) with that profile's `opencode.json`. **Profile configs override global defaults** — they do NOT deep-merge nested keys.
-
-This means:
-- **Global config** defines all 11 providers (with API keys), baseline MCPs, compaction defaults, and no plugins
-- **Profile configs** re-declare providers with their model lists, override compaction settings, add profile-specific MCPs, and declare plugins
 
 ### Critical Rules
 
-1. **Never symlink.** Profile switching is done via `oc <profile>`, which sets `OPENCODE_CONFIG_DIR`. There are no symlinks involved.
-2. **Global config has empty model lists.** Profiles fill in the models they need. The global config only provides provider connection details (baseURL, apiKey) so profiles don't have to repeat them.
-3. **Profile configs are self-contained for `mcp` and `provider`.** Since opencode doesn't deep-merge nested keys, each profile must declare its full `mcp` block (including the 4 global baseline MCPs) and `provider` block with all models it uses.
-4. **Three plugin profiles exist:** OmO (free, team), opencode-runtime-fallback (desk, web), and none (pure, test).
-5. **`opencode-runtime-fallback` uses per-agent `fallback_models`** in `opencode.json` `agent` blocks. The global `opencode-fallback.jsonc` provides a default chain (first-match-wins per location, not merge).
-6. **Auto-loaded plugins** in `~/.config/opencode/plugins/` (better-compaction.ts, go-pool-fallback.ts, go-pool-guard.ts) load for ALL profiles regardless of profile config.
-
-### Profile Switching
-
-```bash
-# Launch a profile (sets OPENCODE_CONFIG_DIR and loads API keys)
-oc free         # Free providers only (default)
-oc desk         # Desktop — no OmO, opencode-runtime-fallback + codemem
-oc team         # Team mode + tmux (Go pool merged in)
-oc go           # Alias for team
-oc web          # Google-provider focus — no OmO, opencode-runtime-fallback
-oc pure         # Vanilla opencode, no plugins
-oc test         # Experimental models, no plugins
-
-# The team profile also exports TMUX_CONF
-oc team / oc go # → also sets TMUX_CONF=~/.config/opencode/.tmux-OmOTeam.conf
-```
-
-### Profile Matrix
-
-| Profile | Plugin(s) | Compaction `auto` | MCPs beyond global | Special |
-|---|---|---|---|---|
-| **free** | `oh-my-openagent@latest` | true | netdata-bylocalhost, chrome-devtools, codemem | Default |
-| **desk** | `opencode-runtime-fallback` | true | chrome-devtools, codemem | Desktop — no OmO, no netdata |
-| **team** | `oh-my-openagent@latest` | **false** | netdata-bylocalhost, chrome-devtools, codemem | Team mode + tmux, Go pool merged in |
-| **web** | `opencode-runtime-fallback` | true | netdata-bylocalhost, chrome-devtools, codemem, google-workspace | Google focus — no OmO |
-| **pure** | none | true | netdata-bylocalhost, chrome-devtools, codemem | Vanilla, no plugins |
-| **test** | none | true | netdata-bylocalhost, chrome-devtools, codemem | Experimental models |
+1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative. No `oc <profile>` launcher, no `profiles/` subdirectory. To switch behavior, change `opencode.json` / `oh-my-openagent.jsonc` directly and chezmoi-track the change.
+2. **Global config defines providers and MCPs.** `opencode.json` has all 10 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
+3. **OmO owns agent + category routing.** `oh-my-openagent.jsonc` declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain.
+4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 10 agents that don't specify their own `fallback_models` arrays.
+5. **Auto-loaded plugins.** Any `.ts` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-fallback.ts`, `go-pool-guard.ts`, `tmux-patch-keeper.ts`. All run in-process with zero LLM cost on the write side.
+6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
 ### Provider Stack (10 providers)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
 | **OpenCode Zen** | 49+ (GPT-5.x, Claude-4.x, Gemini-3.x, DS-V4, GLM-5, Big Pickle, free tier) | Zen sub | Quality primary |
-| **OpenCode Go** | 24 (K2.6/2.7, DS-V4-Pro/Flash, GPT-5.x, Claude-4.x, Qwen3.x, etc.) | $10/mo | Quality pool, merged into team profile |
+| **OpenCode Go** | 24 (K2.6/2.7, DS-V4-Pro/Flash, GPT-5.x, Claude-4.x, Qwen3.x, etc.) | $10/mo | Quality pool, 24 models in routing |
 | **OpenRouter** | 22+ (DS-V4-Flash, Qwen3-Coder, GLM-5, etc.) | Free/Paid | Broadest model selection |
 | **Cloudflare** | 16 (`@cf/...` Workers AI models: Llama 3.3, GPT-OSS 120B, Kimi K2.6/K2.7, GLM 5.2, Qwen 3, Nemotron 3, Gemma 4, etc.) | Free tier | Free-tier leader in fallback chains |
 | **Mistral** | 1 (Mistral Large) | Free (1 req/s) | Reasoning, multilingual |
@@ -98,7 +63,7 @@ oc team / oc go # → also sets TMUX_CONF=~/.config/opencode/.tmux-OmOTeam.conf
 
 | Provider | Removed because | Date | Cleanup scope |
 |---|---|---|---|
-| **Groq** | Groq free-tier TPM limits (12K/8K) were chronically hitting rate limits on agentic workloads. Eliminated from all configs; `.groq-key` deleted; no functional replacement needed (Cloudflare has identical GPT-OSS and Llama 3.3 70B models at higher concurrency) | 2026-07-18 | Provider block + fallback chain entries + team/web/free/desk profiles (all 8 profiles removed entirely) |
+| **Groq** | Groq free-tier TPM limits (12K/8K) were chronically hitting rate limits on agentic workloads. Eliminated from all configs; `.groq-key` deleted; no functional replacement needed (Cloudflare has identical GPT-OSS and Llama 3.3 70B models at higher concurrency) | 2026-07-18 | Provider block + all fallback chain entries (all 8 profile subdirs also deleted root-only config introduced same day) |
 | **Cerebras** | Account lacked model access despite valid `.cerebras-key`. Verified empirically: every retry attempt returned `Not Found: Model does not exist or you do not have access to it` against `cerebras/llama3.3-70b` and `cerebras/gpt-oss-120b` (observed 3× consecutive failures this session). Dormant provider block retained in `opencode.json` for potential re-enablement, but no agent references it. | 2026-07-18 | Stripped from 8 fallback chains in `oh-my-openagent.jsonc` (sisyphus, prometheus, ultrabrain, deep, artistry, quick, unspecified-high, writing). Provider block + `.cerebras-key` retained as dormant. |
 
 Verification of these removals: schema audit of upstream opencode JSON schema (`https://opencode.ai/config.json` `$defs`) confirmed zero native `fallback` or `retry` keywords. All fallback handling is an OmO-feature, parsed by the OmO plugin, not by opencode core. Free→subsidized→pay progression is enforced by OmO at request-failure time.
@@ -124,22 +89,21 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 
 **2. Shell profiles** (`dot_bashrc`, `dot_zshrc.tmpl`) — load at shell login for non-opencode use.
 
-Both use the same key files. The `oc` launcher's `_load_key` function is the canonical source — shell profiles mirror it.
+Both use the same key files. Shell profiles mirror the key files loaded by opencode core at startup.
 
-### Global Config Defaults
+### Config Defaults
 
 `~/.config/opencode/opencode.json` provides:
 
 - **`small_model`**: `google/gemini-2.0-flash` (1M context)
-- **`provider`**: All 11 providers with connection details and `{env:VAR}` key refs, empty model lists
-- **`compaction`**: `{auto: false, prune: true, reserved: 50000, tail_turns: 40}` — profiles with `auto: true` override this
+- **`provider`**: All 10 live providers (Cloudflare, OpenCode Zen, OpenCode Go, OpenRouter, Mistral, SambaNova, Google, Together, Kilo, HuggingFace) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it).
+- **`compaction`**: `{auto: false, prune: true, reserved: 50000, tail_turns: 40}`
 - **`mcp`**: Baseline MCPs (context7, grep_app, websearch, mcp_everything)
-- **No `plugin`** field — profiles declare their own
+- **`plugin`**: `["oh-my-openagent@latest"]` — the OmO plugin is loaded directly by root `opencode.json`
 
-`~/.config/opencode/opencode-fallback.jsonc` provides the global fallback chain for profiles using `opencode-runtime-fallback`:
+`~/.config/opencode/opencode-fallback.jsonc` provides the global fallback chain for agents without their own `fallback_models` array:
 
-- Free-tier fallback chain: cloudflare free → openrouter free → opencode-zen free → opencode-go deepseek-v4-flash → google/gemini-2.0-flash (10 entries total — progressive free→subsidized→pay in `opencode-fallback.jsonc`)
-- Only applies to agents without per-agent `fallback_models` in their profile's `opencode.json`
+- Free→subsidized→pay chain: cloudflare Workers AI free → openrouter free → opencode-zen free → opencode-go deepseek-v4-flash → google/gemini-2.0-flash (10 entries total — progressive, exhausts free first, pays last via OmO's failure-driven fallback)
 - First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global)
 
 ### Global MCP Servers
@@ -151,9 +115,9 @@ Both use the same key files. The `oc` launcher's `_load_key` function is the can
 | **websearch** | remote | `https://mcp.exa.ai/mcp` (oauth: false, `x-api-key: {env:EXA_API_KEY}`) | Web search (Exa) |
 | **mcp_everything** | local | `npx -y @modelcontextprotocol/server-everything` | Test/debug MCP |
 
-### Profile-Specific MCP Servers
+### Optional MCP Servers (declared in `opencode.json` directly)
 
-These are declared in profile configs, not global:
+These are declared in `opencode.json` directly (no profile indirection):
 
 | MCP | Type | Profiles | Purpose |
 |---|---|---|---|
@@ -202,11 +166,11 @@ These are declared in profile configs, not global:
 1. **Big Pickle as Sisyphus primary**: 200K context, tool calling, reasoning, structured output. Free on OpenCode Zen (limited time).
 2. **Gemma 4 12B for Multimodal-Looker**: Encoder-free architecture, 256K context, beats Gemma 3 27B at half the size.
 3. **Free→subsidized→pay global fallback**: The global `opencode-fallback.jsonc` chain has 10 entries in progressive order: cloudflare Workers AI free (`@cf/meta/llama-3.3-70b`, `@cf/openai/gpt-oss-20b`, `@cf/zai-org/glm-4.7-flash`) → openrouter free (`nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-nano-30b-a3b:free`) → opencode-zen free (`nemotron-3-ultra-free`, `deepseek-v4-flash-free`, `mimo-v2.5-free`) → subsidized opencode-go (`deepseek-v4-flash`) → pay-tier last resort `google/gemini-2.0-flash`. Free tier is exhausted first by OmO's failure-driven fallback; pays last.
-4. **Lightweight profiles use `opencode-runtime-fallback`** (desk, web) instead of OmO to save ~204 lines of system prompt overhead. Model fallback is preserved; agent routing, concurrency management, and hooks are not. Skills from `~/.config/opencode/skills/` are still available — they're loaded by OpenCode core, not by OmO.
-5. **Go pool merged into team profile** (Jun 2026): The `go` and `zen` profiles were consolidated into `team`. `oc go` is now an alias for `oc team`. Team gets 24 Go pool models, Zen-aligned critics (gpt-5.4), and the `no-hephaestus-non-gpt` hook.
+4. **OmO is the only plugin**: As of 2026-07-18, `opencode.json` declares `["oh-my-openagent@latest"]` as the sole plugin. Profile variants (`opencode-runtime-fallback` for desk/web, no-plugin for pure/test) are obsolete — deleted with the rest of `profiles/`. Skills from `~/.config/opencode/skills/` continue to load via OpenCode core, not OmO.
+5. **Go pool merged in** (Jun 2026): The former `go` and `zen` profile variants were consolidated into root config. 24 Go pool models (K2.6/K2.7, DS-V4-Pro/Flash, GPT-5.x, Qwen3.x) and Zen-aligned critics (gpt-5.4) are all in `oh-my-openagent.jsonc` directly now.
 6. **MoE preference**: All selected models use Mixture of Experts for efficiency.
-7. **Auto-compaction varies by profile**: `team` has `auto: false` (manual compaction only). All others have `auto: true`.
-8. **Global config layer**: Root `opencode.json` provides provider defaults and baseline MCPs. Profiles override as needed. Since opencode doesn't deep-merge, profiles must still declare full `provider` and `mcp` blocks.
+7. **Auto-compaction**: `opencode.json` declares `{auto: false, prune: true, reserved: 50000, tail_turns: 40}` — manual compaction only. This avoids disrupting background-task `<system-reminder>` delivery on the `chat.message` hook chain, which was identified as a known failure mode in 2026-07. Project-level `<project>/.opencode/opencode.json` can override to `{auto: true}` if a specific project wants auto-compaction back.
+8. **Single global config layer**: Root `opencode.json` is authoritative for providers and MCPs. No per-profile overrides. Machine differences via chezmoi templates and per-project `<project>/.opencode/` overrides only.
 9. **GPT model routing** (Jun 2026): GPT-5.x models require the `opencode` provider prefix (Go binary built-in), NOT `opencode-go` or `opencode-zen`. See [GPT Model Routing](#gpt-model-routing) below for details.
 
 ## GPT Model Routing
@@ -256,14 +220,14 @@ For agents that need GPT (Momus, Oracle, Hephaestus, Visual-Engineering):
 
 ### Config File Hierarchy (Critical)
 
-OmO configs are loaded in layers. **Project-level configs override profile-level configs:**
+OmO configs are loaded in two layers:
 
-1. **Team profile**: `~/.config/opencode/profiles/team/oh-my-openagent.jsonc` — read as `.jsonc` (with `parseJsonc`)
-2. **Project-level**: `<project>/.opencode/oh-my-openagent.jsonc` — **overrides team profile**. THIS is where project-specific agent tuning goes.
+1. **Root**: `~/.config/opencode/oh-my-openagent.jsonc` — read as `.jsonc` (with `parseJsonc`). Authoritative for all agents and categories on this machine.
+2. **Project-level**: `<project>/.opencode/oh-my-openagent.jsonc` — **overrides root**. THIS is where project-specific agent tuning goes.
 3. The OmO plugin's `omoConfig` path resolves to `{configDir}/oh-my-openagent.json` — but the runtime reads `.jsonc` via `parseJsonc`.
 
 **Key lessons learned:**
-- Editing the team profile `.jsonc` alone is NOT enough — the project-level `.opencode/oh-my-openagent.jsonc` overrides it.
+- Editing the root `.jsonc` is the global change; the project-level `.opencode/oh-my-openagent.jsonc` overrides it for that project only.
 - The `.jsonc` file (with comments) is the source of truth. A stripped `.json` copy is also read but comments-stripping must preserve URLs and strings.
 - Config changes require a **restart** to take effect (OmO caches config at process startup).
 - `runtime_fallback.retry_on_errors` must include **400** (not just 500-series) for GPT fallback to trigger on zen's chat-completion 400s.
@@ -393,58 +357,52 @@ Profiles with OmO (free, team) use OmO's built-in `runtime_fallback` in `oh-my-o
 
 ## Maintenance
 
-### Updating Profile Configs
+### Updating OpenCode/OmO Config
 
-When modifying `~/.config/opencode/` files (profiles, keys, global config):
+When modifying `~/.config/opencode/` files (root config, OmO config, fallback chain, keys, plugins):
 
 1. Make changes on disk
 2. Verify with `chezmoi diff` to see what drifted
 3. Capture changes with `chezmoi re-add <file>` or `chezmoi add <file>` (if new)
 4. Commit and push using the **dotfiles skill** (`/dotfiles`) standard commit flow
 
-### Updating the `oc` Launcher
+### Updating the Root Config Layers
 
-The `oc` script at `~/.local/bin/oc` is chezmoi-managed as `dot_local/bin/executable_oc`. After editing it on disk:
+- `opencode.json` — providers, MCPs, compaction, `plugin` declaration
+- `oh-my-openagent.jsonc` — per-agent `model` + `fallback_models` arrays, category routing, concurrency
+- `opencode-fallback.jsonc` — global free→subsidized→pay fallback chain (10 entries)
+- `dispatch-rules.json` — 26 starter rules consumed by Sisyphus at intent-gate time
 
-1. Verify: `chezmoi diff ~/.local/bin/oc`
-2. Capture: `chezmoi re-add ~/.local/bin/oc`
-3. Commit and push via the **dotfiles skill** standard commit flow
+All four are chezmoi-tracked. `chezmoi re-add` each after edits, then standard commit flow.
 
 ### Adding a New API Key
 
 1. Create key file: `echo -n '<key>' > ~/.config/opencode/.<provider>-key`
-2. Add `_load_key` line to `~/.local/bin/oc`
-3. Add `_load_key` line to `dot_bashrc` / `dot_zshrc.tmpl` in chezmoi source
-4. If the key is referenced via `{env:VAR}` in config, ensure the env var name matches
+2. If the key is referenced via `{env:VAR}` in `opencode.json`, ensure the env var name matches. Opencode core reads the `.*-key` files at startup and maps them to env vars based on provider convention.
+3. The shell profiles (`dot_bashrc`, `dot_zshrc.tmpl`) mirror the key files for non-opencode use — add the new mapping there too.
+4. `chezmoi add --encrypt ~/.config/opencode/.<provider>-key` (use `--encrypt` for secrets)
 5. Commit all changes via the **dotfiles skill** (`/dotfiles`)
 
-### Adding a New Profile
-
-1. Create `~/.config/opencode/profiles/<name>/` with `opencode.json` (and optionally `oh-my-openagent.json`)
-2. Add the profile name to the `case` statement in `~/.local/bin/oc`
-3. `chezmoi add` the new profile directory
-4. Commit and push via the **dotfiles skill** (`/dotfiles`)
-
-### Adding a New Global MCP
+### Adding a New MCP
 
 1. Add to `~/.config/opencode/opencode.json` under `mcp`
 2. `chezmoi re-add ~/.config/opencode/opencode.json`
 3. Commit and push via the **dotfiles skill** (`/dotfiles`)
 
-Note: Profile configs override the global `mcp` block entirely. If a profile needs the new global MCP, add it to that profile's config as well.
+This is the only step needed — root config is authoritative for MCPs (no profile indirection).
 
 ## Files Reference
 
 | File | Purpose | Managed by |
 |---|---|---|
-| `~/.config/opencode/opencode.json` | Global defaults (providers, MCPs, compaction) | chezmoi |
-| `~/.config/opencode/opencode-fallback.jsonc` | Global fallback chain for opencode-runtime-fallback | chezmoi |
-| `~/.config/opencode/profiles/<name>/opencode.json` | Profile-specific opencode config | chezmoi |
-| `~/.config/opencode/profiles/<name>/oh-my-openagent.json` | Profile OmO agent/category config (free) | chezmoi |
-| `~/.config/opencode/profiles/<name>/oh-my-openagent.jsonc` | Profile OmO config (team — JSONC with comments) | chezmoi |
-| `~/.config/opencode/AGENTS.md` | Agent behavioral rules | chezmoi |
-| `~/.config/opencode/plugins/*.ts` | Auto-loaded global plugins (better-compaction, go-pool-*) | chezmoi |
-| `~/.config/opencode/.*-key` | API key files (secret) | chezmoi (some encrypted with age) |
-| `~/.local/bin/oc` | Profile launcher script | chezmoi (`dot_local/bin/executable_oc`) |
-| `~/.config/opencode/.tmux-OmOTeam.conf` | tmux layout for team profile | chezmoi |
-| `~/.config/opencode/skills/` | OpenCode skills directory | chezmoi |
+| `~/.config/opencode/opencode.json` | Root config (providers, MCPs, compaction, `plugin` declaration) | chezmoi |
+| `~/.config/opencode/oh-my-openagent.jsonc` | OmO agent + category routing + fallback_models chains | chezmoi |
+| `~/.config/opencode/opencode-fallback.jsonc` | Global free→subsidized→pay fallback chain (10 entries) | chezmoi |
+| `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
+| `~/.config/opencode/AGENTS.md` | Agent behavioral rules (Dispatch Rules + Fleet State Comms sections) | chezmoi |
+| `~/.config/opencode/plugins/*.ts` | Auto-loaded TypeScript plugins (better-compaction, fleet-state-writer, go-pool-fallback, go-pool-guard, tmux-patch-keeper) | chezmoi |
+| `~/.config/opencode/scripts/*.sh` | Bash reader scripts (fleet-digest.sh, go-pool-check.sh, go-pool-switch.sh) | chezmoi (executable bit preserved) |
+| `~/.local/state/opencode-fleet/` | Fleet state tree (state.json + wake.log + digest.txt) — written by `fleet-state-writer.ts`, read by `fleet-digest.sh` | chezmoi tracks `.keep`; live files not tracked |
+| `~/.config/opencode/.*-key` | API key files (secret) | chezmoi (encrypted with age) |
+| `~/.config/opencode/.tmux-OmOTeam.conf` | tmux layout for team mode | chezmoi |
+| `~/.config/opencode/skills/` | OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, opencode-omo-config, etc.) | chezmoi |
