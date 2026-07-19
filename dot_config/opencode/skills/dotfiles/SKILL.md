@@ -199,15 +199,17 @@ grep recipient ~/.config/chezmoi/chezmoi.toml
 
 ```bash
 # Encrypt an existing file into the source state
-chezmoi add --encrypt ~/.config/opencode/.groq-key
+chezmoi add --encrypt ~/.config/opencode/.cloudflare-key
 
 # Encrypt a file that's already in the source state
-chezmoi reencrypt ~/.local/share/chezmoi/dot_config/opencode/encrypted_dot_groq-key.age
+chezmoi reencrypt ~/.local/share/chezmoi/dot_config/opencode/encrypted_dot_cloudflare-key.age
 ```
 
-**Verify**: Run `chezmoi cat ~/.config/opencode/.groq-key` — should show decrypted content. Run `chezmoi diff` — should be clean.
+**Verify**: Run `chezmoi cat ~/.config/opencode/.cloudflare-key` — should show decrypted content. Run `chezmoi diff` — should be clean.
 
 Commit and push using the [standard commit flow](#standard-commit-flow).
+
+> **Note**: This example previously used `.groq-key`. The Groq provider was removed from opencode configuration on 2026-07-18 (Groq's free-tier TPM limits were chronically rate-limiting agentic workloads), so `.groq-key` was dropped from chezmoi management. Examples now use `.cloudflare-key` (still actively managed). See [opencode-omo-config SKILL > Defunct Providers](../opencode-omo-config/SKILL.md#defunct-providers-removed-2026-07-18) for the full rationale.
 
 ---
 
@@ -219,13 +221,15 @@ Commit and push using the [standard commit flow](#standard-commit-flow).
 
 ```bash
 # View decrypted content (stdout)
-chezmoi cat ~/.config/opencode/.groq-key
+chezmoi cat ~/.config/opencode/.cloudflare-key
 
 # Edit an encrypted file (decrypts, opens editor, re-encrypts on save)
-chezmoi edit ~/.config/opencode/.groq-key
+chezmoi edit ~/.config/opencode/.cloudflare-key
 ```
 
 No commit needed for `chezmoi cat` (read-only). After `chezmoi edit`, commit and push using the [standard commit flow](#standard-commit-flow).
+
+> **Note**: `.groq-key` was removed from chezmoi management on 2026-07-18 along with the Groq provider. See Defunct Providers in opencode-omo-config SKILL for rationale.
 
 ---
 
@@ -475,7 +479,7 @@ Use this when you need to manually name a file in the source state (`~/.local/sh
 |---|---|
 | `~/.bashrc` | `dot_bashrc` |
 | `~/.config/opencode/opencode.json` | `dot_config/opencode/opencode.json` |
-| `~/.config/opencode/.groq-key` (encrypted) | `dot_config/opencode/encrypted_dot_groq-key.age` |
+| `~/.config/opencode/.cloudflare-key` (encrypted) | `dot_config/opencode/encrypted_dot_cloudflare-key.age` |
 | `~/.ssh/id_ed25519` (encrypted) | `dot_ssh/encrypted_private_id_ed25519.age` |
 
 Rules:
