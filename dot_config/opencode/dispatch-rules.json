@@ -1,0 +1,139 @@
+{
+  "_comment": "Dispatch rules used by Sisyphus at Phase 0 (Intent Gate) to route tasks to categories/skills. Path: ~/.config/opencode/dispatch-rules.json. Sisyphus reads this via the read tool at intent-gate time to translate task shape into task(category=..., load_skills=[...], ...). Rules are evaluated in order; first match wins. No match → fall through to 'default'.",
+  "rules": [
+    {
+      "when": "trivial single-file edit, typo fix, simple config change",
+      "use": { "category": "quick" },
+      "why": "Quick category is pinned to cheap models; no skill needed for trivial work."
+    },
+    {
+      "when": "find code in repo, multiple angles, unknown locations",
+      "use": { "subagent_type": "explore", "run_in_background": true, "load_skills": [] },
+      "why": "Explore is free contextual grep; parallel beats sequential grep."
+    },
+    {
+      "when": "external library or unfamiliar API, 'how do I use X' for known X",
+      "use": { "subagent_type": "librarian", "run_in_background": true, "load_skills": [] },
+      "why": "Librarian searches external docs / OSS examples via GitHub + Context7 + Web."
+    },
+    {
+      "when": "hard logic, architecture decision, multi-system tradeoffs, threat model",
+      "use": { "subagent_type": "oracle", "run_in_background": true, "load_skills": [] },
+      "why": "Oracle is expensive high-IQ reasoning specialist."
+    },
+    {
+      "when": "ambiguous request, unclear what the user wants, hidden intentions",
+      "use": { "subagent_type": "metis", "run_in_background": false, "load_skills": [] },
+      "why": "Metis is pre-planning consultant for scope clarification."
+    },
+    {
+      "when": "review a workplan or requirements doc for clarity / verifiability / completeness",
+      "use": { "subagent_type": "momus", "run_in_background": false, "load_skills": [] },
+      "why": "Momus is the expert plan critic."
+    },
+    {
+      "when": "frontend UI/UX, styling, layout, animations, frontend component work",
+      "use": { "category": "visual-engineering", "load_skills": ["frontend-ui-ux"] },
+      "why": "Visual-engineering category runs on a model optimized for visual work."
+    },
+    {
+      "when": "complex creative problem, unconventional patterns, design that breaks templates",
+      "use": { "category": "artistry", "load_skills": [] },
+      "why": "Artistry category is optimized for non-standard solutions."
+    },
+    {
+      "when": "hard logic-heavy implementation, subtle algorithm, deep inference",
+      "use": { "category": "ultrabrain", "load_skills": [] },
+      "why": "Ultrabrain is pinned to a model tuned for hard logic."
+    },
+    {
+      "when": "deep research, end-to-end autonomous problem solving, unclear scope hairy",
+      "use": { "category": "deep", "load_skills": [] },
+      "why": "Deep category is goal-oriented research."
+    },
+    {
+      "when": "documentation, prose, technical writing, README",
+      "use": { "category": "writing", "load_skills": [] },
+      "why": "Writing category is optimized for verbose output."
+    },
+    {
+      "when": "high-effort task that doesn't fit any specific category",
+      "use": { "category": "unspecified-high", "load_skills": [] },
+      "why": "Generic high-effort bucket."
+    },
+    {
+      "when": "low-effort task that doesn't fit any specific category",
+      "use": { "category": "unspecified-low", "load_skills": [] },
+      "why": "Generic low-effort bucket."
+    },
+    {
+      "when": "code review before creating a PR",
+      "use": { "category": "unspecified-high", "load_skills": ["ce-code-review"] },
+      "why": "CE code review skill provides structured multi-persona review."
+    },
+    {
+      "when": "debug error, trace root cause, fix bug, reproduce from issue tracker",
+      "use": { "category": "deep", "load_skills": ["ce-debug"] },
+      "why": "CE debug skill provides systematic root-cause analysis with test-first fixes."
+    },
+    {
+      "when": "plan complex multi-step feature, software architecture work",
+      "use": { "load_skills": ["ce-plan"] },
+      "why": "CE plan produces durable plan document in docs/plans/."
+    },
+    {
+      "when": "brainstorm vague feature request, product scope unclear",
+      "use": { "load_skills": ["ce-brainstorm"] },
+      "why": "CE brainstorm produces requirements doc that feeds ce-plan."
+    },
+    {
+      "when": "infrastructure / selfhost ~/docker/ services — godoxy, crowdsec, pocket-id, etc.",
+      "use": { "load_skills": ["selfhost"] },
+      "why": "Selfhost skill is the canonical runbook for the user's docker stack."
+    },
+    {
+      "when": "dotfiles management / chezmoi / age encryption / encrypted secrets",
+      "use": { "load_skills": ["dotfiles"] },
+      "why": "Dotfiles skill manages chezmoi-managed user config with age encryption."
+    },
+    {
+      "when": "git operations — commits, rebase, squash, blame, bisect, log -S",
+      "use": { "load_skills": ["git-master"] },
+      "why": "Git-master is the canonical skill for all git operations."
+    },
+    {
+      "when": "pirate media suite — Stremio, AIostreams, Prowlarr, Jackett, etc.",
+      "use": { "load_skills": ["pirate"] },
+      "why": "Pirate skill is the canonical runbook for ~/docker/pirate/."
+    },
+    {
+      "when": "OCI Vault secret management",
+      "use": { "load_skills": ["oci-vault-secrets"] },
+      "why": "OCI Vault skill creates / retrieves / updates OCI Vault secrets."
+    },
+    {
+      "when": "X Spaces processing pipeline — transcribe, article, publish",
+      "use": { "load_skills": ["xspace-pipeline"] },
+      "why": "XSpace pipeline skill handles the full Space → Beehiiv workflow."
+    },
+    {
+      "when": "Prowlarr SQLite corruption / deserialization errors",
+      "use": { "load_skills": ["prowlarr-db-recovery"] },
+      "why": "Prowlarr DB recovery skill handles clone-then-fix workflow."
+    },
+    {
+      "when": "MCP security audit / runtime guard / policy enforcement",
+      "use": { "load_skills": ["mcp-runtime-guard"] },
+      "why": "MCP security skills cover runtime content inspection + policy-as-code."
+    },
+    {
+      "when": "domain modeling / ubiquitous language / ADR",
+      "use": { "load_skills": ["domain-modeling"] },
+      "why": "Domain-modeling skill sharpens project's domain language."
+    }
+  ],
+  "default": {
+    "category": "unspecified-high",
+    "load_skills": []
+  }
+}
