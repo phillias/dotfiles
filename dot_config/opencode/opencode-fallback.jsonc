@@ -1,15 +1,27 @@
 {
-  // Global free-tier fallback chain — used by any profile running
-  // opencode-runtime-fallback that doesn't have its own per-agent
-  // fallback_models in opencode.json. Per-agent chains override this.
+  // Global free → subsidized → pay fallback chain.
+  // Used by any agent without its own per-agent fallback_models in
+  // oh-my-openagent.jsonc. Per-agent chains override this.
+  //
+  // Progression: exhaust free tier first (cloudflare Workers AI free +
+  // openrouter free + opencode-zen free), then subsidized opencode-go
+  // flash models, then last-resort paid Google Gemini.
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
-  "max_fallback_attempts": 2,
-  "cooldown_seconds": 120,
-  "timeout_seconds": 180,
+  "max_fallback_attempts": 6,
+  "cooldown_seconds": 60,
+  "timeout_seconds": 120,
   "notify_on_fallback": true,
   "fallback_models": [
-    "cerebras/gpt-oss-120b",
+    "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "cloudflare/@cf/openai/gpt-oss-20b",
+    "cloudflare/@cf/zai-org/glm-4.7-flash",
+    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+    "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
+    "opencode-zen/nemotron-3-ultra-free",
+    "opencode-zen/deepseek-v4-flash-free",
+    "opencode-zen/mimo-v2.5-free",
+    "opencode-go/deepseek-v4-flash",
     "google/gemini-2.0-flash"
   ]
 }

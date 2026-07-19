@@ -9,8 +9,8 @@ const FREE_MODEL: Record<string, string> = {
   "opencode-go/deepseek-v4-pro": "openrouter/deepseek/deepseek-v4-flash:free",
   "opencode-go/deepseek-v4-flash": "openrouter/deepseek/deepseek-v4-flash:free",
   "opencode-go/mimo-v2.5-pro": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-  "opencode-go/qwen3.5-plus": "groq/qwen/qwen3-32b",
-  "opencode-go/qwen3.6-plus": "groq/qwen/qwen3-32b",
+  "opencode-go/qwen3.5-plus": "cloudflare/@cf/qwen/qwen3-30b-a3b-fp8",
+  "opencode-go/qwen3.6-plus": "cloudflare/@cf/qwen/qwen3-30b-a3b-fp8",
 };
 
 async function isGoPoolExhausted(): Promise<boolean> {
