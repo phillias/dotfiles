@@ -80,7 +80,6 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "google/gemini-2.0-flash"
       ]
@@ -117,8 +116,7 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "opencode-go/deepseek-v4-pro",
-        "cerebras/gpt-oss-120b"
+        "opencode-go/deepseek-v4-pro"
       ]
     },
 
@@ -245,7 +243,6 @@
       "fallback_models": [
         "cloudflare/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
         "opencode-zen/big-pickle",
-        "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "together/deepseek-ai/DeepSeek-R1"
       ]
@@ -256,7 +253,6 @@
       "fallback_models": [
         "cloudflare/@cf/openai/gpt-oss-120b",
         "opencode-go/kimi-k2.6",
-        "cerebras/llama3.3-70b",
         "together/deepseek-ai/DeepSeek-R1"
       ]
     },
@@ -266,7 +262,6 @@
       "fallback_models": [
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "opencode-zen/nemotron-3-super-free",
-        "cerebras/llama3.3-70b",
         "openrouter/horizon-beta"
       ]
     },
@@ -276,7 +271,6 @@
       "fallback_models": [
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/nemotron-3-super-free",
-        "cerebras/llama3.3-70b",
         "huggingface/google/gemma-4-12b-it"
       ]
     },
@@ -296,7 +290,6 @@
       "fallback_models": [
         "opencode-go/kimi-k2.6",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "cerebras/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "together/deepseek-ai/DeepSeek-R1"
@@ -308,7 +301,6 @@
       "fallback_models": [
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/nemotron-3-super-free",
-        "cerebras/llama3.3-70b",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "google/gemini-2.0-flash"
       ]

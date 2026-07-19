@@ -148,3 +148,89 @@ output with size hints. Include aggregate counts. Fail with structure, not noise
 **When to load the full AXI skill:** Any task involving CLI design, tool output formatting,
 AXI compliance review, or agent-facing tooling. Do NOT load it for general coding, debugging,
 infrastructure, or code review — it would be noise.
+
+## Dispatch Rules (Crew-Dispatch Upgrade)
+
+Sisyphus reads `~/.config/opencode/dispatch-rules.json` at **Phase 0 Intent Gate** to translate task shape into `task(category=..., load_skills=[...], run_in_background=..., subagent_type=...)` calls. The file is the user-edited equivalent of firstmate's `crew-dispatch.json`, expressed against OmO's existing routing primitives (categories + subagents + skills).
+
+### Format
+
+```jsonc
+{
+  "rules": [
+    {
+      "when": "<natural language task shape>",
+      "use": { /* task() call parameters */ },
+      "why": "<one-line rationale>"
+    }
+    // ... rules evaluated in order, first match wins
+  ],
+  "default": { /* fallback when no rule matches */ }
+}
+```
+
+`use` accepts any parameter valid for the `task()` tool: `category`, `subagent_type`, `load_skills`, `run_in_background`. Sisyphus applies judgment: rules are advisory, not literal — explicit user overrides always win, ambiguous tasks may consultar Metis / oracle before dispatching.
+
+### Evaluation order
+
+1. User gave explicit instructions in this turn → use those, ignore rules
+2. Read `dispatch-rules.json` → first matching rule
+3. No match → use `default` block
+
+### When not to consult dispatch rules
+
+- Trivially obvious task (single-file typo, single grep) → just do it
+- User is mid-clarification conversation → don't dispatch yet
+- Task is already in flight with dispatched agent → let it finish before re-routing
+
+### Editing the file
+
+Edit `~/.config/opencode/dispatch-rules.json` directly. Changes take effect on next Sisyphus turn (Sisyphus should re-read the file at intent-gate time if the modification time is newer than the cached read).
+
+## Fleet State Communications (Zero-Token Background-Task Status)
+
+Background-task completion notifications delivered via `<system-reminder>[BACKGROUND TASK COMPLETED]...` are fragile: they ride the `chat.message` hook chain, which can be disrupted by compaction (`experimental.session.compacting`), model fallback, or other plugins intercepting the chain mid-turn. To ensure Sisyphus can recover the status of dispatched tasks regardless of chat-message delivery, a sidecar state tree is maintained on disk.
+
+### State tree location
+
+`~/.local/state/opencode-fleet/`
+
+| File | Format | Purpose |
+|---|---|---|
+| `wake.log` | TSV append-only, one line per event: `<ISO-ts>\t<type>\t<session_id>\t<digest>` | Raw event log. Rotates >1MB to last 1000 lines. |
+| `state.json` | JSON snapshot, rewritten in place | Current state of every dispatched task. `tasks` map keyed by session_id or task_id. |
+| `digest.txt` | TSV snapshot: `<key>\t<status>\t<type>\t<digest>\t<age> ago` | Last computed human-readable summary, regenerated whenever state.json changes. |
+
+### Writer plugin
+
+`~/.config/opencode/plugins/fleet-state-writer.ts` — auto-loaded by opencode (any `.ts` file in `plugins/`). Subscribes to:
+
+- `event` — all `session.*` lifecycle events (`session.idle`/`.error`/`.deleted`/`.compacted`/`.created`)
+- `chat.message` — mines incoming message text for any of `[BACKGROUND TASK RESULT READY]`, `[BACKGROUND TASK COMPLETED]`, `[BACKGROUND TASK CANCELLED]`, `[BACKGROUND TASK INTERRUPTED]`, `[BACKGROUND TASK ERROR]` headers and writes structured event
+- `tool.execute.after` — when Sisyphus calls `background_output(task_id=bg_...)`, marks task as `resulted` (inspected by Sisyphus)
+
+Plugin never throws (all handlers catch + log). Zero LLM cost on the write side — TypeScript handlers run in the opencode plugin process, not in the LLM.
+
+### Reader
+
+`~/.config/opencode/scripts/fleet-digest.sh` — pure bash, zero LLM cost. Emits terse summary:
+
+```bash
+scripts/fleet-digest.sh              # snapshot + wakes from last 30m
+scripts/fleet-digest.sh --since 60   # last 60m of wakes
+scripts/fleet-digest.sh --wakes-only # just wake events, no current snapshot
+scripts/fleet-digest.sh --json       # raw state.json
+```
+
+### When Sisyphus should consult fleet state
+
+- **At session start**: `bash scripts/fleet-digest.sh` to ground yourself in fleet state before responding
+- **After waking from a system-reminder that suggests a background task completed**: verify against `state.json` rather than trusting only the reminder
+- **Before dispatching a new task**: glance at `digest.txt` to see what's already running, avoid duplicate dispatches
+- **When user asks "what's running?"**: run `fleet-digest.sh --since 240` for the last 4 hours
+
+### Failure modes
+
+- If `state.json` is empty/missing: sidecar not loaded yet, fall back to `background_output` API
+- If `wake.log` is corrupted: truncate and let the plugin repopulate
+- The state tree is **never** the source of truth for the actual task transcript — that lives in opencode.db (`session`, `message`, `part` tables). State tree is just a **terse index** for fast Sisyphus reads.
