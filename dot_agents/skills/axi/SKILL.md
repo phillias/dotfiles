@@ -245,3 +245,47 @@ description: Manage project tasks in the current workspace
 ```
 
 Every subcommand should support `--help` with a concise, complete reference: available flags with defaults, required arguments, and 2-3 usage examples. Keep it focused on the requested subcommand — don't dump the entire CLI's manual.
+
+## 11. Native bash whitelist (Overseer Mode A)
+
+When an orchestrator agent (Sisyphus) reads subagent output during a review turn, the input tokens are already sunk cost. A regex post-pass over that same output costs **zero additional LLM tokens**. Use this to shift ~15 deterministic predicates from LLM judgement to bash — no new dispatches, no extra turns, no model round-trips.
+
+| # | LLM prompt pattern | Bash replacement |
+|---|---|---|
+| 1 | "is process/task X (running\|done\|crashed)" | `pgrep -f <pattern>` |
+| 2 | "verify file X exists" | `test -f X` |
+| 3 | "grep\|search X in Y" | `grep -n X Y` |
+| 4 | "exit code X" | `echo $?` |
+| 5 | "build (succeeded\|failed)" | `tail -50 build.log \| grep -E '(ERROR\|BUILD SUCCESS)'` |
+| 6 | "tests (passed\|failed)" | test-runner exit code |
+| 7 | "git diff (summary\|list)" | `git diff --name-only <ref>` |
+| 8 | "look at (build\|test) log" | `tail -50 <log>` |
+| 9 | "X modified within Y minutes" | `find -mmin -Y` |
+| 10 | "API quota\|limit" | `quota-axi show` or `curl vendor/quota` |
+| 11 | "(git status\|staged\|committed)" | `git status --porcelain` |
+| 12 | "pane X (idle\|stale\|busy)" | `tmux list-panes` + `pgrep -f <session>` |
+| 13 | "HTTP X status" | `curl -sI <url> \| head -1` |
+| 14 | "parse X as JSON" | `jq <filter> X` |
+| 15 | "count\|sort\|unique X in Y" | `wc\|sort\|uniq Y` |
+
+### Rules of engagement
+
+- **Whitelist only.** Never extend to fuzzy judgement like "should bash do this?". The moment a question becomes "could bash handle this?", you've already spent the tokens to ask — defeating the point.
+- **Sunk-cost window.** Apply only during a *review turn* where Sisyphus is already reading subagent output. Never dispatch an extra Sisyphus turn just to run the regex.
+- **Contradiction escalates.** When the bash result contradicts the subagent's claim (e.g. says "tests pass" but `npm test --silent` exits 1), trust the bash result and escalate to an LLM turn.
+- **Out of scope.** Architecture, design, naming, ambiguity, code-review of *meaning* — keep these with the LLM. The whitelist is for *fact-checking and state checks*, not reasoning.
+- **No new agents.** Invoke inline during Sisyphus's existing turn — no extra `task()` calls, no subagent dispatch, no model round-trips.
+
+### Example inline use
+
+Subagent reports: "Build successful. PR #42 open. Tests passing on main."
+
+Sisyphus, mid-review, applies predicates 7, 11, 13:
+
+```bash
+gh pr view 42 --json state -q .state           # expect: OPEN
+git diff --name-only main..HEAD                 # expect: file list
+gh pr checks 42 --watch=false 2>&1 | tail -5    # expect: checks summary
+```
+
+Three facts verified for zero LLM tokens. Anything divergent escalates to a model call. Hit rate ~30–40% of review turns contain at least one shiftable predicate.
