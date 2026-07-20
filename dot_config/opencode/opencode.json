@@ -563,5 +563,5 @@
       "enabled": true
     }
   },
-  "plugin": ["oh-my-openagent@latest"]
+  "plugin": ["oh-my-openagent@latest", "./plugins/tmux-patch-keeper.ts"]
 }
