@@ -1,8 +1,8 @@
 # This is Git's per-user configuration file.
 [user]
 # Please adapt and uncomment the following lines:
-	name = phillias
-	email = phillias@phillias.us
+	name = glm-5.2@InspironOne
+	email = phillias@InspironOne.local
 [credential]
 	helper = store
 [credential "https://github.com"]
