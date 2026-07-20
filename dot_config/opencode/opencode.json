@@ -531,6 +531,15 @@
           }
         }
       }
+    },
+    "agnes": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Agnes AI",
+      "options": {
+        "baseURL": "https://apihub.agnes-ai.com/v1",
+        "apiKey": "{file:~/.config/opencode/.agnes-key}"
+      },
+      "models": {}
     }
   },
   "compaction": {
