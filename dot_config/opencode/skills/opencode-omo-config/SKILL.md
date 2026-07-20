@@ -74,7 +74,7 @@ For Groq-equivalent and Cerebras-equivalent free-tier capacity, see **Cloudflare
 
 All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 
-**1. `oc` launcher** (`~/.local/bin/oc`) — loads at opencode startup only:
+**1. `oc` alias** (`alias oc='opencode --port 42069'` in `.bashrc`/`.zshrc`) — loads at shell login:
 ```
 .cerebras-key          → CEREBRAS_API_KEY        # DEFUNCT — see Defunct Providers section
 .mistral-key           → MISTRAL_API_KEY
@@ -82,14 +82,18 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 .google-key            → GOOGLE_API_KEY
 .together-key          → TOGETHER_API_KEY
 .zen-key               → OPENCODE_ZEN_API_KEY
+.fireworks-key         → FIREWORKS_API_KEY
 .exa-key               → EXA_API_KEY
 .google-client-id      → GOOGLE_CLIENT_ID
 .google-client-secret  → GOOGLE_CLIENT_SECRET
+.composio-key          → COMPOSIO_API_KEY
 ```
 
 **2. Shell profiles** (`dot_bashrc`, `dot_zshrc.tmpl`) — load at shell login for non-opencode use.
 
 Both use the same key files. Shell profiles mirror the key files loaded by opencode core at startup.
+
+> **Note:** The `~/.local/bin/oc` launcher script was deprecated in favor of the shell alias. The alias sets `--port 42069` for tmux subagent pane streaming compatibility.
 
 ### Config Defaults
 
