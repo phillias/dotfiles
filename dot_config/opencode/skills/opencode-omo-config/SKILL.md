@@ -37,7 +37,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 
 ### Critical Rules
 
-1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative. No `oc <profile>` launcher, no `profiles/` subdirectory. To switch behavior, change `opencode.json` / `oh-my-openagent.jsonc` directly and chezmoi-track the change.
+1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative. No profile subdirectories, no profile-based launcher. The `oc` command is a shell alias (`opencode --port 42069`). To switch behavior, change `opencode.json` / `oh-my-openagent.jsonc` directly and chezmoi-track the change.
 2. **Global config defines providers and MCPs.** `opencode.json` has all 10 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
 3. **OmO owns agent + category routing.** `oh-my-openagent.jsonc` declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain.
 4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 10 agents that don't specify their own `fallback_models` arrays.
@@ -72,11 +72,9 @@ For Groq-equivalent and Cerebras-equivalent free-tier capacity, see **Cloudflare
 
 ### API Key Management
 
-All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
+All keys stored in `~/.config/opencode/.*-key` files, loaded by opencode core at startup:
 
-**1. `oc` launcher** (`~/.local/bin/oc`) — loads at opencode startup only:
 ```
-.cerebras-key          → CEREBRAS_API_KEY        # DEFUNCT — see Defunct Providers section
 .mistral-key           → MISTRAL_API_KEY
 .sambanova-key         → SAMBANOVA_API_KEY
 .google-key            → GOOGLE_API_KEY
@@ -87,9 +85,13 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 .google-client-secret  → GOOGLE_CLIENT_SECRET
 ```
 
-**2. Shell profiles** (`dot_bashrc`, `dot_zshrc.tmpl`) — load at shell login for non-opencode use.
+The `oc` launcher script (`~/.local/bin/oc`) is retired. `oc` is now a shell alias defined in `.zshrc` / `.bashrc`:
 
-Both use the same key files. Shell profiles mirror the key files loaded by opencode core at startup.
+```bash
+alias oc='opencode --port 42069'
+```
+
+The `--port` flag is required because tmux subagent pane streaming (`buildTmuxAttachCommand`) resolves the server URL via `OPENCODE_PORT` env var (defaults to `http://localhost:42069`). Without `--port`, opencode binds to a random port and the attach command connects to nothing.
 
 ### Config Defaults
 
