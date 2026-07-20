@@ -15,5 +15,3 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfUh8JYOKm5TMY1m88q7wkjA73VNFfpYxXWx5ewNMYz
 
 # Deploy key (this server, chezmoi repo access only)
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaYp4T4ZtEGCR70kD1+1Hbuesv4VfDlKdDXM3pqhbIY chezmoi@CabinInspiron22Kali
-command="git-shell -c \"$SSH_ORIGINAL_COMMAND\"" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIJ8Wz9usRbJmtCwY3A/zpYnFc2SdNMtEc1rCJJEIaAF cabinkali-memgit
-command="git-shell -c \"$SSH_ORIGINAL_COMMAND\"" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGFwPGpbZCRrIlAKssiF8rMIbck8W+Zvxm6+RLmxbYHv kalione-memgit

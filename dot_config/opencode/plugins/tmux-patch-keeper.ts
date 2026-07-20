@@ -20,10 +20,8 @@ const PATCH_TARGET = join(
   ".cache/opencode/packages/oh-my-openagent@latest/node_modules/oh-my-openagent/dist/index.js",
 );
 
-const FINGERPRINT_UPSTREAM_V4_9_1 = "c20c800c1ea3785533e2bc8dac076439a0d33622";
+const FINGERPRINT_UPSTREAM_V4_9_1 = "b4445b49ab60f2af1215a19e37f3ddb26cbf190e";
 const UNPATCHED_SIGNATURE = "const placeholderCmd = buildTmuxPlaceholderCommand(description);";
-const UNPATCHED_ATTACH_SIGNATURE = "return `opencode attach ${shellSingleQuote(serverUrl)} --session ${shellSingleQuote(member.sessionId)} --dir ${shellSingleQuote(getPaneWorkingDirectory(member))}`;";
-const UNPATCHED_TMUX_ATTACH_SIGNATURE = 'return `${TMUX_COMMAND_SHELL} -c "opencode attach ${escapedUrl} --session ${escapedSessionId} --dir ${escapedDirectory}"`;';
 
 const TRACKED_FUNCTIONS = new Set(["spawnTmuxPane", "replaceTmuxPane", "spawnTmuxWindow", "spawnTmuxSession"]);
 const SERVER_VAR: Record<string, string> = {
@@ -40,7 +38,7 @@ function sha1hex(content: Buffer | string): string {
 }
 
 function isUnpatched(content: string): boolean {
-  return content.includes(UNPATCHED_SIGNATURE) || content.includes(UNPATCHED_ATTACH_SIGNATURE) || content.includes(UNPATCHED_TMUX_ATTACH_SIGNATURE);
+  return content.includes(UNPATCHED_SIGNATURE);
 }
 
 function applyPatch(content: string): string {
@@ -58,23 +56,6 @@ function applyPatch(content: string): string {
       const sv = currentFunction ? SERVER_VAR[currentFunction] : "serverUrl";
       const indent = (line.match(/^(\s*)/) ?? ["", ""])[1];
       out.push(`${indent}const attachCmd = buildTmuxAttachCommand(${sv}, sessionId, _directory);`);
-      continue;
-    }
-
-    // Patch buildAttachCommand to keep pane open after session ends
-    if (line.includes(UNPATCHED_ATTACH_SIGNATURE)) {
-      const indent = (line.match(/^(\s*)/) ?? ["", ""])[1];
-      out.push(`${indent}const escapedUrl = shellSingleQuote(serverUrl);`);
-      out.push(`${indent}const escapedSessionId = shellSingleQuote(member.sessionId);`);
-      out.push(`${indent}const escapedDir = shellSingleQuote(getPaneWorkingDirectory(member));`);
-      out.push(`${indent}return \`/bin/sh -c 'opencode attach \${escapedUrl} --session \${escapedSessionId} --dir \${escapedDir} ; echo "\\\\n\\\\n[Session ended. Press any key to close pane.]"; read -n1 -s'\`;`);
-      continue;
-    }
-
-    // Patch buildTmuxAttachCommand to keep pane open after session ends
-    if (line.includes(UNPATCHED_TMUX_ATTACH_SIGNATURE)) {
-      const indent = (line.match(/^(\s*)/) ?? ["", ""])[1];
-      out.push(`${indent}return \`\${TMUX_COMMAND_SHELL} -c "opencode attach \${escapedUrl} --session \${escapedSessionId} --dir \${escapedDirectory} ; echo '\\\\n\\\\n[Session ended. Press any key to close pane.]' ; read -n1 -s"\`;`);
       continue;
     }
 
