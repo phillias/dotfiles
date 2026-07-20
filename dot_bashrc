@@ -161,6 +161,7 @@ alias carb='docker run -it --rm --network host fathyb/carbonyl'
 # opencode
 export PATH=$HOME/.npm-global/bin:$PATH
 export PATH=/home/phillias/.opencode/bin:$PATH
+alias oc='opencode --port 42069'
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
@@ -193,6 +194,12 @@ if [ -f "$HOME/.config/opencode/.google-client-id" ]; then
 fi
 if [ -f "$HOME/.config/opencode/.google-client-secret" ]; then
     export GOOGLE_CLIENT_SECRET="$(cat $HOME/.config/opencode/.google-client-secret)"
+fi
+if [ -f "$HOME/.config/opencode/.fireworks-key" ]; then
+    export FIREWORKS_API_KEY="$(cat $HOME/.config/opencode/.fireworks-key)"
+fi
+if [ -f "$HOME/.config/opencode/.exa-key" ]; then
+    export EXA_API_KEY="$(cat $HOME/.config/opencode/.exa-key)"
 fi
 if [ -f "$HOME/.config/opencode/.composio-key" ]; then
     export COMPOSIO_API_KEY="$(cat $HOME/.config/opencode/.composio-key)"

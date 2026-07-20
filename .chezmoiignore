@@ -7,6 +7,9 @@ age-key.txt.age
 # Literal .config/ path (chezmoi uses dot_config/ prefix convention instead)
 # .config  - Disabled to allow dot_config/ prefix convention for ~/.config/
 
+# Machine-specific git identity — different per box
+.gitconfig
+
 # Profile build artifacts — npm state varies per machine
 .config/opencode/profiles/*/node_modules
 .config/opencode/profiles/*/node_modules/**
