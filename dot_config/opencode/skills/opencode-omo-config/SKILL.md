@@ -37,12 +37,12 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 
 ### Critical Rules
 
-1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative. No profile subdirectories, no profile-based launcher. The `oc` command is a shell alias (`opencode --port 42069`). To switch behavior, change `opencode.json` / `oh-my-openagent.jsonc` directly and chezmoi-track the change.
+1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative. `oc` is a shell alias (`opencode --port 42069`), not a profile launcher. To switch behavior, edit `opencode.json` / `oh-my-openagent.jsonc` directly and chezmoi-track the change.
 2. **Global config defines providers and MCPs.** `opencode.json` has all 10 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
 3. **OmO owns agent + category routing.** `oh-my-openagent.jsonc` declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain.
 4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 10 agents that don't specify their own `fallback_models` arrays.
 5. **Auto-loaded plugins.** Any `.ts` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-fallback.ts`, `go-pool-guard.ts`, `tmux-patch-keeper.ts`. All run in-process with zero LLM cost on the write side.
-6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
+6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in profile subdirs. If `~/.config/opencode/profiles/` exists on a machine, delete it.
 
 ### Provider Stack (10 providers)
 
@@ -75,23 +75,28 @@ For Groq-equivalent and Cerebras-equivalent free-tier capacity, see **Cloudflare
 All keys stored in `~/.config/opencode/.*-key` files, loaded by opencode core at startup:
 
 ```
-.mistral-key           → MISTRAL_API_KEY
-.sambanova-key         → SAMBANOVA_API_KEY
-.google-key            → GOOGLE_API_KEY
-.together-key          → TOGETHER_API_KEY
-.zen-key               → OPENCODE_ZEN_API_KEY
-.exa-key               → EXA_API_KEY
-.google-client-id      → GOOGLE_CLIENT_ID
-.google-client-secret  → GOOGLE_CLIENT_SECRET
+.agnes-key            → AGNES_API_KEY
+.mistral-key          → MISTRAL_API_KEY
+.sambanova-key        → SAMBANOVA_API_KEY
+.google-key           → GOOGLE_API_KEY
+.together-key         → TOGETHER_API_KEY
+.zen-key              → OPENCODE_ZEN_API_KEY
+.exa-key              → EXA_API_KEY
+.google-client-id     → GOOGLE_CLIENT_ID
+.google-client-secret → GOOGLE_CLIENT_SECRET
 ```
 
-The `oc` launcher script (`~/.local/bin/oc`) is retired. `oc` is now a shell alias defined in `.zshrc` / `.bashrc`:
+### `oc` Alias
+
+`oc` is a shell alias defined in `.zshrc` / `.bashrc` — NOT a script at `~/.local/bin/oc`:
 
 ```bash
 alias oc='opencode --port 42069'
 ```
 
-The `--port` flag is required because tmux subagent pane streaming (`buildTmuxAttachCommand`) resolves the server URL via `OPENCODE_PORT` env var (defaults to `http://localhost:42069`). Without `--port`, opencode binds to a random port and the attach command connects to nothing.
+The `--port 42069` is required for tmux subagent pane streaming (`buildTmuxAttachCommand` resolves via `OPENCODE_PORT` env var). Without it, opencode binds to a random port and attach connects to nothing.
+
+**Profiles are obsolete.** If you find `~/.config/opencode/profiles/` on any machine, it is stale — the single root config at `~/.config/opencode/` is authoritative. Delete the profiles directory.
 
 ### Config Defaults
 
@@ -119,15 +124,15 @@ The `--port` flag is required because tmux subagent pane streaming (`buildTmuxAt
 
 ### Optional MCP Servers (declared in `opencode.json` directly)
 
-These are declared in `opencode.json` directly (no profile indirection):
+These are declared in `opencode.json` directly:
 
-| MCP | Type | Profiles | Purpose |
-|---|---|---|---|
-| **netdata-bylocalhost** | remote | all except desk | Server monitoring |
-| **chrome-devtools** | local | all | Browser automation |
-| **codemem** | local | all except desk | Memory/context management (used by better-compaction.ts) |
-| **google-workspace** | local | web | Google Calendar/Docs/Tasks (`{env:GOOGLE_CLIENT_ID}`, `{env:GOOGLE_CLIENT_SECRET}`) |
-| **google-tasks-calendar** | local | mybrain project only | Minimal Google Tasks MCP — moved from zen to `~/mybrain/.opencode/` |
+| MCP | Type | Purpose |
+|---|---|---|
+| **netdata-bylocalhost** | remote | Server monitoring |
+| **chrome-devtools** | local | Browser automation |
+| **codemem** | local | Memory/context management (used by better-compaction.ts) |
+| **google-workspace** | local | Google Calendar/Docs/Tasks (`{env:GOOGLE_CLIENT_ID}`, `{env:GOOGLE_CLIENT_SECRET}`) |
+| **google-tasks-calendar** | local | Minimal Google Tasks MCP — lives in `<project>/.opencode/` |
 
 ## Model Selection Priorities (Team Profile, merged with Go pool)
 
@@ -168,11 +173,11 @@ These are declared in `opencode.json` directly (no profile indirection):
 1. **Big Pickle as Sisyphus primary**: 200K context, tool calling, reasoning, structured output. Free on OpenCode Zen (limited time).
 2. **Gemma 4 12B for Multimodal-Looker**: Encoder-free architecture, 256K context, beats Gemma 3 27B at half the size.
 3. **Free→subsidized→pay global fallback**: The global `opencode-fallback.jsonc` chain has 10 entries in progressive order: cloudflare Workers AI free (`@cf/meta/llama-3.3-70b`, `@cf/openai/gpt-oss-20b`, `@cf/zai-org/glm-4.7-flash`) → openrouter free (`nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-nano-30b-a3b:free`) → opencode-zen free (`nemotron-3-ultra-free`, `deepseek-v4-flash-free`, `mimo-v2.5-free`) → subsidized opencode-go (`deepseek-v4-flash`) → pay-tier last resort `google/gemini-2.0-flash`. Free tier is exhausted first by OmO's failure-driven fallback; pays last.
-4. **OmO is the only plugin**: As of 2026-07-18, `opencode.json` declares `["oh-my-openagent@latest"]` as the sole plugin. Profile variants (`opencode-runtime-fallback` for desk/web, no-plugin for pure/test) are obsolete — deleted with the rest of `profiles/`. Skills from `~/.config/opencode/skills/` continue to load via OpenCode core, not OmO.
-5. **Go pool merged in** (Jun 2026): The former `go` and `zen` profile variants were consolidated into root config. 24 Go pool models (K2.6/K2.7, DS-V4-Pro/Flash, GPT-5.x, Qwen3.x) and Zen-aligned critics (gpt-5.4) are all in `oh-my-openagent.jsonc` directly now.
+4. **OmO is the only plugin**: As of 2026-07-18, `opencode.json` declares `["oh-my-openagent@latest"]` as the sole plugin. Skills from `~/.config/opencode/skills/` continue to load via OpenCode core, not OmO.
+5. **Go pool merged in** (Jun 2026): 24 Go pool models (K2.6/K2.7, DS-V4-Pro/Flash, GPT-5.x, Qwen3.x) are all in `oh-my-openagent.jsonc` directly now.
 6. **MoE preference**: All selected models use Mixture of Experts for efficiency.
 7. **Auto-compaction**: `opencode.json` declares `{auto: false, prune: true, reserved: 50000, tail_turns: 40}` — manual compaction only. This avoids disrupting background-task `<system-reminder>` delivery on the `chat.message` hook chain, which was identified as a known failure mode in 2026-07. Project-level `<project>/.opencode/opencode.json` can override to `{auto: true}` if a specific project wants auto-compaction back.
-8. **Single global config layer**: Root `opencode.json` is authoritative for providers and MCPs. No per-profile overrides. Machine differences via chezmoi templates and per-project `<project>/.opencode/` overrides only.
+8. **Single global config layer**: Root `opencode.json` is authoritative for providers and MCPs. Machine differences via chezmoi templates and per-project `<project>/.opencode/` overrides only.
 9. **GPT model routing** (Jun 2026): GPT-5.x models require the `opencode` provider prefix (Go binary built-in), NOT `opencode-go` or `opencode-zen`. See [GPT Model Routing](#gpt-model-routing) below for details.
 
 ## GPT Model Routing
@@ -381,9 +386,8 @@ All four are chezmoi-tracked. `chezmoi re-add` each after edits, then standard c
 
 1. Create key file: `echo -n '<key>' > ~/.config/opencode/.<provider>-key`
 2. If the key is referenced via `{env:VAR}` in `opencode.json`, ensure the env var name matches. Opencode core reads the `.*-key` files at startup and maps them to env vars based on provider convention.
-3. The shell profiles (`dot_bashrc`, `dot_zshrc.tmpl`) mirror the key files for non-opencode use — add the new mapping there too.
-4. `chezmoi add --encrypt ~/.config/opencode/.<provider>-key` (use `--encrypt` for secrets)
-5. Commit all changes via the **dotfiles skill** (`/dotfiles`)
+3. `chezmoi add --encrypt ~/.config/opencode/.<provider>-key` (use `--encrypt` for secrets)
+4. Commit all changes via the **dotfiles skill** (`/dotfiles`)
 
 ### Adding a New MCP
 
@@ -391,7 +395,7 @@ All four are chezmoi-tracked. `chezmoi re-add` each after edits, then standard c
 2. `chezmoi re-add ~/.config/opencode/opencode.json`
 3. Commit and push via the **dotfiles skill** (`/dotfiles`)
 
-This is the only step needed — root config is authoritative for MCPs (no profile indirection).
+This is the only step needed — root config is authoritative.
 
 ## Files Reference
 
