@@ -167,7 +167,7 @@ alias oc='opencode --port 42069'
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-# OpenCode provider API keys (also loaded by ~/.local/bin/oc)
+# OpenCode provider API keys
 if [ -f "$HOME/.config/opencode/.groq-key" ]; then
     export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
 fi
