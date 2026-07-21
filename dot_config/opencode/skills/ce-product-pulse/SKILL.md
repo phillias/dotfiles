@@ -59,20 +59,20 @@ If it shows `__NO_CONFIG__`, the file does not exist — treat this as a first r
 If it shows an unresolved command string, read `.compound-engineering/config.local.yaml` from the repo root using the native file-read tool (e.g., Read in Claude Code, read_file in Codex). If the file does not exist, treat as first run.
 
 **Config keys:**
-- `pulse_product_name` -- string, used in report titles. Required for routing: if unset, skill is unconfigured.
-- `pulse_lookback_default` -- one of `1h`, `24h`, `7d`, `30d` (default: `24h`)
-- `pulse_primary_event` -- string, the engagement event name
-- `pulse_value_event` -- string, the value-realization event name
-- `pulse_completion_events` -- comma-separated string of 0-3 event names
-- `pulse_quality_scoring` -- `true` or default `false` (AI products only)
-- `pulse_quality_dimension` -- string scored 1-5 when `pulse_quality_scoring` is true; ignored otherwise
-- `pulse_analytics_source` -- string identifying analytics provider (e.g., `posthog`, `mixpanel`, `custom`)
-- `pulse_tracing_source` -- string identifying tracing provider (e.g., `sentry`, `datadog`, `custom`)
-- `pulse_payments_source` -- string identifying payments provider (e.g., `stripe`, `custom`); omit if not used
-- `pulse_db_enabled` -- `true` or default `false`; when `true`, read-only DB access is part of the pulse
-- `pulse_metric_sources` -- comma-separated `metric=source` pairs giving per-strategy-metric source overrides (e.g., `retention_d7=posthog,nps=delighted`). Strategy metrics not listed fall back to `pulse_analytics_source` and are rendered with a `(default source)` marker so the implicit routing is visible.
-- `pulse_pending_metrics` -- comma-separated string of strategy-doc metric names awaiting instrumentation; rendered as `no data` in each pulse report until instrumentation lands
-- `pulse_excluded_metrics` -- comma-separated string of strategy-doc metric names intentionally excluded from the pulse; the metric stays in `STRATEGY.md` but is not surfaced in pulse reports
+config_keys[14]{key,details}: pulse_product_name,string — used in report titles. Required for routing: if unset, skill is unconfigured.
+config_keys[14]{key,details}: pulse_lookback_default,one of 1h/24h/7d/30d (default: 24h)
+config_keys[14]{key,details}: pulse_primary_event,string — the engagement event name
+config_keys[14]{key,details}: pulse_value_event,string — the value-realization event name
+config_keys[14]{key,details}: pulse_completion_events,comma-separated string of 0-3 event names
+config_keys[14]{key,details}: pulse_quality_scoring,true or default false (AI products only)
+config_keys[14]{key,details}: pulse_quality_dimension,string scored 1-5 when pulse_quality_scoring is true; ignored otherwise
+config_keys[14]{key,details}: pulse_analytics_source,string — identifying analytics provider (e.g., posthog, mixpanel, custom)
+config_keys[14]{key,details}: pulse_tracing_source,string — identifying tracing provider (e.g., sentry, datadog, custom)
+config_keys[14]{key,details}: pulse_payments_source,string — identifying payments provider (e.g., stripe, custom); omit if not used
+config_keys[14]{key,details}: pulse_db_enabled,true or default false — when true, read-only DB access is part of the pulse
+config_keys[14]{key,details}: pulse_metric_sources,comma-separated metric=source pairs giving per-strategy-metric source overrides (e.g., retention_d7=posthog,nps=delighted). Strategy metrics not listed fall back to pulse_analytics_source and are rendered with a (default source) marker so the implicit routing is visible.
+config_keys[14]{key,details}: pulse_pending_metrics,comma-separated string of strategy-doc metric names awaiting instrumentation — rendered as no data in each pulse report until instrumentation lands
+config_keys[14]{key,details}: pulse_excluded_metrics,comma-separated string of strategy-doc metric names intentionally excluded from the pulse — the metric stays in STRATEGY.md but is not surfaced in pulse reports
 
 **Routing:**
 
@@ -169,11 +169,11 @@ Never schedule automatically. Any scheduling handoff requires explicit confirmat
 
 ## What This Skill Does Not Do
 
-- Does not report "what shipped." Shipped work lives in the issue tracker and commit history, not here. Pulse is strictly about user experience and system performance.
-- Does not set thresholds or alert the user. The reader interprets.
-- Does not persist PII in saved reports.
-- Does not mutate the database or any external system. All queries are read-only.
-- Does not replace tracing dashboards or analytics tools. It consolidates a single-page read; deep investigation still uses the native tools.
+not_done[5]{limitation}: Does not report "what shipped." Shipped work lives in the issue tracker and commit history, not here. Pulse is strictly about user experience and system performance.
+not_done[5]{limitation}: Does not set thresholds or alert the user. The reader interprets.
+not_done[5]{limitation}: Does not persist PII in saved reports.
+not_done[5]{limitation}: Does not mutate the database or any external system. All queries are read-only.
+not_done[5]{limitation}: Does not replace tracing dashboards or analytics tools. It consolidates a single-page read; deep investigation still uses the native tools.
 
 ## Learn More
 

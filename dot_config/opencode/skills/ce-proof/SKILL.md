@@ -155,14 +155,12 @@ curl -X POST "https://www.proofeditor.ai/api/agent/{slug}/edit/v2" \
 
 Per-op body shape (singular `block` vs plural `blocks` is load-bearing — sending the wrong one returns 422):
 
-| op | body fields |
-|---|---|
-| `replace_block` | `ref`, `block: {markdown}` |
-| `insert_after` | `ref`, `blocks: [{markdown}, ...]` |
-| `insert_before` | `ref`, `blocks: [{markdown}, ...]` |
-| `delete_block` | `ref` |
-| `replace_range` | `fromRef`, `toRef`, `blocks: [{markdown}, ...]` |
-| `find_replace_in_block` | `ref`, `find`, `replace`, `occurrence: "first" \| "all"` |
+edit_ops[6]{op,body_fields}: replace_block,ref + block: {markdown}
+edit_ops[6]{op,body_fields}: insert_after,ref + blocks: [{markdown}, ...]
+edit_ops[6]{op,body_fields}: insert_before,ref + blocks: [{markdown}, ...]
+edit_ops[6]{op,body_fields}: delete_block,ref
+edit_ops[6]{op,body_fields}: replace_range,fromRef + toRef + blocks: [{markdown}, ...]
+edit_ops[6]{op,body_fields}: find_replace_in_block,ref + find + replace + occurrence: "first" | "all"
 
 Read `/snapshot` to get stable block `ref` IDs. `operations` commits atomically — either every op lands or none do — so one `/edit/v2` call can batch dozens of block edits safely and efficiently (see the bulk-sweep guidance in `references/hitl-review.md` Phase 2.4).
 
@@ -185,22 +183,20 @@ Requires Proof.app running. Bridge at `http://localhost:9847`.
 
 ### Key Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| GET | `/windows` | List open documents |
-| GET | `/state` | Read markdown, cursor, word count |
-| GET | `/marks` | List all suggestions and comments |
-| POST | `/marks/suggest-replace` | `{"quote":"old","by":"ai:compound-engineering","content":"new"}` |
-| POST | `/marks/suggest-insert` | `{"quote":"after this","by":"ai:compound-engineering","content":"insert"}` |
-| POST | `/marks/suggest-delete` | `{"quote":"delete this","by":"ai:compound-engineering"}` |
-| POST | `/marks/comment` | `{"quote":"text","by":"ai:compound-engineering","text":"comment"}` |
-| POST | `/marks/reply` | `{"markId":"<id>","by":"ai:compound-engineering","text":"reply"}` |
-| POST | `/marks/resolve` | `{"markId":"<id>","by":"ai:compound-engineering"}` |
-| POST | `/marks/accept` | `{"markId":"<id>"}` |
-| POST | `/marks/reject` | `{"markId":"<id>"}` |
-| POST | `/rewrite` | `{"content":"full markdown","by":"ai:compound-engineering"}` |
-| POST | `/presence` | `{"status":"reading","summary":"..."}` |
-| GET | `/events/pending` | Poll for user actions |
+bridge_endpoints[14]{method,endpoint,purpose}: GET,/windows,List open documents
+bridge_endpoints[14]{method,endpoint,purpose}: GET,/state,Read markdown, cursor, word count
+bridge_endpoints[14]{method,endpoint,purpose}: GET,/marks,List all suggestions and comments
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/suggest-replace,{"quote":"old","by":"ai:compound-engineering","content":"new"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/suggest-insert,{"quote":"after this","by":"ai:compound-engineering","content":"insert"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/suggest-delete,{"quote":"delete this","by":"ai:compound-engineering"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/comment,{"quote":"text","by":"ai:compound-engineering","text":"comment"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/reply,{"markId":"<id>","by":"ai:compound-engineering","text":"reply"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/resolve,{"markId":"<id>","by":"ai:compound-engineering"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/accept,{"markId":"<id>"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/marks/reject,{"markId":"<id>"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/rewrite,{"content":"full markdown","by":"ai:compound-engineering"}
+bridge_endpoints[14]{method,endpoint,purpose}: POST,/presence,{"status":"reading","summary":"..."}
+bridge_endpoints[14]{method,endpoint,purpose}: GET,/events/pending,Poll for user actions
 
 ### Presence Statuses
 

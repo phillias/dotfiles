@@ -13,128 +13,78 @@ description: >
 
 Runbook for maintaining a chezmoi-managed dotfiles repo across multiple machines.
 
-## Agent-Friendly Interface: chezmoi-axi
+## Skills
 
-For agent contexts, use `chezmoi-axi` — an AXI-compliant wrapper around chezmoi that provides token-efficient TOON output (~40% savings over plain text) with structured errors and contextual help hints.
-
-```bash
-# Quick status check
-chezmoi-axi status
-
-# List managed files (minimal schema)
-chezmoi-axi list
-chezmoi-axi list --changed   # only files with pending diffs
-chezmoi-axi list --encrypted # only encrypted files
-
-# Review diffs
-chezmoi-axi diff
-chezmoi-axi diff ~/.bashrc   # specific file
-
-# Add/re-add files
-chezmoi-axi add ~/.config/app/config.json
-chezmoi-axi add --encrypt ~/.config/app/secret.key
-chezmoi-axi re-add ~/.bashrc
-chezmoi-axi re-add --all     # re-add all changed files
-
-# Apply and verify
-chezmoi-axi apply
-chezmoi-axi apply --preview  # dry run
-chezmoi-axi verify
-
-# Sync remote changes
-chezmoi-axi sync
-chezmoi-axi sync --preview   # fetch + diff, no apply
-
-# Commit, push, and open PR
-chezmoi-axi commit
-chezmoi-axi commit "feat(app): add new config"
-```
-
-The script is at `~/.local/bin/chezmoi-axi`. All output uses TOON format per [AXI principles](https://axi.md).
+skills[2]{name,description}:
+  chezmoi-axi,Agent-friendly chezmoi wrapper with TOON output — status, list, diff, add, re-add, apply, verify, sync, commit
+  /ce-commit-push-pr,Full PR workflow — branching, committing, PR creation, post-PR cleanup
 
 ## Health Check
 
 Before any operation, assess current state:
 
-```bash
-# Verify all files match source state (exits 0 if clean)
-chezmoi verify
-
-# Show pending differences between source state and installed files
-chezmoi diff
-
-# List all managed files
-chezmoi managed
+```
+chezmoi-axi status              # managed count, pending diffs, last sync
+chezmoi-axi verify              # exits 0 if clean, 1 if drifted
+chezmoi-axi diff                # show pending differences
 ```
 
-- **`verify` exits non-zero** → some files have drifted. Run `chezmoi diff` to see what.
-- **`diff` shows unexpected changes** → files were modified outside chezmoi. See [I edited a file directly — capture the changes](#re-add-a-changed-file).
-- **`diff` is clean** → repo is in sync. Proceed with your operation.
+- verify exits non-zero → files drifted. Run `chezmoi-axi diff`.
+- diff shows unexpected changes → files modified outside chezmoi. See Re-add a changed file.
+- diff is clean → repo in sync. Proceed.
 
 ---
 
 ## Bootstrap a New Machine
 
-**Use this when**: Setting up dotfiles on a fresh server or VM.
+One-liner (installs chezmoi, tools, decrypts secrets, applies dotfiles):
 
-**One-liner** (installs chezmoi, tools, decrypts secrets, applies dotfiles):
-
-```bash
+```
 curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/setup.sh | bash
 ```
 
-**What the script does:**
-1. Installs chezmoi (latest version, updates if outdated)
-2. Installs GitHub CLI (`gh`)
-3. Installs Bitwarden CLI (`bw`)
-4. Installs cloudflared
-5. Installs opencode (user-local to `~/.opencode`, via npm/bun — NOT OS package manager)
-6. Sets up PATH in `.bashrc` and `.zshrc` (`~/.opencode/bin`, `~/.local/bin`, `~/bin`)
-7. Generates SSH deploy key and registers it on GitHub
-8. Prompts for profile branch (master/personal/work)
-9. Clones dotfiles repo
-10. Authenticates Bitwarden and decrypts age key
-11. Applies dotfiles
-12. Sets up cron auto-sync every 30 min
+What the script does:
 
-**Interactive prompts you'll answer:**
-- GitHub token (if `gh` not authenticated)
-- Profile branch choice
-- Bitwarden master password + 2FA
-- Bitwarden API key (optional, for cron)
-- Age key passphrase (auto-fetched from Bitwarden if available)
+steps[12]{n,action}:
+  1,Install chezmoi (latest, updates if outdated)
+  2,Install GitHub CLI (gh)
+  3,Install Bitwarden CLI (bw)
+  4,Install cloudflared
+  5,Install opencode (user-local ~/.opencode via npm/bun)
+  6,Set up PATH in .bashrc and .zshrc
+  7,Generate SSH deploy key and register on GitHub
+  8,Prompt for profile branch (master/personal/work)
+  9,Clone dotfiles repo
+  10,Authenticate Bitwarden and decrypt age key
+  11,Apply dotfiles
+  12,Set up cron auto-sync every 30 min
 
-**Prerequisites:**
-- `curl`, `python3`, `ssh-keygen`
-- Node.js or Bun (for opencode install)
-- `sudo` (optional — falls back to user-local installs)
+Interactive prompts you'll answer:
 
-**After bootstrap:**
-```bash
-# Verify everything is applied
-chezmoi verify
+prompts[5]{item}:
+  GitHub token (if gh not authenticated)
+  Profile branch choice
+  Bitwarden master password + 2FA
+  Bitwarden API key (optional, for cron)
+  Age key passphrase (auto-fetched from Bitwarden if available)
 
-# Check installed tools
-chezmoi managed | head -20
-```
+Prerequisites: curl, python3, ssh-keygen, Node.js or Bun, sudo (optional)
 
 ---
 
 ## What are you trying to do?
 
-| Situation | Go to |
-|---|---|
-| I have a new config file to start tracking | → [Add a new file](#add-a-new-file) |
-| I edited a tracked file on disk and want to capture the changes | → [Re-add a changed file](#re-add-a-changed-file) |
-| A file has secrets — I need to encrypt it | → [Encrypt a file](#encrypt-a-file) |
-| I want to view or edit an encrypted file's contents | → [Decrypt a file](#decrypt-a-file) |
-| Changes I made on one machine aren't showing up on another | → [Sync changes across machines](#sync-changes-across-machines) |
-| I want to stop tracking a file | → [Remove a file](#remove-a-file) |
-| Encrypted files are being skipped during `chezmoi apply` | → [Troubleshoot: age key](#troubleshoot-age-key) |
-| `chezmoi init` or `git push` fails with permission denied | → [Troubleshoot: SSH deploy key](#troubleshoot-ssh-deploy-key) |
-| Bitwarden template variables aren't rendering | → [Troubleshoot: Bitwarden session](#troubleshoot-bitwarden-session) |
-| I just want a quick overview of what chezmoi manages | → [View managed files](#view-managed-files) |
-| I want agent-friendly output for chezmoi operations | → [Agent-Friendly Interface: chezmoi-axi](#agent-friendly-interface-chezmoi-axi) |
+situations[10]{situation,go-to}:
+  New config file to start tracking,Add a new file
+  Edited tracked file on disk,Re-add a changed file
+  File has secrets — need to encrypt,Encrypt a file
+  View/edit encrypted file contents,Decrypt a file
+  Changes not showing on another machine,Sync changes across machines
+  Stop tracking a file,Remove a file
+  Exclude files from chezmoi,Manage .chezmoiignore
+  Run cleanup/setup scripts during apply,Run scripts
+  Encrypted files skipped during apply,Troubleshoot: age key
+  Permission denied on init/push,Troubleshoot: SSH deploy key
 
 ---
 
@@ -142,261 +92,206 @@ chezmoi managed | head -20
 
 ### Add a new file
 
-**Use this when**: You have a config file on disk that isn't yet chezmoi-managed.
+Before you begin: All configs go on master. Secrets encrypted with age.
 
-**Before you begin**: All configs go on `master`. Secrets are encrypted with age, so they're safe on the shared branch — no need for separate profile branches.
+```
+chezmoi-axi add ~/.tmux.conf                           # unencrypted
+chezmoi-axi add --encrypt ~/.config/some-app/token     # encrypted
+```
 
-**Steps**:
+Verify: `chezmoi-axi diff` — no differences.
 
-1. Add the file to chezmoi's source state:
-   ```bash
-   # Unencrypted (no secrets)
-   chezmoi add ~/.tmux.conf
-
-   # Encrypted (API keys, tokens, private keys)
-   chezmoi add --encrypt ~/.config/some-app/token
-   ```
-
-2. Review the source state file was created:
-   ```bash
-   ls ~/.local/share/chezmoi/dot_*
-   ```
-
-3. **Verify**: run `chezmoi diff` — should show no differences between source and installed file.
-
-4. Commit and push using the [standard commit flow](#standard-commit-flow).
+Commit: `chezmoi-axi commit "feat(app): add new config"` or load /ce-commit-push-pr.
 
 ---
 
 ### Re-add a changed file
 
-**Use this when**: You edited a tracked file directly on disk (e.g., `~/.bashrc`) and want to capture those changes back into chezmoi's source state.
+```
+chezmoi-axi re-add ~/.bashrc      # single file
+chezmoi-axi re-add --all          # all changed files
+```
 
-**Steps**:
-
-1. ```bash
-   chezmoi re-add ~/.bashrc
-   ```
-
-2. **Verify**: run `chezmoi diff` — should now be clean.
-
-3. Commit and push using the [standard commit flow](#standard-commit-flow).
-
-> **Note**: This also works for files that were added to the source state manually (without `chezmoi add`) but need their content synced.
+Verify: `chezmoi-axi diff` — should be clean.
 
 ---
 
 ### Encrypt a file
 
-**Use this when**: You have a plaintext file in chezmoi that should be encrypted, or you're adding a new file that contains secrets.
-
-**Before you begin**: Check the age recipient is configured:
-```bash
+Check age recipient is configured:
+```
 grep recipient ~/.config/chezmoi/chezmoi.toml
 ```
 
-**Steps**:
-
-```bash
-# Encrypt an existing file into the source state
+```
 chezmoi add --encrypt ~/.config/opencode/.cloudflare-key
-
-# Encrypt a file that's already in the source state
 chezmoi reencrypt ~/.local/share/chezmoi/dot_config/opencode/encrypted_dot_cloudflare-key.age
 ```
 
-**Verify**: Run `chezmoi cat ~/.config/opencode/.cloudflare-key` — should show decrypted content. Run `chezmoi diff` — should be clean.
+Verify: `chezmoi cat ~/.config/opencode/.cloudflare-key` — shows decrypted content. `chezmoi diff` — clean.
 
-Commit and push using the [standard commit flow](#standard-commit-flow).
-
-> **Note**: This example previously used `.groq-key`. The Groq provider was removed from opencode configuration on 2026-07-18 (Groq's free-tier TPM limits were chronically rate-limiting agentic workloads), so `.groq-key` was dropped from chezmoi management. Examples now use `.cloudflare-key` (still actively managed). See [opencode-omo-config SKILL > Defunct Providers](../opencode-omo-config/SKILL.md#defunct-providers-removed-2026-07-18) for the full rationale.
+Note: .groq-key removed 2026-07-18 (Groq free-tier TPM limits). Examples use .cloudflare-key.
 
 ---
 
 ### Decrypt a file
 
-**Use this when**: You need to view the plaintext contents of an encrypted file, or edit one.
-
-**Steps**:
-
-```bash
-# View decrypted content (stdout)
-chezmoi cat ~/.config/opencode/.cloudflare-key
-
-# Edit an encrypted file (decrypts, opens editor, re-encrypts on save)
-chezmoi edit ~/.config/opencode/.cloudflare-key
+```
+chezmoi cat ~/.config/opencode/.cloudflare-key         # view (stdout)
+chezmoi edit ~/.config/opencode/.cloudflare-key        # edit (decrypts, opens editor, re-encrypts)
 ```
 
-No commit needed for `chezmoi cat` (read-only). After `chezmoi edit`, commit and push using the [standard commit flow](#standard-commit-flow).
-
-> **Note**: `.groq-key` was removed from chezmoi management on 2026-07-18 along with the Groq provider. See Defunct Providers in opencode-omo-config SKILL for rationale.
+No commit for chezmoi cat (read-only). After chezmoi edit, commit with chezmoi-axi commit.
 
 ---
 
 ### Sync changes across machines
 
-**Use this when**: Changes committed and pushed from machine A aren't appearing on machine B.
-
-**Before you begin**: Ensure the changes were pushed to the remote (check `git log origin/master..master` on the source machine).
-
-**Steps**:
-
-`chezmoi update` runs automatically via cron every 30 min on each machine. To sync immediately:
-
-```bash
-chezmoi update
+```
+chezmoi-axi sync              # pull + apply
+chezmoi-axi sync --preview    # see what's coming first
 ```
 
-This does: `git pull` + `chezmoi apply`.
+Verify: `chezmoi-axi verify` — should be clean.
 
-**Verify**: Run `chezmoi diff` and `chezmoi verify` — both should be clean. Check that the expected file changes are present.
-
-To preview without applying:
-
-```bash
-chezmoi diff
-```
-
-**Note**: `chezmoi diff` compares local source state against installed files. It does NOT show changes on the remote git repository that haven't been pulled yet.
+Note: chezmoi update also runs automatically via cron every 30 min.
 
 ---
 
-### Preview remote changes before applying
+### Preview remote changes
 
-**Use this when**: You want to see what changes exist on the remote before pulling them down.
+```
+chezmoi-axi sync --preview    # fetch + diff, no apply
+```
 
-`chezmoi update` does `git pull` + `chezmoi apply` in one shot. To inspect what's coming first:
-
-```bash
-# 1. Fetch remote without changing anything
+Or manually:
+```
 chezmoi git -- fetch origin
-
-# 2. See commits on remote master that you don't have
 chezmoi git -- log --oneline HEAD..origin/master
-
-# 3. See what files changed
-chezmoi git -- diff --stat HEAD origin/master
-
-# 4. See actual diff content
 chezmoi git -- diff HEAD origin/master
 ```
 
-**To preview how those changes would affect installed files:**
-
-```bash
-# Fast-forward source state only (safe, doesn't touch installed files)
-chezmoi git -- merge --ff-only origin/master
-
-# Now chezmoi diff shows remote vs installed
-chezmoi diff
-
-# If happy, apply:
-chezmoi apply
-
-# If not, undo the fast-forward:
-chezmoi git -- reset --hard HEAD
-```
+To apply: `chezmoi-axi apply`
 
 ---
 
 ### Remove a file
 
-**Use this when**: You want to stop managing a file with chezmoi.
-
-**Steps**:
-
-```bash
-# Stop managing (leaves the installed copy on disk)
-chezmoi forget ~/.some-file
-
-# Remove entirely (deletes from source state AND the installed copy)
-chezmoi remove ~/.some-file
+```
+chezmoi forget ~/.some-file    # stop managing (keeps installed copy)
+chezmoi remove ~/.some-file    # remove entirely
 ```
 
-**Verify**: Run `chezmoi managed | grep some-file` — should return nothing.
-
-Commit and push using the [standard commit flow](#standard-commit-flow).
+Verify: `chezmoi-axi list | grep some-file` — nothing.
 
 ---
 
 ### View managed files
 
-**Use this when**: You want a quick overview of what chezmoi is tracking, or what the sync state looks like.
-
-**Steps**:
-
-```bash
-# List all managed files
-chezmoi managed
-
-# Show differences between source state and installed files
-chezmoi diff
-
-# Quick health check
-chezmoi verify  # exits 0 if everything matches
+```
+chezmoi-axi list              # all managed files
+chezmoi-axi list --changed    # only files with pending diffs
+chezmoi-axi list --encrypted  # only encrypted files
 ```
 
 ---
 
-## Standard commit flow
+## Manage .chezmoiignore
 
-This is the standard way to commit and push source state changes. Used by most procedures above.
+The .chezmoiignore file at the source state root tells chezmoi to skip certain files during apply. Uses .gitignore pattern syntax.
 
-**Quick alternative**: `chezmoi-axi commit` automates this entire flow — stages all changes, commits, pushes to a feature branch, and opens a PR:
+Current patterns:
 
-```bash
+ignore[5]{pattern,reason}:
+  .chezmoi.toml,Internal chezmoi files
+  .chezmoiignore,Internal chezmoi files
+  .chezmoi-inventory.json,Internal chezmoi files
+  age-key.txt.age,Internal chezmoi files
+  .gitconfig,Machine-specific git identity
+
+profile-ignores[3]{pattern}:
+  .config/opencode/profiles/*/node_modules
+  .config/opencode/profiles/*/package-lock.json
+  .config/opencode/profiles/*/bun.lock
+
+When to edit:
+- Adding machine-specific files that shouldn't sync
+- Excluding build artifacts, caches, or temp files
+- Ignoring files that exist on some machines but not others
+
+Add a pattern:
+```
+echo "path/to/exclude" >> ~/.local/share/chezmoi/.chezmoiignore
+```
+
+Verify: `chezmoi diff` — ignored files no longer appear as pending.
+
+---
+
+## Run scripts
+
+Chezmoi can run scripts automatically during chezmoi apply. Scripts use special name prefixes:
+
+script-types[2]{prefix,runs,use-case}:
+  run_once_,Once per machine (tracked in .run_once),One-time migrations, cleanup
+  run_onchange_,When file content changes (hash tracked),Installs, updates, rebuilds
+
+Scripts can have .tmpl suffix for templating.
+
+Current run scripts:
+
+run_once_cleanup-stale.sh.tmpl:
+  rm -f ~/.config/opencode/oh-my-openagent.json  # replaced by .jsonc
+  rm -f ~/.local/bin/oc                           # replaced by shell alias
+  rm -rf ~/.config/opencode/profiles              # single-root config since Jul 2026
+
+Adding a new run script:
+
+1. Create in source state:
+```
+vim ~/.local/share/chezmoi/run_once_describe-what-it-does.sh
+```
+
+2. Make executable: `chmod +x`
+
+3. Commit: `chezmoi-axi commit "chore: add run script for X"`
+
+Re-run a run_once script:
+```
+rm ~/.local/share/chezmoi/.run_once/describe-what-it-does.sh
+chezmoi-axi apply
+```
+
+Re-run a run_onchange script: just edit the file — chezmoi detects content change.
+
+---
+
+## Commit and PR Flow
+
+Quick commit (stages, commits, pushes, opens PR):
+```
 chezmoi-axi commit "feat(app): add new config"
 ```
 
-**Manual flow** (when you need more control):
+Full PR workflow: load /ce-commit-push-pr. Handles branching, committing, PR creation, cleanup.
 
-```bash
-cd ~/.local/share/chezmoi
-
-# 1. Review changes
-git status
-git diff --stat
-
-# 2. Stage and commit
-git add <changed-file(s)>
-git commit -m "<type>(<scope>): <description>"
-
-# 3. Create a feature branch and push
-git checkout -b update-$(date +%Y%m%d-%H%M%S)
-git push -u origin $(git branch --show-current)
-
-# 4. Open a pull request
-gh pr create \
-  --title "$(git log -1 --pretty=%s)" \
-  --body "$(git log -1 --pretty=%b)" \
-  --base master
-
-# 5. Switch branch back to masster
-git checkout master
-
-# 6. Delete local branch
-git branch -d update-$(date +%Y%m%d-%H%M%S)
-```
-
-> **Note**: The repo is at `~/.local/share/chezmoi`. Other machines pick up changes on their next `chezmoi update` (cron runs every 30 min). Prefer PRs for traceability; if branch protection prevents direct push, the agent should handle it flexibly.
+Other machines pick up changes on next chezmoi update (cron every 30 min).
 
 ---
 
 ## Troubleshooting
 
-### Troubleshoot: age key
+### age key
 
-**Symptom**: `chezmoi apply` skips encrypted files with the error `"chezmoi: <file>: encrypted, but age is not configured"`.
+Symptom: "chezmoi: <file>: encrypted, but age is not configured"
 
-**Diagnosis**: The age key file is missing, or `chezmoi.toml` doesn't have encryption configured.
-
-**Fix**:
-
-```bash
-# Check if config exists
+Fix:
+```
 cat ~/.config/chezmoi/chezmoi.toml
+```
 
-# If missing, recreate:
+If missing, recreate:
+```
 mkdir -p ~/.config/chezmoi
 cat > ~/.config/chezmoi/chezmoi.toml << 'EOF'
 encryption = "age"
@@ -406,63 +301,46 @@ encryption = "age"
 EOF
 ```
 
-**Still broken?** → See [passphrase incorrect](#troubleshoot-passphrase-incorrect).
+Still broken? See passphrase incorrect.
 
 ---
 
-### Troubleshoot: passphrase incorrect
+### passphrase incorrect
 
-**Symptom**: `"could not decrypt"` / `"passphrase is incorrect"`.
+Symptom: "could not decrypt" / "passphrase is incorrect"
 
-**Diagnosis**: The age passphrase used during bootstrap was wrong, or the key file needs to be decrypted.
-
-**Fix**:
-
-```bash
-# Decrypt the age key from chezmoi source
+Fix:
+```
 chezmoi age decrypt --passphrase \
   -o ~/.config/chezmoi/key.txt \
   ~/.local/share/chezmoi/age-key.txt.age
 ```
 
-**Find the passphrase**: Search your password manager for "Chezmoi Age Key" or similar. Make sure there's no leading/trailing whitespace in the pasted passphrase.
+Find passphrase: search password manager for "Chezmoi Age Key". No leading/trailing whitespace.
 
-Then re-apply:
-
-```bash
-chezmoi apply
-```
+Then re-apply: `chezmoi-axi apply`
 
 ---
 
-### Troubleshoot: Bitwarden session
+### Bitwarden session
 
-**Symptom**: `.tmpl` files that use Bitwarden template variables are not rendering (showing template syntax instead of values).
+Symptom: .tmpl files show template syntax instead of values.
 
-**Diagnosis**: The `BW_SESSION` environment variable is not set, so chezmoi can't access Bitwarden.
-
-**Fix**:
-
-```bash
+Fix:
+```
 export BW_SESSION=$(bw unlock --raw)
-BW_SESSION="$BW_SESSION" chezmoi apply
+BW_SESSION="$BW_SESSION" chezmoi-axi apply
 ```
 
 ---
 
-### Troubleshoot: SSH deploy key
+### SSH deploy key
 
-**Symptom**: `chezmoi init` or `git push` fails with `Permission denied (publickey)`.
+Symptom: "Permission denied (publickey)" on chezmoi init or git push
 
-**Diagnosis**: The SSH deploy key (`~/.ssh/chezmoi-deploy-key`) is missing, not loaded, or not registered on GitHub.
-
-**Fix**:
-
-```bash
-# Test the key
+Fix:
+```
 ssh -T git@github.com -i ~/.ssh/chezmoi-deploy-key
-
-# If it fails, register the key on GitHub
 gh repo deploy-key add ~/.ssh/chezmoi-deploy-key.pub \
   --repo <owner>/<repo> \
   --title "chezmoi@$(hostname)" \
@@ -473,19 +351,16 @@ gh repo deploy-key add ~/.ssh/chezmoi-deploy-key.pub \
 
 ## Naming Reference
 
-Use this when you need to manually name a file in the source state (`~/.local/share/chezmoi/`):
-
-| Target path | Source state filename |
-|---|---|
-| `~/.bashrc` | `dot_bashrc` |
-| `~/.config/opencode/opencode.json` | `dot_config/opencode/opencode.json` |
-| `~/.config/opencode/.cloudflare-key` (encrypted) | `dot_config/opencode/encrypted_dot_cloudflare-key.age` |
-| `~/.ssh/id_ed25519` (encrypted) | `dot_ssh/encrypted_private_id_ed25519.age` |
+naming[4]{target,source}:
+  ~/.bashrc,dot_bashrc
+  ~/.config/opencode/opencode.json,dot_config/opencode/opencode.json
+  ~/.config/opencode/.cloudflare-key (encrypted),dot_config/opencode/encrypted_dot_cloudflare-key.age
+  ~/.ssh/id_ed25519 (encrypted),dot_ssh/encrypted_private_id_ed25519.age
 
 Rules:
-- Replace leading `.` → `dot_` prefix
-- Preserve directory structure under `dot_` prefix
-- Encrypted files: prefix `encrypted_` + suffix `.age`
-- SSH private keys: use `encrypted_private_` prefix (chezmoi convention)
+- Replace leading . → dot_ prefix
+- Preserve directory structure under dot_ prefix
+- Encrypted files: prefix encrypted_ + suffix .age
+- SSH private keys: use encrypted_private_ prefix (chezmoi convention)
 
-> **Prefer `chezmoi add` over manual naming** — it handles naming conventions automatically.
+Prefer `chezmoi add` over manual naming — it handles conventions automatically.
