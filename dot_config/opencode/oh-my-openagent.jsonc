@@ -41,34 +41,39 @@
   },
 
   "background_task": {
-    "defaultConcurrency": 8,
+    // Conservative limits based on provider rate limits:
+    // - Cloudflare: 300 req/min, 10K Neurons/day
+    // - OpenRouter: 50 req/day (free), 20 req/min
+    // - Zen: ~200 req/day (free tier)
+    // - Go: $10/mo shared pool
+    "defaultConcurrency": 6,
     "providerConcurrency": {
-      "opencode": 15,
-      "opencode-zen": 15,
-      "opencode-go": 8,
-      "openrouter": 6,
-      "cloudflare": 10,
-      "agnes": 5
+      "opencode": 12,
+      "opencode-zen": 10,      // Down from 15 — free tier ~200 req/day
+      "opencode-go": 6,        // Down from 8 — expensive pool
+      "openrouter": 4,         // Down from 6 — free tier 50 req/day
+      "cloudflare": 8,         // Down from 10 — 300 req/min limit
+      "agnes": 3               // Unknown limits, conservative
     },
     "modelConcurrency": {
       "opencode-zen/big-pickle": 2,
-      "opencode-go/kimi-k2.6": 3,
+      "opencode-go/kimi-k2.6": 2,
       "opencode-go/deepseek-v4-pro": 2,
       "opencode-go/gpt-5.5": 2,
       "opencode-go/gpt-5.4": 2,
       "opencode-go/gpt-5.3-codex": 2,
       "opencode-go/glm-5.1": 2,
-      "opencode-go/deepseek-v4-flash": 15,
+      "opencode-go/deepseek-v4-flash": 8,  // Down from 15
       "opencode-zen/kimi-k2.6": 2,
-      "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast": 5,
+      "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast": 4,  // Down from 5
       "cloudflare/@cf/openai/gpt-oss-120b": 2,
-      "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct": 3,
+      "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct": 2,  // Down from 3
       "cloudflare/@cf/moonshotai/kimi-k2.7-code": 2,
       "cloudflare/@cf/nvidia/nemotron-3-120b-a12b": 2,
-      "cloudflare/@cf/google/gemma-4-26b-a4b-it": 3,
-      "cloudflare/@cf/zai-org/glm-4.7-flash": 5,
-      "agnes/agnes-2.0-flash": 3,
-      "agnes/agnes-1.5-flash": 5
+      "cloudflare/@cf/google/gemma-4-26b-a4b-it": 2,  // Down from 3
+      "cloudflare/@cf/zai-org/glm-4.7-flash": 4,  // Down from 5
+      "agnes/agnes-2.0-flash": 2,  // Down from 3
+      "agnes/agnes-1.5-flash": 3   // Down from 5
     }
   },
 
