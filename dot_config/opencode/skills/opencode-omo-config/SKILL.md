@@ -4,12 +4,112 @@
 
 This skill documents the architecture, decisions, and maintenance procedures for the OpenCode and Oh-My-OpenAgent (OmO) configuration. As of 2026-07-18, this is a single-root config — profiles were phased out after they were identified as the source of the `cloudflare/` vs `@cf/` prefix bug (root config was correct, profiles shadowed it with bare model names).
 
+## Model Specifications
+
+### OpenCode Zen (47 models)
+
+| Model | Context | Output | Temp |
+|-------|---------|--------|------|
+| big-pickle | 200K | 32K | 0.7 |
+| kimi-k2.6 | 200K | 32K | 0.7 |
+| deepseek-v4-pro | 131K | 8K | 1.0 |
+| deepseek-v4-flash | 131K | 8K | 0.7 |
+| gpt-5.5 | 128K | 32K | 0.7 |
+| gpt-5.4 | 128K | 32K | 0.7 |
+| claude-opus-4-8 | 200K | 32K | 0.7 |
+| gemini-3.5-flash | 1M | 64K | 0.7 |
+| nemotron-3-ultra-free | 262K | 8K | 0.7 |
+| deepseek-v4-flash-free | 131K | 8K | 0.7 |
+
+### Cloudflare Workers AI (16 models)
+
+| Model | Context | Output | Temp |
+|-------|---------|--------|------|
+| @cf/meta/llama-3.3-70b-instruct-fp8-fast | 24K | 8K | 0.7 |
+| @cf/meta/llama-4-scout-17b-16e-instruct | 131K | 8K | 0.7 |
+| @cf/deepseek-ai/deepseek-r1-distill-qwen-32b | 80K | 8K | 1.0 |
+| @cf/qwen/qwen2.5-coder-32b-instruct | 32K | 8K | 0.7 |
+| @cf/qwen/qwen3-30b-a3b-fp8 | 32K | 8K | 0.7 |
+| @cf/openai/gpt-oss-120b | 128K | 8K | 0.7 |
+| @cf/openai/gpt-oss-20b | 128K | 8K | 0.7 |
+| @cf/moonshotai/kimi-k2.6 | 262K | 8K | 0.7 |
+| @cf/moonshotai/kimi-k2.7-code | 262K | 8K | 0.7 |
+| @cf/zai-org/glm-4.7-flash | 131K | 8K | 0.7 |
+| @cf/zai-org/glm-5.2 | 262K | 8K | 0.7 |
+| @cf/google/gemma-4-26b-a4b-it | 256K | 8K | 0.7 |
+| @cf/nvidia/nemotron-3-120b-a12b | 256K | 8K | 0.7 |
+
+### Agnes AI (5 models)
+
+| Model | Context | Output | Temp |
+|-------|---------|--------|------|
+| agnes-1.5-flash | 131K | 8K | 0.7 |
+| agnes-2.0-flash | 131K | 8K | 0.7 |
+| agnes-video-v2.0 | 32K | 4K | 0.7 |
+| agnes-image-2.1-flash | 32K | 4K | 0.7 |
+| agnes-image-2.0-flash | 32K | 4K | 0.7 |
+
+### OpenRouter (24 models)
+
+| Model | Context | Output | Temp |
+|-------|---------|--------|------|
+| qwen/qwen3-coder:free | 131K | 8K | 0.7 |
+| meta-llama/llama-3.3-70b-instruct:free | 131K | 8K | 0.7 |
+| nvidia/nemotron-3-super-120b-a12b:free | 131K | 8K | 0.7 |
+| openai/gpt-4o | 128K | 16K | 0.7 |
+| google/gemini-2.5-flash | 1M | 64K | 0.7 |
+| deepseek/deepseek-chat | 131K | 8K | 0.7 |
+
+### OpenCode Go (12 models)
+
+| Model | Context | Output | Temp |
+|-------|---------|--------|------|
+| kimi-k2.6 | 200K | 32K | 0.7 |
+| deepseek-v4-pro | 131K | 8K | 1.0 |
+| deepseek-v4-flash | 131K | 8K | 0.7 |
+| glm-5.1 | 131K | 8K | 0.7 |
+
+### Other Providers
+
+| Provider | Model | Context | Output | Temp |
+|----------|-------|---------|--------|------|
+| Google | gemini-2.0-flash | 1M | 8K | 0.7 |
+| Mistral | mistral-large-latest | 131K | 8K | 0.7 |
+| SambaNova | Meta-Llama-3.3-70B-Instruct | 131K | 8K | 0.7 |
+| Together | deepseek-ai/DeepSeek-R1 | 163K | 163K | 1.0 |
+| HuggingFace | deepseek-ai/DeepSeek-R1-0528 | 131K | 8K | 1.0 |
+| HuggingFace | Qwen/Qwen3-Coder-480B-A35B-Instruct | 131K | 8K | 0.7 |
+| HuggingFace | google/gemma-4-12b-it | 262K | 8K | 0.7 |
+
 ## Architecture Overview
 
 ### Single-Root Config System
 
 All config lives directly under `~/.config/opencode/`. No profile subdirectories. There is exactly one `opencode.json`, one `oh-my-openagent.jsonc`, one `opencode-fallback.jsonc` — each is the authoritative source for its concern.
 
+```
+~/.config/opencode/
+├── opencode.json                              # Providers (Cloudflare, OpenRouter, OpenCode Zen, OpenCode Go, Agnes AI, Google, Mistral, SambaNova, Together, HuggingFace), MCPs, compaction defaults
+├── oh-my-openagent.jsonc                      # OmO agent and category routing (sisyphus, prometheus, oracle, metis, momus, atlas, ultrabrain, deep, quick, writing, artistry, explore, librarian, sisyphus-junior, etc.) + fallback_models chains
+├── opencode-fallback.jsonc                    # Global 11-entry free→subsidized→pay fallback chain (cloudflare Workers AI free → openrouter free → opencode-zen free → opencode-go flash → google gemini last resort)
+├── dispatch-rules.json                        # 26 starter rules mapping task shape → task(category=..., load_skills=[...]) at Sisyphus intent-gate time
+├── plugins/
+│   ├── better-compaction.ts                   # Auto-loaded: todo tracking, skill generation, codemem
+│   ├── fleet-state-writer.ts                  # Auto-loaded: zero-LLM-cost state wire (writes ~/.local/state/opencode-fleet/{state.json,wake.log,digest.txt})
+│   ├── fleet-digest.sh                        # (in scripts/, not plugins/) — pure bash reader for fleet state
+│   ├── go-pool-fallback.ts                    # Auto-loaded: Go pool exhaustion compaction note
+│   ├── go-pool-guard.ts                       # Auto-loaded: redirect to free when Go exhausted (only safety net for bare-opencode runs; no-op when OmO loads)
+│   └── tmux-patch-keeper.ts                   # Auto-loaded: re-applies tmux attach patch on session.created when upstream fingerprint detected
+├── scripts/
+│   ├── fleet-digest.sh                        # Pure bash reader for fleet state (terse TSV summary)
+│   ├── go-pool-check.sh                       # Go pool usage probe helper
+│   └── go-pool-switch.sh                      # Switch Go pool off if exhausted
+├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
+├── docs/plans/                                # Plan archive (not actively consumed at runtime)
+├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .agnes-key, .exa-key  # API keys (secret; .groq-key + any other defunct-key files removed)
+├── .tmux-OmOTeam.conf                         # tmux layout for team mode
+├── .google-client-id, .google-client-secret   # OAuth creds for Google Workspace MCP
+└── skills/                                    # OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, etc.)
 ```
 ~/.config/opencode/
 ├── opencode.json                              # Providers (Cloudflare, OpenRouter, OpenCode Zen, OpenCode Go, Google, Mistral, SambaNova, Together, Kilo, HuggingFace), MCPs, compaction defaults
@@ -38,13 +138,13 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 ### Critical Rules
 
 1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative. No `oc <profile>` launcher, no `profiles/` subdirectory. To switch behavior, change `opencode.json` / `oh-my-openagent.jsonc` directly and chezmoi-track the change.
-2. **Global config defines providers and MCPs.** `opencode.json` has all 10 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
+2. **Global config defines providers and MCPs.** `opencode.json` has all 11 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
 3. **OmO owns agent + category routing.** `oh-my-openagent.jsonc` declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain.
-4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 10 agents that don't specify their own `fallback_models` arrays.
+4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 11 agents that don't specify their own `fallback_models` arrays.
 5. **Auto-loaded plugins.** Any `.ts` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-fallback.ts`, `go-pool-guard.ts`, `tmux-patch-keeper.ts`. All run in-process with zero LLM cost on the write side.
 6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
-### Provider Stack (10 providers)
+### Provider Stack (11 providers)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
@@ -56,8 +156,8 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 | **SambaNova** | 1 (Llama 3.3 70B) | Free | Fast 70B option |
 | **Google** | 1 (Gemini 2.0 Flash) | Free (1500 req/day) | Vision, 1M ctx, pay-tier last resort |
 | **Together** | 1 (DeepSeek R1) | Free tier | Reasoning specialist |
-| **Kilo Gateway** | 4 (auto-router, Nemotron, Grok Code, Trinity) | Free (200 req/hr) | Auto-router, fast code |
 | **HuggingFace** | 5 (R1-0528, Qwen3-Coder-480B, Qwen3-235B, QwQ-32B, Gemma 4 12B) | Free | Reasoning, coding, multimodal |
+| **Agnes AI** | 5 (video, image, flash models) | Free tier | Multimodal (video, image generation) |
 
 ### Defunct Providers (removed 2026-07-18)
 
@@ -68,7 +168,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 
 Verification of these removals: schema audit of upstream opencode JSON schema (`https://opencode.ai/config.json` `$defs`) confirmed zero native `fallback` or `retry` keywords. All fallback handling is an OmO-feature, parsed by the OmO plugin, not by opencode core. Free→subsidized→pay progression is enforced by OmO at request-failure time.
 
-For Groq-equivalent and Cerebras-equivalent free-tier capacity, see **Cloudflare Workers AI** in the provider stack above — it now leads every fallback chain via `opencode-fallback.jsonc` (10-entry progressive chain).
+For Groq-equivalent and Cerebras-equivalent free-tier capacity, see **Cloudflare Workers AI** in the provider stack above — it now leads every fallback chain via `opencode-fallback.jsonc` (11-entry progressive chain).
 
 ### API Key Management
 
@@ -100,7 +200,7 @@ Both use the same key files. Shell profiles mirror the key files loaded by openc
 `~/.config/opencode/opencode.json` provides:
 
 - **`small_model`**: `google/gemini-2.0-flash` (1M context)
-- **`provider`**: All 10 live providers (Cloudflare, OpenCode Zen, OpenCode Go, OpenRouter, Mistral, SambaNova, Google, Together, Kilo, HuggingFace) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it).
+- **`provider`**: All 11 live providers (Cloudflare, OpenCode Zen, OpenCode Go, Agnes AI, OpenRouter, Mistral, SambaNova, Google, Together, HuggingFace) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it).
 - **`compaction`**: `{auto: false, prune: true, reserved: 50000, tail_turns: 40}`
 - **`mcp`**: Baseline MCPs (context7, grep_app, websearch, mcp_everything)
 - **`plugin`**: `["oh-my-openagent@latest"]` — the OmO plugin is loaded directly by root `opencode.json`
