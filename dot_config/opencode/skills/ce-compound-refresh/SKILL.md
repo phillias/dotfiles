@@ -12,10 +12,9 @@ Maintain the quality of `docs/solutions/` over time. This workflow reviews exist
 
 Check if `$ARGUMENTS` contains `mode:headless`. If present, strip it from arguments (use the remainder as a scope hint) and run in **headless mode**.
 
-| Mode | When | Behavior |
-|------|------|----------|
-| **Interactive** (default) | User is present and can answer questions | Ask for decisions on ambiguous cases, confirm actions |
-| **Headless** | `mode:headless` in arguments | No user interaction. Apply all unambiguous actions (Keep, Update, Consolidate, auto-Delete, Replace with sufficient evidence). Mark ambiguous cases as stale. Generate a summary report at the end. |
+mode_detection[2]{mode,when,behavior}:
+  Interactive (default),User is present and can answer questions,Ask for decisions on ambiguous cases confirm actions
+  Headless,`mode:headless` in arguments,"No user interaction. Apply all unambiguous actions (Keep, Update, Consolidate, auto-Delete, Replace with sufficient evidence). Mark ambiguous cases as stale. Generate a summary report at the end."
 
 ### Headless mode rules
 
@@ -60,13 +59,12 @@ If the user starts by naming a pattern doc, you may begin there to understand th
 
 For each candidate artifact, classify it into one of five outcomes:
 
-| Outcome | Meaning | Default action |
-|---------|---------|----------------|
-| **Keep** | Still accurate and still useful | No file edit by default; report that it was reviewed and remains trustworthy |
-| **Update** | Core solution is still correct, but references drifted | Apply evidence-backed in-place edits |
-| **Consolidate** | Two or more docs overlap heavily but are both correct | Merge unique content into the canonical doc, delete the subsumed doc |
-| **Replace** | The old artifact is now misleading, but there is a known better replacement | Create a trustworthy successor, then delete the old artifact |
-| **Delete** | No longer useful, applicable, or distinct | Delete the file — git history preserves it if anyone needs to recover it later |
+maintenance_outcomes[5]{outcome,meaning,default_action}:
+  Keep,"Still accurate and still useful","No file edit by default; report that it was reviewed and remains trustworthy"
+  Update,"Core solution is still correct, but references drifted",Apply evidence-backed in-place edits
+  Consolidate,"Two or more docs overlap heavily but are both correct","Merge unique content into the canonical doc, delete the subsumed doc"
+  Replace,"The old artifact is now misleading, but there is a known better replacement","Create a trustworthy successor, then delete the old artifact"
+  Delete,"No longer useful, applicable, or distinct","Delete the file — git history preserves it if anyone needs to recover it later"
 
 ## Core Rules
 
@@ -122,11 +120,10 @@ Before asking the user to classify anything:
 
 ### Route by Scope
 
-| Scope | When to use it | Interaction style |
-|-------|----------------|-------------------|
-| **Focused** | 1-2 likely files or user named a specific doc | Investigate directly, then present a recommendation |
-| **Batch** | Up to ~8 mostly independent docs | Investigate first, then present grouped recommendations |
-| **Broad** | 9+ docs, ambiguous, or repo-wide stale-doc sweep | Triage first, then investigate in batches |
+route_by_scope[3]{scope,when_to_use,interaction_style}:
+  Focused,1-2 likely files or user named a specific doc,"Investigate directly, then present a recommendation"
+  Batch,Up to ~8 mostly independent docs,"Investigate first, then present grouped recommendations"
+  Broad,"9+ docs, ambiguous, or repo-wide stale-doc sweep",Triage first then investigate in batches
 
 ### Broad Scope Triage
 
@@ -263,12 +260,11 @@ Contradictions between docs are more urgent than individual staleness — they a
 
 Use subagents for context isolation when investigating multiple artifacts — not just because the task sounds complex. Choose the lightest approach that fits:
 
-| Approach | When to use |
-|----------|-------------|
-| **Main thread only** | Small scope, short docs |
-| **Sequential subagents** | 1-2 artifacts with many supporting files to read |
-| **Parallel subagents** | 3+ truly independent artifacts with low overlap |
-| **Batched subagents** | Broad sweeps — narrow scope first, then investigate in batches |
+subagent_strategy[4]{approach,when_to_use}:
+  Main thread only,Small scope short docs
+  Sequential subagents,1-2 artifacts with many supporting files to read
+  Parallel subagents,3+ truly independent artifacts with low overlap
+  Batched subagents,Broad sweeps — narrow scope first then investigate in batches
 
 **When spawning any subagent**, omit the `mode` parameter so the user's configured permission settings apply. Include this instruction in its task prompt:
 
@@ -552,11 +548,10 @@ Before offering options, check:
 
 Use sensible defaults — no user to ask:
 
-| Context | Default action |
-|---------|---------------|
-| On main/master | Create a branch named for what was refreshed (e.g., `docs/refresh-auth-and-ci-learnings`), commit, attempt to open a PR. If PR creation fails, report the branch name. |
-| On a feature branch | Commit as a separate commit on the current branch |
-| Git operations fail | Include the recommended git commands in the report and continue |
+headless_defaults[3]{context,default_action}:
+  On main/master,"Create a branch named for what was refreshed (e.g., docs/refresh-auth-and-ci-learnings), commit, attempt to open a PR. If PR creation fails, report the branch name."
+  On a feature branch,Commit as a separate commit on the current branch
+  Git operations fail,Include the recommended git commands in the report and continue
 
 Stage only the files that compound-refresh modified — not other dirty files in the working tree.
 

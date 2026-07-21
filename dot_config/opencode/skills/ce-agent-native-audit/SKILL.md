@@ -11,14 +11,15 @@ Conduct a comprehensive review of the codebase against agent-native architecture
 
 ## Core Principles to Audit
 
-1. **Action Parity** - "Whatever the user can do, the agent can do"
-2. **Tools as Primitives** - "Tools provide capability, not behavior"
-3. **Context Injection** - "System prompt includes dynamic context about app state"
-4. **Shared Workspace** - "Agent and user work in the same data space"
-5. **CRUD Completeness** - "Every entity has full CRUD (Create, Read, Update, Delete)"
-6. **UI Integration** - "Agent actions immediately reflected in UI"
-7. **Capability Discovery** - "Users can discover what the agent can do"
-8. **Prompt-Native Features** - "Features are prompts defining outcomes, not code"
+core_principles[8]{principle,description}:
+  1,Action Parity — "Whatever the user can do, the agent can do"
+  2,Tools as Primitives — "Tools provide capability, not behavior"
+  3,Context Injection — "System prompt includes dynamic context about app state"
+  4,Shared Workspace — "Agent and user work in the same data space"
+  5,CRUD Completeness — "Every entity has full CRUD (Create, Read, Update, Delete)"
+  6,UI Integration — "Agent actions immediately reflected in UI"
+  7,Capability Discovery — "Users can discover what the agent can do"
+  8,Prompt-Native Features — "Features are prompts defining outcomes, not code"
 
 ## Workflow
 
@@ -268,11 +269,13 @@ After all agents complete, compile a summary with:
 If $ARGUMENTS specifies a single principle (e.g., "action parity"), only run that sub-agent and provide detailed findings for that principle alone.
 
 Valid arguments:
-- `action parity` or `1`
-- `tools` or `primitives` or `2`
-- `context` or `injection` or `3`
-- `shared` or `workspace` or `4`
-- `crud` or `5`
-- `ui` or `integration` or `6`
-- `discovery` or `7`
-- `prompt` or `features` or `8`
+
+valid_args[8]{arg,aliases}:
+  1,action parity / 1
+  2,tools / primitives / 2
+  3,context / injection / 3
+  4,shared / workspace / 4
+  5,crud / 5
+  6,ui / integration / 6
+  7,discovery / 7
+  8,prompt / features / 8

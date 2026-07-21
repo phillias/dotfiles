@@ -149,9 +149,9 @@ The maintainer will review your report and respond as soon as possible.
 ## Privacy Notice
 
 This skill does NOT collect:
-- Personal information
-- API keys or credentials
-- Private code from projects
-- File paths beyond basic OS info
+not_collected[4]{item}: Personal information
+not_collected[4]{item}: API keys or credentials
+not_collected[4]{item}: Private code from projects
+not_collected[4]{item}: File paths beyond basic OS info
 
 Only technical information about the bug is included in the report.

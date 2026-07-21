@@ -27,17 +27,15 @@ Run `bash scripts/detect-project-type.sh` to identify the framework.
 
 Route by type to the matching recipe reference for start command and port defaults:
 
-| Type | Recipe |
-|------|--------|
-| `rails` | `references/dev-server-rails.md` |
-| `next` | `references/dev-server-next.md` |
-| `vite` | `references/dev-server-vite.md` |
-| `nuxt` | `references/dev-server-nuxt.md` |
-| `astro` | `references/dev-server-astro.md` |
-| `remix` | `references/dev-server-remix.md` |
-| `sveltekit` | `references/dev-server-sveltekit.md` |
-| `procfile` | `references/dev-server-procfile.md` |
-| `unknown` | Ask the user how to start the project |
+dev_server_routing[9]{type,recipe}: rails,references/dev-server-rails.md
+dev_server_routing[9]{type,recipe}: next,references/dev-server-next.md
+dev_server_routing[9]{type,recipe}: vite,references/dev-server-vite.md
+dev_server_routing[9]{type,recipe}: nuxt,references/dev-server-nuxt.md
+dev_server_routing[9]{type,recipe}: astro,references/dev-server-astro.md
+dev_server_routing[9]{type,recipe}: remix,references/dev-server-remix.md
+dev_server_routing[9]{type,recipe}: sveltekit,references/dev-server-sveltekit.md
+dev_server_routing[9]{type,recipe}: procfile,references/dev-server-procfile.md
+dev_server_routing[9]{type,recipe}: unknown,Ask the user how to start the project
 
 For framework types that need a package manager, run `bash scripts/resolve-package-manager.sh` and substitute the result into the start command.
 
@@ -70,20 +68,20 @@ No checklist. No envelope. Just conversation.
 ## References
 
 Reference files (loaded on demand):
-- `references/launch-json-schema.md` — launch.json schema + per-framework stubs
-- `references/ide-detection.md` — host IDE detection and browser-handoff
-- `references/dev-server-detection.md` — port resolution documentation
-- `references/dev-server-rails.md` — Rails dev-server defaults
-- `references/dev-server-next.md` — Next.js dev-server defaults
-- `references/dev-server-vite.md` — Vite dev-server defaults
-- `references/dev-server-nuxt.md` — Nuxt dev-server defaults
-- `references/dev-server-astro.md` — Astro dev-server defaults
-- `references/dev-server-remix.md` — Remix dev-server defaults
-- `references/dev-server-sveltekit.md` — SvelteKit dev-server defaults
-- `references/dev-server-procfile.md` — Procfile-based dev-server defaults
+reference_files[11]{file,description}: references/launch-json-schema.md,launch.json schema + per-framework stubs
+reference_files[11]{file,description}: references/ide-detection.md,host IDE detection and browser-handoff
+reference_files[11]{file,description}: references/dev-server-detection.md,port resolution documentation
+reference_files[11]{file,description}: references/dev-server-rails.md,Rails dev-server defaults
+reference_files[11]{file,description}: references/dev-server-next.md,Next.js dev-server defaults
+reference_files[11]{file,description}: references/dev-server-vite.md,Vite dev-server defaults
+reference_files[11]{file,description}: references/dev-server-nuxt.md,Nuxt dev-server defaults
+reference_files[11]{file,description}: references/dev-server-astro.md,Astro dev-server defaults
+reference_files[11]{file,description}: references/dev-server-remix.md,Remix dev-server defaults
+reference_files[11]{file,description}: references/dev-server-sveltekit.md,SvelteKit dev-server defaults
+reference_files[11]{file,description}: references/dev-server-procfile.md,Procfile-based dev-server defaults
 
 Scripts (invoked via `bash scripts/<name>`):
-- `scripts/read-launch-json.sh` — launch.json reader
-- `scripts/detect-project-type.sh` — project-type classifier
-- `scripts/resolve-package-manager.sh` — lockfile-based package-manager resolver
-- `scripts/resolve-port.sh` — port resolution cascade
+scripts[4]{script,description}: scripts/read-launch-json.sh,launch.json reader
+scripts[4]{script,description}: scripts/detect-project-type.sh,project-type classifier
+scripts[4]{script,description}: scripts/resolve-package-manager.sh,lockfile-based package-manager resolver
+scripts[4]{script,description}: scripts/resolve-port.sh,port resolution cascade

@@ -149,15 +149,14 @@ Dispatch agents using **bounded parallelism** with the platform's subagent primi
 
 Each agent receives the prompt built from the subagent template included below with these variables filled:
 
-| Variable | Value |
-|----------|-------|
-| `{persona_file}` | Full content of the agent's markdown file |
-| `{schema}` | Content of the findings schema included below |
-| `{document_type}` | "requirements" or "plan" from Phase 1 classification |
-| `{document_path}` | Path to the document |
-| `{origin_path}` | Value of the document's `origin:` frontmatter field if present, or the literal string `none` if absent. Personas that adapt on origin (product-lens, adversarial, scope-guardian) read this slot to gate technique suppression — they do NOT re-parse frontmatter themselves. Extract this once during Phase 1 reading. |
-| `{document_content}` | Full text of the document |
-| `{decision_primer}` | Cumulative prior-round decisions in the current session, or an empty `<prior-decisions>` block on round 1. See "Decision primer" below. |
+template_variables[8]{variable,value}:
+  {persona_file},Full content of the agent's markdown file
+  {schema},Content of the findings schema included below
+  {document_type},"requirements" or "plan" from Phase 1 classification
+  {document_path},Path to the document
+  {origin_path},Value of the document's `origin:` frontmatter field if present\, or the literal string `none` if absent. Personas that adapt on origin (product-lens\, adversarial\, scope-guardian) read this slot to gate technique suppression — they do NOT re-parse frontmatter themselves. Extract this once during Phase 1 reading.
+  {document_content},Full text of the document
+  {decision_primer},Cumulative prior-round decisions in the current session\, or an empty `<prior-decisions>` block on round 1. See "Decision primer" below.
 
 Pass each agent the **full document** — do not split into sections.
 
