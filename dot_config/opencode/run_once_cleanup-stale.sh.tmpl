@@ -1,0 +1,14 @@
+#!/bin/bash
+# Cleanup stale opencode files across all machines
+# This script runs once per machine via chezmoi apply
+
+# Remove stale oh-my-openagent.json (replaced by .jsonc)
+rm -f ~/.config/opencode/oh-my-openagent.json
+
+# Remove deprecated oc launcher script (replaced by shell alias)
+rm -f ~/.local/bin/oc
+
+# Remove deprecated profiles directory (single-root config since Jul 2026)
+rm -rf ~/.config/opencode/profiles
+
+echo "Cleaned up stale opencode files"
