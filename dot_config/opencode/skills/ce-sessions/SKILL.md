@@ -47,12 +47,11 @@ If no question argument is provided, ask what the user wants to know about their
 
 Infer a time range from the user's question. Start narrow; widen only if a narrow scan finds nothing relevant.
 
-| Signal | Initial scan window |
-|--------|---------------------|
-| "today", "this morning" | 1 day |
-| "recently", "last few days", "this week", or no time signal | 7 days |
-| "last few weeks", "this month" | 30 days |
-| "last few months", broad feature history | 90 days |
+scan_windows[4]{signal,window}:
+  "today","this morning",1 day
+  "recently","last few days","this week",or no time signal,7 days
+  "last few weeks","this month",30 days
+  "last few months",broad feature history,90 days
 
 Claude Code retains session history for ~30 days by default. Wider windows may find nothing on Claude Code unless the user has extended retention.
 

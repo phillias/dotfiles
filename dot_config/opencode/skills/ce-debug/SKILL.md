@@ -19,13 +19,12 @@ Find root causes, then fix them. This skill investigates bugs systematically —
 
 ## Execution Flow
 
-| Phase | Name | Purpose |
-|-------|------|---------|
-| 0 | Triage | Parse input, fetch issue if referenced, proceed to investigation |
-| 1 | Investigate | Reproduce the bug, trace the code path |
-| 2 | Root Cause | Form hypotheses with predictions for uncertain links, test them, **causal chain gate**, smart escalation |
-| 3 | Fix | Only if user chose to fix. Test-first fix with workspace safety checks |
-| 4 | Handoff | Structured summary, then prompt the user for the next action |
+execution_flow[5]{phase,name,purpose}:
+  0,Triage,"Parse input, fetch issue if referenced, proceed to investigation"
+  1,Investigate,"Reproduce the bug, trace the code path"
+  2,Root Cause,"Form hypotheses with predictions for uncertain links, test them, causal chain gate, smart escalation"
+  3,Fix,"Only if user chose to fix. Test-first fix with workspace safety checks"
+  4,Handoff,"Structured summary, then prompt the user for the next action"
 
 Beyond the trivial-bug fast-path in Phase 0, no further phase skipping — complex bugs simply spend more time in each phase naturally. No further complexity tiers.
 
@@ -164,12 +163,11 @@ Do not suggest brainstorm for bugs that are large but have a clear fix — size 
 
 If 2-3 hypotheses are exhausted without confirmation, diagnose why:
 
-| Pattern | Diagnosis | Next move |
-|---------|-----------|-----------|
-| Hypotheses point to different subsystems | Architecture/design problem, not a localized bug | Present findings, suggest `/ce-brainstorm` |
-| Evidence contradicts itself | Wrong mental model of the code | Step back, re-read the code path without assumptions |
-| Works locally, fails in CI/prod | Environment problem | Focus on env differences, config, dependencies, timing |
-| Fix works but prediction was wrong | Symptom fix, not root cause | The real cause is still active — keep investigating |
+smart_escalation[4]{pattern,diagnosis,next_move}:
+  Hypotheses point to different subsystems,Architecture/design problem not a localized bug,"Present findings, suggest /ce-brainstorm"
+  Evidence contradicts itself,Wrong mental model of the code,"Step back, re-read the code path without assumptions"
+  Works locally fails in CI/prod,Environment problem,"Focus on env differences, config, dependencies, timing"
+  Fix works but prediction was wrong,Symptom fix not root cause,The real cause is still active — keep investigating
 
 **Parallel investigation option:** When hypotheses are evidence-bottlenecked across clearly independent subsystems, dispatch read-only sub-agents in parallel, each with an explicit hypothesis and structured evidence-return format. No code edits by sub-agents, and skip this when hypotheses depend on each other's outcomes. If the platform does not support parallel sub-agent dispatch, run the same hypothesis probes sequentially in ranked-likelihood order instead — the parallelism is a latency optimization, not a correctness requirement.
 

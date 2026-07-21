@@ -37,16 +37,15 @@ If `CE_MISSING`, fall back to the standard OmO workflow (generic plan agent, dir
 
 Evaluate the user's incoming request against this routing matrix:
 
-| Signal | Classification | Route | Example |
-|---|---|---|---|---|
-| 1-2 files, no behavioral change, typo, config-only, rename | **Trivial** | Execute directly | "Fix the typo in login.ts" |
-| Single-file change with clear behavior | **Trivial** | Execute directly or use ce-work with bare prompt | "Add validation to email field" |
-| Multi-step feature, clear scope, known patterns, no CONTEXT.md | **Feature** | ce-plan → ce-work | "Add user authentication with JWT" |
-| Multi-step feature, clear scope, CONTEXT.md or ADRs exist | **Feature + Domain** | grill-with-docs → ce-plan → ce-work | "Add notification preferences UI" |
-| WHAT is unclear, product decisions needed, no CONTEXT.md | **Ambiguous** | ce-brainstorm → ce-plan → ce-work | "We need a notification system" |
-| WHAT is unclear, CONTEXT.md or ADRs exist | **Ambiguous + Domain** | grill-with-docs → ce-brainstorm → ce-plan → ce-work | "We need a notification system" |
-| Bug report, error trace, regression, "doesn't work" | **Bug** | ce-debug → fix → (optional) ce-compound | "Users get 500 on checkout" |
-| Large cross-cutting change, 10+ files, architectural decisions | **Large** | Offer ce-brainstorm first; respect user choice | "Migrate from REST to GraphQL" |
+routing_matrix[8]{signal,classification,route,example}:
+  1-2 files; no behavioral change; typo; config-only; rename,**Trivial**,Execute directly,"Fix the typo in login.ts"
+  Single-file change with clear behavior,**Trivial**,Execute directly or use ce-work with bare prompt,Add validation to email field
+  Multi-step feature; clear scope; known patterns; no CONTEXT.md,**Feature**,ce-plan → ce-work,Add user authentication with JWT
+  Multi-step feature; clear scope; CONTEXT.md or ADRs exist,**Feature + Domain**,grill-with-docs → ce-plan → ce-work,Add notification preferences UI
+  WHAT is unclear; product decisions needed; no CONTEXT.md,**Ambiguous**,ce-brainstorm → ce-plan → ce-work,We need a notification system
+  WHAT is unclear; CONTEXT.md or ADRs exist,**Ambiguous + Domain**,grill-with-docs → ce-brainstorm → ce-plan → ce-work,We need a notification system
+  Bug report; error trace; regression; "doesn't work",**Bug**,ce-debug → fix → (optional) ce-compound,Users get 500 on checkout
+  Large cross-cutting change; 10+ files; architectural decisions,**Large**,Offer ce-brainstorm first; respect user choice,Migrate from REST to GraphQL
 
 **Decision rules:**
 
@@ -210,26 +209,24 @@ After shipping a non-trivial bug fix or notable learning:
 
 ## Quick Reference: Skill Invocation Map
 
-| Action | Invocation |
-|---|---|---|
-| Domain alignment (terminology sharpening) | `grill-with-docs` (interactive, one question at a time, updates CONTEXT.md inline) |
-| Plan a feature | `ce-plan` with description |
-| Run a brainstorm | `ce-brainstorm` with topic |
-| Debug an error | `ce-debug` with error details |
-| Execute a plan | `ce-work <plan-path>` |
-| Review plan quality | `ce-doc-review mode:headless <plan-path>` |
-| Review code quality | `ce-code-review` |
-| Document a solution | `ce-compound [context]` |
-| Handle PR feedback | `ce-resolve-pr-feedback` |
-| Create commit + PR | `ce-commit-push-pr` |
+skill_invocation_map[10]{action,invocation}:
+  Domain alignment (terminology sharpening),`grill-with-docs` (interactive; one question at a time; updates CONTEXT.md inline)
+  Plan a feature,`ce-plan` with description
+  Run a brainstorm,`ce-brainstorm` with topic
+  Debug an error,`ce-debug` with error details
+  Execute a plan,`ce-work <plan-path>`
+  Review plan quality,`ce-doc-review mode:headless <plan-path>`
+  Review code quality,`ce-code-review`
+  Document a solution,`ce-compound [context]`
+  Handle PR feedback,`ce-resolve-pr-feedback`
+  Create commit + PR,`ce-commit-push-pr`
 
 ## Error Recovery
 
-| Symptom | Likely Cause | Action |
-|---|---|---|
-| `ce-plan` not found | CE plugin not installed | Fall back to OmO `task(subagent_type="plan")` |
-| Plan saved to `docs/plans/` but `.omo/plans/` expected | `.omo/` directory doesn't exist | Either create `.omo/` in the repo root, or set `OMO_PLANS_DIR` env var. Plan location is cosmetic — execution works from either path |
-| `ce-work` can't read plan | Plan lacks CE frontmatter (old OmO format) | ce-work reads any plan format. Pass the plan path explicitly |
-| Momus review doesn't fire | Plan wasn't written to `.omo/plans/` | Review still happens via ce-doc-review. Momus is an additional pass, not the only one |
-| `grill-with-docs` skill not found | Matt Pocock's skills not deployed | Run `chezmoi apply` to restore from dotfiles, or install via `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`. Skip domain alignment gate until present |
-| ce-doc-review or ce-code-review slow | Large diff or many findings | Tier 1 (harness-native) is faster for small changes. Escalate to Tier 2 only when warranted |
+error_recovery[6]{symptom,likely_cause,action}:
+  `ce-plan` not found,CE plugin not installed,Fall back to OmO `task(subagent_type="plan")`
+  Plan saved to `docs/plans/` but `.omo/plans/` expected,`.omo/` directory doesn't exist,"Either create `.omo/` in the repo root, or set `OMO_PLANS_DIR` env var. Plan location is cosmetic — execution works from either path"
+  `ce-work` can't read plan,Plan lacks CE frontmatter (old OmO format),ce-work reads any plan format. Pass the plan path explicitly
+  Momus review doesn't fire,Plan wasn't written to `.omo/plans/`,Review still happens via ce-doc-review. Momus is an additional pass, not the only one
+  `grill-with-docs` skill not found,Matt Pocock's skills not deployed,"Run `chezmoi apply` to restore from dotfiles, or install via `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`. Skip domain alignment gate until present"
+  ce-doc-review or ce-code-review slow,Large diff or many findings,Tier 1 (harness-native) is faster for small changes. Escalate to Tier 2 only when warranted

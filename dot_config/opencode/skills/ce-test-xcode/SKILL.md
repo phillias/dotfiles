@@ -11,10 +11,11 @@ Build, install, and test iOS apps on the simulator using XcodeBuildMCP. Captures
 
 ## Prerequisites
 
-- Xcode installed with command-line tools
-- XcodeBuildMCP MCP server connected
-- Valid Xcode project or workspace
-- At least one iOS Simulator available
+prerequisites[4]{item}:
+  Xcode installed with command-line tools
+  XcodeBuildMCP MCP server connected
+  Valid Xcode project or workspace
+  At least one iOS Simulator available
 
 ## Workflow
 
@@ -81,17 +82,21 @@ For each key screen in the app:
 Call `take_screenshot` with the simulator UUID and a descriptive filename (e.g., `screen-home.png`).
 
 **Review screenshot for:**
-- UI elements rendered correctly
-- No error messages visible
-- Expected content displayed
-- Layout looks correct
+
+screenshot_check[4]{item}:
+  UI elements rendered correctly
+  No error messages visible
+  Expected content displayed
+  Layout looks correct
 
 **Check logs for errors:**
 Call `get_sim_logs` with the simulator UUID. Look for:
-- Crashes
-- Exceptions
-- Error-level log messages
-- Failed network requests
+
+log_check[4]{item}:
+  Crashes
+  Exceptions
+  Error-level log messages
+  Failed network requests
 
 **Known automation limitation — SwiftUI Text links:**
 Simulated taps (via XcodeBuildMCP or any simulator automation tool) do not trigger gesture recognizers on SwiftUI `Text` views with inline `AttributedString` links. Taps report success but have no effect. This is a platform limitation — inline links are not exposed as separate elements in the accessibility tree. When a tap on a Text link has no visible effect, prompt the user to tap manually in the simulator. If the target URL is known, `xcrun simctl openurl <device> <URL>` can open it directly as a fallback.
@@ -100,14 +105,13 @@ Simulated taps (via XcodeBuildMCP or any simulator automation tool) do not trigg
 
 Pause for human input when testing touches flows that require device interaction.
 
-| Flow Type | What to Ask |
-|-----------|-------------|
-| Sign in with Apple | "Please complete Sign in with Apple on the simulator" |
-| Push notifications | "Send a test push and confirm it appears" |
-| In-app purchases | "Complete a sandbox purchase" |
-| Camera/Photos | "Grant permissions and verify camera works" |
-| Location | "Allow location access and verify map updates" |
-| SwiftUI Text links | "Please tap on [element description] manually — automated taps cannot trigger inline text links" |
+human_verification[6]{flow_type,what_to_ask}:
+  Sign in with Apple,Please complete Sign in with Apple on the simulator
+  Push notifications,Send a test push and confirm it appears
+  In-app purchases,Complete a sandbox purchase
+  Camera/Photos,Grant permissions and verify camera works
+  Location,Allow location access and verify map updates
+  SwiftUI Text links,Please tap on [element description] manually — automated taps cannot trigger inline text links
 
 Ask the user using the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_user` in Gemini, `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to numbered options in chat only when no blocking tool exists in the harness or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question:
 

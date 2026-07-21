@@ -321,12 +321,11 @@ This step is a single orchestrator-side analysis against the grounding summary a
 
 **Worked examples (illustrative, not a template — derive from actual grounding):**
 
-| Topic | Axes |
-|---|---|
-| Social sharing of crossfire and convergence pages | Send mechanics; discovery (receive side); arrival/dwell experience; compounding over time; actor types (first-party, expert, reader) |
-| Improve our authentication system | Sign-in flow; session management; account recovery; permissions; identity providers |
-| Dark mode for our app | Visual surfaces; toggle UX; system-preference detection; asset variants; edge cases (third-party content) |
-| Cache invalidation in the data layer | Trigger surfaces; coordination across replicas; staleness tolerance per data class; observability of invalidation events |
+worked_examples[4]{topic,axes}:
+  Social sharing of crossfire and convergence pages,"Send mechanics; discovery (receive side); arrival/dwell experience; compounding over time; actor types (first-party\, expert\, reader)"
+  Improve our authentication system,"Sign-in flow; session management; account recovery; permissions; identity providers"
+  Dark mode for our app,"Visual surfaces; toggle UX; system-preference detection; asset variants; edge cases (third-party content)"
+  Cache invalidation in the data layer,"Trigger surfaces; coordination across replicas; staleness tolerance per data class; observability of invalidation events"
 
 **Skip condition.** Some subjects are atomic and resist meaningful decomposition — a single string output (a name, a tagline), a narrowly-scoped tactical fix ("the typo on line 47 of README"), or a topic where the candidate axes *are* the deliverable (e.g., "what surface should the API expose?"). When 3+ orthogonal axes that pass the criteria above cannot be generated, skip decomposition. Note `Decomposition skipped — atomic subject` in the grounding summary so the artifact records the choice.
 
@@ -363,15 +362,13 @@ Assign each sub-agent a different ideation frame as a **starting bias, not a con
 
 Each sub-agent returns this structure per idea:
 
-- **title**
-- **summary** (2-4 sentences)
-- **axis** — required when Phase 1.5 produced an axis list. Pick the one axis this idea most centrally targets; do not span. Omit entirely when decomposition was skipped.
-- **basis** (required, tagged) — one of:
-  - `direct:` quoted line / specific file / named issue / explicit user-supplied context
-  - `external:` named prior art, domain research, adjacent pattern, with source
-  - `reasoned:` explicit first-principles argument for why this move likely applies — not a gesture; the argument is written out
-- **why_it_matters** — connects the basis to the move's significance
-- **meeting_test** — one line confirming this would warrant team discussion (waived when Phase 0.5 detected tactical focus signals)
+per_idea_contract[6]{field,description}:
+  title,Short title for the idea
+  summary,2-4 sentence description
+  axis,Required when Phase 1.5 produced an axis list. Pick the one axis this idea most centrally targets; do not span. Omit entirely when decomposition was skipped.
+  basis,"Required\, tagged — one of: `direct:` quoted line / specific file / named issue / explicit user-supplied context; `external:` named prior art\, domain research\, adjacent pattern\, with source; `reasoned:` explicit first-principles argument for why this move likely applies"
+  why_it_matters,Connects the basis to the move's significance
+  meeting_test,One line confirming this would warrant team discussion (waived when Phase 0.5 detected tactical focus signals)
 
 Basis is required, not optional. If a sub-agent cannot articulate a basis of at least one type, the idea does not surface. The failure mode to prevent is generic "AI-slop" ideas that sound plausible but lack a basis the user can verify.
 
