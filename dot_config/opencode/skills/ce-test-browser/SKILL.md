@@ -82,17 +82,16 @@ git diff --name-only main...[branch]
 
 Map changed files to testable routes:
 
-| File Pattern | Route(s) |
-|-------------|----------|
-| `app/views/users/*` | `/users`, `/users/:id`, `/users/new` |
-| `app/controllers/settings_controller.rb` | `/settings` |
-| `app/javascript/controllers/*_controller.js` | Pages using that Stimulus controller |
-| `app/components/*_component.rb` | Pages rendering that component |
-| `app/views/layouts/*` | All pages (test homepage at minimum) |
-| `app/assets/stylesheets/*` | Visual regression on key pages |
-| `app/helpers/*_helper.rb` | Pages using that helper |
-| `src/app/*` (Next.js) | Corresponding routes |
-| `src/components/*` | Pages using those components |
+route_mapping[9]{file_pattern,routes}:
+  app/views/users/*,/users | /users/:id | /users/new
+  app/controllers/settings_controller.rb,/settings
+  app/javascript/controllers/*_controller.js,Pages using that Stimulus controller
+  app/components/*_component.rb,Pages rendering that component
+  app/views/layouts/*,All pages (test homepage at minimum)
+  app/assets/stylesheets/*,Visual regression on key pages
+  app/helpers/*_helper.rb,Pages using that helper
+  src/app/* (Next.js),Corresponding routes
+  src/components/*,Pages using those components
 
 Build a list of URLs to test based on the mapping.
 
@@ -228,13 +227,12 @@ agent-browser screenshot --full page-name-full.png
 
 Pause for human input when testing touches flows that require external interaction:
 
-| Flow Type | What to Ask |
-|-----------|-------------|
-| OAuth | "Please sign in with [provider] and confirm it works" |
-| Email | "Check your inbox for the test email and confirm receipt" |
-| Payments | "Complete a test purchase in sandbox mode" |
-| SMS | "Verify you received the SMS code" |
-| External APIs | "Confirm the [service] integration is working" |
+human_verification[5]{flow,ask}:
+  OAuth,"Please sign in with [provider] and confirm it works"
+  Email,"Check your inbox for the test email and confirm receipt"
+  Payments,"Complete a test purchase in sandbox mode"
+  SMS,"Verify you received the SMS code"
+  External APIs,"Confirm the [service] integration is working"
 
 Ask the user (using the platform's question tool, or present numbered options and wait):
 

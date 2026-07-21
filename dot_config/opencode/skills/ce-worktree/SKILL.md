@@ -60,10 +60,10 @@ Modified configs are never auto-trusted. The script prints the manual trust comm
 
 ## When to create a worktree
 
-Create a worktree when:
-- Reviewing a PR while keeping the main checkout free for other work
-- Running multiple features in parallel without branch-switching overhead
-- Keeping the default branch free of in-progress state
+when_to_create[3]{scenario}:
+  Reviewing a PR while keeping the main checkout free for other work
+  Running multiple features in parallel without branch-switching overhead
+  Keeping the default branch free of in-progress state
 
 Do not create a worktree for single-task work that can happen on a branch in the main checkout.
 

@@ -46,14 +46,14 @@ If the input is present but unclear or underspecified, do not abandon — ask on
 ## Plan Quality Bar
 
 Every plan should contain:
-- A clear problem frame and scope boundary
-- Concrete requirements traceability back to the request or origin document
-- Repo-relative file paths for the work being proposed (never absolute paths — see Planning Rules)
-- Explicit test file paths for feature-bearing implementation units
-- Decisions with rationale, not just tasks
-- Existing patterns or code references to follow
-- Enumerated test scenarios for each feature-bearing unit, specific enough that an implementer knows exactly what to test without inventing coverage themselves
-- Clear dependencies and sequencing
+plan_quality[8]{requirement}: A clear problem frame and scope boundary
+plan_quality[8]{requirement}: Concrete requirements traceability back to the request or origin document
+plan_quality[8]{requirement}: Repo-relative file paths for the work being proposed (never absolute paths — see Planning Rules)
+plan_quality[8]{requirement}: Explicit test file paths for feature-bearing implementation units
+plan_quality[8]{requirement}: Decisions with rationale, not just tasks
+plan_quality[8]{requirement}: Existing patterns or code references to follow
+plan_quality[8]{requirement}: Enumerated test scenarios for each feature-bearing unit, specific enough that an implementer knows exactly what to test without inventing coverage themselves
+plan_quality[8]{requirement}: Clear dependencies and sequencing
 
 A plan is ready when an implementer can start confidently without needing the plan to write the code for them.
 
@@ -386,15 +386,15 @@ For **Standard** or **Deep** plans, briefly consider who is affected by this cha
 Break the work into logical implementation units. Each unit should represent one meaningful change that an implementer could typically land as an atomic commit.
 
 Good units are:
-- Focused on one component, behavior, or integration seam
-- Usually touching a small cluster of related files
-- Ordered by dependency
-- Concrete enough for execution without pre-writing code
+good_unit_traits[4]{trait}: Focused on one component, behavior, or integration seam
+good_unit_traits[4]{trait}: Usually touching a small cluster of related files
+good_unit_traits[4]{trait}: Ordered by dependency
+good_unit_traits[4]{trait}: Concrete enough for execution without pre-writing code
 
 Avoid:
-- 2-5 minute micro-steps
-- Units that span multiple unrelated concerns
-- Units that are so vague an implementer still has to invent the plan
+unit_pitfalls[3]{pitfall}: 2-5 minute micro-steps
+unit_pitfalls[3]{pitfall}: Units that span multiple unrelated concerns
+unit_pitfalls[3]{pitfall}: Units that are so vague an implementer still has to invent the plan
 
 Each unit carries a stable plan-local **U-ID** assigned in Phase 3.5 (`U1`, `U2`, …). U-IDs survive reordering, splitting, and deletion: new units take the next unused number, gaps are fine, and existing IDs are never renumbered. This lets `ce-work` reference units unambiguously across plan edits.
 
@@ -404,15 +404,13 @@ Before detailing implementation units, decide whether an overview would help a r
 
 **When to include it:**
 
-| Work involves... | Best overview form |
-|---|---|
-| DSL or API surface design | Pseudo-code grammar or contract sketch |
-| Multi-component integration | Mermaid sequence or component diagram |
-| Data pipeline or transformation | Data flow sketch |
-| State-heavy lifecycle | State diagram |
-| Complex branching logic | Flowchart |
-| Mode/flag combinations or multi-input behavior | Decision matrix (inputs -> outcomes) |
-| Single-component with non-obvious shape | Pseudo-code sketch |
+overview_forms[7]{work_involves,best_overview_form}: DSL or API surface design,Pseudo-code grammar or contract sketch
+overview_forms[7]{work_involves,best_overview_form}: Multi-component integration,Mermaid sequence or component diagram
+overview_forms[7]{work_involves,best_overview_form}: Data pipeline or transformation,Data flow sketch
+overview_forms[7]{work_involves,best_overview_form}: State-heavy lifecycle,State diagram
+overview_forms[7]{work_involves,best_overview_form}: Complex branching logic,Flowchart
+overview_forms[7]{work_involves,best_overview_form}: Mode/flag combinations or multi-input behavior,Decision matrix (inputs -> outcomes)
+overview_forms[7]{work_involves,best_overview_form}: Single-component with non-obvious shape,Pseudo-code sketch
 
 **When to skip it:**
 - Well-patterned work where prose and file paths tell the whole story
@@ -513,14 +511,14 @@ Use one planning philosophy across all depths. Change the amount of detail, not 
 #### 4.1b Optional Deep Plan Extensions
 
 For sufficiently large, risky, or cross-cutting work, add the sections that genuinely help:
-- **Alternative Approaches Considered**
-- **Success Metrics**
-- **Dependencies / Prerequisites**
-- **Risk Analysis & Mitigation**
-- **Phased Delivery**
-- **Documentation Plan**
-- **Operational / Rollout Notes**
-- **Future Considerations** only when they materially affect current design
+deep_extensions[8]{section}: Alternative Approaches Considered
+deep_extensions[8]{section}: Success Metrics
+deep_extensions[8]{section}: Dependencies / Prerequisites
+deep_extensions[8]{section}: Risk Analysis & Mitigation
+deep_extensions[8]{section}: Phased Delivery
+deep_extensions[8]{section}: Documentation Plan
+deep_extensions[8]{section}: Operational / Rollout Notes
+deep_extensions[8]{section}: Future Considerations — only when they materially affect current design
 
 Do not add these as boilerplate. Include them only when they improve execution quality or stakeholder alignment.
 
@@ -670,13 +668,13 @@ Determine the plan depth from the document:
 - **Deep** - cross-cutting, high-risk, or strategically important work, usually 4-8 units or phased delivery
 
 Build a risk profile. Treat these as high-risk signals:
-- Authentication, authorization, or security-sensitive behavior
-- Payments, billing, or financial flows
-- Data migrations, backfills, or persistent data changes
-- External APIs or third-party integrations
-- Privacy, compliance, or user data handling
-- Cross-interface parity or multi-surface behavior
-- Significant rollout, monitoring, or operational concerns
+risk_signals[7]{signal}: Authentication, authorization, or security-sensitive behavior
+risk_signals[7]{signal}: Payments, billing, or financial flows
+risk_signals[7]{signal}: Data migrations, backfills, or persistent data changes
+risk_signals[7]{signal}: External APIs or third-party integrations
+risk_signals[7]{signal}: Privacy, compliance, or user data handling
+risk_signals[7]{signal}: Cross-interface parity or multi-surface behavior
+risk_signals[7]{signal}: Significant rollout, monitoring, or operational concerns
 
 ##### 5.3.2 Gate: Decide Whether to Deepen
 

@@ -15,13 +15,12 @@ Delete local branches whose remote tracking branch has been deleted, including a
 
 ### Auto-triggers (agent-initiated)
 
-| Trigger | When | Action |
-|---------|------|--------|
-| **After PR merge** | `ce-commit-push-pr` completes and PR state is `MERGED` | Offer to clean up the merged branch |
-| **Session start** | Agent begins work on an existing repo with stale branches | Warn about gone branches, offer cleanup |
-| **Before new feature branch** | User asks to create a branch for new work | Ensure clean baseline, detect drift |
-| **After `git pull`** | Branch may have gone remote-side | Detect and offer to prune |
-| **Drift detected** | `ce-commit-push-pr` Step 3 detects diverged branches | Surface stale branches as part of drift report |
+auto_triggers[5]{trigger,when,action}:
+  After PR merge,"ce-commit-push-pr completes and PR state is MERGED",Offer to clean up the merged branch
+  Session start,"Agent begins work on an existing repo with stale branches",Warn about gone branches, offer cleanup
+  Before new feature branch,"User asks to create a branch for new work",Ensure clean baseline, detect drift
+  After `git pull`,Branch may have gone remote-side,Detect and offer to prune
+  Drift detected,"ce-commit-push-pr Step 3 detects diverged branches",Surface stale branches as part of drift report
 
 ### Agent behavior on auto-trigger
 
@@ -63,13 +62,12 @@ fi
 
 ### State handling
 
-| State | Action |
-|-------|--------|
-| **GONE** | Safe to delete — remote no longer exists |
-| **SYNCHRONIZED** | Safe to delete — local matches remote |
-| **BEHIND** | Safe to delete — local work is subset of remote |
-| **AHEAD** | **WARN** — branch has unpushed commits. Ask for confirmation with commit count |
-| **DIVERGED** | **BLOCK** — refuse to delete. Show divergence and suggest resolution |
+state_handling[5]{state,action}:
+  GONE,Safe to delete — remote no longer exists
+  SYNCHRONIZED,Safe to delete — local matches remote
+  BEHIND,Safe to delete — local work is subset of remote
+  AHEAD,WARN — branch has unpushed commits. Ask for confirmation with commit count
+  DIVERGED,BLOCK — refuse to delete. Show divergence and suggest resolution
 
 For AHEAD branches, show:
 ```

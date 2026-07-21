@@ -84,10 +84,9 @@ If arguments describe what to capture, classify based on the description. Otherw
 1. **Involves motion or interaction?** (animations, typing flows, drag-and-drop, real-time updates, continuous CLI output) -> classify as `motion`.
 2. **Involves discrete states?** (before/after UI, new page, command with output, API response) -> classify as `states`.
 
-| Change characteristic | Classification |
-|---|---|
-| Animations, typing, drag-and-drop, streaming output | `motion` |
-| New UI, before/after, command output, API responses | `states` |
+change_classification[2]{characteristic,classification}:
+  Animations\, typing\, drag-and-drop\, streaming output,motion
+  New UI\, before/after\, command output\, API responses,states
 
 **Feature vs bug fix -- what to demonstrate:**
 
@@ -131,11 +130,13 @@ Present the available tiers to the user via the platform's blocking question too
 **Question:** "How should evidence be captured for this change?"
 
 **Options** (show only tiers from the `available` list, order by recommendation):
-1. **Browser reel** -- Agent-browser screenshots stitched into animated GIF. Best for web apps.
-2. **Terminal recording** -- VHS terminal recording to GIF. Best for CLI tools with interaction/motion.
-3. **Screenshot reel** -- Styled terminal frames stitched into animated GIF. Best for discrete CLI steps.
-4. **Static screenshots** -- Individual PNGs. Fallback when other tools are unavailable.
-5. **No evidence needed** -- The diff speaks for itself. Best for text-only or config changes.
+
+tier_options[5]{name,description,use_case}:
+  Browser reel,Agent-browser screenshots stitched into animated GIF,Best for web apps
+  Terminal recording,VHS terminal recording to GIF,Best for CLI tools with interaction/motion
+  Screenshot reel,Styled terminal frames stitched into animated GIF,Best for discrete CLI steps
+  Static screenshots,Individual PNGs,Fallback when other tools are unavailable
+  No evidence needed,The diff speaks for itself,Best for text-only or config changes
 
 If the question tool is unavailable (background agent, batch mode), present the numbered options and wait for the user's reply before proceeding.
 
@@ -145,11 +146,12 @@ Carry the capture hypothesis from Step 0 and the feature exercise results from S
 
 Load the appropriate reference file for the selected tier:
 
-- **Browser reel** -> Read `references/tier-browser-reel.md`
-- **Terminal recording** -> Read `references/tier-terminal-recording.md`
-- **Screenshot reel** -> Read `references/tier-screenshot-reel.md`
-- **Static screenshots** -> Read `references/tier-static-screenshots.md`
-- **No evidence needed** -> Skip to output. Set `evidence_url` to null, `evidence_label` to null.
+tier_references[5]{tier,reference_file}:
+  Browser reel,references/tier-browser-reel.md
+  Terminal recording,references/tier-terminal-recording.md
+  Screenshot reel,references/tier-screenshot-reel.md
+  Static screenshots,references/tier-static-screenshots.md
+  No evidence needed,(skip to output; set evidence_url and evidence_label to null)
 
 **Runtime failure fallback:** If the selected tier fails during execution (tool crashes, server not accessible, recording produces empty output), fall back to the next available tier rather than failing entirely. The fallback order is: browser reel -> static screenshots, terminal recording -> screenshot reel -> static screenshots, screenshot reel -> static screenshots. Static screenshots is the terminal fallback -- if even that fails, report the failure and let the user decide.
 
