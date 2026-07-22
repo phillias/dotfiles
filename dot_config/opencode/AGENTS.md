@@ -1,7 +1,5 @@
 # Global OpenCode Rules
 
-> **Note for team profiles:** When `OPENCODE_CONFIG_DIR` is set (e.g., running `oc team`), OpenCode loads the profile's own `AGENTS.md` instead of this global file. Team-specific rules (including Compound Engineering skill instructions) are defined in `~/.config/opencode/profiles/<profile>/AGENTS.md`.
-
 ## Git Commit Identity
 
 Before any `git commit`, the agent **must** set the commit author identity dynamically:
@@ -39,6 +37,19 @@ When pushing changes intended for a pull request:
 3. **If no PR exists**: create a feature branch, push it, and open a pull request via `gh pr create --base master`.
 
 To infer the base branch: compare `git merge-base` against `master` and `develop` and any other likely upstream branches, then pick the closest one (smallest divergence).
+
+## Docker Service Discovery
+
+When a live URL or container name is given, locate its compose/project dir via the running container before grep-ing the filesystem:
+
+```bash
+docker ps | grep <name-or-port-from-url>
+docker inspect <container> | grep -iE 'WorkingDir|com.docker.compose.*Working.*Dir|com.docker.compose.project.config_files'
+```
+
+`~/docker/` is the default selfhost location, not an exhaustive one. Project-specific compose files may live elsewhere (e.g. `~/mybrain/wiki_viewer/`). The runtime always knows where a running container came from; the filesystem does not.
+
+Do not broad-grep `~/docker/` subdirectories when a container is running — that anchors on the wrong assumption and produces a long haystack hunt. Only fall back to filesystem grep if the container is not on the host.
 
 ## Compound-Engineering Integration (OmO + CE)
 
