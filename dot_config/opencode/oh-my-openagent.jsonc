@@ -179,7 +179,6 @@
       "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
-        "huggingface/openai/gpt-oss-20b",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "opencode-zen/mimo-v2.5-free"
@@ -194,7 +193,6 @@
       "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
-        "huggingface/openai/gpt-oss-20b",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
         "opencode-zen/mimo-v2.5-free"
@@ -202,9 +200,8 @@
     },
 
     "multimodal-looker": {
-      "model": "huggingface/google/gemma-4-26B-A4B-it",
+      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
       "fallback_models": [
-        "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         "opencode-zen/mimo-v2.5-free",
         "opencode-zen/nemotron-3-ultra-free"
@@ -265,9 +262,8 @@
     },
 
     "artistry": {
-      "model": "huggingface/google/gemma-4-26B-A4B-it",
+      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
       "fallback_models": [
-        "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "opencode-zen/mimo-v2.5-free",
         "openrouter/horizon-beta"
       ]
@@ -278,8 +274,7 @@
       "fallback_models": [
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "agnes/agnes-1.5-flash",
-        "opencode-zen/mimo-v2.5-free",
-        "huggingface/google/gemma-4-26B-A4B-it"
+        "opencode-zen/mimo-v2.5-free"
       ]
     },
 
@@ -307,7 +302,6 @@
     "writing": {
       "model": "opencode-zen/deepseek-v4-flash-free",
       "fallback_models": [
-        "huggingface/meta-llama/Llama-3.3-70B-Instruct",
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/mimo-v2.5-free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",

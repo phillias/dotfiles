@@ -467,6 +467,14 @@
           },
           "temperature": 0.7
         },
+        "deepseek-ai/DeepSeek-V4-Pro": {
+          "name": "DeepSeek V4 Pro",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
+          "temperature": 0.7
+        },
         "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
           "name": "Qwen3 Coder 480B",
           "limit": {
@@ -483,19 +491,11 @@
           },
           "temperature": 0.7
         },
-        "Qwen/QwQ-32B": {
-          "name": "QwQ 32B",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          },
-          "temperature": 1.0
-        },
         "google/gemma-4-26B-A4B-it": {
-          "name": "Gemma 4 26B MoE",
+          "name": "Gemma 4 26B MoE (thinking)",
           "limit": {
             "context": 262144,
-            "output": 16384
+            "output": 32768
           },
           "temperature": 0.7
         },
@@ -508,9 +508,9 @@
           "temperature": 0.7
         },
         "deepseek-ai/DeepSeek-R1-0528": {
-          "name": "DeepSeek R1 0528",
+          "name": "DeepSeek R1 0528 (reasoning)",
           "limit": {
-            "context": 131072,
+            "context": 163840,
             "output": 8192
           },
           "temperature": 1.0
