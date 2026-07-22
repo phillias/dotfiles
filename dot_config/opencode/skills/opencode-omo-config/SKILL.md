@@ -77,9 +77,15 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | Mistral | mistral-large-latest | 131K | 8K | 0.7 |
 | SambaNova | Meta-Llama-3.3-70B-Instruct | 131K | 8K | 0.7 |
 | Together | deepseek-ai/DeepSeek-R1 | 163K | 163K | 1.0 |
+| HuggingFace | openai/gpt-oss-120b | 131K | 32K | 0.7 |
+| HuggingFace | openai/gpt-oss-20b | 131K | 16K | 0.7 |
+| HuggingFace | deepseek-ai/DeepSeek-V4-Flash | 1M | 16K | 0.7 |
+| HuggingFace | Qwen/Qwen3-Coder-480B-A35B-Instruct | 262K | 32K | 0.7 |
+| HuggingFace | Qwen/Qwen3-235B-A22B-Instruct-2507 | 262K | 8K | 0.7 |
+| HuggingFace | Qwen/QwQ-32B | 131K | 8K | 1.0 |
+| HuggingFace | google/gemma-4-26B-A4B-it | 262K | 16K | 0.7 |
+| HuggingFace | meta-llama/Llama-3.3-70B-Instruct | 131K | 16K | 0.7 |
 | HuggingFace | deepseek-ai/DeepSeek-R1-0528 | 131K | 8K | 1.0 |
-| HuggingFace | Qwen/Qwen3-Coder-480B-A35B-Instruct | 131K | 8K | 0.7 |
-| HuggingFace | google/gemma-4-12b-it | 262K | 8K | 0.7 |
 
 ## Architecture Overview
 
@@ -156,7 +162,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 | **SambaNova** | 1 (Llama 3.3 70B) | Free | Fast 70B option |
 | **Google** | 1 (Gemini 2.0 Flash) | Free (1500 req/day) | Vision, 1M ctx, pay-tier last resort |
 | **Together** | 1 (DeepSeek R1) | Free tier | Reasoning specialist |
-| **HuggingFace** | 5 (R1-0528, Qwen3-Coder-480B, Qwen3-235B, QwQ-32B, Gemma 4 12B) | Free | Reasoning, coding, multimodal |
+| **HuggingFace** | 9 (GPT-OSS-120B, GPT-OSS-20B, DS-V4-Flash, Qwen3-Coder-480B, Qwen3-235B, QwQ-32B, Gemma-4-26B, Llama-3.3-70B, R1-0528) | Pass-through (HF router) | Coding, reasoning, multimodal |
 | **Agnes AI** | 5 (video, image, flash models) | Free tier | Multimodal (video, image generation) |
 
 ### Defunct Providers (removed 2026-07-18)
@@ -261,8 +267,8 @@ These are declared in `opencode.json` directly (no profile indirection):
 
 | Agent | Primary | Rationale |
 |---|---|---|
-| **Multimodal-Looker** | `huggingface/google/gemma-4-12b-it` | Vision-specific, encoder-free multimodal |
-| **Artistry** | `huggingface/google/gemma-4-12b-it` | Non-conventional, creative approaches |
+| **Multimodal-Looker** | `huggingface/google/gemma-4-26B-A4B-it` | Vision-specific, MoE, 262K ctx, tools ✅ |
+| **Artistry** | `huggingface/google/gemma-4-26B-A4B-it` | Non-conventional, creative approaches |
 | **Writing** | `cloudflare/llama-3.3-70b` | Fast, good prose, no Go dependency |
 
 ## Key Decisions
@@ -494,6 +500,93 @@ All four are chezmoi-tracked. `chezmoi re-add` each after edits, then standard c
 3. Commit and push via the **dotfiles skill** (`/dotfiles`)
 
 This is the only step needed — root config is authoritative for MCPs (no profile indirection).
+
+## Fleet State Writer Fixes (2026-07-22)
+
+Root cause analysis of 24 subagent sessions stuck in "running" state:
+
+### Root Causes Found
+
+1. **`session.diff` / `session.updated` overwrite terminal states.** The event handler mapped unrecognized event types to `"running"`. `session.diff` fires ~8ms after `session.idle`, overwriting `"completed"` back to `"running"`.
+2. **Error objects serialized as `[object Object]`.** `String(error)` on Error objects loses the message. Fixed to use `error?.message ?? String(error)`.
+3. **No staleness detection.** Tasks stuck in `"running"` for days/weeks were never garbage collected.
+4. **`session.status` events also overwrote terminal states.** Same fallthrough bug as `session.diff`.
+
+### Fixes Applied
+
+- **Terminal-state protection**: `updateTask()` now checks if the task is already in a terminal state (`completed`, `failed`, `cancelled`) and refuses to overwrite.
+- **No-op event mapping**: `session.diff` and `session.updated` events are now skipped entirely in the event handler (they don't affect task status).
+- **Staleness GC**: `loadState()` runs `gcStaleTasks()` on every read — any `"running"` task older than 4 hours is marked `"failed"` with `[gc: stale after Xh]` in the digest.
+- **Error serialization**: Fixed to extract `error.message` from Error objects.
+- **Fallback transition logging**: Chat messages containing fallback keywords are logged to `wake.log` as `fallback` events.
+- **`HF_API_KEY` loading**: Added `export HF_API_KEY="$(cat $HOME/.config/opencode/.hf-key)"` to `.bashrc`.
+
+### Runtime Fallback Changes
+
+- `runtime_fallback.max_fallback_attempts`: 1 → 3 (more retries before giving up)
+- `runtime_fallback.cooldown_seconds`: 30 (unchanged)
+- `runtime_fallback.timeout_seconds`: 60 (unchanged)
+
+## HuggingFace Provider Reference
+
+### Pricing Model
+
+HF Inference Providers is a **pass-through router** at `https://router.huggingface.co/v1` routing to 17+ third-party providers (Groq, Together, DeepInfra, Cerebras, etc.). No HF markup — you pay provider rates.
+
+| Tier | Monthly Cost | Credits | Notes |
+|------|-------------|---------|-------|
+| Free | $0 | $0.10/mo | Exhausts in ~100-200 agent turns |
+| PRO | $9/mo | $2.00/mo | 20x credits |
+
+### Rate Limits
+
+- **Inference Providers**: No fixed per-minute limits. Billing by token against credit balance. 402 on exhaustion.
+- **Legacy Serverless API**: ~10-20 req/min per IP, silent queuing (no 429), 10-30s cold starts. Do NOT use for agent work.
+- **Provider auto-failover**: Use `:fastest` or `:cheapest` suffix for automatic provider routing around dead endpoints.
+
+### HF Provider Models (9 models)
+
+| Model | Context | Output | Temp | Tools | Best For |
+|-------|---------|--------|------|-------|----------|
+| openai/gpt-oss-120b | 131K | 32K | 0.7 | Yes | Best bang-for-buck coding |
+| openai/gpt-oss-20b | 131K | 16K | 0.7 | Yes | Fast cheap subagent |
+| deepseek-ai/DeepSeek-V4-Flash | 1M | 16K | 0.7 | Yes | Cheapest, huge context |
+| Qwen/Qwen3-Coder-480B-A35B-Instruct | 262K | 32K | 0.7 | Yes | Dedicated code MoE |
+| Qwen/Qwen3-235B-A22B-Instruct-2507 | 262K | 8K | 0.7 | Yes | Budget MoE |
+| Qwen/QwQ-32B | 131K | 8K | 1.0 | No | Reasoning |
+| google/gemma-4-26B-A4B-it | 262K | 16K | 0.7 | Yes | Vision/MoE, multimodal |
+| meta-llama/Llama-3.3-70B-Instruct | 131K | 16K | 0.7 | Yes | Reliable all-rounder |
+| deepseek-ai/DeepSeek-R1-0528 | 131K | 8K | 1.0 | No | Deep reasoning |
+
+### Broken Models Replaced
+
+| Old (broken) | New (working) | Reason |
+|--------------|---------------|--------|
+| `huggingface/google/gemma-4-12b-it` | `huggingface/google/gemma-4-26B-A4B-it` | 401 Unauthorized, gemma-4-12b deprecated |
+| `opencode-zen/nemotron-3-super-free` (in fallback chains) | `opencode-zen/mimo-v2.5-free` | Model retired: "Did you mean nemotron-3-ultra-free?" |
+
+## CE Skill Stagger Dispatch Map
+
+14 parallel subagent dispatch sites across 10 SKILL.md files. Highest-risk thundering herds:
+
+| Site | Max Agents | File | Lines |
+|------|-----------|------|-------|
+| ce-code-review Stage 4 | ~18 | ce-code-review/SKILL.md | 416-489 |
+| ce-code-review Stage 5b | ~15 | ce-code-review/SKILL.md | 576 |
+| ce-agent-native-audit | 8 | ce-agent-native-audit/SKILL.md | 38 |
+| ce-doc-review | 7 | ce-doc-review/SKILL.md | 133-202 |
+| ce-ideate Phase 2 | 6 | ce-ideate/SKILL.md | 340 |
+| ce-compound Phase 3 | 6 | ce-compound/SKILL.md | 336-349 |
+| ce-ideate Phase 1 | 5 | ce-ideate/SKILL.md | 237-268 |
+| ce-compound Phase 1 | 4 | ce-compound/SKILL.md | 117-187 |
+| ce-plan Phase 1.1 | 3 | ce-plan/SKILL.md | 240-256 |
+| ce-simplify-code | 3 | ce-simplify-code/SKILL.md | 21-23 |
+| ce-work | 3+ | ce-work/SKILL.md | 134-187 |
+| ce-plan Phase 1.3 | 2 | ce-plan/SKILL.md | 308-313 |
+| ce-optimize Phase 3.2 | N | ce-optimize/SKILL.md | 436 |
+| ce-optimize Phase 3.3 | N | ce-optimize/SKILL.md | 494 |
+
+**Stagger recommendation**: Add 5-10s jitter between dispatches at each site. `ce-code-review` (18+15 agents) is highest priority. Sites already using bounded parallelism (`ce-code-review`, `ce-doc-review`) benefit from stagger + queue combination.
 
 ## Files Reference
 
