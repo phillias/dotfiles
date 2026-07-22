@@ -77,15 +77,15 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | Mistral | mistral-large-latest | 131K | 8K | 0.7 |
 | SambaNova | Meta-Llama-3.3-70B-Instruct | 131K | 8K | 0.7 |
 | Together | deepseek-ai/DeepSeek-R1 | 163K | 163K | 1.0 |
-| HuggingFace | openai/gpt-oss-120b | 131K | 32K | 0.7 |
-| HuggingFace | openai/gpt-oss-20b | 131K | 16K | 0.7 |
-| HuggingFace | deepseek-ai/DeepSeek-V4-Flash | 1M | 16K | 0.7 |
+| HuggingFace | openai/gpt-oss-120b | 128K | 32K | 0.7 |
+| HuggingFace | openai/gpt-oss-20b | 128K | 16K | 0.7 |
+| HuggingFace | deepseek-ai/DeepSeek-V4-Flash | 1024K | 16K | 0.7 |
+| HuggingFace | deepseek-ai/DeepSeek-V4-Pro | 1024K | 32K | 0.7 |
 | HuggingFace | Qwen/Qwen3-Coder-480B-A35B-Instruct | 262K | 32K | 0.7 |
 | HuggingFace | Qwen/Qwen3-235B-A22B-Instruct-2507 | 262K | 8K | 0.7 |
-| HuggingFace | Qwen/QwQ-32B | 131K | 8K | 1.0 |
-| HuggingFace | google/gemma-4-26B-A4B-it | 262K | 16K | 0.7 |
-| HuggingFace | meta-llama/Llama-3.3-70B-Instruct | 131K | 16K | 0.7 |
-| HuggingFace | deepseek-ai/DeepSeek-R1-0528 | 131K | 8K | 1.0 |
+| HuggingFace | google/gemma-4-26B-A4B-it | 256K | 32K | 0.7 |
+| HuggingFace | meta-llama/Llama-3.3-70B-Instruct | 128K | 16K | 0.7 |
+| HuggingFace | deepseek-ai/DeepSeek-R1-0528 | 160K | 8K | 1.0 |
 
 ## Architecture Overview
 
@@ -162,7 +162,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 | **SambaNova** | 1 (Llama 3.3 70B) | Free | Fast 70B option |
 | **Google** | 1 (Gemini 2.0 Flash) | Free (1500 req/day) | Vision, 1M ctx, pay-tier last resort |
 | **Together** | 1 (DeepSeek R1) | Free tier | Reasoning specialist |
-| **HuggingFace** | 9 (GPT-OSS-120B, GPT-OSS-20B, DS-V4-Flash, Qwen3-Coder-480B, Qwen3-235B, QwQ-32B, Gemma-4-26B, Llama-3.3-70B, R1-0528) | Pass-through (HF router) | Coding, reasoning, multimodal |
+| **HuggingFace** | 9 (GPT-OSS-120B, GPT-OSS-20B, DS-V4-Flash, DS-V4-Pro, Qwen3-Coder-480B, Qwen3-235B, Gemma-4-26B, Llama-3.3-70B, R1-0528) | Pass-through (HF router) | **DORMANT** — zero free models, paid-only. See Defunct Providers. |
 | **Agnes AI** | 5 (video, image, flash models) | Free tier | Multimodal (video, image generation) |
 
 ### Defunct Providers (removed 2026-07-18)
@@ -171,6 +171,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 |---|---|---|---|
 | **Groq** | Groq free-tier TPM limits (12K/8K) were chronically hitting rate limits on agentic workloads. Eliminated from all configs; `.groq-key` deleted; no functional replacement needed (Cloudflare has identical GPT-OSS and Llama 3.3 70B models at higher concurrency) | 2026-07-18 | Provider block + all fallback chain entries (all 8 profile subdirs also deleted root-only config introduced same day) |
 | **Cerebras** | Account lacked model access despite valid `.cerebras-key`. Verified empirically: every retry attempt returned `Not Found: Model does not exist or you do not have access to it` against `cerebras/llama3.3-70b` and `cerebras/gpt-oss-120b` (observed 3× consecutive failures this session). Dormant provider block retained in `opencode.json` for potential re-enablement, but no agent references it. | 2026-07-18 | Stripped from 8 fallback chains in `oh-my-openagent.jsonc` (sisyphus, prometheus, ultrabrain, deep, artistry, quick, unspecified-high, writing). Provider block + `.cerebras-key` retained as dormant. |
+| **HuggingFace** | HF Inference Providers has **zero free models** — `is_free: false` on all 127 models across all 17 providers (verified via `/v1/models` API 2026-07-22). The `$0.10/mo` "free credits" is a one-time starting balance, not a renewable tier. Credits exhaust same-day → 402 on everything. Additional gotchas: Gemma 4 26B is a thinking model (content=null, reasoning tokens consume max_tokens); Llama 3.3 70B novita provider caps context at 5K (!). Provider block retained in `opencode.json` for manual/direct use; removed from all OmO agent/category fallback chains. | 2026-07-22 | Stripped from 6 fallback chains (explore, librarian, multimodal-looker, artistry, quick, writing). ProviderConcurrency entry removed. Provider block + `.hf-key` retained. |
 
 Verification of these removals: schema audit of upstream opencode JSON schema (`https://opencode.ai/config.json` `$defs`) confirmed zero native `fallback` or `retry` keywords. All fallback handling is an OmO-feature, parsed by the OmO plugin, not by opencode core. Free→subsidized→pay progression is enforced by OmO at request-failure time.
 
@@ -527,7 +528,9 @@ Root cause analysis of 24 subagent sessions stuck in "running" state:
 - `runtime_fallback.cooldown_seconds`: 30 (unchanged)
 - `runtime_fallback.timeout_seconds`: 60 (unchanged)
 
-## HuggingFace Provider Reference (Empirical, 2026-07-22)
+## HuggingFace Provider Reference (Empirical, 2026-07-22) — DORMANT
+
+> **DORMANT as of 2026-07-22.** Zero free models verified via API. Provider block retained in `opencode.json` for manual/direct use only. Removed from all OmO agent/category fallback chains. See Defunct Providers.
 
 ### Pricing Model — NO FREE TIER
 

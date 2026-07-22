@@ -53,8 +53,7 @@
       "opencode-go": 6,        // Down from 8 — expensive pool
       "openrouter": 4,         // Down from 6 — free tier 50 req/day
       "cloudflare": 8,         // Down from 10 — 300 req/min limit
-      "agnes": 3,              // Unknown limits, conservative
-      "huggingface": 2         // PAID — no free tier, credits exhaust fast
+      "agnes": 3               // Unknown limits, conservative
     },
     "modelConcurrency": {
       "opencode-zen/big-pickle": 2,
@@ -182,8 +181,7 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",
-        "opencode-zen/mimo-v2.5-free",
-        "huggingface/openai/gpt-oss-20b"
+        "opencode-zen/mimo-v2.5-free"
       ],
       "permission": {
         "edit": "allow",
@@ -197,8 +195,7 @@
       "fallback_models": [
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "opencode-zen/mimo-v2.5-free",
-        "huggingface/openai/gpt-oss-20b"
+        "opencode-zen/mimo-v2.5-free"
       ]
     },
 
@@ -207,8 +204,7 @@
       "fallback_models": [
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         "opencode-zen/mimo-v2.5-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "huggingface/google/gemma-4-26B-A4B-it"
+        "opencode-zen/nemotron-3-ultra-free"
       ]
     },
 
@@ -269,8 +265,7 @@
       "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
       "fallback_models": [
         "opencode-zen/mimo-v2.5-free",
-        "openrouter/horizon-beta",
-        "huggingface/google/gemma-4-26B-A4B-it"
+        "openrouter/horizon-beta"
       ]
     },
 
@@ -279,8 +274,7 @@
       "fallback_models": [
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "agnes/agnes-1.5-flash",
-        "opencode-zen/mimo-v2.5-free",
-        "huggingface/google/gemma-4-26B-A4B-it"
+        "opencode-zen/mimo-v2.5-free"
       ]
     },
 
@@ -311,8 +305,7 @@
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/mimo-v2.5-free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-        "google/gemini-2.0-flash",
-        "huggingface/meta-llama/Llama-3.3-70B-Instruct"
+        "google/gemini-2.0-flash"
       ]
     }
   }
