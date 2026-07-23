@@ -1,27 +1,38 @@
 {
   // Global free → subsidized → pay fallback chain.
-  // Used by any agent without its own per-agent fallback_models in
-  // oh-my-openagent.jsonc. Per-agent chains override this.
+  // Used by non-agent model calls (small_model, compaction, title gen),
+  // and as safety net when per-agent fallback_models chains are also exhausted.
+  // Per-agent chains in oh-my-openagent.jsonc override this for agent calls.
   //
-  // Progression: exhaust free tier first (cloudflare Workers AI free +
-  // openrouter free + opencode-zen free), then subsidized opencode-go
-  // flash models, then last-resort paid Google Gemini.
+  // Progression: Cloudflare free (300 RPM) → NIM free (~40 RPM shared) →
+  // OpenRouter free (50 req/day) → Zen free (200 req/day) → Baseten subsidized
+  // ($30 credits) → Go subsidized ($10/mo) → Google pay (last resort).
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
-  "max_fallback_attempts": 6,
+  "max_fallback_attempts": 13,
   "cooldown_seconds": 60,
   "timeout_seconds": 120,
   "notify_on_fallback": true,
   "fallback_models": [
+    // TIER 1: FREE — Cloudflare Workers AI (300 req/min, highest RPM)
     "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     "cloudflare/@cf/openai/gpt-oss-20b",
     "cloudflare/@cf/zai-org/glm-4.7-flash",
+    // TIER 2: FREE — NVIDIA NIM (~40 RPM shared, largest catalog, 1M ctx via Inkling)
+    "nvidia/deepseek-ai/deepseek-v4-flash",
+    "nvidia/nvidia/nemotron-3-super-120b-a12b",
+    // TIER 3: FREE — OpenRouter (50 req/day)
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
     "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
+    // TIER 4: FREE — OpenCode Zen (~200 req/day)
     "opencode-zen/nemotron-3-ultra-free",
     "opencode-zen/deepseek-v4-flash-free",
     "opencode-zen/mimo-v2.5-free",
+    // TIER 5: SUBSIDIZED — Baseten ($30 credits → $0.10/M GPT-OSS 120B)
+    "baseten/openai/gpt-oss-120b",
+    // TIER 6: SUBSIDIZED — OpenCode Go ($10/mo pool)
     "opencode-go/deepseek-v4-flash",
+    // TIER 7: PAY — Last resort
     "google/gemini-2.0-flash"
   ]
 }
