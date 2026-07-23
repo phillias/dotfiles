@@ -87,6 +87,129 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | HuggingFace | meta-llama/Llama-3.3-70B-Instruct | 128K | 16K | 0.7 |
 | HuggingFace | deepseek-ai/DeepSeek-R1-0528 | 160K | 8K | 1.0 |
 
+### NVIDIA NIM (118 models, 48 relevant — FREE for prototyping)
+
+**Cost**: Free for prototyping via NVIDIA Developer Program. No per-token pricing published.
+**Rate limit**: ~40 RPM shared across ALL models (community-acknowledged baseline, not published SLA). No daily token cap.
+**Production**: NVIDIA AI Enterprise from $4,500/GPU/year. Free 90-day evaluation available.
+**Key file**: `.nvidia-key` → `NVIDIA_API_KEY`
+**Verified via API**: 2026-07-23, 118 total models on `integrate.api.nvidia.com/v1/models`
+
+#### Flagship Models (free, highest value for fallback chains)
+
+| Model ID | Category | Context | Notes |
+|----------|----------|---------|-------|
+| `nvidia/nemotron-3-ultra-550b-a55b` | Agentic/Reasoning | 202K | Flagship MoE, 550B total / 55B active |
+| `nvidia/nemotron-3-super-120b-a12b` | Agentic/Coding | 202K | Strong coding + reasoning MoE |
+| `nvidia/nemotron-3-nano-30b-a3b` | Lightweight | 202K | Edge-tier MoE, 30B total / 3B active |
+| `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | Reasoning | 202K | Omni-modal reasoning variant |
+| `deepseek-ai/deepseek-v4-pro` | Frontier Reasoning | 1024K | 1.6T MoE, 49B active |
+| `deepseek-ai/deepseek-v4-flash` | Fast Coding | 131K | Speed-optimized variant |
+| `z-ai/glm-5.2` | Agentic/Coding | 524K | SWE-bench leader |
+| `moonshotai/kimi-k2.6` | Agentic/Coding | 262K | Long-horizon problem solving |
+| `qwen/qwen3.5-397b-a17b` | Vision/Chat | 262K | MoE, vision-capable |
+| `qwen/qwen3-next-80b-a3b-instruct` | Lightweight MoE | 128K | 80B total / 3B active |
+| `openai/gpt-oss-120b` | General Purpose | 128K | OpenAI's open-source 120B |
+| `openai/gpt-oss-20b` | Fast General | 128K | Lightweight open-source |
+| `thinkingmachines/inkling` | 1M Context | 1048K | Multimodal, Apache 2.0 |
+| `google/gemma-4-31b-it` | Vision | 256K | Multimodal MoE |
+| `minimaxai/minimax-m2.7` | Reasoning | 128K | |
+| `minimaxai/minimax-m3` | Reasoning | 128K | |
+| `mistralai/mistral-nemotron` | Agentic/Coding | 128K | Mistral × NVIDIA collab |
+| `meta/llama-4-maverick-17b-128e-instruct` | Chat | 128K | Meta MoE |
+
+#### Utility/Embedding Models (free, specialized)
+
+| Model ID | Category | Notes |
+|----------|----------|-------|
+| `nvidia/llama-nemotron-embed-1b-v2` | Embeddings | |
+| `nvidia/llama-nemotron-embed-vl-1b-v2` | Vision Embeddings | |
+| `nvidia/nemotron-3-embed-1b` | Embeddings | |
+| `nvidia/nemotron-nano-12b-v2-vl` | Vision | |
+| `nvidia/llama-3.1-nemotron-nano-vl-8b-v1` | Vision | |
+| `nvidia/nemotron-parse` | Document parsing | |
+| `nvidia/nemotron-3.5-content-safety` | Moderation | |
+| `nvidia/llama-3.1-nemotron-safety-guard-8b-v3` | Safety | |
+
+#### Rate Limit Details
+
+- **Shared limit**: ~40 RPM across ALL models for a single API key
+- **Not per-model**: All model calls combined cannot exceed the limit
+- **Model-dependent ceiling**: Your exact limit is shown in build.nvidia.com account panel
+- **No daily token cap**: Only RPM is limited
+- **No SLA**: "Dependent on model, use-case and the amount of current overall traffic"
+- **Recommendation**: Set `providerConcurrency.nvidia: 4` to stay well under 40 RPM with burst headroom
+
+### Baseten (13 models — PAY-PER-TOKEN with $30 free credits)
+
+**Cost**: Pay-per-token. $30 free credits for new workspaces (no credit card required).
+**Rate limit**: 15 RPM (unverified) / 120 RPM (verified) per workspace.
+**Startup program**: Up to $25,000 credits (Dedicated Inference) + $2,500 (Model APIs) for seed–Series A.
+**Key file**: `.baseten-key` → `BASETEN_API_KEY`
+**Verified via API**: 2026-07-23, 13 models on `inference.baseten.co/v1/models`
+
+#### Full Model Catalog with Pricing
+
+| Model ID | Name | Context | Max Output | In $/M | Out $/M | Cache $/M | Features |
+|----------|------|---------|------------|--------|---------|-----------|----------|
+| `openai/gpt-oss-120b` | GPT-OSS 120B | 128K | 128K | **$0.10** | **$0.50** | $0.10 | tools, reasoning, json_mode, structured_outputs |
+| `nvidia/Nemotron-120B-A12B` | Nemotron Super | 202K | 202K | **$0.30** | **$0.75** | $0.06 | tools, json_mode, structured_outputs, reasoning |
+| `zai-org/GLM-4.7` | GLM 4.7 | 200K | 200K | $0.60 | $2.20 | $0.12 | tools, json_mode, structured_outputs |
+| `moonshotai/Kimi-K2.5` | Kimi K2.5 | 262K | 262K | $0.60 | $3.00 | $0.12 | tools, json_mode, structured_outputs, vision |
+| `nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B` | Nemotron Ultra | 202K | 202K | $0.60 | $2.40 | $0.12 | tools, json_mode, structured_outputs, reasoning |
+| `zai-org/GLM-5` | GLM 5 | 202K | 202K | $0.95 | $3.15 | $0.20 | tools, json_mode, structured_outputs |
+| `moonshotai/Kimi-K2.6` | Kimi K2.6 | 262K | 262K | $0.95 | $4.00 | $0.16 | tools, json_mode, structured_outputs, reasoning |
+| `moonshotai/Kimi-K2.7-Code` | Kimi K2.7 Code | 262K | 262K | $0.95 | $4.00 | $0.16 | tools, json_mode, structured_outputs, reasoning |
+| `thinkingmachines/inkling` | Inkling | **1048K** | 32K | $1.00 | $4.05 | $0.17 | tools, json_mode, structured_outputs, reasoning |
+| `zai-org/GLM-5.1` | GLM 5.1 | 202K | 202K | $1.30 | $4.30 | $0.26 | tools, json_mode, structured_outputs |
+| `zai-org/GLM-5.2` | GLM 5.2 | **524K** | **524K** | $1.40 | $4.40 | $0.14 | tools, json_mode, structured_outputs, reasoning |
+| `deepseek-ai/DeepSeek-V4-Pro` | DeepSeek V4 Pro | 262K | 262K | $1.74 | $3.48 | $0.14 | tools, json_mode, structured_outputs, reasoning |
+| `zai-org/GLM-5.2-Fast` | GLM 5.2 Fast | **524K** | **524K** | $2.10 | $6.60 | $0.21 | tools, json_mode, structured_outputs, reasoning |
+
+#### Rate Limit Details
+
+| Account Type | RPM | TPM |
+|---|---|---|
+| Basic (unverified) | 15 | 100,000 |
+| Basic (verified) | 120 | 500,000 |
+| Pro | 120 | 1,000,000 |
+| Enterprise | Custom | Custom |
+
+#### Best Value Picks (for fallback chain placement)
+
+1. **`openai/gpt-oss-120b`** — $0.10/$0.50 per 1M tokens. Cheapest general-purpose model. 128K context.
+2. **`nvidia/Nemotron-120B-A12B`** — $0.30/$0.75. Strong coding + reasoning at budget price. 202K context.
+3. **`thinkingmachines/inkling`** — $1.00/$4.05. **1M context window** — unique capability. Multimodal.
+4. **`zai-org/GLM-5.2`** — $1.40/$4.40. **524K context**, reasoning. SWE-bench leader.
+
+### Free→Subsidized→Pay Value Analysis
+
+**Priority ranking for fallback chain placement (exhaust free → subsidized → pay):**
+
+| Tier | Provider | Models | Cost | RPM | Best For |
+|------|----------|--------|------|-----|----------|
+| 🟢 **FREE** | NVIDIA NIM | 48 relevant | $0 | ~40 shared | Largest free catalog, 1M ctx (Inkling), reasoning (Nemotron Ultra) |
+| 🟢 **FREE** | Cloudflare Workers AI | 16 | $0 | 300 req/min | Free-tier leader, GPT-OSS, Kimi K2.7, GLM 5.2 |
+| 🟢 **FREE** | OpenRouter | 6 free | $0 | 50 req/day | Nemotron Super/Nano, Qwen3 Coder |
+| 🟢 **FREE** | OpenCode Zen | 6 free | $0 | ~200 req/day | Nemotron Ultra, DeepSeek V4 Flash, MiMo |
+| 🟡 **SUBSIDIZED** | Baseten | 13 | $30 credits | 15-120 | GPT-OSS 120B at $0.10/M, Inkling at 1M ctx |
+| 🟡 **SUBSIDIZED** | OpenCode Go | 24 | $10/mo | — | Quality pool (K2.6, DS-V4, GLM-5.1) |
+| 🔴 **PAY** | Google | 1 | Pay-per-token | 1500/day | Gemini 2.0 Flash, 1M ctx, last resort |
+| 🔴 **PAY** | Together | 1 | Pay-per-token | 60+ | DeepSeek R1, reasoning specialist |
+
+**Key insight**: NVIDIA NIM provides the **largest free model catalog** (48 relevant models at $0) with a shared ~40 RPM limit. This should be inserted into fallback chains **after** Cloudflare (which has higher RPM at 300 req/min) but **before** OpenRouter free (which has only 50 req/day). Baseten's $30 credits + $0.10/M GPT-OSS 120B provides a cheap subsidized tier between free and full-pay.
+
+**DeepSeek V4 availability**: Only 2 providers offer DS-V4 for free — NVIDIA NIM (both Flash and Pro) and OpenCode Zen (Flash Free only). OpenRouter's `:free` listing is dead (endpoints: [], 0% availability). Add both NIM and Zen DS-V4 models to fallback chains for resilience — they have independent rate limits.
+
+**Recommended fallback chain order**:
+1. Cloudflare Workers AI (free, 300 RPM)
+2. NVIDIA NIM (free, ~40 RPM shared — use 1-2 models max to stay under limit)
+3. OpenRouter free (50 req/day)
+4. OpenCode Zen free (200 req/day)
+5. Baseten ($30 credits → $0.10/M GPT-OSS 120B)
+6. OpenCode Go ($10/mo pool)
+7. Google Gemini (pay, last resort)
+
 ## Architecture Overview
 
 ### Single-Root Config System
@@ -112,7 +235,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 │   └── go-pool-switch.sh                      # Switch Go pool off if exhausted
 ├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
 ├── docs/plans/                                # Plan archive (not actively consumed at runtime)
-├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .agnes-key, .exa-key  # API keys (secret; .groq-key + any other defunct-key files removed)
+├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .agnes-key, .exa-key, .nvidia-key, .baseten-key  # API keys (secret; .groq-key + any other defunct-key files removed)
 ├── .tmux-OmOTeam.conf                         # tmux layout for team mode
 ├── .google-client-id, .google-client-secret   # OAuth creds for Google Workspace MCP
 └── skills/                                    # OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, etc.)
@@ -135,7 +258,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 │   └── go-pool-switch.sh                      # Switch Go pool off if exhausted
 ├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
 ├── docs/plans/                                # Plan archive (not actively consumed at runtime)
-├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .kilo-key, .exa-key  # API keys (secret; .groq-key + any other defunct-key files removed)
+├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .kilo-key, .exa-key, .nvidia-key, .baseten-key  # API keys (secret; .groq-key + any other defunct-key files removed)
 ├── .tmux-OmOTeam.conf                         # tmux layout for team mode
 ├── .google-client-id, .google-client-secret   # OAuth creds for Google Workspace MCP
 └── skills/                                    # OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, etc.)
@@ -144,20 +267,22 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 ### Critical Rules
 
 1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative. No `oc <profile>` launcher, no `profiles/` subdirectory. To switch behavior, change `opencode.json` / `oh-my-openagent.jsonc` directly and chezmoi-track the change.
-2. **Global config defines providers and MCPs.** `opencode.json` has all 11 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
+2. **Global config defines providers and MCPs.** `opencode.json` has all 13 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
 3. **OmO owns agent + category routing.** `oh-my-openagent.jsonc` declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain.
 4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 11 agents that don't specify their own `fallback_models` arrays.
 5. **Auto-loaded plugins.** Any `.ts` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-fallback.ts`, `go-pool-guard.ts`, `tmux-patch-keeper.ts`. All run in-process with zero LLM cost on the write side.
 6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
-### Provider Stack (11 providers)
+### Provider Stack (13 providers)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
 | **OpenCode Zen** | 49+ (GPT-5.x, Claude-4.x, Gemini-3.x, DS-V4, GLM-5, Big Pickle, free tier) | Zen sub | Quality primary |
 | **OpenCode Go** | 24 (K2.6/2.7, DS-V4-Pro/Flash, GPT-5.x, Claude-4.x, Qwen3.x, etc.) | $10/mo | Quality pool, 24 models in routing |
 | **OpenRouter** | 22+ (DS-V4-Flash, Qwen3-Coder, GLM-5, etc.) | Free/Paid | Broadest model selection |
-| **Cloudflare** | 16 (`@cf/...` Workers AI models: Llama 3.3, GPT-OSS 120B, Kimi K2.6/K2.7, GLM 5.2, Qwen 3, Nemotron 3, Gemma 4, etc.) | Free tier | Free-tier leader in fallback chains |
+| **Cloudflare** | 16 (`@cf/...` Workers AI models: Llama 3.3, GPT-OSS 120B, Kimi K2.6/K2.7, GLM 5.2, Qwen 3, Nemotron 3, Gemma 4, etc.) | Free tier | Free-tier leader in fallback chains (300 RPM) |
+| **NVIDIA NIM** | 48 relevant of 118 total (Nemotron 3 Ultra/Super/Nano, DS-V4, GLM 5.2, Kimi K2.6, Qwen 3.5, GPT-OSS, Inkling, Gemma 4, MiniMax, etc.) | Free (prototyping) | **Largest free catalog** (~40 RPM shared), 1M ctx via Inkling |
+| **Baseten** | 13 (GPT-OSS 120B, Nemotron Super/Ultra, GLM 4.7/5/5.1/5.2, Kimi K2.5/K2.6/K2.7, DS-V4-Pro, Inkling, GLM 5.2 Fast) | $30 free credits → pay-per-token | **Cheapest pay-per-token** ($0.10/M GPT-OSS 120B), 1M ctx Inkling |
 | **Mistral** | 1 (Mistral Large) | Free (1 req/s) | Reasoning, multilingual |
 | **SambaNova** | 1 (Llama 3.3 70B) | Free | Fast 70B option |
 | **Google** | 1 (Gemini 2.0 Flash) | Free (1500 req/day) | Vision, 1M ctx, pay-tier last resort |
@@ -191,6 +316,8 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 .zen-key               → OPENCODE_ZEN_API_KEY
 .fireworks-key         → FIREWORKS_API_KEY
 .exa-key               → EXA_API_KEY
+.nvidia-key            → NVIDIA_API_KEY           # NVIDIA NIM — free prototyping, ~40 RPM shared
+.baseten-key           → BASETEN_API_KEY          # Baseten — $30 free credits, pay-per-token after
 .google-client-id      → GOOGLE_CLIENT_ID
 .google-client-secret  → GOOGLE_CLIENT_SECRET
 .composio-key          → COMPOSIO_API_KEY
@@ -385,9 +512,22 @@ Global default: `{auto: false, prune: true, reserved: 50000, tail_turns: 40}`
 - `reserved: 50000`: Budget for manual compaction
 - `tail_turns: 40`: Preserves post-compaction context
 - `small_model`: `google/gemini-2.0-flash` (1M context — sees full session before compacting)
+  - **Used for**: Compaction (session summarization) + title generation. NOT used for agentic tasks.
+  - **Key constraint**: Must have ≥1M context to ingest full session history before summarizing.
+  - **No tool calling required**: Compaction is plain text summarization.
+  - **Best choices**: `google/gemini-2.0-flash` (current, free 1M), `nvidia/thinkingmachines/inkling` (free 1M on NIM, 32K output limit)
+  - **Avoid**: Models with <500K context (can't see full sessions), reasoning models (overkill for summarization)
 - `team` has `auto: false` (manual compaction only — preserves context for long code sessions)
 
 ## Global Fallback Config (`opencode-runtime-fallback`)
+
+The global `opencode-fallback.jsonc` chain is used for:
+
+1. **Non-agent model calls** — `small_model` (compaction/title gen), any ad-hoc model usage outside agent context
+2. **Safety net** — when an agent's per-agent `fallback_models` chain is *also* exhausted
+3. **Project-level overrides** — `.opencode/opencode-fallback.jsonc` can shadow the global chain per-project
+
+Since all agents in `oh-my-openagent.jsonc` have their own `fallback_models`, the global chain primarily serves as the "last resort before failure" for any model call not routed through a specific agent.
 
 Profiles using `opencode-runtime-fallback` (desk, web) get model fallback via the plugin. The global config at `~/.config/opencode/opencode-fallback.jsonc`:
 

@@ -1090,6 +1090,194 @@
           "temperature": true
         }
       }
+    },
+    "nvidia": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "NVIDIA NIM",
+      "options": {
+        "baseURL": "https://integrate.api.nvidia.com/v1",
+        "apiKey": "{env:NVIDIA_API_KEY}"
+      },
+      "models": {
+        "nvidia/nemotron-3-ultra-550b-a55b": {
+          "name": "Nemotron 3 Ultra 550B",
+          "limit": {
+            "context": 202800,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "nvidia/nemotron-3-super-120b-a12b": {
+          "name": "Nemotron 3 Super 120B",
+          "limit": {
+            "context": 202800,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "nvidia/nemotron-3-nano-30b-a3b": {
+          "name": "Nemotron 3 Nano 30B",
+          "limit": {
+            "context": 202800,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "deepseek-ai/deepseek-v4-flash": {
+          "name": "DeepSeek V4 Flash",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "deepseek-ai/deepseek-v4-pro": {
+          "name": "DeepSeek V4 Pro",
+          "limit": {
+            "context": 1048576,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "z-ai/glm-5.2": {
+          "name": "GLM 5.2",
+          "limit": {
+            "context": 524288,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "moonshotai/kimi-k2.6": {
+          "name": "Kimi K2.6",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "qwen/qwen3.5-397b-a17b": {
+          "name": "Qwen 3.5 397B",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "openai/gpt-oss-120b": {
+          "name": "GPT-OSS 120B",
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "openai/gpt-oss-20b": {
+          "name": "GPT-OSS 20B",
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "thinkingmachines/inkling": {
+          "name": "Inkling",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
+          "temperature": true
+        },
+        "minimaxai/minimax-m2.7": {
+          "name": "MiniMax M2.7",
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "google/gemma-4-31b-it": {
+          "name": "Gemma 4 31B",
+          "limit": {
+            "context": 256000,
+            "output": 8192
+          },
+          "temperature": true
+        }
+      }
+    },
+    "baseten": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Baseten",
+      "options": {
+        "baseURL": "https://inference.baseten.co/v1",
+        "apiKey": "{env:BASETEN_API_KEY}"
+      },
+      "models": {
+        "openai/gpt-oss-120b": {
+          "name": "GPT-OSS 120B",
+          "limit": {
+            "context": 128072,
+            "output": 128072
+          },
+          "temperature": true
+        },
+        "nvidia/Nemotron-120B-A12B": {
+          "name": "Nemotron Super",
+          "limit": {
+            "context": 202800,
+            "output": 202800
+          },
+          "temperature": true
+        },
+        "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B": {
+          "name": "Nemotron Ultra",
+          "limit": {
+            "context": 202800,
+            "output": 202800
+          },
+          "temperature": true
+        },
+        "zai-org/GLM-5.2": {
+          "name": "GLM 5.2",
+          "limit": {
+            "context": 524288,
+            "output": 524288
+          },
+          "temperature": true
+        },
+        "moonshotai/Kimi-K2.6": {
+          "name": "Kimi K2.6",
+          "limit": {
+            "context": 262000,
+            "output": 262000
+          },
+          "temperature": true
+        },
+        "moonshotai/Kimi-K2.7-Code": {
+          "name": "Kimi K2.7 Code",
+          "limit": {
+            "context": 262000,
+            "output": 262000
+          },
+          "temperature": true
+        },
+        "thinkingmachines/inkling": {
+          "name": "Inkling",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
+          "temperature": true
+        },
+        "deepseek-ai/DeepSeek-V4-Pro": {
+          "name": "DeepSeek V4 Pro",
+          "limit": {
+            "context": 262144,
+            "output": 262144
+          },
+          "temperature": true
+        }
+      }
     }
   },
   "compaction": {

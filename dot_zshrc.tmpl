@@ -313,7 +313,16 @@ fi
 if [ -f "$HOME/.config/opencode/.zen-key" ]; then
     export OPENCODE_ZEN_API_KEY="$(cat $HOME/.config/opencode/.zen-key)"
 fi
+if [ -f "$HOME/.config/opencode/.hf-key" ]; then
+    export HF_API_KEY="$(cat $HOME/.config/opencode/.hf-key)"
+fi
 {{- end }}
+if [ -f "$HOME/.config/opencode/.nvidia-key" ]; then
+    export NVIDIA_API_KEY="$(cat $HOME/.config/opencode/.nvidia-key)"
+fi
+if [ -f "$HOME/.config/opencode/.baseten-key" ]; then
+    export BASETEN_API_KEY="$(cat $HOME/.config/opencode/.baseten-key)"
+fi
 
 # Google Workspace MCP credentials
 if [ -f "$HOME/.config/opencode/.google-client-id" ]; then
