@@ -254,6 +254,11 @@ cmd_search() {
   fi
   local total=${#files[@]}
 
+  # Track search stats
+  local stats_file="$MEM_DIR/.stats"
+  mkdir -p "$(dirname "$stats_file")"
+  printf '%d\tsearch\t%d\t%s\n' "$(date -u +%s)" "$total" "$query" >> "$stats_file"
+
   if (( total == 0 )); then
     # §5: definitive empty state — say zero with context
     printf 'mem[0]{id,type,title,confidence}:\n'
@@ -380,6 +385,10 @@ cmd_add() {
   local fpath
   fpath=$(path_for "$type" "$id")
   if [[ -f "$fpath" ]]; then
+    # Track duplicate skip
+    local stats_file="$MEM_DIR/.stats"
+    mkdir -p "$(dirname "$stats_file")"
+    printf '%d\tdupe\t%s\n' "$(date -u +%s)" "$id" >> "$stats_file"
     printf 'memory:\n  id: %s\n  status: already-exists (no-op)\n' "$id"
     return 0
   fi
@@ -422,6 +431,11 @@ cmd_add() {
   # Track + commit (single commit per add)
   git -C "$MEM_DIR" add "$fpath" 2>/dev/null
   git -C "$MEM_DIR" commit -m "mem($type): $title" >/dev/null 2>&1 || true
+
+  # Track successful add
+  local stats_file="$MEM_DIR/.stats"
+  mkdir -p "$(dirname "$stats_file")"
+  printf '%d\tadd\t%s\n' "$(date -u +%s)" "$id" >> "$stats_file"
 
   printf 'memory:\n'
   printf '  id: %s\n' "$id"
@@ -516,6 +530,64 @@ cmd_sync() {
   return $status
 }
 
+cmd_stats() {
+  ensure_repo
+  local stats_file="$MEM_DIR/.stats"
+
+  # Count memories by type
+  local total=0
+  local -A type_counts=()
+  for t in "${ORDERED_TYPES[@]}"; do
+    local dir="${TYPE_DIR[$t]}"
+    local n
+    n=$(find "$MEM_OBJECTS/$dir" -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
+    type_counts[$t]=$n
+    total=$((total + n))
+  done
+
+  # Parse .stats file for search/add counts
+  local searches=0 hits=0 adds=0 dupes=0
+  local last_search="never" last_add="never"
+  if [[ -f "$stats_file" ]]; then
+    while IFS=$'\t' read -r epoch event detail _rest; do
+      case "$event" in
+        search)
+          searches=$((searches + 1))
+          if [[ "$detail" -gt 0 ]] 2>/dev/null; then
+            hits=$((hits + 1))
+          fi
+          last_search=$(date -u -d "@$epoch" +"%Y-%m-%d %H:%M" 2>/dev/null || echo "$epoch")
+          ;;
+        add)
+          adds=$((adds + 1))
+          last_add=$(date -u -d "@$epoch" +"%Y-%m-%d %H:%M" 2>/dev/null || echo "$epoch")
+          ;;
+        dupe)
+          dupes=$((dupes + 1))
+          ;;
+      esac
+    done < "$stats_file"
+  fi
+
+  # Calculate hit rate
+  local hit_rate="0%"
+  if (( searches > 0 )); then
+    hit_rate=$(( hits * 100 / searches ))"%"
+  fi
+
+  # TOON output
+  printf 'axi-memory stats:\n'
+  printf '  store: %s\n' "$MEM_DIR"
+  printf '  total: %d memories\n' "$total"
+  for t in "${ORDERED_TYPES[@]}"; do
+    printf '    %s: %d\n' "$t" "${type_counts[$t]}"
+  done
+  printf '  searches: %d (hits: %d, rate: %s)\n' "$searches" "$hits" "$hit_rate"
+  printf '  adds: %d (duplicates skipped: %d)\n' "$adds" "$dupes"
+  printf '  last_search: %s\n' "$last_search"
+  printf '  last_add: %s\n' "$last_add"
+}
+
 # --- Per-subcommand --help blocks (§10) --------------------------------------
 
 cmd_help_top() {
@@ -532,6 +604,7 @@ Commands:
   add              create a new memory
   list             list memories (filter by --type / --tag)
   sync             git pull --rebase && git push
+  stats            show usage statistics
   --help           this message
 
 Configuration (env):
@@ -633,6 +706,24 @@ Examples:
 EOF
 }
 
+cmd_stats_help() {
+  cat <<'EOF'
+mem stats — show usage statistics
+
+Usage: mem stats
+
+Output: TOON block with:
+  - store: path to memory store
+  - total: memory count by type
+  - searches: total searches, hits, hit rate
+  - adds: total adds, duplicates skipped
+  - last_search: timestamp of last search
+  - last_add: timestamp of last add
+
+Stats are tracked in $MEM_DIR/.stats (TSV append-only).
+EOF
+}
+
 # --- Top-level dispatcher -----------------------------------------------------
 
 main() {
@@ -655,6 +746,7 @@ main() {
     add)    cmd_add    "$@" ;;
     list)   cmd_list   "$@" ;;
     sync)   cmd_sync   "$@" ;;
+    stats)  cmd_stats  "$@" ;;
     *)
       die "unknown command: $cmd" 2 "run \`mem --help\` for the command list"
       ;;
