@@ -105,7 +105,7 @@
     "openrouter": {
       "models": {
         "qwen/qwen3-coder:free": {
-          "name": "Qwen3 Coder",
+          "name": "Qwen3 Coder (Free)",
           "limit": {
             "context": 131072,
             "output": 8192
@@ -288,14 +288,6 @@
           },
           "temperature": 0.7
         },
-        "qwen/qwen3-coder:free": {
-          "name": "Qwen3 Coder (Free)",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          },
-          "temperature": 0.7
-        },
         "qwen/qwen3-next-80b-a3b-instruct:free": {
           "name": "Qwen3 Next 80B (Free)",
           "limit": {
@@ -451,45 +443,77 @@
         "apiKey": "{env:HF_API_KEY}"
       },
       "models": {
-        "deepseek-ai/DeepSeek-R1-0528": {
-          "name": "DeepSeek R1 0528",
+        "openai/gpt-oss-120b": {
+          "name": "GPT-OSS 120B",
           "limit": {
             "context": 131072,
-            "output": 8192
+            "output": 32768
           },
-          "temperature": 1.0
+          "temperature": 0.7
+        },
+        "openai/gpt-oss-20b": {
+          "name": "GPT-OSS 20B",
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          },
+          "temperature": 0.7
+        },
+        "deepseek-ai/DeepSeek-V4-Flash": {
+          "name": "DeepSeek V4 Flash",
+          "limit": {
+            "context": 1048576,
+            "output": 16384
+          },
+          "temperature": 0.7
+        },
+        "deepseek-ai/DeepSeek-V4-Pro": {
+          "name": "DeepSeek V4 Pro",
+          "limit": {
+            "context": 1048576,
+            "output": 32768
+          },
+          "temperature": 0.7
         },
         "Qwen/Qwen3-Coder-480B-A35B-Instruct": {
           "name": "Qwen3 Coder 480B",
           "limit": {
-            "context": 131072,
-            "output": 8192
+            "context": 262144,
+            "output": 32768
           },
           "temperature": 0.7
         },
         "Qwen/Qwen3-235B-A22B-Instruct-2507": {
           "name": "Qwen3 235B",
           "limit": {
-            "context": 131072,
-            "output": 8192
-          },
-          "temperature": 0.7
-        },
-        "Qwen/QwQ-32B": {
-          "name": "QwQ 32B",
-          "limit": {
-            "context": 131072,
-            "output": 8192
-          },
-          "temperature": 1.0
-        },
-        "google/gemma-4-12b-it": {
-          "name": "Gemma 4 12B",
-          "limit": {
             "context": 262144,
             "output": 8192
           },
           "temperature": 0.7
+        },
+        "google/gemma-4-26B-A4B-it": {
+          "name": "Gemma 4 26B MoE (thinking)",
+          "limit": {
+            "context": 262144,
+            "output": 32768
+          },
+          "temperature": 0.7
+        },
+        "meta-llama/Llama-3.3-70B-Instruct": {
+          "name": "Llama 3.3 70B",
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          },
+          "temperature": 0.7
+        },
+        "deepseek-ai/DeepSeek-R1-0528": {
+          "name": "DeepSeek R1 0528 (reasoning)",
+          "limit": {
+            "context": 163840,
+            "output": 8192
+          },
+          "temperature": 1.0
         }
       }
     },
@@ -1094,9 +1118,16 @@
     },
     "codemem": {
       "type": "local",
-      "command": ["codemem", "mcp"],
+      "command": [
+        "codemem",
+        "mcp"
+      ],
       "enabled": true
     }
   },
-  "plugin": ["oh-my-openagent@latest", "./plugins/tmux-patch-keeper.ts", "./plugins/tps-status.tsx"]
+  "plugin": [
+    "oh-my-openagent@latest",
+    "./plugins/tmux-patch-keeper.ts",
+    "./plugins/tps-status.tsx"
+  ]
 }
