@@ -7,7 +7,7 @@
   "runtime_fallback": {
     "enabled": true,
     "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
-    "max_fallback_attempts": 1,
+    "max_fallback_attempts": 3,
     "cooldown_seconds": 30,
     "timeout_seconds": 60,
     "notify_on_fallback": true
@@ -176,13 +176,12 @@
     },
 
     "explore": {
-      "model": "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
+        "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",
-        "agnes/agnes-1.5-flash",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-zen/mimo-v2.5-free"
       ],
       "permission": {
         "edit": "allow",
@@ -191,21 +190,18 @@
     },
 
     "librarian": {
-      "model": "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
+        "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "agnes/agnes-1.5-flash",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/qwen3.5-plus",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-zen/mimo-v2.5-free"
       ]
     },
 
     "multimodal-looker": {
-      "model": "huggingface/google/gemma-4-12b-it",
+      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
       "fallback_models": [
-        "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         "opencode-zen/mimo-v2.5-free",
         "opencode-zen/nemotron-3-ultra-free"
@@ -266,10 +262,9 @@
     },
 
     "artistry": {
-      "model": "huggingface/google/gemma-4-12b-it",
+      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
       "fallback_models": [
-        "cloudflare/@cf/google/gemma-4-26b-a4b-it",
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/mimo-v2.5-free",
         "openrouter/horizon-beta"
       ]
     },
@@ -279,8 +274,7 @@
       "fallback_models": [
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "agnes/agnes-1.5-flash",
-        "opencode-zen/nemotron-3-super-free",
-        "huggingface/google/gemma-4-12b-it"
+        "opencode-zen/mimo-v2.5-free"
       ]
     },
 
@@ -306,11 +300,10 @@
     },
 
     "writing": {
-      "model": "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "model": "opencode-zen/deepseek-v4-flash-free",
       "fallback_models": [
         "cloudflare/@cf/zai-org/glm-4.7-flash",
-        "agnes/agnes-2.0-flash",
-        "opencode-zen/nemotron-3-super-free",
+        "opencode-zen/mimo-v2.5-free",
         "openrouter/meta-llama/llama-3.3-70b-instruct:free",
         "google/gemini-2.0-flash"
       ]

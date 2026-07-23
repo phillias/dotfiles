@@ -41,6 +41,7 @@ function loadState(): StateFile {
     const raw = readFileSync(STATE_JSON, "utf-8");
     const parsed = JSON.parse(raw) as StateFile;
     if (!parsed.tasks) parsed.tasks = {};
+    gcStaleTasks(parsed);
     return parsed;
   } catch {
     return { tasks: {}, updated_at: 0 };
@@ -80,20 +81,42 @@ function appendWake(type: string, sessionID: string, digest: string): void {
   }
 }
 
+const TERMINAL_STATUSES: ReadonlySet<Status> = new Set(["completed", "failed", "cancelled"]);
+const STALE_THRESHOLD_MS = 4 * 3600 * 1000; // 4 hours
+
+function gcStaleTasks(state: StateFile): void {
+  const now = Date.now();
+  for (const [key, t] of Object.entries(state.tasks)) {
+    if (t.status === "running" && (now - t.updated_at) > STALE_THRESHOLD_MS) {
+      const ageH = Math.floor((now - t.updated_at) / 3600000);
+      t.status = "failed";
+      t.digest = `${t.digest} [gc: stale after ${ageH}h]`;
+      appendWake("fleet.gc", t.session_id, `gc stale ${key} after ${ageH}h`);
+    }
+  }
+}
+
 function updateTask(
   key: string,
   partial: { task_id?: string; session_id: string; status?: Status; type: string; digest: string; agent?: string },
 ): void {
   try {
     const state = loadState();
+    const existing = state.tasks[key];
+
+    // Terminal-state protection: never overwrite completed/failed/cancelled
+    if (existing && TERMINAL_STATUSES.has(existing.status) && partial.status !== existing.status) {
+      return; // Already terminal — don't overwrite
+    }
+
     const t: TaskState = {
-      task_id: partial.task_id,
+      task_id: partial.task_id ?? existing?.task_id,
       session_id: partial.session_id,
       status: partial.status ?? "running",
       type: partial.type,
       digest: partial.digest,
       updated_at: Date.now(),
-      agent: partial.agent,
+      agent: partial.agent ?? existing?.agent,
     };
     state.tasks[key] = t;
     saveState(state);
@@ -112,6 +135,8 @@ const BG_HEADERS: Array<{ re: RegExp; status: Status }> = [
   { re: /\[BACKGROUND TASK ERROR\]/i, status: "failed" },
 ];
 
+const FALLBACK_RE = /(?:fallback|falling back|trying alternative model|model.*failed.*switching|runtime.?fallback)/i;
+
 // ── Plugin ────────────────────────────────────────────────────────────
 export const FleetStateWriterPlugin: Plugin = async () => {
   return {
@@ -122,6 +147,7 @@ export const FleetStateWriterPlugin: Plugin = async () => {
         const ev = input.event;
         const t = ev.type;
         if (!t.startsWith("session.")) return;
+        if (t === "session.diff" || t === "session.updated") return;
         const props = ev.properties ?? {};
         const sessionID: string = props.sessionID ?? props.id ?? "";
         if (!sessionID) return;
@@ -134,7 +160,9 @@ export const FleetStateWriterPlugin: Plugin = async () => {
           t === "session.created" ? "running" :
           "running";
 
-        const digest = `[${t}] session=${sessionID}${props.error ? ` err=${String(props.error).slice(0, 80)}` : ""}`;
+        const errorDetail = props.error?.message
+          ?? (typeof props.error === "string" ? props.error : "");
+        const digest = `[${t}] session=${sessionID}${errorDetail ? ` err=${errorDetail.slice(0, 80)}` : ""}`;
         updateTask(sessionID, {
           session_id: sessionID,
           status,
@@ -176,6 +204,12 @@ export const FleetStateWriterPlugin: Plugin = async () => {
           type: "chat.message.bg",
           digest,
         });
+
+        if (FALLBACK_RE.test(text)) {
+          const fbLine = text.split("\n").find((l) => FALLBACK_RE.test(l)) ?? "";
+          const fbDigest = fbLine.slice(0, 120);
+          appendWake("fallback", input.sessionID, fbDigest || text.slice(0, 120));
+        }
       } catch (err) {
         console.error("[fleet-state-writer] chat.message handler error:", err);
       }
