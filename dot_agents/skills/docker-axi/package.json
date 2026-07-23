@@ -1,0 +1,33 @@
+{
+  "name": "docker-axi",
+  "version": "0.1.0",
+  "description": "Agent-facing Docker operations AXI for safe token-efficient CLI workflows.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thatdudealso/docker-axi.git"
+  },
+  "homepage": "https://github.com/thatdudealso/docker-axi#readme",
+  "bugs": {
+    "url": "https://github.com/thatdudealso/docker-axi/issues"
+  },
+  "bin": {
+    "docker-axi": "./bin/docker-axi.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "test:live": "DOCKER_AXI_LIVE_TESTS=1 node --test",
+    "skill:check": "node bin/docker-axi.js skill generate --check"
+  },
+  "keywords": [
+    "docker",
+    "axi",
+    "cli",
+    "toon",
+    "containers"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

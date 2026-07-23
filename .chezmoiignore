@@ -15,3 +15,7 @@ age-key.txt.age
 .config/opencode/profiles/*/node_modules/**
 .config/opencode/profiles/*/package-lock.json
 .config/opencode/profiles/*/bun.lock
+
+# Python build artifacts — regenerated per machine
+.agents/**/__pycache__/**
+.agents/**/__pycache__
