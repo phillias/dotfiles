@@ -19,6 +19,10 @@ skills[2]{name,description}:
   chezmoi-axi,Agent-friendly chezmoi wrapper with TOON output — status, list, diff, add, re-add, apply, verify, sync, commit
   /ce-commit-push-pr,Full PR workflow — branching, committing, PR creation, post-PR cleanup
 
+> **DEFAULT WORKFLOW**: Any dotfiles change that isn't a trivial local-only fix must use `/ce-commit-push-pr`.
+> This handles branching, committing, pushing, PR creation, and post-PR branch cleanup.
+> `chezmoi-axi commit` is ONLY for direct-to-master pushes (rare — usually cron syncs or quick hotfixes).
+
 ## Health Check
 
 Before any operation, assess current state:
@@ -101,7 +105,7 @@ chezmoi-axi add --encrypt ~/.config/some-app/token     # encrypted
 
 Verify: `chezmoi-axi diff` — no differences.
 
-Commit: `chezmoi-axi commit "feat(app): add new config"` or load /ce-commit-push-pr.
+Commit: **Load `/ce-commit-push-pr`** (creates branch, commits, opens PR, cleans up).
 
 ---
 
@@ -113,6 +117,8 @@ chezmoi-axi re-add --all          # all changed files
 ```
 
 Verify: `chezmoi-axi diff` — should be clean.
+
+Commit: **Load `/ce-commit-push-pr`** (creates branch, commits, opens PR, cleans up).
 
 ---
 
@@ -130,6 +136,8 @@ chezmoi reencrypt ~/.local/share/chezmoi/dot_config/opencode/encrypted_dot_cloud
 
 Verify: `chezmoi cat ~/.config/opencode/.cloudflare-key` — shows decrypted content. `chezmoi diff` — clean.
 
+Commit: **Load `/ce-commit-push-pr`**.
+
 Note: .groq-key removed 2026-07-18 (Groq free-tier TPM limits). Examples use .cloudflare-key.
 
 ---
@@ -141,7 +149,7 @@ chezmoi cat ~/.config/opencode/.cloudflare-key         # view (stdout)
 chezmoi edit ~/.config/opencode/.cloudflare-key        # edit (decrypts, opens editor, re-encrypts)
 ```
 
-No commit for chezmoi cat (read-only). After chezmoi edit, commit with chezmoi-axi commit.
+No commit for chezmoi cat (read-only). After chezmoi edit, **load `/ce-commit-push-pr`**.
 
 ---
 
@@ -249,7 +257,7 @@ vim ~/.local/share/chezmoi/run_once_describe-what-it-does.sh
 
 2. Make executable: `chmod +x`
 
-3. Commit: `chezmoi-axi commit "chore: add run script for X"`
+3. **Load `/ce-commit-push-pr`** to commit and open PR.
 
 Re-run a run_once script:
 ```
@@ -263,12 +271,17 @@ Re-run a run_onchange script: just edit the file — chezmoi detects content cha
 
 ## Commit and PR Flow
 
-Quick commit (stages, commits, pushes, opens PR):
-```
-chezmoi-axi commit "feat(app): add new config"
-```
+> **ALWAYS USE THIS** for any dotfiles change:
+> ```
+> load /ce-commit-push-pr
+> ```
+> It handles: feature branch creation → chezmoi re-add → commit → push → PR creation → branch cleanup → return to master.
+> **Do not hand-roll git commit/push/branch workflows for dotfiles.** The skill handles all of it.
 
-Full PR workflow: load /ce-commit-push-pr. Handles branching, committing, PR creation, cleanup.
+Quick commit (direct to master, no PR — **only for trivial local-only fixes**):
+```
+chezmoi-axi commit "chore: quick fix for X"
+```
 
 Other machines pick up changes on next chezmoi update (cron every 30 min).
 
