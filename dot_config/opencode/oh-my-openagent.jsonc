@@ -53,6 +53,8 @@
       "opencode-go": 6,        // Down from 8 — expensive pool
       "openrouter": 4,         // Down from 6 — free tier 50 req/day
       "cloudflare": 8,         // Down from 10 — 300 req/min limit
+      "nvidia": 4,             // ~40 RPM shared across all models — 4 concurrent safe
+      "baseten": 3,            // 15 RPM unverified, 120 verified — conservative start
       "agnes": 3               // Unknown limits, conservative
     },
     "modelConcurrency": {
@@ -73,7 +75,10 @@
       "cloudflare/@cf/google/gemma-4-26b-a4b-it": 2,  // Down from 3
       "cloudflare/@cf/zai-org/glm-4.7-flash": 4,  // Down from 5
       "agnes/agnes-2.0-flash": 2,  // Down from 3
-      "agnes/agnes-1.5-flash": 3   // Down from 5
+      "agnes/agnes-1.5-flash": 3,  // Down from 5
+      "nvidia/deepseek-ai/deepseek-v4-flash": 2,
+      "nvidia/nvidia/nemotron-3-super-120b-a12b": 2,
+      "baseten/openai/gpt-oss-120b": 2
     }
   },
 
@@ -86,8 +91,10 @@
         "variant": "xhigh"
       },
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+        "baseten/openai/gpt-oss-120b",
         "mistral/mistral-large-latest",
         "google/gemini-2.0-flash"
       ]
@@ -122,6 +129,7 @@
     "prometheus": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "cloudflare/@cf/moonshotai/kimi-k2.7-code",
         "opencode-go/deepseek-v4-pro"
@@ -132,6 +140,7 @@
       "model": "opencode-go/glm-5.1",
       "temperature": 0.3,
       "fallback_models": [
+        "nvidia/z-ai/glm-5.2",
         "cloudflare/@cf/zai-org/glm-5.2",
         "opencode-zen/glm-5.1",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
@@ -156,6 +165,7 @@
     "atlas": {
       "model": "opencode-go/deepseek-v4-flash",
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-flash",
         "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct",
         "opencode-go/kimi-k2.6",
         "sambanova/Meta-Llama-3.3-70B-Instruct"
@@ -168,8 +178,10 @@
       "variant": "xhigh",
       "fallback_models": [
         "opencode-zen/gpt-5.5-pro",
+        "nvidia/thinkingmachines/inkling",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
         "opencode-zen/big-pickle",
+        "baseten/openai/gpt-oss-120b",
         "opencode/deepseek-v4-pro",
         "together/deepseek-ai/DeepSeek-R1"
       ]
@@ -179,6 +191,7 @@
       "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "opencode-zen/mimo-v2.5-free"
@@ -193,6 +206,7 @@
       "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
         "opencode-zen/mimo-v2.5-free"
@@ -212,6 +226,7 @@
     "quick": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
+        "nvidia/nvidia/nemotron-3-super-120b-a12b",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "agnes/agnes-1.5-flash",
         "opencode-zen/deepseek-v4-flash-free",
@@ -222,6 +237,7 @@
     "unspecified-low": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
+        "nvidia/nvidia/nemotron-3-super-120b-a12b",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "agnes/agnes-1.5-flash",
         "opencode-zen/deepseek-v4-flash-free",
@@ -245,19 +261,21 @@
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-pro",
         "cloudflare/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
         "opencode-zen/big-pickle",
-        "mistral/mistral-large-latest",
-        "together/deepseek-ai/DeepSeek-R1"
+        "baseten/nvidia/Nemotron-120B-A12B",
+        "mistral/mistral-large-latest"
       ]
     },
 
     "deep": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-pro",
         "cloudflare/@cf/openai/gpt-oss-120b",
         "opencode-go/kimi-k2.6",
-        "together/deepseek-ai/DeepSeek-R1"
+        "baseten/openai/gpt-oss-120b"
       ]
     },
 
@@ -272,6 +290,7 @@
     "quick": {
       "model": "cloudflare/@cf/openai/gpt-oss-20b",
       "fallback_models": [
+        "nvidia/nvidia/nemotron-3-super-120b-a12b",
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "agnes/agnes-1.5-flash",
         "opencode-zen/mimo-v2.5-free"
@@ -281,6 +300,7 @@
     "unspecified-low": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
+        "nvidia/nvidia/nemotron-3-super-120b-a12b",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
         "agnes/agnes-1.5-flash",
         "opencode-zen/deepseek-v4-flash-free",
@@ -291,11 +311,11 @@
     "unspecified-high": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
+        "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "mistral/mistral-large-latest",
-        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "together/deepseek-ai/DeepSeek-R1"
+        "baseten/openai/gpt-oss-120b",
+        "mistral/mistral-large-latest"
       ]
     },
 
