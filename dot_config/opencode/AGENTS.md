@@ -47,9 +47,7 @@ docker ps | grep <name-or-port-from-url>
 docker inspect <container> | grep -iE 'WorkingDir|com.docker.compose.*Working.*Dir|com.docker.compose.project.config_files'
 ```
 
-`~/docker/` is the default selfhost location, not an exhaustive one. Project-specific compose files may live elsewhere (e.g. `~/mybrain/wiki_viewer/`). The runtime always knows where a running container came from; the filesystem does not.
-
-Do not broad-grep `~/docker/` subdirectories when a container is running — that anchors on the wrong assumption and produces a long haystack hunt. Only fall back to filesystem grep if the container is not on the host.
+The runtime always knows where a running container came from; the filesystem does not.
 
 ## Compound-Engineering Integration (OmO + CE)
 

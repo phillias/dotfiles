@@ -209,11 +209,6 @@ ignore[5]{pattern,reason}:
   age-key.txt.age,Internal chezmoi files
   .gitconfig,Machine-specific git identity
 
-profile-ignores[3]{pattern}:
-  .config/opencode/profiles/*/node_modules
-  .config/opencode/profiles/*/package-lock.json
-  .config/opencode/profiles/*/bun.lock
-
 When to edit:
 - Adding machine-specific files that shouldn't sync
 - Excluding build artifacts, caches, or temp files
