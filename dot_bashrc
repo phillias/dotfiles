@@ -161,7 +161,7 @@ alias carb='docker run -it --rm --network host fathyb/carbonyl'
 # opencode
 export PATH=$HOME/.npm-global/bin:$PATH
 export PATH=/home/phillias/.opencode/bin:$PATH
-alias oc='opencode --port 42069'
+alias oc='opencode'
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
