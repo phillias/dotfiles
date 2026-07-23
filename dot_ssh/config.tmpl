@@ -27,6 +27,20 @@ Host primary55522
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User ubuntu
 
+Host kali
+  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  IdentityFile ~/.ssh/id_ed25519_memgit
+  HostName kali.phillias.us
+  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
+  User phillias
+
+Host kalione
+  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  IdentityFile ~/.ssh/id_ed25519_memgit
+  HostName ssh.phillias.org
+  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
+  User phillias
+
 # Cloudflare Tunnel SSH keepalive - prevent Gateway 270s idle timeout
 Host *cloudflared* *
   ServerAliveInterval 30
