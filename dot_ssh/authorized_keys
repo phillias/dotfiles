@@ -1,21 +1,22 @@
-# DO NOT EDIT MANUALLY — managed by chezmoi
-# Master branch: all keys (shared baseline)
-
-# primary server (ubuntu user)
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDpUFakTrEZ+EIzXEYDVPbJLUjyFCIzXI7wFpGax4GCq ubuntu@primary
-
-# Personal machines
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDCdvLo1rdj4w7KCaGQtvSvwUSn/sXe3MspxQ11nftZe phillias@inspironkali
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG2EM7XL2/UvUIUgg7F57s5rQEyOXC+zv1S7aGHixBuc phillias@MBP
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHVwb0kv+vvjA2vGDqudeMtPRPl90/tm6T97BLhopffH phillias@kali-cabin
 
 # Cloud VMs
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJsD/G+KVmsK25ytwoZvO3mneXBrzlCAxG+4gUpBQtrJ phillias@gmail.com oraclecloud
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfUh8JYOKm5TMY1m88q7wkjA73VNFfpYxXWx5ewNMYz phillias@gmail.com huggingface
-
+# DO NOT EDIT MANUALLY — managed by chezmoi
 # Deploy key (this server, chezmoi repo access only)
+# Git shell deploy keys (memgit)
+# Master branch: all keys (shared baseline)
+# Personal machines
+# primary server (ubuntu user)
+command="git-shell -c \"$SSH_ORIGINAL_COMMAND\"" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGFwPGpbZCRrIlAKssiF8rMIbck8W+Zvxm6+RLmxbYHv kalione-memgit
+command="git-shell -c \"$SSH_ORIGINAL_COMMAND\"" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIJ8Wz9usRbJmtCwY3A/zpYnFc2SdNMtEc1rCJJEIaAF cabinkali-memgit
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDCdvLo1rdj4w7KCaGQtvSvwUSn/sXe3MspxQ11nftZe phillias@inspironkali
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDfUh8JYOKm5TMY1m88q7wkjA73VNFfpYxXWx5ewNMYz phillias@gmail.com huggingface
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDpUFakTrEZ+EIzXEYDVPbJLUjyFCIzXI7wFpGax4GCq ubuntu@primary
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG2EM7XL2/UvUIUgg7F57s5rQEyOXC+zv1S7aGHixBuc phillias@MBP
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHVwb0kv+vvjA2vGDqudeMtPRPl90/tm6T97BLhopffH phillias@kali-cabin
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJsD/G+KVmsK25ytwoZvO3mneXBrzlCAxG+4gUpBQtrJ phillias@gmail.com oraclecloud
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaYp4T4ZtEGCR70kD1+1Hbuesv4VfDlKdDXM3pqhbIY chezmoi@CabinInspiron22Kali
 
 # Memgit keys (full SSH access for inter-server fleet management)
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIJ8Wz9usRbJmtCwY3A/zpYnFc2SdNMtEc1rCJJEIaAF cabinkali-memgit
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGFwPGpbZCRrIlAKssiF8rMIbck8W+Zvxm6+RLmxbYHv kalione-memgit
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKdyF48weZL0KpOqv8MQvZC5QB1wsEXHEf4hsvWDU1Ms memgit@primary
