@@ -213,4 +213,7 @@ fi
 if [ -f "$HOME/.config/opencode/.baseten-key" ]; then
     export BASETEN_API_KEY="$(cat $HOME/.config/opencode/.baseten-key)"
 fi
+if [ -f "$HOME/.config/opencode/.intern-key" ]; then
+    export INTERN_API_KEY="$(cat $HOME/.config/opencode/.intern-key)"
+fi
 export PATH="$HOME/.npm-global/bin:$PATH"
