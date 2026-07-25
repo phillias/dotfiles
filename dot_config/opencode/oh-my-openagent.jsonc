@@ -55,7 +55,8 @@
       "cloudflare": 8,         // Down from 10 — 300 req/min limit
       "nvidia": 4,             // ~40 RPM shared across all models — 4 concurrent safe
       "baseten": 3,            // 15 RPM unverified, 120 verified — conservative start
-      "agnes": 3               // Unknown limits, conservative
+      "agnes": 3,              // Unknown limits, conservative
+      "intern": 3              // InternLM API — unknown limits, conservative start
     },
     "modelConcurrency": {
       "opencode-zen/big-pickle": 2,
@@ -78,7 +79,9 @@
       "agnes/agnes-1.5-flash": 3,  // Down from 5
       "nvidia/deepseek-ai/deepseek-v4-flash": 2,
       "nvidia/nvidia/nemotron-3-super-120b-a12b": 2,
-      "baseten/openai/gpt-oss-120b": 2
+      "baseten/openai/gpt-oss-120b": 2,
+      "openrouter/poolside/laguna-s-2.1:free": 2,  // NEW — Laguna S 2.1, agentic coding
+      "intern/intern-s2-preview-397b": 2            // NEW — Intern-S2, scientific reasoning
     }
   },
 
@@ -194,6 +197,7 @@
         "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",
+        "openrouter/poolside/laguna-s-2.1:free",
         "opencode-zen/mimo-v2.5-free"
       ],
       "permission": {
@@ -209,6 +213,7 @@
         "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
+        "openrouter/poolside/laguna-s-2.1:free",
         "opencode-zen/mimo-v2.5-free"
       ]
     },
@@ -222,12 +227,24 @@
       ]
     },
 
+    // ── Specialized Agents ──────────────────────────────────────
+    "science": {
+      "model": "intern/intern-s2-preview-397b",
+      "description": "Scientific reasoning, biomolecular design, material structure, multimodal scientific tasks",
+      "fallback_models": [
+        "nvidia/thinkingmachines/inkling",
+        "opencode-go/glm-5.1",
+        "opencode-zen/big-pickle"
+      ]
+    },
+
     // ── Utility Agents (from Go merge) ────────────────────────────
     "quick": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
         "nvidia/nvidia/nemotron-3-super-120b-a12b",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/poolside/laguna-s-2.1:free",
         "agnes/agnes-1.5-flash",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-go/deepseek-v4-flash"
@@ -239,6 +256,7 @@
       "fallback_models": [
         "nvidia/nvidia/nemotron-3-super-120b-a12b",
         "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+        "openrouter/poolside/laguna-s-2.1:free",
         "agnes/agnes-1.5-flash",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-go/deepseek-v4-flash"

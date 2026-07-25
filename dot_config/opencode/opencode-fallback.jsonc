@@ -24,6 +24,7 @@
     // TIER 3: FREE — OpenRouter (50 req/day)
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
     "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
+    "openrouter/poolside/laguna-s-2.1:free",
     // TIER 4: FREE — OpenCode Zen (~200 req/day)
     "opencode-zen/nemotron-3-ultra-free",
     "opencode-zen/deepseek-v4-flash-free",
