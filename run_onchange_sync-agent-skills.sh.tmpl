@@ -1,0 +1,37 @@
+#!/bin/bash
+# Sync unmanaged files from ~/.agents/skills/ into the chezmoi source tree.
+#
+# This is a run_onchange script — re-runs when its rendered content changes.
+# A fingerprint of the target skills directory is embedded below, so adding
+# a new skill on disk drifts the fingerprint and triggers a re-run on the
+# next `chezmoi apply`.
+#
+# Fingerprint: {{ output "bash" "-c" "find ~/.agents/skills -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+set -euo pipefail
+
+SKILLS_DIR="$HOME/.agents/skills"
+SOURCE_DIR="{{ .chezmoi.sourceDir }}/dot_agents/skills"
+
+echo "sync-agent-skills: checking for unmanaged files in $SKILLS_DIR"
+
+unmanaged=()
+while IFS= read -r -d '' file; do
+    rel="${file#"$SKILLS_DIR"/}"
+    source_file="$SOURCE_DIR/$rel"
+    if [[ ! -f "$source_file" ]]; then
+        unmanaged+=("$file")
+    fi
+done < <(find "$SKILLS_DIR" -type f -print0 2>/dev/null)
+
+if [[ ${#unmanaged[@]} -eq 0 ]]; then
+    echo "sync-agent-skills: all files managed, nothing to do"
+    exit 0
+fi
+
+echo "sync-agent-skills: found ${#unmanaged[@]} unmanaged file(s), adding to chezmoi"
+for file in "${unmanaged[@]}"; do
+    echo "  + $file"
+    chezmoi add "$file"
+done
+
+echo "sync-agent-skills: done — changes will apply on next chezmoi apply"
