@@ -10,6 +10,9 @@ age-key.txt.age
 # Machine-specific git identity — different per box
 .gitconfig
 
+# SSH known_hosts — mutable per-machine, changes on every new connection
+.ssh/known_hosts
+
 # Profile build artifacts — npm state varies per machine
 .config/opencode/profiles/*/node_modules
 .config/opencode/profiles/*/node_modules/**
