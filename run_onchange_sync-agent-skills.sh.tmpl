@@ -1,0 +1,76 @@
+#!/bin/bash
+# Sync unmanaged files from target directories into the chezmoi source tree.
+#
+# This is a run_onchange script — re-runs when its rendered content changes.
+# A fingerprint of the target directories is embedded below via chezmoi
+# template expressions. Adding a new file on disk drifts the fingerprint,
+# which changes the rendered content, which triggers a re-run on the next
+# `chezmoi apply`.
+#
+# Managed directories:
+#   ~/.agents/                  → dot_agents/
+#   ~/.config/opencode/         → dot_config/opencode/
+#   ~/.config/systemd/user/     → dot_config/systemd/user/
+#   ~/.omo/plans/               → private_dot_omo/plans/  (plans only, not state)
+#
+# Fingerprint (agents):   {{ output "bash" "-c" "find ~/.agents -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (opencode): {{ output "bash" "-c" "find ~/.config/opencode -maxdepth 1 -type f -o -path '*/skills/*' -type f -o -path '*/agents/*' -type f -o -path '*/plugins/*' -type f -o -path '*/themes/*' -type f -o -path '*/scripts/*' -type f -o -path '*/docs/*' -type f -o -path '*/compound-engineering/*' -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (systemd):  {{ output "bash" "-c" "find ~/.config/systemd/user -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (omoplans): {{ output "bash" "-c" "find ~/.omo/plans -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+set -euo pipefail
+
+SOURCE="{{ .chezmoi.sourceDir }}"
+unmanaged=()
+
+check_dir() {
+    local target_dir="$1"
+    local source_dir="$2"
+    [[ -d "$target_dir" ]] || return 0
+
+    while IFS= read -r -d '' file; do
+        local rel="${file#"$target_dir"/}"
+        [[ -f "$source_dir/$rel" ]] || unmanaged+=("$file")
+    done < <(find "$target_dir" -type f -print0 2>/dev/null)
+}
+
+check_opencode() {
+    local target_dir="$HOME/.config/opencode"
+    local source_dir="$SOURCE/dot_config/opencode"
+    [[ -d "$target_dir" ]] || return 0
+
+    local file
+    # Root-level config files
+    while IFS= read -r -d '' file; do
+        local rel="${file#"$target_dir"/}"
+        [[ -f "$source_dir/$rel" ]] || unmanaged+=("$file")
+    done < <(find "$target_dir" -maxdepth 1 -type f -print0 2>/dev/null)
+
+    # Managed subdirectories only (skip node_modules, cache, DBs, etc.)
+    local sub
+    for sub in skills agents plugins themes scripts docs compound-engineering; do
+        [[ -d "$target_dir/$sub" ]] || continue
+        while IFS= read -r -d '' file; do
+            local rel="${file#"$target_dir"/}"
+            [[ -f "$source_dir/$rel" ]] || unmanaged+=("$file")
+        done < <(find "$target_dir/$sub" -type f -print0 2>/dev/null)
+    done
+}
+
+# Scan each managed directory
+check_dir "$HOME/.agents" "$SOURCE/dot_agents"
+check_opencode
+check_dir "$HOME/.config/systemd/user" "$SOURCE/dot_config/systemd/user"
+check_dir "$HOME/.omo/plans" "$SOURCE/private_dot_omo/plans"
+
+if [[ ${#unmanaged[@]} -eq 0 ]]; then
+    echo "sync-dotfiles: all files managed, nothing to do"
+    exit 0
+fi
+
+echo "sync-dotfiles: found ${#unmanaged[@]} unmanaged file(s), adding to chezmoi"
+for file in "${unmanaged[@]}"; do
+    echo "  + $file"
+    chezmoi add "$file"
+done
+
+echo "sync-dotfiles: done — changes will apply on next chezmoi apply"
