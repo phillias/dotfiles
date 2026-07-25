@@ -11,10 +11,12 @@
 #   ~/.agents/                  → dot_agents/
 #   ~/.config/opencode/         → dot_config/opencode/
 #   ~/.config/systemd/user/     → dot_config/systemd/user/
+#   ~/.omo/plans/               → private_dot_omo/plans/  (plans only, not state)
 #
 # Fingerprint (agents):   {{ output "bash" "-c" "find ~/.agents -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (opencode): {{ output "bash" "-c" "find ~/.config/opencode -maxdepth 1 -type f -o -path '*/skills/*' -type f -o -path '*/agents/*' -type f -o -path '*/plugins/*' -type f -o -path '*/themes/*' -type f -o -path '*/scripts/*' -type f -o -path '*/docs/*' -type f -o -path '*/compound-engineering/*' -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (systemd):  {{ output "bash" "-c" "find ~/.config/systemd/user -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (omoplans): {{ output "bash" "-c" "find ~/.omo/plans -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 set -euo pipefail
 
 SOURCE="{{ .chezmoi.sourceDir }}"
@@ -58,6 +60,7 @@ check_opencode() {
 check_dir "$HOME/.agents" "$SOURCE/dot_agents"
 check_opencode
 check_dir "$HOME/.config/systemd/user" "$SOURCE/dot_config/systemd/user"
+check_dir "$HOME/.omo/plans" "$SOURCE/private_dot_omo/plans"
 
 if [[ ${#unmanaged[@]} -eq 0 ]]; then
     echo "sync-dotfiles: all files managed, nothing to do"
