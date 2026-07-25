@@ -30,7 +30,12 @@ check_dir() {
     while IFS= read -r -d '' file; do
         local rel="${file#"$target_dir"/}"
         [[ -f "$source_dir/$rel" ]] || unmanaged+=("$file")
-    done < <(find "$target_dir" -type f -print0 2>/dev/null)
+    done < <(find "$target_dir" \
+        -not -path '*/.git/*' \
+        -not -path '*/node_modules/*' \
+        -not -name '*.log' \
+        -not -name '*.tmp' \
+        -type f -print0 2>/dev/null)
 }
 
 check_opencode() {
@@ -52,7 +57,12 @@ check_opencode() {
         while IFS= read -r -d '' file; do
             local rel="${file#"$target_dir"/}"
             [[ -f "$source_dir/$rel" ]] || unmanaged+=("$file")
-        done < <(find "$target_dir/$sub" -type f -print0 2>/dev/null)
+        done < <(find "$target_dir/$sub" \
+            -not -path '*/.git/*' \
+            -not -path '*/node_modules/*' \
+            -not -name '*.log' \
+            -not -name '*.tmp' \
+            -type f -print0 2>/dev/null)
     done
 }
 
@@ -67,10 +77,16 @@ if [[ ${#unmanaged[@]} -eq 0 ]]; then
     exit 0
 fi
 
-echo "sync-dotfiles: found ${#unmanaged[@]} unmanaged file(s), adding to chezmoi"
-for file in "${unmanaged[@]}"; do
-    echo "  + $file"
-    chezmoi add "$file"
-done
+# NOTE: We cannot call 'chezmoi add' here because this script runs while
+# chezmoi holds the state lock. Calling chezmoi add would deadlock.
+# Instead, print the list so the user can run it after the update completes.
 
-echo "sync-dotfiles: done — changes will apply on next chezmoi apply"
+echo "sync-dotfiles: found ${#unmanaged[@]} unmanaged file(s):"
+echo ""
+echo "  Run the following to add them:"
+echo ""
+for file in "${unmanaged[@]}"; do
+    echo "    chezmoi add '$file'"
+done
+echo ""
+echo "  Or run: chezmoi add ${unmanaged[0]} ... (all files listed above)"
