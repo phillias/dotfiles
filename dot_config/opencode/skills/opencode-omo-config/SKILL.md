@@ -56,6 +56,7 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | qwen/qwen3-coder:free | 131K | 8K | 0.7 |
 | meta-llama/llama-3.3-70b-instruct:free | 131K | 8K | 0.7 |
 | nvidia/nemotron-3-super-120b-a12b:free | 131K | 8K | 0.7 |
+| poolside/laguna-s-2.1:free | 262K | 8K | 0.7 | NEW — 118B MoE, 8B active, agentic coding specialist |
 | openai/gpt-4o | 128K | 16K | 0.7 |
 | google/gemini-2.5-flash | 1M | 64K | 0.7 |
 | deepseek/deepseek-chat | 131K | 8K | 0.7 |
@@ -77,6 +78,7 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | Mistral | mistral-large-latest | 131K | 8K | 0.7 |
 | SambaNova | Meta-Llama-3.3-70B-Instruct | 131K | 8K | 0.7 |
 | Together | deepseek-ai/DeepSeek-R1 | 163K | 163K | 1.0 |
+| InternLM | intern-s2-preview-397b | 256K | 8K | 0.7 | NEW — 397B MoE, scientific reasoning, Apache 2.0 |
 | HuggingFace | openai/gpt-oss-120b | 128K | 32K | 0.7 |
 | HuggingFace | openai/gpt-oss-20b | 128K | 16K | 0.7 |
 | HuggingFace | deepseek-ai/DeepSeek-V4-Flash | 1024K | 16K | 0.7 |
@@ -209,6 +211,55 @@ This skill documents the architecture, decisions, and maintenance procedures for
 5. Baseten ($30 credits → $0.10/M GPT-OSS 120B)
 6. OpenCode Go ($10/mo pool)
 7. Google Gemini (pay, last resort)
+
+### Recently Added Models (2026-07-24)
+
+#### Laguna S 2.1 (Poolside) — Agentic Coding Specialist
+
+| Spec | Value |
+|------|-------|
+| Total Params | 118B (MoE) |
+| Active Params | 8B per token |
+| Context | 262K (free) / 1M (paid) |
+| License | OpenMDW-1.1 |
+| Provider | OpenRouter (`poolside/laguna-s-2.1:free`) |
+| Pricing | Free (262K ctx) / $0.10 input, $0.20 output (1M ctx) |
+| Benchmarks | Terminal-Bench 2.1: 70.2%, SWE-bench: 78.5% |
+| Placement | Free tier in explore, librarian, quick, unspecified-low, global fallback |
+
+#### Intern-S2-Preview-397B (InternLM) — Scientific Reasoning
+
+| Spec | Value |
+|------|-------|
+| Total Params | 397B (MoE) |
+| Active Params | ~120B per token |
+| Context | 256K |
+| License | Apache 2.0 |
+| Provider | InternLM API (`chat.intern-ai.org.cn`) — NEW provider |
+| Pricing | Free (official API) |
+| Capabilities | Multimodal (vision + text), scientific reasoning, agent workflows |
+| Placement | Oracle, deep, unspecified-high (reasoning-heavy agents) |
+
+### Pending Evaluation
+
+#### Ling 3.0 Flash (Ant Group/InclusionAI) — Check 2026-08-03
+
+| Spec | Value |
+|------|-------|
+| Total Params | 124B (MoE) |
+| Active Params | 5.1B per token |
+| Context | 256K native, extendable to 1M |
+| License | MIT expected (not yet published) |
+| Provider | OpenRouter (`inclusionai/ling-3.0-flash:free`) — free through Aug 3 |
+| Status | ⚠️ Unverified benchmarks, no model card, no technical report |
+
+**Action Required**: Re-evaluate on 2026-08-03 when:
+1. Benchmarks are independently verified
+2. License is published
+3. HuggingFace weights become available (for self-hosting option)
+4. Post-promotion pricing is known
+
+**If verified**: Add to utility agent fallback chains (explore, librarian, quick) — 5.1B active at 256K context is extremely efficient for high-volume workloads.
 
 ## Architecture Overview
 

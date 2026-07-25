@@ -295,6 +295,14 @@
             "output": 8192
           },
           "temperature": true
+        },
+        "poolside/laguna-s-2.1:free": {
+          "name": "Laguna S 2.1 (Free)",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "temperature": true
         }
       }
     },
@@ -1274,6 +1282,24 @@
           "limit": {
             "context": 262144,
             "output": 262144
+          },
+          "temperature": true
+        }
+      }
+    },
+    "intern": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "InternLM",
+      "options": {
+        "baseURL": "https://chat.intern-ai.org.cn/api/v1",
+        "apiKey": "{env:INTERN_API_KEY}"
+      },
+      "models": {
+        "intern-s2-preview-397b": {
+          "name": "Intern-S2-Preview-397B",
+          "limit": {
+            "context": 262144,
+            "output": 8192
           },
           "temperature": true
         }
