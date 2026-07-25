@@ -234,7 +234,7 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       }),
     },
 
-    // ── Capture last user message + user boost detection ──────────────────
+    // ── Capture last user message + user boost detection + auto-save ──────
     "chat.message": async (
       input: { sessionID: string; agent?: string; model?: any; messageID?: string; variant?: string },
       output: { message: any; parts: any[] },
@@ -245,16 +245,28 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       // Store last user message for system context injection
       lastUserMessages.set(input.sessionID, text);
 
-      // Score ALL messages — auto-save high-scoring ones (threshold ≥12/45).
+      // Score ALL messages — auto-save high-scoring ones immediately (threshold ≥12/45).
       // User boost adds +15, making "remember that" nearly always cross the line.
       // But novelty(7)+depth(7)=14 or novelty(7)+risk(6)+error(5)=18 also trigger.
       const boosted = hasUserBoost(text);
       const score = scoreMessage(text, boosted);
       if (score.shouldRemember) {
-        const title = text.slice(0, 80).replace(/"/g, '\\"');
+        // Dedup: don't save the same title twice in this session
         const sessionCaptures = capturedThisSession.get(input.sessionID) ?? new Set<string>();
         if (!capturedThisSession.has(input.sessionID)) capturedThisSession.set(input.sessionID, sessionCaptures);
+        
+        const title = text.slice(0, 80).replace(/"/g, '\\"');
+        if (sessionCaptures.has(title)) return; // Already captured this turn
         sessionCaptures.add(title);
+
+        // Save immediately — don't wait for session.idle (which may never fire)
+        const memType = inferMemType(title);
+        const tags = inferTags(title).join(",");
+        try {
+          await shell`mem add --type ${memType} --title "${title}" --tags "${tags}" --body "Auto-captured (${score.reasoning})"`.quiet().nothrow();
+        } catch {
+          // Silent fail — axi-memory is best-effort
+        }
       }
     },
 
@@ -307,33 +319,5 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       }
     },
 
-    // ── Strategy 4: Session-end auto-capture ────────────────────────────
-    // On session.idle, check if any captured messages had high scores
-    // but weren't saved yet (dedup via capturedThisSession set).
-    event: async (input: { event: { type: string; properties?: any } }) => {
-      if (input.event.type !== "session.idle") return;
-      const sessionID = input.event.properties?.sessionID ?? "";
-      if (!sessionID) return;
-
-      const captured = capturedThisSession.get(sessionID);
-      if (!captured || captured.size === 0) {
-        lastUserMessages.delete(sessionID);
-        capturedThisSession.delete(sessionID);
-        return;
-      }
-
-      for (const title of captured) {
-        const memType = inferMemType(title);
-        const tags = inferTags(title).join(",");
-        try {
-          await shell`mem add --type ${memType} --title "${title.replace(/"/g, '\\"')}" --tags "${tags}" --body "Auto-captured at session end"`.quiet().nothrow();
-        } catch {
-          // Silent fail
-        }
-      }
-
-      lastUserMessages.delete(sessionID);
-      capturedThisSession.delete(sessionID);
-    },
   };
 };
