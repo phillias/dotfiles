@@ -1341,7 +1341,6 @@
   },
   "plugin": [
     "oh-my-openagent@latest",
-    "./plugins/tmux-patch-keeper.ts",
     "./plugins/tps-status.tsx"
   ]
 }

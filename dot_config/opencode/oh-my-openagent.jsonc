@@ -184,7 +184,6 @@
         "nvidia/thinkingmachines/inkling",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
         "opencode-zen/big-pickle",
-        "intern/intern-s2-preview-397b",
         "baseten/openai/gpt-oss-120b",
         "opencode/deepseek-v4-pro",
         "together/deepseek-ai/DeepSeek-R1"
@@ -225,6 +224,17 @@
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         "opencode-zen/mimo-v2.5-free",
         "opencode-zen/nemotron-3-ultra-free"
+      ]
+    },
+
+    // ── Specialized Agents ──────────────────────────────────────
+    "science": {
+      "model": "intern/intern-s2-preview-397b",
+      "description": "Scientific reasoning, biomolecular design, material structure, multimodal scientific tasks",
+      "fallback_models": [
+        "nvidia/thinkingmachines/inkling",
+        "opencode-go/glm-5.1",
+        "opencode-zen/big-pickle"
       ]
     },
 
@@ -283,7 +293,6 @@
         "nvidia/deepseek-ai/deepseek-v4-pro",
         "cloudflare/@cf/openai/gpt-oss-120b",
         "opencode-go/kimi-k2.6",
-        "intern/intern-s2-preview-397b",
         "baseten/openai/gpt-oss-120b"
       ]
     },
@@ -323,7 +332,6 @@
         "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "intern/intern-s2-preview-397b",
         "baseten/openai/gpt-oss-120b",
         "mistral/mistral-large-latest"
       ]

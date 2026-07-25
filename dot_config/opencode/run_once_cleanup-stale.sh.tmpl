@@ -11,4 +11,8 @@ rm -f ~/.local/bin/oc
 # Remove deprecated profiles directory (single-root config since Jul 2026)
 rm -rf ~/.config/opencode/profiles
 
+# Remove tmux-patch-keeper plugin (resolved upstream in oh-my-openagent, was causing
+# "refusing to patch upstream" console errors due to fingerprint mismatch)
+rm -f ~/.config/opencode/plugins/tmux-patch-keeper.ts
+
 echo "Cleaned up stale opencode files"
