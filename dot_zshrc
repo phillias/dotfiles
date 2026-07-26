@@ -264,11 +264,7 @@ if [ -f /etc/zsh_command_not_found ]; then
 fi
 
 export ANTHROPIC_BASE_URL="https://openrouter.ai"
-{{- if (env "BW_SESSION") }}
-export ANTHROPIC_AUTH_TOKEN="{{ (index (bitwardenFields "item" "339936cd-b111-492b-8a77-b3f900fb1c23") "Anthropic Auth Token").value }}"
-{{- else }}
 export ANTHROPIC_AUTH_TOKEN=""
-{{- end }}
 export ANTHROPIC_API_KEY=""
 export ENABLE_TOOL_SEARCH=false
 export ANTHROPIC_COMPATIBILITY_MODE=1
@@ -289,9 +285,6 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="/usr/local/go/bin:$HOME/.bun/bin:$HOME/go/bin:$PATH"
-{{- if (env "BW_SESSION") }}
-export GROQ_API_KEY="{{ (index (bitwardenFields "item" "339936cd-b111-492b-8a77-b3f900fb1c23") "Groq API Key").value }}"
-{{- else }}
 if [ -f "$HOME/.config/opencode/.groq-key" ]; then
     export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
 fi
@@ -316,7 +309,6 @@ fi
 if [ -f "$HOME/.config/opencode/.hf-key" ]; then
     export HF_API_KEY="$(cat $HOME/.config/opencode/.hf-key)"
 fi
-{{- end }}
 if [ -f "$HOME/.config/opencode/.nvidia-key" ]; then
     export NVIDIA_API_KEY="$(cat $HOME/.config/opencode/.nvidia-key)"
 fi
@@ -325,6 +317,9 @@ if [ -f "$HOME/.config/opencode/.baseten-key" ]; then
 fi
 if [ -f "$HOME/.config/opencode/.intern-key" ]; then
     export INTERN_API_KEY="$(cat $HOME/.config/opencode/.intern-key)"
+fi
+if [ -f "$HOME/.config/opencode/.openrouter-key" ]; then
+    export OPENROUTER_API_KEY="$(cat $HOME/.config/opencode/.openrouter-key)"
 fi
 
 # Google Workspace MCP credentials
