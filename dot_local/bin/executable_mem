@@ -505,22 +505,46 @@ cmd_list() {
 cmd_sync() {
   ensure_repo
   local status=0 output
+  local sync_timeout=30
   printf 'sync:\n'
   printf '  remote: %s\n' "$MEM_REMOTE"
+
+  # Circuit breaker: 30s timeout per git operation.
+  # SSH keepalive (ServerAliveInterval/ConnectTimeout) lives in ~/.ssh/config.
+  # Without a timeout, a dead remote tunnel freezes the entire session.
+  local branch
+  branch=$(git -C "$MEM_DIR" config init.defaultBranch 2>/dev/null || echo master)
+
   # Pull first to grab latest from the anchor
-  if output=$(git -C "$MEM_DIR" pull --rebase "$MEM_REMOTE" "$(git -C "$MEM_DIR" config init.defaultBranch || echo master)" 2>&1); then
+  if output=$(timeout "$sync_timeout" git -C "$MEM_DIR" pull --rebase "$MEM_REMOTE" "$branch" 2>&1); then
     printf '  pull: ok\n'
   else
-    printf '  pull: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
+    local code=$?
+    if [ "$code" -eq 124 ]; then
+      printf '  pull: timeout (%ds) — remote %s unreachable\n' "$sync_timeout" "$MEM_REMOTE"
+    else
+      printf '  pull: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
+    fi
     status=1
   fi
-  # Push our changes
-  if output=$(git -C "$MEM_DIR" push "$MEM_REMOTE" HEAD 2>&1); then
-    printf '  push: ok\n'
+
+  # Push our changes (skip if pull failed — push would also hang)
+  if [ "$status" -eq 0 ]; then
+    if output=$(timeout "$sync_timeout" git -C "$MEM_DIR" push "$MEM_REMOTE" HEAD 2>&1); then
+      printf '  push: ok\n'
+    else
+      local code=$?
+      if [ "$code" -eq 124 ]; then
+        printf '  push: timeout (%ds) — remote %s unreachable\n' "$sync_timeout" "$MEM_REMOTE"
+      else
+        printf '  push: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
+      fi
+      status=1
+    fi
   else
-    printf '  push: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
-    status=1
+    printf '  push: skipped (pull failed)\n'
   fi
+
   # Brief status summary - §4 pre-computed
   local ahead behind
   ahead=$(git -C "$MEM_DIR" rev-list --count @{u}..HEAD 2>/dev/null || echo "?")
@@ -528,6 +552,79 @@ cmd_sync() {
   printf '  unpushed: %s commits ahead\n' "$ahead"
   printf '  unpulled: %s commits behind\n' "$behind"
   return $status
+}
+
+cmd_status() {
+  ensure_repo
+  local total=0
+
+  for t in "${ORDERED_TYPES[@]}"; do
+    local n
+    n=$(find "$MEM_OBJECTS/${TYPE_DIR[$t]}" -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
+    total=$((total + n))
+  done
+
+  # Git sync state
+  local ahead behind last_commit last_epoch now diff_s last_fmt="never"
+  ahead=$(git -C "$MEM_DIR" rev-list --count @{u}..HEAD 2>/dev/null || echo "?")
+  behind=$(git -C "$MEM_DIR" rev-list --count HEAD..@{u} 2>/dev/null || echo "?")
+  last_epoch=$(git -C "$MEM_DIR" log -1 --format=%ct 2>/dev/null || echo 0)
+  if [[ "$last_epoch" -gt 0 ]]; then
+    now=$(date +%s)
+    diff_s=$(( now - last_epoch ))
+    if (( diff_s < 60 )); then
+      last_fmt="just now"
+    elif (( diff_s < 3600 )); then
+      last_fmt="$(( diff_s / 60 ))m ago"
+    elif (( diff_s < 86400 )); then
+      last_fmt="$(( diff_s / 3600 ))h ago"
+    else
+      last_fmt="$(( diff_s / 86400 ))d ago"
+    fi
+  fi
+
+  # Remote URL + reachability
+  local remote_url remote_ok="unknown"
+  remote_url=$(git -C "$MEM_DIR" remote get-url "$MEM_REMOTE" 2>/dev/null || echo "none")
+  if [[ "$remote_url" != "none" ]]; then
+    # Extract host from SSH URL for a quick reachability check
+    local remote_host
+    remote_host=$(printf '%s' "$remote_url" | sed -E 's#^[a-z]+://##; s#[:/].*##; s#.*@##')
+    if timeout 5 ssh -o ConnectTimeout=3 -o BatchMode=yes "$remote_host" exit 2>/dev/null; then
+      remote_ok="reachable"
+    else
+      remote_ok="unreachable"
+    fi
+  fi
+
+  # Disk usage
+  local disk_size
+  disk_size=$(du -sh "$MEM_DIR" 2>/dev/null | cut -f1)
+
+  printf 'mem:\n'
+  printf '  store: %s\n' "${MEM_DIR/#$HOME/~}"
+  printf '  total: %d memories\n' "$total"
+  printf '  disk: %s\n' "$disk_size"
+  printf '  remote: %s (%s)\n' "$remote_url" "$remote_ok"
+  printf '  ahead: %s, behind: %s\n' "$ahead" "$behind"
+  printf '  last_commit: %s\n' "$last_fmt"
+
+  local hints=()
+  if [[ "$ahead" != "0" && "$ahead" != "?" ]]; then
+    hints+=("Run \`mem sync\` to push $ahead unpushed commits")
+  fi
+  if [[ "$remote_ok" == "unreachable" ]]; then
+    hints+=("Remote is unreachable — check tunnel/VPN or SSH config")
+  fi
+  if [[ "$behind" != "0" && "$behind" != "?" ]]; then
+    hints+=("Run \`mem sync\` to pull $behind unpulled commits")
+  fi
+  if (( ${#hints[@]} > 0 )); then
+    printf 'help[%d]:\n' "${#hints[@]}"
+    for h in "${hints[@]}"; do
+      printf '  %s\n' "$h"
+    done
+  fi
 }
 
 cmd_stats() {
@@ -603,6 +700,7 @@ Commands:
   show <id>        full detail (body truncated by default; use --full)
   add              create a new memory
   list             list memories (filter by --type / --tag)
+  status           operational health: sync state, remote, disk
   sync             git pull --rebase && git push
   stats            show usage statistics
   --help           this message
@@ -706,6 +804,20 @@ Examples:
 EOF
 }
 
+cmd_status_help() {
+  cat <<'EOF'
+mem status — operational health check
+
+Usage: mem status
+
+Output: TOON block with store path, memory count, disk usage,
+remote URL + reachability, sync state (ahead/behind), last commit time.
+
+Includes contextual hints when action is needed (unpushed commits,
+unreachable remote, unpulled commits).
+EOF
+}
+
 cmd_stats_help() {
   cat <<'EOF'
 mem stats — show usage statistics
@@ -746,6 +858,7 @@ main() {
     add)    cmd_add    "$@" ;;
     list)   cmd_list   "$@" ;;
     sync)   cmd_sync   "$@" ;;
+    status) cmd_status "$@" ;;
     stats)  cmd_stats  "$@" ;;
     *)
       die "unknown command: $cmd" 2 "run \`mem --help\` for the command list"
