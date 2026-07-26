@@ -1341,6 +1341,11 @@
   },
   "plugin": [
     "oh-my-openagent@latest",
-    "./plugins/tps-status.tsx"
+    "./plugins/tps-status.tsx",
+    "./plugins/fleet-state-writer.ts",
+    "./plugins/better-compaction.ts",
+    "./plugins/axi-memory-bridge.ts",
+    "./plugins/go-pool-fallback.ts",
+    "./plugins/go-pool-guard.ts"
   ]
 }
