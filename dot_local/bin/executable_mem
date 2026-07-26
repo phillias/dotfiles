@@ -505,22 +505,46 @@ cmd_list() {
 cmd_sync() {
   ensure_repo
   local status=0 output
+  local sync_timeout=30
   printf 'sync:\n'
   printf '  remote: %s\n' "$MEM_REMOTE"
+
+  # Circuit breaker: 30s timeout per git operation.
+  # SSH keepalive (ServerAliveInterval/ConnectTimeout) lives in ~/.ssh/config.
+  # Without a timeout, a dead remote tunnel freezes the entire session.
+  local branch
+  branch=$(git -C "$MEM_DIR" config init.defaultBranch 2>/dev/null || echo master)
+
   # Pull first to grab latest from the anchor
-  if output=$(git -C "$MEM_DIR" pull --rebase "$MEM_REMOTE" "$(git -C "$MEM_DIR" config init.defaultBranch || echo master)" 2>&1); then
+  if output=$(timeout "$sync_timeout" git -C "$MEM_DIR" pull --rebase "$MEM_REMOTE" "$branch" 2>&1); then
     printf '  pull: ok\n'
   else
-    printf '  pull: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
+    local code=$?
+    if [ "$code" -eq 124 ]; then
+      printf '  pull: timeout (%ds) — remote %s unreachable\n' "$sync_timeout" "$MEM_REMOTE"
+    else
+      printf '  pull: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
+    fi
     status=1
   fi
-  # Push our changes
-  if output=$(git -C "$MEM_DIR" push "$MEM_REMOTE" HEAD 2>&1); then
-    printf '  push: ok\n'
+
+  # Push our changes (skip if pull failed — push would also hang)
+  if [ "$status" -eq 0 ]; then
+    if output=$(timeout "$sync_timeout" git -C "$MEM_DIR" push "$MEM_REMOTE" HEAD 2>&1); then
+      printf '  push: ok\n'
+    else
+      local code=$?
+      if [ "$code" -eq 124 ]; then
+        printf '  push: timeout (%ds) — remote %s unreachable\n' "$sync_timeout" "$MEM_REMOTE"
+      else
+        printf '  push: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
+      fi
+      status=1
+    fi
   else
-    printf '  push: %s\n' "$(printf '%s' "$output" | tail -3 | tr '\n' ' ')"
-    status=1
+    printf '  push: skipped (pull failed)\n'
   fi
+
   # Brief status summary - §4 pre-computed
   local ahead behind
   ahead=$(git -C "$MEM_DIR" rev-list --count @{u}..HEAD 2>/dev/null || echo "?")
