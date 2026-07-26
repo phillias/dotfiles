@@ -216,4 +216,7 @@ fi
 if [ -f "$HOME/.config/opencode/.intern-key" ]; then
     export INTERN_API_KEY="$(cat $HOME/.config/opencode/.intern-key)"
 fi
+if [ -f "$HOME/.config/opencode/.openrouter-key" ]; then
+    export OPENROUTER_API_KEY="$(cat $HOME/.config/opencode/.openrouter-key)"
+fi
 export PATH="$HOME/.npm-global/bin:$PATH"
