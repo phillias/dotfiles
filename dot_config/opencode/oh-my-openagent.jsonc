@@ -56,7 +56,8 @@
       "nvidia": 4,             // ~40 RPM shared across all models — 4 concurrent safe
       "baseten": 3,            // 15 RPM unverified, 120 verified — conservative start
       "agnes": 3,              // Unknown limits, conservative
-      "intern": 3              // InternLM API — unknown limits, conservative start
+      "intern": 3,             // InternLM API — unknown limits, conservative start
+      "together": 4            // 60 RPM free tier — 4 concurrent safe with burst headroom
     },
     "modelConcurrency": {
       "opencode-zen/big-pickle": 2,
@@ -191,9 +192,10 @@
     },
 
     "explore": {
-      "model": "opencode-zen/deepseek-v4-flash-free",
+      "model": "together/Prism-ML/Ternary-Bonsai-27B",
       "temperature": 0.1,
       "fallback_models": [
+        "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",
@@ -207,9 +209,10 @@
     },
 
     "librarian": {
-      "model": "opencode-zen/deepseek-v4-flash-free",
+      "model": "together/Prism-ML/Ternary-Bonsai-27B",
       "temperature": 0.1,
       "fallback_models": [
+        "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
@@ -219,8 +222,9 @@
     },
 
     "multimodal-looker": {
-      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
+      "model": "together/Prism-ML/Ternary-Bonsai-27B",
       "fallback_models": [
+        "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
         "opencode-zen/mimo-v2.5-free",
         "opencode-zen/nemotron-3-ultra-free"

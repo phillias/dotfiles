@@ -399,6 +399,14 @@
             "output": 163840
           },
           "temperature": true
+        },
+        "Prism-ML/Ternary-Bonsai-27B": {
+          "name": "Ternary Bonsai 27B",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "temperature": true
         }
       }
     },

@@ -4,12 +4,12 @@
   // and as safety net when per-agent fallback_models chains are also exhausted.
   // Per-agent chains in oh-my-openagent.jsonc override this for agent calls.
   //
-  // Progression: Cloudflare free (300 RPM) → NIM free (~40 RPM shared) →
-  // OpenRouter free (50 req/day) → Zen free (200 req/day) → Baseten subsidized
+  // Progression: Cloudflare free (300 RPM) → Together free (60 RPM, 262K ctx) →
+  // NIM free (~40 RPM shared) → OpenRouter free (50 req/day) → Zen free (200 req/day) → Baseten subsidized
   // ($30 credits) → Go subsidized ($10/mo) → Google pay (last resort).
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
-  "max_fallback_attempts": 13,
+  "max_fallback_attempts": 15,
   "cooldown_seconds": 60,
   "timeout_seconds": 120,
   "notify_on_fallback": true,
@@ -18,22 +18,24 @@
     "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     "cloudflare/@cf/openai/gpt-oss-20b",
     "cloudflare/@cf/zai-org/glm-4.7-flash",
-    // TIER 2: FREE — NVIDIA NIM (~40 RPM shared, largest catalog, 1M ctx via Inkling)
+    // TIER 2: FREE — Together AI (60 RPM, 262K ctx, vision + tools)
+    "together/Prism-ML/Ternary-Bonsai-27B",
+    // TIER 3: FREE — NVIDIA NIM (~40 RPM shared, largest catalog, 1M ctx via Inkling)
     "nvidia/deepseek-ai/deepseek-v4-flash",
     "nvidia/nvidia/nemotron-3-super-120b-a12b",
-    // TIER 3: FREE — OpenRouter (50 req/day)
+    // TIER 4: FREE — OpenRouter (50 req/day)
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
     "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
     "openrouter/poolside/laguna-s-2.1:free",
-    // TIER 4: FREE — OpenCode Zen (~200 req/day)
+    // TIER 5: FREE — OpenCode Zen (~200 req/day)
     "opencode-zen/nemotron-3-ultra-free",
     "opencode-zen/deepseek-v4-flash-free",
     "opencode-zen/mimo-v2.5-free",
-    // TIER 5: SUBSIDIZED — Baseten ($30 credits → $0.10/M GPT-OSS 120B)
+    // TIER 6: SUBSIDIZED — Baseten ($30 credits → $0.10/M GPT-OSS 120B)
     "baseten/openai/gpt-oss-120b",
-    // TIER 6: SUBSIDIZED — OpenCode Go ($10/mo pool)
+    // TIER 7: SUBSIDIZED — OpenCode Go ($10/mo pool)
     "opencode-go/deepseek-v4-flash",
-    // TIER 7: PAY — Last resort
+    // TIER 8: PAY — Last resort
     "google/gemini-2.0-flash"
   ]
 }
