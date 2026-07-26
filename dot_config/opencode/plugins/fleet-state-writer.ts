@@ -1,5 +1,5 @@
 import type { Plugin } from "@opencode-ai/plugin";
-import { mkdirSync, appendFileSync, writeFileSync, readFileSync, existsSync, statSync } from "fs";
+import { mkdirSync, appendFileSync, writeFileSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
 
@@ -65,16 +65,39 @@ function saveState(state: StateFile): void {
   writeFileSync(DIGEST_TXT, lines.join("\n") + (lines.length ? "\n" : ""));
 }
 
+// --- Wake log rotation (non-blocking) ---------------------------------------
+// Instead of statSync on every append, track approximate size in memory
+// and rotate in batches. This avoids I/O on every event.
+
+let wakeLogApproxBytes = 0;
+let wakeLogAppendCount = 0;
+const ROTATE_CHECK_INTERVAL = 50; // Check rotation every N appends
+const ROTATE_THRESHOLD_BYTES = 900_000; // Rotate at ~900KB (leave headroom under 1MB)
+const ROTATE_KEEP_LINES = 1000;
+
 function appendWake(type: string, sessionID: string, digest: string): void {
   const ts = new Date().toISOString();
   const line = `${ts}\t${type}\t${sessionID}\t${digest}\n`;
   try {
     appendFileSync(WAKE_LOG, line);
-    // Rotate wake.log if >1MB: keep last 1000 lines
-    const stat = statSync(WAKE_LOG);
-    if (stat.size > 1_000_000) {
-      const content = readFileSync(WAKE_LOG, "utf-8").split("\n").slice(-1000).join("\n");
-      writeFileSync(WAKE_LOG, content);
+    wakeLogApproxBytes += Buffer.byteLength(line, "utf-8");
+    wakeLogAppendCount++;
+
+    // Only check rotation periodically, not on every append
+    if (wakeLogAppendCount >= ROTATE_CHECK_INTERVAL) {
+      wakeLogAppendCount = 0;
+      if (wakeLogApproxBytes > ROTATE_THRESHOLD_BYTES) {
+        try {
+          const content = readFileSync(WAKE_LOG, "utf-8").split("\n").slice(-ROTATE_KEEP_LINES).join("\n");
+          writeFileSync(WAKE_LOG, content);
+          wakeLogApproxBytes = Buffer.byteLength(content, "utf-8");
+        } catch (rotateErr) {
+          // If rotation fails, reset counter and try again later
+          // Don't let rotation errors break event handling
+          console.error("[fleet-state-writer] wake.log rotation error:", rotateErr);
+          wakeLogApproxBytes = 0; // Reset to avoid infinite retry loop
+        }
+      }
     }
   } catch (err) {
     console.error("[fleet-state-writer] appendWake error:", err);
