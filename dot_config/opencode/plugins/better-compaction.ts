@@ -429,8 +429,7 @@ When encountering similar tasks, reference this skill for established patterns a
     },
 
     "tool.execute.after": async (input: { tool: string; sessionID: string; callID: string; args: any }) => {
-      captureToolContext(input.sessionID, input.tool);
-turnCounter++;
+      turnCounter++;
       captureToolContext(input.sessionID, input.tool);
 
       // Attribute tool usage to the active todo

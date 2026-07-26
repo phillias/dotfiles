@@ -6,16 +6,16 @@ import { z } from "zod";
  * axi-memory-bridge — Hybrid injection plugin for axi-memory
  *
  * Three injection strategies:
- * 1. Turn-level system context: injects relevant memories into system prompt every turn
+ * 1. Turn-level system context: injects relevant memories into system prompt (once per session)
  * 2. Agent-callable tools: axi-memory-search and axi-memory-add
- * 3. Auto-search on tool execution: appends ambient context to tool output
+ * 3. Auto-search on tool execution: appends ambient context to tool output (throttled + cached)
  *
  * Plus: user boost detection + lightweight memory scoring
  *
- * This plugin runs alongside codemem for A/B comparison during Phase 1-2.
- *
- * Design principle: ZERO console output. All communication to the agent happens
- * via tool output injection and system prompt context. No TUI disruption.
+ * Performance guards:
+ * - System context: injected once per session (injectedSessions guard), not every turn
+ * - Tool output: throttled to max 1 mem search per 5 seconds per session, with LRU cache
+ * - Both use ripgrep which is fast (~0.1s) but process spawn overhead adds up at scale
  */
 
 // --- Lightweight scoring (adapted from better-compaction) -------------------
@@ -152,6 +152,21 @@ function extractKeywords(text: string, maxWords = 5): string {
     .join(" ");
 }
 
+// --- Throttle + Cache for tool.execute.after --------------------------------
+
+const TOOL_SEARCH_INTERVAL_MS = 5_000; // Max 1 mem search per 5 seconds per session
+const TOOL_CACHE_TTL_MS = 60_000;      // Cache results for 60 seconds
+const TOOL_CACHE_MAX = 200;            // Max cached entries before eviction
+
+interface CacheEntry {
+  result: string;
+  ts: number;
+}
+
+function makeToolCacheKey(sessionID: string, query: string): string {
+  return `${sessionID}::${query}`;
+}
+
 // --- Plugin -----------------------------------------------------------------
 
 export const AxiMemoryBridgePlugin: Plugin = async (input) => {
@@ -160,15 +175,36 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
   const lastUserMessages = new Map<string, string>();
   const capturedThisSession = new Map<string, Set<string>>();
 
+  // Strategy 1: session-scoped guard (run once per session)
+  const injectedSessions = new Set<string>();
+
+  // Strategy 3: throttle + LRU cache for tool.execute.after
+  const lastToolSearch = new Map<string, number>(); // sessionID → timestamp
+  const toolSearchCache = new Map<string, CacheEntry>(); // key → cached result
+
+  function evictToolCache() {
+    if (toolSearchCache.size <= TOOL_CACHE_MAX) return;
+    // Evict oldest entries
+    const entries = [...toolSearchCache.entries()]
+      .sort((a, b) => a[1].ts - b[1].ts);
+    const toRemove = entries.slice(0, entries.length - TOOL_CACHE_MAX);
+    for (const [k] of toRemove) toolSearchCache.delete(k);
+  }
+
+  async function runMemSearch(query: string, limit: number): Promise<string> {
+    return await shell`mem search "${query}" --limit ${limit}`.quiet().nothrow().text();
+  }
+
   return {
     // ── Strategy 1: Turn-level system context ─────────────────────────────
-    // Runs on EVERY turn (no injectedSessions guard).
-    // Extracts keywords from the last user message and searches axi-memory.
+    // Runs ONCE per session — extracts keywords from the first user message
+    // and searches axi-memory. Subsequent turns reuse the injected context.
     "experimental.chat.system.transform": async (
       input: { sessionID?: string; model: any },
       output: { system: string[] },
     ) => {
       if (!input.sessionID) return;
+      if (injectedSessions.has(input.sessionID)) return;
 
       const lastMsg = lastUserMessages.get(input.sessionID);
       if (!lastMsg) return;
@@ -176,8 +212,10 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       const query = extractKeywords(lastMsg, 5);
       if (!query) return;
 
+      injectedSessions.add(input.sessionID);
+
       try {
-        const result = await shell`mem search "${query}" --limit 3`.quiet().nothrow().text();
+        const result = await runMemSearch(query, 3);
         if (hasResults(result)) {
           output.system.push(`\n## axi-memory (live)\n${result}`);
         }
@@ -273,6 +311,14 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
     // ── Strategy 3: Auto-search on tool execution ─────────────────────────
     // After non-trivial tool calls, search axi-memory and append results
     // to the tool output so the agent sees ambient context.
+    //
+    // THROTTLE: Max 1 mem search per 5 seconds per session. During rapid
+    // tool execution (20-50 calls/turn), only the first search actually
+    // runs; the rest are skipped. This prevents process spawn storms.
+    //
+    // CACHE: Search results are cached for 60 seconds by query hash.
+    // Repeated similar queries (e.g., "bash" tool with similar commands)
+    // hit the cache instead of spawning new processes.
     "tool.execute.after": async (input: {
       tool: string;
       sessionID: string;
@@ -295,6 +341,8 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
         "axi-memory-search", "axi-memory-add", "codemem-search",
         // Edit/write — we just changed the file, memory about it is stale
         "edit", "write",
+        // Long-running tools — don't delay their output
+        "task",
       ]);
       if (skipTools.has(input.tool)) return;
 
@@ -308,8 +356,36 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
         query += " " + parts[parts.length - 1].replace(/\.[^.]+$/, "");
       }
 
+      // Throttle: skip if we searched too recently for this session
+      const now = Date.now();
+      const lastSearch = lastToolSearch.get(input.sessionID) ?? 0;
+      if (now - lastSearch < TOOL_SEARCH_INTERVAL_MS) {
+        return; // Throttled — skip this search
+      }
+
+      // Check cache first
+      const cacheKey = makeToolCacheKey(input.sessionID, query);
+      const cached = toolSearchCache.get(cacheKey);
+      if (cached && (now - cached.ts) < TOOL_CACHE_TTL_MS) {
+        // Cache hit — still count as a search for throttling purposes
+        // (prevents rapid-fire queries even on cache hits)
+        lastToolSearch.set(input.sessionID, now);
+        if (hasResults(cached.result)) {
+          output.output += `\n\n[axi-memory: ${cached.result.trim()}]`;
+        }
+        return;
+      }
+
+      // Cache miss — run the search
+      lastToolSearch.set(input.sessionID, now);
+
       try {
-        const result = await shell`mem search "${query}" --limit 2`.quiet().nothrow().text();
+        const result = await runMemSearch(query, 2);
+
+        // Store in cache
+        toolSearchCache.set(cacheKey, { result, ts: now });
+        evictToolCache();
+
         if (hasResults(result)) {
           // Append to tool output — agent sees this as ambient context
           output.output += `\n\n[axi-memory: ${result.trim()}]`;
