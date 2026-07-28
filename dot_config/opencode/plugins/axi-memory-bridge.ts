@@ -167,6 +167,29 @@ function makeToolCacheKey(sessionID: string, query: string): string {
   return `${sessionID}::${query}`;
 }
 
+/** Sanitize a string for safe use in a shell double-quoted argument.
+ *  Strips control chars (newlines, tabs, etc.), truncates to 200 chars
+ *  for search queries to prevent massive commands from flooding mem search. */
+function sanitizeShellArg(s: string, maxLen = 200): string {
+  return s
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, ' ')
+    .replace(/\t/g, ' ')
+    .slice(0, maxLen)
+    .trim();
+}
+
+/** Sanitize a string for use as a memory title (shorter, no newlines). */
+function sanitizeTitle(s: string): string {
+  return s
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, ' ')
+    .replace(/\r/g, '')
+    .slice(0, 80)
+    .trim();
+}
+
 // --- Plugin -----------------------------------------------------------------
 
 export const AxiMemoryBridgePlugin: Plugin = async (input) => {
@@ -234,18 +257,16 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
             .describe("Filter by memory type"),
         },
         execute: async (args) => {
-          try {
-            const cmd = args.type
-              ? `mem search "${args.query}" --type ${args.type} --limit 5`
-              : `mem search "${args.query}" --limit 5`;
-            const result = await shell`${cmd}`.quiet().nothrow().text();
-            if (!hasResults(result)) {
-              return { output: `No memories found for "${args.query}".` };
-            }
-            return { output: `axi-memory results for "${args.query}":\n${result}` };
-          } catch (err) {
-            return { output: `axi-memory search error: ${err}` };
+          if (!args.query?.trim()) return { output: "Query is required." };
+          const q = sanitizeShellArg(args.query);
+          const cmd = args.type
+            ? `mem search "${q}" --type ${args.type} --limit 5`
+            : `mem search "${q}" --limit 5`;
+          const result = await shell`${cmd}`.quiet().nothrow().text();
+          if (!hasResults(result)) {
+            return { output: `No memories found for "${q}".` };
           }
+          return { output: `axi-memory results for "${q}":\n${result}` };
         },
       }),
 
@@ -259,15 +280,19 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
           tags: z.string().optional().describe("Comma-separated tags"),
         },
         execute: async (args) => {
-          try {
-            let cmd = `mem add --type ${args.type} --title "${args.title}"`;
-            if (args.body) cmd += ` --body "${args.body}"`;
-            if (args.tags) cmd += ` --tags "${args.tags}"`;
-            const result = await shell`${cmd}`.quiet().nothrow().text();
-            return { output: result };
-          } catch (err) {
-            return { output: `axi-memory add error: ${err}` };
+          const title = sanitizeTitle(args.title);
+          if (!title) return { output: "Title is required." };
+          let cmd = `mem add --type ${args.type} --title "${title}"`;
+          if (args.body) {
+            const body = sanitizeShellArg(args.body, 500);
+            if (body) cmd += ` --body "${body}"`;
           }
+          if (args.tags) {
+            const tags = sanitizeShellArg(args.tags, 100);
+            if (tags) cmd += ` --tags "${tags}"`;
+          }
+          const result = await shell`${cmd}`.quiet().nothrow().text();
+          return { output: result };
         },
       }),
     },
@@ -293,7 +318,7 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
         const sessionCaptures = capturedThisSession.get(input.sessionID) ?? new Set<string>();
         if (!capturedThisSession.has(input.sessionID)) capturedThisSession.set(input.sessionID, sessionCaptures);
         
-        const title = text.slice(0, 80).replace(/"/g, '\\"');
+        const title = sanitizeTitle(text);
         if (sessionCaptures.has(title)) return; // Already captured this turn
         sessionCaptures.add(title);
 
@@ -347,13 +372,14 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       if (skipTools.has(input.tool)) return;
 
       // Build a search query from the tool name + relevant args
+      // All args must be sanitized — especially `command` which is raw bash
       let query = input.tool;
-      if (input.args?.query) query += " " + input.args.query;
-      if (input.args?.command) query += " " + input.args.command;
-      if (input.args?.pattern) query += " " + input.args.pattern;
+      if (input.args?.query) query += " " + sanitizeShellArg(input.args.query);
+      if (input.args?.command) query += " " + sanitizeShellArg(input.args.command);
+      if (input.args?.pattern) query += " " + sanitizeShellArg(input.args.pattern);
       if (input.args?.filePath) {
         const parts = input.args.filePath.split("/");
-        query += " " + parts[parts.length - 1].replace(/\.[^.]+$/, "");
+        query += " " + sanitizeShellArg(parts[parts.length - 1].replace(/\.[^.]+$/, ""));
       }
 
       // Throttle: skip if we searched too recently for this session
