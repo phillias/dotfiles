@@ -1,0 +1,13 @@
+[Unit]
+Description=CodeBurn Web Dashboard
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/phillias/.npm-global/bin/codeburn web --no-open --port 4747
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=default.target

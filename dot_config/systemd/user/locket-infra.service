@@ -1,0 +1,16 @@
+[Unit]
+Description=Locket Infrastructure — stacks with secret injection (newrelic, llpoa)
+Documentation=https://github.com/bpbradley/locket
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/home/phillias/.local/bin/locket exec --provider bws --bws-token=file:/home/phillias/.config/bwsh/token -e /home/phillias/docker/newrelic/.env.locket -- /usr/local/bin/docker compose -f /home/phillias/docker/newrelic/compose.yml up -d --remove-orphans
+ExecStart=/home/phillias/.local/bin/locket exec --provider bws --bws-token=file:/home/phillias/.config/bwsh/token -e /home/phillias/docker/llpoa/.env.locket -- /usr/local/bin/docker compose -f /home/phillias/docker/llpoa/docker-compose.yml up -d --remove-orphans
+ExecStop=/usr/local/bin/docker compose -f /home/phillias/docker/newrelic/compose.yml down
+ExecStop=/usr/local/bin/docker compose -f /home/phillias/docker/llpoa/docker-compose.yml down
+
+[Install]
+WantedBy=default.target

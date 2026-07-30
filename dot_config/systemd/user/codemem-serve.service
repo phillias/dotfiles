@@ -1,0 +1,14 @@
+[Unit]
+Description=codemem serve (viewer + sync daemon)
+After=network-online.target network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/phillias/.npm-global/bin/codemem serve start --foreground --host 0.0.0.0 --port 38888 --db-path /home/phillias/.codemem/mem.sqlite
+Restart=on-failure
+RestartSec=5
+Environment=PATH=/home/phillias/.npm-global/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target

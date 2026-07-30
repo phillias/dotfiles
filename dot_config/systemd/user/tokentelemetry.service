@@ -1,0 +1,16 @@
+[Unit]
+Description=TokenTelemetry - AI Agent Token Observability Dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/tokentelemetry
+ExecStart=/usr/bin/env /usr/bin/node %h/tokentelemetry/bin/cli.js --port 3010 --api-port 8880 --host 127.0.0.1
+Restart=on-failure
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=DO_NOT_TRACK=1
+Environment=TT_NO_UPDATE_CHECK=1
+
+[Install]
+WantedBy=default.target
