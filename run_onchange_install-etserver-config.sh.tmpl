@@ -1,6 +1,0 @@
-#!/bin/bash
-# Install ET server config to /etc/ — runs when script contents change
-sudo install -m 644 -o root -g root \
-  "${CHEZMOI_SOURCE_DIR}/scripts/etserver/et.cfg" \
-  /etc/et.cfg
-sudo systemctl restart et.service || true
