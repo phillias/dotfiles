@@ -1,0 +1,27 @@
+[Unit]
+Description=OpenCode Headless Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.opencode/bin/opencode serve --port 38889 --hostname 0.0.0.0 --pure --log-level WARN
+Restart=on-failure
+RestartSec=30
+
+# Throttle I/O to prevent disk saturation from idle watchers
+IOWeight=10
+IOWriteBandwidthMax=/dev/sda 5M
+IOReadBandwidthMax=/dev/sda 10M
+
+# Limit CPU to 50% of one core
+CPUQuota=50%
+
+# Cap memory at 512MB
+MemoryMax=512M
+
+# Lower scheduling priority
+Nice=10
+
+[Install]
+WantedBy=default.target
