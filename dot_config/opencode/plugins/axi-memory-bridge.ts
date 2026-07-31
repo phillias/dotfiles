@@ -259,10 +259,14 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
         execute: async (args) => {
           if (!args.query?.trim()) return { output: "Query is required." };
           const q = sanitizeShellArg(args.query);
-          const cmd = args.type
-            ? `mem search "${q}" --type ${args.type} --limit 5`
-            : `mem search "${q}" --limit 5`;
-          const result = await shell`${cmd}`.quiet().nothrow().text();
+          // Direct interpolation only — never interpolate a pre-built command
+          // string. Bun's $ shell quotes interpolated values as single words,
+          // so `shell`${cmd}`` tries to exec a program literally named
+          // `mem search "..."` → ENOENT → empty output → every search
+          // returned "No memories found". (Fixed 2026-07-31.)
+          const result = args.type
+            ? await shell`mem search "${q}" --type ${args.type} --limit 5`.quiet().nothrow().text()
+            : await runMemSearch(q, 5);
           if (!hasResults(result)) {
             return { output: `No memories found for "${q}".` };
           }
