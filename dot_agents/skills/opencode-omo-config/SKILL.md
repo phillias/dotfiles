@@ -78,7 +78,7 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | Mistral | mistral-large-latest | 131K | 8K | 0.7 |
 | SambaNova | Meta-Llama-3.3-70B-Instruct | 131K | 8K | 0.7 |
 | Together | deepseek-ai/DeepSeek-R1 | 163K | 163K | 1.0 |
-| Together | Prism-ML/Ternary-Bonsai-27B | 262K | 8K | 0.7 | FREE — 1.58-bit ternary, 95% FP16 quality, vision + tools |
+| Together | Prism-ML/Ternary-Bonsai-27B | 262K | 8K | 0.7 | FREE — 1.58-bit ternary, vision + tools. ⚠️ TOOL-LOOP FAILURE: single-shot only (see Known Failure) |
 | InternLM | intern-s2-preview-397b | 256K | 8K | 0.7 | NEW — 397B MoE, scientific reasoning, Apache 2.0 |
 | HuggingFace | openai/gpt-oss-120b | 128K | 32K | 0.7 |
 | HuggingFace | openai/gpt-oss-20b | 128K | 16K | 0.7 |
@@ -195,7 +195,7 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | 🟢 **FREE** | Cloudflare Workers AI | 16 | $0 | 300 req/min | Free-tier leader, GPT-OSS, Kimi K2.7, GLM 5.2 |
 | 🟢 **FREE** | OpenRouter | 6 free | $0 | 50 req/day | Nemotron Super/Nano, Qwen3 Coder |
 | 🟢 **FREE** | OpenCode Zen | 6 free | $0 | ~200 req/day | Nemotron Ultra, DeepSeek V4 Flash, MiMo |
-| 🟢 **FREE** | Together AI | 2 (DS-R1 + Bonsai 27B) | $0 | 60 RPM, 60K TPM | DeepSeek R1 (reasoning), **Ternary Bonsai 27B (262K ctx, vision, tools)** |
+| 🟢 **FREE** | Together AI | 2 (DS-R1 + Bonsai 27B) | $0 | 60 RPM, 60K TPM | DeepSeek R1 (reasoning), **Ternary Bonsai 27B (262K ctx, vision, tools) ⚠️ single-shot only — tool-loop failure** |
 | 🟡 **SUBSIDIZED** | Baseten | 13 | $30 credits | 15-120 | GPT-OSS 120B at $0.10/M, Inkling at 1M ctx |
 | 🟡 **SUBSIDIZED** | OpenCode Go | 24 | $10/mo | — | Quality pool (K2.6, DS-V4, GLM-5.1) |
 | 🔴 **PAY** | Google | 1 | Pay-per-token | 1500/day | Gemini 2.0 Flash, 1M ctx, last resort |
@@ -207,7 +207,7 @@ This skill documents the architecture, decisions, and maintenance procedures for
 
 **Recommended fallback chain order**:
 1. Cloudflare Workers AI (free, 300 RPM)
-2. Together AI (free, 60 RPM — Bonsai 27B for 262K ctx + vision, DS-R1 for reasoning)
+2. Together AI (free, 60 RPM — Bonsai 27B for 262K ctx + vision, DS-R1 for reasoning) — ⚠️ Bonsai single-shot only, never as agent primary
 3. NVIDIA NIM (free, ~40 RPM shared — use 1-2 models max to stay under limit)
 4. OpenRouter free (50 req/day)
 5. OpenCode Zen free (200 req/day)
@@ -267,9 +267,28 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | Benchmark avg | 80.49 (thinking mode, 15 benchmarks) — 94.6% of FP16 baseline |
 | Math | 93.40 (within 2 pts of FP16) |
 | Coding | 85.96 |
-| Agentic tool use | 74.01 |
+| Agentic tool use | 74.01 (benchmark score — does NOT reflect real-world loop behavior, see Known Failure below) |
 | Vision | 65.19 |
-| Placement | Explore/Librarian primary (free, 262K ctx), global fallback chain, Quick/Unspecified-Low secondary |
+| Placement | **RESTRICTED — single-shot/non-agent calls only** (see Known Failure). Was Explore/Librarian primary; reverted 2026-07-31 |
+
+**⚠️ KNOWN FAILURE — DO NOT USE AS PRIMARY FOR TOOL-LOOP AGENTS (2026-07-31)**
+
+Empirically verified failure in the Librarian agent:
+
+- **Symptom**: When a tool call fails (error, empty result, dead endpoint), the model
+  **repeats the SAME call** instead of synthesizing a different approach. It pattern-matches
+  "call tool" without reading the error context.
+- **Root cause**: 1.58-bit ternary quantization preserves static knowledge benchmarks
+  (~94.6% of FP16) but degrades the *agentic* capability benchmarks don't measure:
+  error-context parsing + alternative-plan generation. The `Agentic tool use 74.01`
+  score is a static benchmark, not evidence of loop behavior.
+- **Impact**: A dispatch can burn the whole fallback chain re-hitting the same failed
+  endpoint, or terminate with a repeated-call loop instead of a research answer.
+- **Status**: Reverted from Librarian primary → `opencode-zen/deepseek-v4-flash-free`
+  (131K, FREE, reliable tool recovery — the documented llama-3.3-70b replacement, line 836).
+- **Rule**: Never place in primary/early-fallback of any agent that iterates tool calls
+  (librarian, explore, quick, unspecified-low). Safe for SINGLE-SHOT calls with no loop:
+  vision `look_at`, title generation, compaction, global-chain safety net for non-agent use.
 
 #### Ternary Bonsai 8B/4B/1.7B (PrismML) — Compact Ternary Family
 
@@ -376,7 +395,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 | **Mistral** | 1 (Mistral Large) | Free (1 req/s) | Reasoning, multilingual |
 | **SambaNova** | 1 (Llama 3.3 70B) | Free | Fast 70B option |
 | **Google** | 1 (Gemini 2.0 Flash) | Free (1500 req/day) | Vision, 1M ctx, pay-tier last resort |
-| **Together** | 2 (DeepSeek R1 + Ternary Bonsai 27B) | Free tier | Reasoning specialist + 262K ctx ternary (vision, tools) |
+| **Together** | 2 (DeepSeek R1 + Ternary Bonsai 27B) | Free tier | Reasoning specialist + 262K ctx ternary (vision, tools). ⚠️ Bonsai single-shot only (Known Failure) |
 | **HuggingFace** | 9 (GPT-OSS-120B, GPT-OSS-20B, DS-V4-Flash, DS-V4-Pro, Qwen3-Coder-480B, Qwen3-235B, Gemma-4-26B, Llama-3.3-70B, R1-0528) | Pass-through (HF router) | **DORMANT** — zero free models, paid-only. See Defunct Providers. |
 | **Agnes AI** | 5 (video, image, flash models) | Free tier | Multimodal (video, image generation) |
 
@@ -476,8 +495,8 @@ These are declared in `opencode.json` directly (no profile indirection):
 |---|---|---|
 | **Sisyphus-Junior** | `opencode-zen/nemotron-3-ultra-free` | `opencode-go/deepseek-v4-flash` → `zen/deepseek-v4-flash-free` → openrouter/qwen-free |
 | **Atlas** | `opencode-go/deepseek-v4-flash` | `cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct` → `opencode-go/kimi-k2.6` → sambanova |
-| **Explore** | `together/Prism-ML/Ternary-Bonsai-27B` | `cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast` → `cloudflare/@cf/google/gemma-4-26b-a4b-it` → openrouter/nemotron-3-super:free → `opencode-zen/deepseek-v4-flash-free` → `opencode-go/deepseek-v4-flash` |
-| **Librarian** | `together/Prism-ML/Ternary-Bonsai-27B` | `cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast` → `cloudflare/@cf/nvidia/nemotron-3-120b-a12b` → openrouter/nemotron-3-super:free → `opencode-zen/deepseek-v4-flash-free` → `opencode-go/qwen3.5-plus` → `opencode-go/deepseek-v4-flash` |
+| **Explore** | `opencode-zen/deepseek-v4-flash-free` | `cloudflare/@cf/moonshotai/kimi-k2.7-code` → `cloudflare/@cf/openai/gpt-oss-120b` → `cloudflare/@cf/nvidia/nemotron-3-120b-a12b` → `nvidia/deepseek-ai/deepseek-v4-flash` → openrouter/poolside/laguna-s-2.1:free → `opencode-go/deepseek-v4-flash` → `google/gemini-2.0-flash` |
+| **Librarian** | `opencode-zen/deepseek-v4-flash-free` | `cloudflare/@cf/moonshotai/kimi-k2.7-code` → `cloudflare/@cf/openai/gpt-oss-120b` → `cloudflare/@cf/nvidia/nemotron-3-120b-a12b` → `nvidia/deepseek-ai/deepseek-v4-flash` → openrouter/poolside/laguna-s-2.1:free → `opencode-go/deepseek-v4-flash` → `google/gemini-2.0-flash` |
 | **Quick** | `opencode-zen/nemotron-3-ultra-free` | `opencode-go/deepseek-v4-flash` → `zen/deepseek-v4-flash-free` → openrouter/qwen-free |
 | **Unspecified-Low** | `opencode-zen/nemotron-3-ultra-free` | `opencode-go/deepseek-v4-flash` → `zen/deepseek-v4-flash-free` → openrouter/qwen-free |
 
@@ -485,7 +504,7 @@ These are declared in `opencode.json` directly (no profile indirection):
 
 | Agent | Primary | Rationale |
 |---|---|---|
-| **Multimodal-Looker** | `together/Prism-ML/Ternary-Bonsai-27B` | Vision-capable, 262K ctx, free, tools ✅. Falls back to `huggingface/google/gemma-4-26B-A4B-it` if Together exhausted. |
+| **Multimodal-Looker** | `together/Prism-ML/Ternary-Bonsai-27B` | Vision-capable, 262K ctx, free, tools ✅. **OK — single-shot vision `look_at` calls, no tool loop** (Known Failure restriction satisfied). Falls back to `huggingface/google/gemma-4-26B-A4B-it` if Together exhausted. |
 | **Artistry** | `huggingface/google/gemma-4-26B-A4B-it` | Non-conventional, creative approaches |
 | **Writing** | `cloudflare/llama-3.3-70b` | Fast, good prose, no Go dependency |
 
@@ -493,14 +512,14 @@ These are declared in `opencode.json` directly (no profile indirection):
 
 1. **Big Pickle as Sisyphus primary**: 200K context, tool calling, reasoning, structured output. Free on OpenCode Zen (limited time).
 2. **Gemma 4 12B for Multimodal-Looker**: Encoder-free architecture, 256K context, beats Gemma 3 27B at half the size.
-3. **Free→subsidized→pay global fallback**: The global `opencode-fallback.jsonc` chain has 11 entries in progressive order: cloudflare Workers AI free (`@cf/meta/llama-3.3-70b`, `@cf/openai/gpt-oss-20b`, `@cf/zai-org/glm-4.7-flash`) → together free (`Prism-ML/Ternary-Bonsai-27B` — 262K ctx, vision, tools) → openrouter free (`nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-nano-30b-a3b:free`) → opencode-zen free (`nemotron-3-ultra-free`, `deepseek-v4-flash-free`, `mimo-v2.5-free`) → subsidized opencode-go (`deepseek-v4-flash`) → pay-tier last resort `google/gemini-2.0-flash`. Free tier is exhausted first by OmO's failure-driven fallback; pays last.
+3. **Free→subsidized→pay global fallback**: The global `opencode-fallback.jsonc` chain has 11 entries in progressive order: cloudflare Workers AI free (`@cf/meta/llama-3.3-70b`, `@cf/openai/gpt-oss-20b`, `@cf/zai-org/glm-4.7-flash`) → together free (`Prism-ML/Ternary-Bonsai-27B` — 262K ctx, vision, tools; **single-shot only, see Known Failure**) → openrouter free (`nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-nano-30b-a3b:free`) → opencode-zen free (`nemotron-3-ultra-free`, `deepseek-v4-flash-free`, `mimo-v2.5-free`) → subsidized opencode-go (`deepseek-v4-flash`) → pay-tier last resort `google/gemini-2.0-flash`. Free tier is exhausted first by OmO's failure-driven fallback; pays last.
 4. **OmO is the only plugin**: As of 2026-07-18, `opencode.json` declares `["oh-my-openagent@latest"]` as the sole plugin. Profile variants (`opencode-runtime-fallback` for desk/web, no-plugin for pure/test) are obsolete — deleted with the rest of `profiles/`. Skills from `~/.agents/skills/` continue to load via OpenCode core, not OmO.
 5. **Go pool merged in** (Jun 2026): The former `go` and `zen` profile variants were consolidated into root config. 24 Go pool models (K2.6/K2.7, DS-V4-Pro/Flash, GPT-5.x, Qwen3.x) and Zen-aligned critics (gpt-5.4) are all in `oh-my-openagent.jsonc` directly now.
 6. **MoE preference**: All selected models use Mixture of Experts for efficiency.
 7. **Auto-compaction**: `opencode.json` declares `{auto: false, prune: true, reserved: 50000, tail_turns: 40}` — manual compaction only. This avoids disrupting background-task `<system-reminder>` delivery on the `chat.message` hook chain, which was identified as a known failure mode in 2026-07. Project-level `<project>/.opencode/opencode.json` can override to `{auto: true}` if a specific project wants auto-compaction back.
 8. **Single global config layer**: Root `opencode.json` is authoritative for providers and MCPs. No per-profile overrides. Machine differences via chezmoi templates and per-project `<project>/.opencode/` overrides only.
 9. **GPT model routing** (Jun 2026): GPT-5.x models require the `opencode` provider prefix (Go binary built-in), NOT `opencode-go` or `opencode-zen`. See [GPT Model Routing](#gpt-model-routing) below for details.
-10. **Ternary Bonsai 27B for utility agents** (Jul 2026): Free on Together AI, 262K context, vision + tools + reasoning at 94.6% of FP16 quality. Replaces Cloudflare Llama 3.3 70B (24K ctx) as Explore/Librarian primary — 10x more context at same cost ($0). Also serves Multimodal-Looker (vision input). Together's 60 RPM free tier sits between Cloudflare (300 RPM) and NVIDIA NIM (~40 RPM shared) in the fallback chain.
+10. **Ternary Bonsai 27B for utility agents** (Jul 2026, **REVISED 2026-07-31**): Initially adopted as Explore/Librarian primary (free on Together AI, 262K context, vision + tools, ~94.6% of FP16 benchmark quality) to replace Cloudflare Llama 3.3 70B (24K ctx). **REVISION — REVERTED**: Bonsai empirically FAILED as Librarian primary — when a tool call fails it repeats the same call instead of synthesizing a different approach (ternary quantization preserves static benchmarks but degrades agentic tool-error recovery). Librarian/Explore reverted to `opencode-zen/deepseek-v4-flash-free` (131K, FREE) with kimi-k2.7-code / gpt-oss-120b / nemotron-3-120b free fallbacks. Bonsai is now **single-shot only** (vision `look_at`, title gen, compaction) — never an agent primary. Full details in the **Known Failure** note under the Ternary Bonsai spec section. Together's 60 RPM free tier still sits between Cloudflare (300 RPM) and NVIDIA NIM (~40 RPM shared) in the fallback chain, but without Bonsai as agent primary.
 
 ## GPT Model Routing
 
@@ -634,7 +653,7 @@ Profiles using `opencode-runtime-fallback` (desk, web) get model fallback via th
     "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     "cloudflare/@cf/openai/gpt-oss-20b",
     "cloudflare/@cf/zai-org/glm-4.7-flash",
-    "together/Prism-ML/Ternary-Bonsai-27B",
+    "together/Prism-ML/Ternary-Bonsai-27B",  // single-shot only (tool-loop failure) — kept for non-agent calls
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
     "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
     "opencode-zen/nemotron-3-ultra-free",
