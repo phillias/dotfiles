@@ -1,0 +1,238 @@
+#!/bin/bash
+# Consolidated housekeeping run_onchange: cleanup + sync.
+#
+# Runs whenever its rendered content changes. Fingerprints below are embedded
+# via chezmoi template expressions, so any change on disk that drifts a
+# fingerprint changes the rendered content and triggers a re-run on the next
+# `chezmoi apply` — on every machine. This makes cleanup self-maintaining:
+# deprecated skills, stale files, or config drift get fixed on the next apply
+# that observes a change.
+#
+# Responsibilities (aggressive cleanup by design):
+#   1. Remove stale files that should not exist (moved out of run_once — a
+#      run_once never re-runs after execution, so re-created junk survives;
+#      a run_onchange with a cleanup fingerprint catches it)
+#   2. Prune session-generated skills (by marker) + explicitly deprecated
+#      skills from agent skill dirs
+#   3. Report chezmoi source-repo health (branch + drift) so changes never
+#      get committed/PR'd from the wrong branch
+#   4. Sync: fingerprint-driven scan for unmanaged files, printed as
+#      `chezmoi add` suggestions (cannot run chezmoi add here — state lock)
+#
+# Managed directories:
+#   ~/.agents/                  → dot_agents/
+#   ~/.config/opencode/         → dot_config/opencode/
+#   ~/.config/systemd/user/     → dot_config/systemd/user/
+#   ~/.omo/plans/               → private_dot_omo/plans/  (plans only, not state)
+#
+# Fingerprint (agents):   {{ output "bash" "-c" "find ~/.agents -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (opencode): {{ output "bash" "-c" "find ~/.config/opencode -maxdepth 1 -type f -o -path '*/skills/*' -type f -o -path '*/agents/*' -type f -o -path '*/plugins/*' -type f -o -path '*/themes/*' -type f -o -path '*/scripts/*' -type f -o -path '*/docs/*' -type f -o -path '*/compound-engineering/*' -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (systemd):  {{ output "bash" "-c" "find ~/.config/systemd/user -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (omoplans): {{ output "bash" "-c" "find ~/.omo/plans -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (cleanup):  {{ output "bash" "-c" "for t in ~/.config/opencode/oh-my-openagent.json ~/.config/opencode/oh-my-openagent.json.orig ~/.local/bin/oc ~/.config/opencode/profiles ~/.config/opencode/plugins/tmux-patch-keeper.ts ~/.config/opencode/.tmux-OmOTeam.conf; do [ -e $t ] && echo $t; done | sha256sum | cut -d' ' -f1" }}
+set -euo pipefail
+
+# ---------------------------------------------------------------- stale-files --
+# Anything here should not exist. Re-created junk is caught by the cleanup
+# fingerprint above, which re-triggers this script on the next apply.
+STALE_TARGETS=(
+    "$HOME/.config/opencode/oh-my-openagent.json"          # replaced by .jsonc
+    "$HOME/.config/opencode/oh-my-openagent.json.orig"     # backup of the removed file
+    "$HOME/.local/bin/oc"                                  # replaced by shell alias
+    "$HOME/.config/opencode/profiles"                      # single-root config since Jul 2026
+    "$HOME/.config/opencode/plugins/tmux-patch-keeper.ts"  # resolved upstream in oh-my-openagent
+    "$HOME/.config/opencode/.tmux-OmOTeam.conf"            # merged into ~/.tmux.conf
+)
+
+cleanup_stale() {
+    local t
+    for t in "${STALE_TARGETS[@]}"; do
+        if [[ -e "$t" ]]; then
+            rm -rf "$t"
+            echo "cleaned stale: $t"
+        fi
+    done
+}
+
+# ---------------------------------------------------------------- deprecated ---
+# Session-generated skills: agents (compound-engineering and others) write a
+# "Auto-generated skill from completed task in session <id>" marker into the
+# SKILL.md of skills they create while working. Those are task records, not
+# reusable tools — prune them by marker so this never needs a name list.
+AUTO_GENERATED_MARKER="Auto-generated skill from completed task"
+
+# Explicitly deprecated skills that lack the marker (empty dirs, stale stubs,
+# renamed artifacts). Add new strays here so every machine prunes them.
+DEPRECATED_SKILLS=(
+    agents-md-add-omo-to-ce-routing-rules-for-the-inte
+    bridge-skill-create-omo-ce-bridge-skill-md-with-in
+    bws-secrets-created-8-new-secrets
+    ce-plan-skill-md-add-optional-omo-plans-output-sup
+    chezmoi-add-new-tracked-files-and-push-to-pr-86
+    chezmoi-re-add-tracked-files-add-new-untracked-plu
+    create-missing-bws-secrets-db-password-pg-db-passw
+    create-pr-in-dotfiles-repo-with-all-changes
+    deploy-and-verify-services
+    docker
+    docker-infra-mgmt
+    install-matt-pocock-s-grill-with-docs-skill-locall
+    lfg
+    pirate-infra-mgmt
+    pirate-stack
+    recreate-mariadb-and-pocketid-containers-with-new-
+    selfhost-cloudbeaver
+    selfhost-compose-remove-mariadb-init-tinyauth-init
+    tinyauth-add-depends-on-locket-for-raw-env-injecti
+    update-ce-brainstorm-skill-md-add-context-md-to-ph
+    update-ce-workflow-skill-md-add-phase-0-5a-domain-
+    update-mssql-connection-password-via-api
+)
+
+# Tool skills installed via `npx skills add` / plugin bundles. They are
+# intentionally NOT tracked in the dotfiles repo — never suggest adding them.
+TOOL_SKILLS=(
+    agents-sdk
+    chrome-devtools-mcp
+    cloudflare
+    cloudflare-email-service
+    cloudflare-one
+    cloudflare-one-migrations
+    codegraph-mcp
+    durable-objects
+    google-workspace-mcp
+    netdata-mcp
+    sandbox-sdk
+    skywork-skills
+    turnstile-spin
+    web-perf
+    workers-best-practices
+    wrangler
+)
+
+prune_deprecated() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    local name
+    for name in "${DEPRECATED_SKILLS[@]}"; do
+        if [[ -e "$dir/$name" ]]; then
+            rm -rf "$dir/$name"
+            echo "pruned deprecated skill: $name"
+        fi
+    done
+}
+
+prune_auto_generated() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    local skill
+    for skill in "$dir"/*/; do
+        [[ -d "$skill" ]] || continue
+        if grep -q "$AUTO_GENERATED_MARKER" "$skill/SKILL.md" 2>/dev/null; then
+            rm -rf "$skill"
+            echo "pruned auto-generated skill: $(basename "$skill")"
+        fi
+    done
+}
+
+# Skills migrated to ~/.agents/skills still lingering in the opencode config
+# dir are migration leftovers (the #144 move was incomplete for ce-plan).
+# Canonical copy is in ~/.agents — prune the config-side duplicate.
+prune_config_side_duplicates() {
+    local agents="$HOME/.agents/skills"
+    local config="$HOME/.config/opencode/skills"
+    [[ -d "$agents" && -d "$config" ]] || return 0
+    local skill name
+    for skill in "$config"/*/; do
+        [[ -d "$skill" ]] || continue
+        name=$(basename "$skill")
+        if [[ -d "$agents/$name" ]]; then
+            rm -rf "$skill"
+            echo "pruned config-side duplicate (canonical in ~/.agents): $name"
+        fi
+    done
+}
+
+is_tool_skill() {
+    local name
+    name=$(basename "$(dirname "$1")")
+    local ts
+    for ts in "${TOOL_SKILLS[@]}"; do
+        [[ "$name" == "$ts" ]] && return 0
+    done
+    return 1
+}
+
+# ------------------------------------------------------------ repo health -----
+# Surfacing the chezmoi source-repo branch/drift on every apply prevents
+# changes being committed and PR'd from the wrong branch on a drifted machine.
+repo_health() {
+    local src branch ahead behind
+    # Direct path, not `chezmoi source-path`: that command fails while chezmoi
+    # holds the state lock during apply, which would silence this whole check.
+    src="${CHEZMOI_SOURCE_DIR:-${HOME}/.local/share/chezmoi}"
+    branch=$(git -C "$src" branch --show-current 2>/dev/null || echo '?')
+    ahead=$(git -C "$src" rev-list --count "origin/$branch..HEAD" 2>/dev/null || echo '?')
+    behind=$(git -C "$src" rev-list --count "HEAD..origin/$branch" 2>/dev/null || echo '?')
+    echo "repo: $branch (ahead $ahead, behind $behind)"
+    if [[ "$branch" != "master" ]]; then
+        echo "WARNING: source repo on branch '$branch' — commits here target the wrong PR base"
+    fi
+    if [[ "$behind" != "0" && "$behind" != "?" ]]; then
+        echo "WARNING: source repo $behind commit(s) behind origin/$branch — sync before making changes"
+    fi
+}
+
+# ------------------------------------------------------------------ run --------
+cleanup_stale
+prune_auto_generated "$HOME/.config/opencode/skills"
+prune_auto_generated "$HOME/.agents/skills"
+prune_config_side_duplicates
+prune_deprecated "$HOME/.config/opencode/skills"
+prune_deprecated "$HOME/.agents/skills"
+repo_health
+
+# -------------------------------------------------------------- sync/unmanaged -
+# Use 'chezmoi unmanaged' to find files not tracked by chezmoi.
+# This correctly handles chezmoi's naming conventions (dot_, private_, executable_, etc.)
+unmanaged=()
+
+# Helper: collect unmanaged files from a target directory
+collect_unmanaged() {
+    local target_dir="$1"
+    [[ -d "$target_dir" ]] || return 0
+
+    while IFS= read -r -d '' file; do
+        # Skip noise files
+        case "$file" in
+            */.git/*|*/node_modules/*|*.log|*.tmp) continue ;;
+        esac
+        # Skip installed tool skills — tracked upstream, not in dotfiles
+        is_tool_skill "$file" && continue
+        unmanaged+=("$file")
+    done < <(chezmoi unmanaged --include files --path-style absolute --nul-path-separator "$target_dir" 2>/dev/null || true)
+}
+
+# Scan each managed directory
+collect_unmanaged "$HOME/.agents"
+collect_unmanaged "$HOME/.config/opencode"
+collect_unmanaged "$HOME/.config/systemd/user"
+collect_unmanaged "$HOME/.omo/plans"
+
+if [[ ${#unmanaged[@]} -eq 0 ]]; then
+    echo "sync-dotfiles: all files managed, nothing to do"
+    exit 0
+fi
+
+# NOTE: We cannot call 'chezmoi add' here because this script runs while
+# chezmoi holds the state lock. Calling chezmoi add would deadlock.
+# Instead, print the list so the user can run it after the update completes.
+
+echo "sync-dotfiles: found ${#unmanaged[@]} unmanaged file(s):"
+echo ""
+echo "  Run the following to add them:"
+echo ""
+for file in "${unmanaged[@]}"; do
+    echo "    chezmoi add '$file'"
+done
+echo ""
+echo "  Or run: chezmoi add ${unmanaged[0]} ... (all files listed above)"
