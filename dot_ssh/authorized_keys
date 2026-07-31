@@ -16,6 +16,9 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHVwb0kv+vvjA2vGDqudeMtPRPl90/tm6T97BLhopffH
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJsD/G+KVmsK25ytwoZvO3mneXBrzlCAxG+4gUpBQtrJ phillias@gmail.com oraclecloud
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKaYp4T4ZtEGCR70kD1+1Hbuesv4VfDlKdDXM3pqhbIY chezmoi@CabinInspiron22Kali
 
+# Localhost access for ET server authentication
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG2EM7XL2/UvUIUgg7F57s5rQEyOXC+zv1S7aGHixBuc phillias@MBP
+
 # Memgit keys (full SSH access for inter-server fleet management)
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIJ8Wz9usRbJmtCwY3A/zpYnFc2SdNMtEc1rCJJEIaAF cabinkali-memgit
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGFwPGpbZCRrIlAKssiF8rMIbck8W+Zvxm6+RLmxbYHv kalione-memgit
