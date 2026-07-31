@@ -377,7 +377,6 @@ cmd_add() {
   local slug
   slug=$(printf '%s' "$title" \
     | tr '[:upper:]' '[:lower:]' \
-    | tr $'\n' '-' \
     | sed -E 's/[^a-z0-9]+/-/g; s/^-//; s/-$//; s/--+/-/g' \
     | cut -c1-40)
   local id="${t}-${datestamp}-${slug}"
