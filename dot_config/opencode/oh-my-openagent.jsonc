@@ -192,15 +192,16 @@
     },
 
     "explore": {
-      "model": "together/Prism-ML/Ternary-Bonsai-27B",
+      "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
-        "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+        "cloudflare/@cf/openai/gpt-oss-120b",
+        "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
         "nvidia/deepseek-ai/deepseek-v4-flash",
-        "opencode-go/deepseek-v4-flash",
-        "cloudflare/@cf/google/gemma-4-26b-a4b-it",
         "openrouter/poolside/laguna-s-2.1:free",
-        "opencode-zen/mimo-v2.5-free"
+        "opencode-go/deepseek-v4-flash",
+        "google/gemini-2.0-flash"
       ],
       "permission": {
         "edit": "allow",
@@ -209,18 +210,21 @@
     },
 
     "librarian": {
-      "model": "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "model": "opencode-zen/deepseek-v4-flash-free",
       "temperature": 0.1,
       "fallback_models": [
-        "nvidia/deepseek-ai/deepseek-v4-flash",
-        "opencode-go/deepseek-v4-flash",
+        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+        "cloudflare/@cf/openai/gpt-oss-120b",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
+        "nvidia/deepseek-ai/deepseek-v4-flash",
         "openrouter/poolside/laguna-s-2.1:free",
-        "opencode-zen/mimo-v2.5-free"
+        "opencode-go/deepseek-v4-flash",
+        "google/gemini-2.0-flash"
       ]
     },
 
     "multimodal-looker": {
+      // Bonsai OK here — single-shot vision look_at calls, no tool loop (Known Failure restriction in opencode-omo-config SKILL.md)
       "model": "together/Prism-ML/Ternary-Bonsai-27B",
       "fallback_models": [
         "cloudflare/@cf/google/gemma-4-26b-a4b-it",

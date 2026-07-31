@@ -19,7 +19,7 @@
     "cloudflare/@cf/openai/gpt-oss-20b",
     "cloudflare/@cf/zai-org/glm-4.7-flash",
     // TIER 2: FREE — Together AI (60 RPM, 262K ctx, vision + tools)
-    "together/Prism-ML/Ternary-Bonsai-27B",
+    "together/Prism-ML/Ternary-Bonsai-27B",  // single-shot only (tool-loop failure) — last-resort fallback for non-agent calls
     // TIER 3: FREE — NVIDIA NIM (~40 RPM shared, largest catalog, 1M ctx via Inkling)
     "nvidia/deepseek-ai/deepseek-v4-flash",
     "nvidia/nvidia/nemotron-3-super-120b-a12b",
