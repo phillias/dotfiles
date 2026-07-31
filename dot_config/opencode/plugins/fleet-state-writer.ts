@@ -202,7 +202,7 @@ export const FleetStateWriterPlugin: Plugin = async () => {
     // because we record the event to disk before any compaction prompt runs.
     "chat.message": async (
       input: { sessionID: string },
-      output: { parts: Array<{ text?: string }> },
+      output: { parts: Array<{ type?: string; text?: string }> },
     ) => {
       try {
         const text = output.parts.map((p) => p.text ?? "").join(" ");

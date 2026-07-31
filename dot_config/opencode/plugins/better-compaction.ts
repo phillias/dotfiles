@@ -272,7 +272,7 @@ When encountering similar tasks, reference this skill for established patterns a
 
       // Body: link to full SKILL.md if one was generated, otherwise just the content
       const body = skillName
-        ? `See: ~/.config/opencode/skills/${skillName}/SKILL.md` +
+        ? `See: ~/.agents/skills/${skillName}/SKILL.md` +
           `\n${item.content}`
         : item.content;
 
@@ -413,7 +413,7 @@ When encountering similar tasks, reference this skill for established patterns a
       }),
     },
 
-    "chat.message": async (input: { sessionID: string }, output: { parts: Array<{ text?: string }> }) => {
+    "chat.message": async (input: { sessionID: string }, output: { parts: Array<{ type?: string; text?: string }> }) => {
       const text = output.parts.map(p => p.text ?? "").join(" ");
       const boostPhrases = ["remember that", "keep that one", "save that", "remember this", "keep this", "worth remembering", "note that", "remember", "worked", "perfect", "that's it", "fixed"];
       if (boostPhrases.some(p => text.toLowerCase().includes(p))) {
@@ -487,7 +487,7 @@ When encountering similar tasks, reference this skill for established patterns a
         }
       }
 
-      const skillsDir = join(homedir(), ".config", "opencode", "skills");
+      const skillsDir = join(homedir(), ".agents", "skills");
       for (const { item, score, reasoning } of skillWorthyItems) {
         const skillName = generateSkillName(item.content);
         const skillPath = join(skillsDir, skillName, "SKILL.md");
