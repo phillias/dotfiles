@@ -35,6 +35,96 @@ toon_list() {
   done
 }
 
+# Map a target path (~/.ssh/config) to its source template entry if the target
+# is managed by a template (dot_ssh/config.tmpl). Prints the source path and
+# returns 0 if template-managed, 1 otherwise.
+template_source_for() {
+  local target="$1"
+  local rel="${target#$HOME/}"
+  local rel_dir rel_base mapped_dir=""
+  rel_dir=$(dirname "$rel")
+  rel_base=$(basename "$rel")
+
+  # Map dir components: .ssh -> dot_ssh
+  local p
+  IFS='/' read -ra parts <<< "$rel_dir"
+  for p in "${parts[@]}"; do
+    [[ -z "$p" || "$p" == "." ]] && continue
+    if [[ "$p" == .* ]]; then
+      mapped_dir="${mapped_dir}/dot_${p#.}"
+    else
+      mapped_dir="${mapped_dir}/${p}"
+    fi
+  done
+
+  # Map file component: .bashrc -> dot_bashrc
+  local src_base="$rel_base"
+  [[ "$src_base" == .* ]] && src_base="dot_${src_base#.}"
+
+  local candidates=("${CHEZMOI_SRC}${mapped_dir}/${src_base}.tmpl")
+  if [[ -n "$mapped_dir" ]]; then
+    candidates+=(
+      "${CHEZMOI_SRC}/private_${mapped_dir#/}/${src_base}.tmpl"
+      "${CHEZMOI_SRC}/encrypted_${mapped_dir#/}/${src_base}.tmpl"
+    )
+  else
+    candidates+=(
+      "${CHEZMOI_SRC}/private_${src_base}.tmpl"
+      "${CHEZMOI_SRC}/encrypted_${src_base}.tmpl"
+    )
+  fi
+
+  local c
+  for c in "${candidates[@]}"; do
+    if [[ -f "$c" ]]; then
+      echo "$c"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Re-add a single target with dry-run branch verdicts (Principle 5, 8).
+# Returns: 0 = re-added, 2 = skipped (template-managed), 3 = in sync
+readd_one() {
+  local f="$1"
+  f="${f/#\~/$HOME}"
+  [[ "$f" != /* ]] && f="${HOME}/${f}"   # normalize relative paths (--all mode)
+
+  if [[ ! -e "$f" ]]; then
+    echo "error: file not found: ${f/#$HOME/~}"
+    return 1
+  fi
+
+  local dry_out src
+  # -n -v: dry-run with verbose diff on stderr — the only re-add feedback that
+  # distinguishes "has changes" from "nothing to do". Without -v, --dry-run is
+  # silent even for files with pending changes.
+  dry_out=$(chezmoi re-add --dry-run --verbose "$f" 2>&1 || true)
+
+  if [[ -n "$dry_out" ]]; then
+    if chezmoi re-add "$f" >/dev/null 2>&1; then
+      echo "re-added: ${f/#$HOME/~}"
+      return 0
+    fi
+    echo "error: failed to re-add ${f/#$HOME/~}"
+    return 1
+  fi
+
+  # Empty dry-run: nothing would change. re-add silently skips template-managed
+  # files (documented: "chezmoi will not overwrite templates"; exits 0, no
+  # source change) — flag them instead of reporting success.
+  if src=$(template_source_for "$f"); then
+    echo "skipped: ${f/#$HOME/~} is template-managed (source ${src#$CHEZMOI_SRC/})"
+    echo "  re-add cannot merge live-file edits into a template - edit the template directly"
+    echo "  verify: chezmoi execute-template < ${src#$CHEZMOI_SRC/} | diff - ~${f#$HOME}"
+    return 2
+  fi
+
+  echo "in sync: ${f/#$HOME/~} (no changes to capture)"
+  return 3
+}
+
 # --- Commands ---
 
 cmd_status() {
@@ -293,49 +383,35 @@ cmd_readd() {
   done
 
   if [[ "$add_all" == "true" ]]; then
-    # Re-add all changed files
-    local changed_files=()
     while IFS= read -r line; do
       local f
       f=$(echo "$line" | sed 's|^diff --git a/.* b/||')
-      changed_files+=("$f")
+      files+=("$f")
     done < <(chezmoi diff 2>/dev/null | grep '^diff --git')
-
-    if [[ ${#changed_files[@]} -eq 0 ]]; then
-      echo "re-added: 0 files (no changes detected)"
-      help_hint "Run \`chezmoi-axi list\` to see all managed files"
-      return 0
-    fi
-
-    local readded=0
-    for f in "${changed_files[@]}"; do
-      if chezmoi re-add "$f" 2>/dev/null; then
-        echo "re-added: ${f/#$HOME/~}"
-        (( readded++ )) || true
-      else
-        echo "error: failed to re-add ${f/#$HOME/~}"
-      fi
-    done
-    echo "summary: ${readded} files re-added"
-  else
-    [[ ${#files[@]} -eq 0 ]] && die "no files specified" "chezmoi-axi re-add [--all] [file]..."
-
-    local readded=0
-    for f in "${files[@]}"; do
-      f="${f/#\~/$HOME}"
-      if chezmoi re-add "$f" 2>/dev/null; then
-        echo "re-added: ${f/#$HOME/~}"
-        (( readded++ )) || true
-      else
-        echo "error: failed to re-add ${f/#$HOME/~}"
-      fi
-    done
-    echo "summary: ${readded} files re-added"
   fi
 
+  if [[ ${#files[@]} -eq 0 ]]; then
+    echo "re-added: 0 files (no changes detected)"
+    help_hint "Run \`chezmoi-axi list\` to see all managed files"
+    return 0
+  fi
+
+  local readded=0 skipped=0 insync=0 rc=0
+  for f in "${files[@]}"; do
+    readd_one "$f" || rc=$?
+    if   [[ $rc -eq 0 ]]; then (( readded++ )) || true
+    elif [[ $rc -eq 2 ]]; then (( skipped++ )) || true
+    elif [[ $rc -eq 3 ]]; then (( insync++ )) || true
+    fi
+    rc=0
+  done
+
+  echo "summary: ${readded} re-added, ${skipped} skipped (template-managed), ${insync} in sync"
+
   local hints=()
-  hints+=("Run \`chezmoi-axi diff\` to verify clean state")
-  hints+=("Run \`chezmoi-axi commit\` to commit and push")
+  (( skipped > 0 )) && hints+=("Run \`chezmoi-axi diff\` to review template drift")
+  (( readded > 0 )) && hints+=("Run \`chezmoi-axi diff\` to verify clean state")
+  (( readded > 0 )) && hints+=("Run \`chezmoi-axi commit\` to commit and push")
   help_hint "${hints[@]}"
 }
 
