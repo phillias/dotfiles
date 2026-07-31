@@ -133,6 +133,24 @@ prune_auto_generated() {
     done
 }
 
+# Skills migrated to ~/.agents/skills still lingering in the opencode config
+# dir are migration leftovers (the #144 move was incomplete for ce-plan).
+# Canonical copy is in ~/.agents — prune the config-side duplicate.
+prune_config_side_duplicates() {
+    local agents="$HOME/.agents/skills"
+    local config="$HOME/.config/opencode/skills"
+    [[ -d "$agents" && -d "$config" ]] || return 0
+    local skill name
+    for skill in "$config"/*/; do
+        [[ -d "$skill" ]] || continue
+        name=$(basename "$skill")
+        if [[ -d "$agents/$name" ]]; then
+            rm -rf "$skill"
+            echo "pruned config-side duplicate (canonical in ~/.agents): $name"
+        fi
+    done
+}
+
 is_tool_skill() {
     local name
     name=$(basename "$(dirname "$1")")
@@ -167,6 +185,7 @@ repo_health() {
 cleanup_stale
 prune_auto_generated "$HOME/.config/opencode/skills"
 prune_auto_generated "$HOME/.agents/skills"
+prune_config_side_duplicates
 prune_deprecated "$HOME/.config/opencode/skills"
 prune_deprecated "$HOME/.agents/skills"
 repo_health
