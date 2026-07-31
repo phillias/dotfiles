@@ -60,11 +60,22 @@ chezmoi-axi add --encrypt ~/.config/app/secret.key
 
 ### `chezmoi-axi re-add <file>`
 
-Capture on-disk changes back to source state. Idempotent (Principle 6).
+Capture on-disk changes back to source state. Runs `chezmoi re-add --dry-run --verbose` first and branches on the tool's feedback (Principles 5, 8):
+
+- dry-run non-empty → real re-add → `re-added: <file>`
+- dry-run empty + source is a `.tmpl` → `skipped: template-managed` — re-add cannot merge live-file edits into a template (chezmoi docs: "will not overwrite templates"; exits 0 silently). Edit the template directly; verify with `chezmoi execute-template < src | diff - <target>`
+- dry-run empty + not a template → `in sync: <file>` (nothing to capture)
 
 ```
 chezmoi-axi re-add ~/.bashrc
 chezmoi-axi re-add --all      # re-add all changed files
+```
+
+Example verdict:
+```
+skipped: ~/.ssh/config is template-managed (source dot_ssh/config.tmpl)
+  re-add cannot merge live-file edits into a template - edit the template directly
+  verify: chezmoi execute-template < dot_ssh/config.tmpl | diff - ~/.ssh/config
 ```
 
 ### `chezmoi-axi apply`

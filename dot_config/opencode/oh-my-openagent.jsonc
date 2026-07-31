@@ -209,10 +209,9 @@
     },
 
     "librarian": {
-      "model": "together/Prism-ML/Ternary-Bonsai-27B",
+      "model": "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
       "temperature": 0.1,
       "fallback_models": [
-        "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
         "nvidia/deepseek-ai/deepseek-v4-flash",
         "opencode-go/deepseek-v4-flash",
         "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",

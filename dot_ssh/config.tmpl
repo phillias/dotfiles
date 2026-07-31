@@ -46,3 +46,21 @@ Host *cloudflared* *
   ServerAliveInterval 30
   ServerAliveCountMax 3
   TCPKeepAlive yes
+
+# ET — Eternal Terminal host aliases (for CLI et connections)
+# Usage: et et-kali  (connects to etserver via tunnel DNS on port 2022)
+Host et-kali
+  HostName 127.0.0.1
+  Port 55554
+  User phillias
+  IdentityFile ~/.ssh/id_ed25519_kali
+
+Host et-55522
+  HostName et.phillias.cc
+  Port 22
+  User ubuntu
+
+Host et-kalione
+  HostName et.phillias.org
+  Port 22
+  User phillias
