@@ -51,7 +51,7 @@ The runtime always knows where a running container came from; the filesystem doe
 
 ## Compound-Engineering Integration (OmO + CE)
 
-When the compound-engineering plugin is installed (skills present at `~/.config/opencode/skills/ce-*`), route planning and execution through CE skills instead of the built-in OmO plan agent:
+When the compound-engineering plugin is installed (skills present at `~/.agents/skills/ce-*`), route planning and execution through CE skills instead of the built-in OmO plan agent:
 
 ### Pre-Planning Domain Alignment
 
