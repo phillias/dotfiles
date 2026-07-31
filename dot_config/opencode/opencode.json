@@ -1344,7 +1344,7 @@
         "codemem",
         "mcp"
       ],
-      "enabled": true
+      "enabled": false
     },
     "co-invest": {
       "type": "remote",
