@@ -1345,6 +1345,11 @@
         "mcp"
       ],
       "enabled": true
+    },
+    "co-invest": {
+      "type": "remote",
+      "url": "https://coinvest-computer.liquid.trade/mcp",
+      "enabled": false
     }
   },
   "plugin": [
