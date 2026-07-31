@@ -320,7 +320,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 │   ├── fleet-digest.sh                        # (in scripts/, not plugins/) — pure bash reader for fleet state
 │   ├── go-pool-fallback.ts                    # Auto-loaded: Go pool exhaustion compaction note
 │   ├── go-pool-guard.ts                       # Auto-loaded: redirect to free when Go exhausted (only safety net for bare-opencode runs; no-op when OmO loads)
-│   └── tmux-patch-keeper.ts                   # Auto-loaded: re-applies tmux attach patch on session.created when upstream fingerprint detected
+│   └── tmux-subagent-activator.ts             # Auto-loaded: respawns placeholder subagent panes with `opencode attach` so they stream immediately (replaces retired tmux-patch-keeper; OmO >= 4.19 spawns placeholders in plain tmux)
 ├── scripts/
 │   ├── fleet-digest.sh                        # Pure bash reader for fleet state (terse TSV summary)
 │   ├── go-pool-check.sh                       # Go pool usage probe helper
@@ -328,7 +328,6 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 ├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
 ├── docs/plans/                                # Plan archive (not actively consumed at runtime)
 ├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .agnes-key, .exa-key, .nvidia-key, .baseten-key  # API keys (secret; .groq-key + any other defunct-key files removed)
-├── .tmux-OmOTeam.conf                         # tmux layout for team mode
 ├── .google-client-id, .google-client-secret   # OAuth creds for Google Workspace MCP
 └── skills/                                    # OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, etc.)
 ```
@@ -343,7 +342,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 │   ├── fleet-digest.sh                        # (in scripts/, not plugins/) — pure bash reader for fleet state
 │   ├── go-pool-fallback.ts                    # Auto-loaded: Go pool exhaustion compaction note
 │   ├── go-pool-guard.ts                       # Auto-loaded: redirect to free when Go exhausted (only safety net for bare-opencode runs; no-op when OmO loads)
-│   └── tmux-patch-keeper.ts                   # Auto-loaded: re-applies tmux attach patch on session.created when upstream fingerprint detected
+│   └── tmux-subagent-activator.ts             # Auto-loaded: respawns placeholder subagent panes with `opencode attach` so they stream immediately (replaces retired tmux-patch-keeper; OmO >= 4.19 spawns placeholders in plain tmux)
 ├── scripts/
 │   ├── fleet-digest.sh                        # Pure bash reader for fleet state (terse TSV summary)
 │   ├── go-pool-check.sh                       # Go pool usage probe helper
@@ -351,7 +350,6 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 ├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
 ├── docs/plans/                                # Plan archive (not actively consumed at runtime)
 ├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .kilo-key, .exa-key, .nvidia-key, .baseten-key  # API keys (secret; .groq-key + any other defunct-key files removed)
-├── .tmux-OmOTeam.conf                         # tmux layout for team mode
 ├── .google-client-id, .google-client-secret   # OAuth creds for Google Workspace MCP
 └── skills/                                    # OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, etc.)
 ```
@@ -362,7 +360,7 @@ All config lives directly under `~/.config/opencode/`. No profile subdirectories
 2. **Global config defines providers and MCPs.** `opencode.json` has all 13 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
 3. **OmO owns agent + category routing.** `oh-my-openagent.jsonc` declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain.
 4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 11 agents that don't specify their own `fallback_models` arrays.
-5. **Auto-loaded plugins.** Any `.ts` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-fallback.ts`, `go-pool-guard.ts`, `tmux-patch-keeper.ts`. All run in-process with zero LLM cost on the write side.
+5. **Auto-loaded plugins.** Any `.ts` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-fallback.ts`, `go-pool-guard.ts`, `tmux-subagent-activator.ts`. All run in-process with zero LLM cost on the write side.
 6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
 ### Provider Stack (13 providers)
@@ -398,7 +396,7 @@ For Groq-equivalent and Cerebras-equivalent free-tier capacity, see **Cloudflare
 
 All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 
-**1. `oc` alias** (`alias oc='opencode --port 42069'` in `.bashrc`/`.zshrc`) — loads at shell login:
+**1. `oc` alias** (`alias oc='opencode'` in `.bashrc`/`.zshrc`) — loads at shell login:
 ```
 .cerebras-key          → CEREBRAS_API_KEY        # DEFUNCT — see Defunct Providers section
 .mistral-key           → MISTRAL_API_KEY
@@ -419,7 +417,7 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 
 Both use the same key files. Shell profiles mirror the key files loaded by opencode core at startup.
 
-> **Note:** The `~/.local/bin/oc` launcher script was deprecated in favor of the shell alias. The alias sets `--port 42069` for tmux subagent pane streaming compatibility.
+> **Note:** The `~/.local/bin/oc` launcher script was deprecated in favor of the shell alias (`oc='opencode'`, no pinned port — opencode binds 4096 or an ephemeral port; see issue #3963 note in tmux-subagent-activator.ts).
 
 ### Config Defaults
 
@@ -869,9 +867,8 @@ Primary: zen/cloudflare/openrouter (free)
 | `~/.config/opencode/opencode-fallback.jsonc` | Global free→subsidized→pay fallback chain (10 entries) | chezmoi |
 | `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
 | `~/.config/opencode/AGENTS.md` | Agent behavioral rules (Dispatch Rules + Fleet State Comms sections) | chezmoi |
-| `~/.config/opencode/plugins/*.ts` | Auto-loaded TypeScript plugins (better-compaction, fleet-state-writer, go-pool-fallback, go-pool-guard, tmux-patch-keeper) | chezmoi |
+| `~/.config/opencode/plugins/*.ts` | Auto-loaded TypeScript plugins (better-compaction, fleet-state-writer, go-pool-fallback, go-pool-guard, tmux-subagent-activator) | chezmoi |
 | `~/.config/opencode/scripts/*.sh` | Bash reader scripts (fleet-digest.sh, go-pool-check.sh, go-pool-switch.sh) | chezmoi (executable bit preserved) |
 | `~/.local/state/opencode-fleet/` | Fleet state tree (state.json + wake.log + digest.txt) — written by `fleet-state-writer.ts`, read by `fleet-digest.sh` | chezmoi tracks `.keep`; live files not tracked |
 | `~/.config/opencode/.*-key` | API key files (secret) | chezmoi (encrypted with age) |
-| `~/.config/opencode/.tmux-OmOTeam.conf` | tmux layout for team mode | chezmoi |
 | `~/.config/opencode/skills/` | OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, opencode-omo-config, etc.) | chezmoi |
