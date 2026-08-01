@@ -477,7 +477,6 @@ These are declared in `opencode.json` directly (no profile indirection):
 |---|---|---|---|
 | **netdata-bylocalhost** | remote | all except desk | Server monitoring |
 | **chrome-devtools** | local | all | Browser automation |
-| **codemem** | local | all except desk | Memory/context management (used by better-compaction.ts) |
 | **google-workspace** | local | web | Google Calendar/Docs/Tasks (`{env:GOOGLE_CLIENT_ID}`, `{env:GOOGLE_CLIENT_SECRET}`) |
 | **google-tasks-calendar** | local | mybrain project only | Minimal Google Tasks MCP — moved from zen to `~/mybrain/.opencode/` |
 

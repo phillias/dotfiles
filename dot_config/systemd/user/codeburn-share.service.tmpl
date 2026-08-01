@@ -4,12 +4,12 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/phillias
-ExecStart=/home/phillias/.npm-global/bin/codeburn share --always --port 7777
+WorkingDirectory={{ .chezmoi.homeDir }}
+ExecStart={{ .chezmoi.homeDir }}/.npm-global/bin/codeburn share --always --port 7777
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
-Environment=HOME=/home/phillias
+Environment=HOME={{ .chezmoi.homeDir }}
 
 [Install]
 WantedBy=default.target
