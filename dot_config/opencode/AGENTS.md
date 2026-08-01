@@ -243,3 +243,10 @@ scripts/fleet-digest.sh --json       # raw state.json
 - If `state.json` is empty/missing: sidecar not loaded yet, fall back to `background_output` API
 - If `wake.log` is corrupted: truncate and let the plugin repopulate
 - The state tree is **never** the source of truth for the actual task transcript — that lives in opencode.db (`session`, `message`, `part` tables). State tree is just a **terse index** for fast Sisyphus reads.
+
+## Self-Learning & Memory
+
+- **Golden paths → skills.** When a task only worked after several attempts, or you worked out a non-obvious recurring workflow (DB access, deploy, env-var locations, verification), harvest it as a reusable skill via the `self-learning` skill (`~/.agents/skills/self-learning/`). Promotion rule: promote only when verified (passing check) + named failure pattern + ≥1 ruled-out dead-end; otherwise record a low-confidence `mem` note (`mem add --confidence 0.2`) instead.
+- **Facts & one-liners → axi-memory.** Single facts/corrections go to axi-memory (`axi-memory-add` tool or `mem add --type <constraint|decision|failure|howto|preference>`), not a new skill.
+- **Never write secret values** into skills or memory — record where they live (env var, vault, MCP tool), never the value.
+- **Autocapture cues.** The `self-learning-autocapture` plugin writes harvest cues to `~/.local/state/opencode-selflearning/cues.tsv` when it detects hard-won wins or explicit skill requests. At session start, if that file is non-empty: read each cue, harvest the golden path (skill) or route it to mem, then append processed lines to `processed.tsv` and truncate `cues.tsv`.
