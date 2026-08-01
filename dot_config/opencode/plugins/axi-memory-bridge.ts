@@ -286,16 +286,19 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
         execute: async (args) => {
           const title = sanitizeTitle(args.title);
           if (!title) return { output: "Title is required." };
-          let cmd = `mem add --type ${args.type} --title "${title}"`;
-          if (args.body) {
-            const body = sanitizeShellArg(args.body, 500);
-            if (body) cmd += ` --body "${body}"`;
-          }
-          if (args.tags) {
-            const tags = sanitizeShellArg(args.tags, 100);
-            if (tags) cmd += ` --tags "${tags}"`;
-          }
-          const result = await shell`${cmd}`.quiet().nothrow().text();
+          // Direct interpolation only — never interpolate a pre-built command
+          // string (same bug as axi-memory-search had: shell`${cmd}` tries to
+          // exec a program literally named `mem add "..."` → ENOENT → empty
+          // output → silent no-op. Fixed 2026-08-01.)
+          const body = args.body ? sanitizeShellArg(args.body, 500) : undefined;
+          const tags = args.tags ? sanitizeShellArg(args.tags, 100) : undefined;
+          const result = body && tags
+            ? await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --tags "${tags}"`.quiet().nothrow().text()
+            : body
+              ? await shell`mem add --type ${args.type} --title "${title}" --body "${body}"`.quiet().nothrow().text()
+              : tags
+                ? await shell`mem add --type ${args.type} --title "${title}" --tags "${tags}"`.quiet().nothrow().text()
+                : await shell`mem add --type ${args.type} --title "${title}"`.quiet().nothrow().text();
           return { output: result };
         },
       }),
