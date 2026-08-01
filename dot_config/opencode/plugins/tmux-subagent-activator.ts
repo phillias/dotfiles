@@ -15,6 +15,17 @@ import { execFile } from "node:child_process";
 // respawns it with `opencode attach <url> --session <id> --dir <dir>` —
 // the same command OmO's own activation path uses.
 //
+// ATTACH TARGET (verified 2026-07-31): `opencode attach` requires the full
+// REST API. A bare `opencode` TUI's embedded server serves only `/` — every
+// route 404s ("Error: not found", pane dies instantly). The embedded server
+// serves the full API only when the TUI is launched with an explicit port
+// (`opencode --port N` — the `oc` launcher does this) or is itself attached
+// to a serve daemon. Resolution priority (self-first, portable):
+//   1. input.serverUrl (SELF) if it answers a capabilities probe — works for
+//      `opencode --port N` TUIs and attach-client TUIs on any machine
+//   2. $OPENCODE_SERVE_URL (explicit override, may embed basic auth)
+//   3. $OPENCODE_PORT || 4096 (OmO convention; fails gracefully if idle)
+//
 // Guards:
 //   - Only panes still in placeholder state (command sleep/sh, no opencode)
 //     are touched, so team-layout panes (already attached) and already-
@@ -90,6 +101,18 @@ function buildAttachCommand(serverUrl: string, sessionId: string, directory: str
   );
 }
 
+/** True when the URL serves the full API that `opencode attach` requires. */
+async function isFullServer(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${url}/experimental/capabilities`, {
+      signal: AbortSignal.timeout(1500),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export const TmuxSubagentActivatorPlugin: Plugin = async (input) => {
   if (!process.env.TMUX) {
     return {}; // not inside tmux — nothing to activate
@@ -101,17 +124,19 @@ export const TmuxSubagentActivatorPlugin: Plugin = async (input) => {
   let timer: ReturnType<typeof setTimeout> | undefined;
   let ticking = false;
 
-  // Resolve the server URL the same way OmO's resolveServerUrl does:
-  // prefer the real bound URL; fall back to OPENCODE_PORT or 4096 when
-  // the context URL is unusable (port 0 — see oh-my-openagent issue #3963).
-  const serverUrl = (() => {
+  // Attach target, self-first and portable: `opencode attach` needs the full
+  // REST API, which the embedded server only serves when the TUI runs with an
+  // explicit port or as an attach client. Probe input.serverUrl before falling
+  // back to the env override, then the OmO convention.
+  const selfUrl = (() => {
     const url = input.serverUrl;
-    if (url && url.port && url.port !== "0") {
-      return url.origin;
-    }
-    const fallbackPort = process.env.OPENCODE_PORT || "4096";
-    return `http://localhost:${fallbackPort}`;
+    if (url && url.port && url.port !== "0") return url.origin;
+    return null;
   })();
+  const serverUrl =
+    (selfUrl && (await isFullServer(selfUrl)) ? selfUrl : null) ??
+    (process.env.OPENCODE_SERVE_URL?.trim().replace(/\/+$/, "") || null) ??
+    `http://localhost:${process.env.OPENCODE_PORT || "4096"}`;
 
   function scheduleTick(): void {
     if (!timer && pending.size > 0) {
