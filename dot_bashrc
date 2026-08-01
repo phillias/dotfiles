@@ -161,7 +161,11 @@ alias carb='docker run -it --rm --network host fathyb/carbonyl'
 # opencode
 export PATH=$HOME/.npm-global/bin:$PATH
 export PATH=/home/phillias/.opencode/bin:$PATH
-alias oc='opencode'
+# oc: one OpenCode server per host, with an explicit port for tmux attaches.
+oc() {
+  local port="${OPENCODE_PORT:-42069}"
+  command opencode --port "$port" "$@"
+}
 
 # bun
 export BUN_INSTALL="$HOME/.bun"

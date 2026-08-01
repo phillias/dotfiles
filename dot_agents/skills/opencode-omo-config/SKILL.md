@@ -89,6 +89,7 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | HuggingFace | google/gemma-4-26B-A4B-it | 256K | 32K | 0.7 |
 | HuggingFace | meta-llama/Llama-3.3-70B-Instruct | 128K | 16K | 0.7 |
 | HuggingFace | deepseek-ai/DeepSeek-R1-0528 | 160K | 8K | 1.0 |
+| MindLab | Macaron-V1-Preview-749B | 202K | 8K | 0.7 | NEW — 749B-class Mixture-of-LoRA personal-agent (GLM-5.1 base), MIT, HF weights + harness only — NO hosted API (see Recently Added Models) |
 
 ### NVIDIA NIM (118 models, 48 relevant — FREE for prototyping)
 
@@ -300,6 +301,27 @@ Empirically verified failure in the Librarian agent:
 
 **Self-host note**: The smaller Bonsai models (8B, 4B, 1.7B) are NOT available on Together AI or any hosted provider. They require local deployment via llama.cpp (GGUF) or MLX. The 8B at 1.75 GB fits on any machine with 4GB+ free RAM. Useful for offline/airgapped utility agents if self-hosted.
 
+#### Macaron-V1-Preview-749B (MindLab Research) — Personal-Agent MoL Specialist
+
+Captured 2026-07-31 from model card + config.json (weights verified on HF).
+
+| Spec | Value |
+|------|-------|
+| Total Params | 749B-class Mixture-of-LoRA: 744B base (GLM-5.1) + 5 × ~1B LoRA adapters (`l0`–`l4`) |
+| Active Params | 8 routed experts per token (256 routed + 1 shared expert, MoE) |
+| Architecture | `glm_moe_dsa` (DeepSeek-style sparse-attention MoE), 78 layers, hidden 6144, head_dim 64, qk_head_dim 256, vocab 154,880 |
+| Context | 202,752 tokens (from `config.json` / `tokenizer_config.json`) |
+| Precision | bfloat16 |
+| License | MIT (respect inherited GLM-5.1 base terms) |
+| Languages | en, zh |
+| Post-training | MinT system |
+| Provider | **HuggingFace weights ONLY** (`mindlab-research/Macaron-V1-Preview-749B`) — **NO hosted API** (not on OpenRouter's 336 models, CF, NIM, Baseten, Zen, or Go as of 2026-07-31) |
+| Routing | Router-tool design: `l0` chat/default + entry → `l1` personal-agent (calendar/planning/search), `l2` coding/terminal/repo/shell, `l3` A2UI/Generative UI, `l4` computer-agent (OpenClaw-style) |
+| Serving | Mixture-of-LoRA-Harness (source-only; SGLang + `route_decode_v2`, shadow-LoRA prep). Live preview compute-constrained, not an API |
+| Self-host cost | ~1.49 TB bf16 weights (744B) → multi-node cluster required — NOT viable on this box |
+| Benchmarks | Macaron Livingbench **75.2** (#1; GLM-5.1 63.2, GPT-5.4 66.5, Opus 4.6 68.9), VitaBench **59.6** (#1), A2UI-Bench **75.6** (#1; GPT-5.4 74.1), PinchBench **92.5** (#1), Tau3 Bench 67.6 (mid-pack), SWE-bench Verified 78.1 (par with GPT-5.4 78.2 / Opus 4.6 78.2), Terminal-Bench 2.0 67.4 (below GPT-5.4 75.1) |
+| Placement | **WATCH — no API today.** If MindLab ships an OpenAI-compatible endpoint: GLM-5.1-family upgrade for metis/prometheus (same base as current metis primary `opencode-go/glm-5.1`); Livingbench/VitaBench leadership → personal-task orchestrator; A2UI-Bench #1 → Generative UI for visual-engineering IF the routed harness + A2UI renderer are deployed; `l4` → computer-agent workflows. NOT for oracle (Tau3 67.6 below current) or high-volume explore/librarian (no API/RPM story) |
+
 ### Pending Evaluation
 
 #### Ling 3.0 Flash (Ant Group/InclusionAI) — Check 2026-08-03
@@ -436,7 +458,7 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 
 Both use the same key files. Shell profiles mirror the key files loaded by opencode core at startup.
 
-> **Note:** The `~/.local/bin/oc` launcher script was deprecated in favor of the shell alias (`oc='opencode'`, no pinned port — opencode binds 4096 or an ephemeral port; see issue #3963 note in tmux-subagent-activator.ts).
+> **Note:** The `~/.local/bin/oc` launcher script was deprecated in favor of the `oc` shell function (`.zshrc`/`.bashrc`), which launches one OpenCode server per host with `opencode --port 42069` (override via `OPENCODE_PORT`). Multiple simultaneous OpenCode instances are intentionally unsupported. The pinned port matters (verified 2026-07-31): a bare `opencode` TUI binds an ephemeral port whose embedded server serves **only** `/` — every REST route 404s, so `opencode attach` (used by tmux-subagent-activator for subagent panes) fails with "Error: not found". `opencode --port N` serves the full API. The activator probes `input.serverUrl` (self) first, then `OPENCODE_SERVE_URL`, then `OPENCODE_PORT || 4096`.
 
 ### Config Defaults
 
@@ -853,6 +875,8 @@ Primary: zen/cloudflare/openrouter (free)
 | `huggingface/google/gemma-4-12b-it` | `cloudflare/@cf/google/gemma-4-26b-a4b-it` (free) | 401 Unauthorized, gemma-4-12b deprecated on HF |
 | `opencode-zen/nemotron-3-super-free` | `opencode-zen/mimo-v2.5-free` | Model retired: "Did you mean nemotron-3-ultra-free?" |
 | `cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast` (explore/librarian/writing primary) | `opencode-zen/deepseek-v4-flash-free` | 24K context too small for ~40K token prompts |
+
+**Global-chain gap (fixed 2026-07-31)**: the same 24K llama remained TIER 1 of `opencode-fallback.jsonc` — the runtime safety net used when per-agent `fallback_models` chains exhaust. A librarian prompt (~31K input + 8K max output = 39,648 estimated tokens) overflowed the 24K window with `AiError 5021` when the chain landed on it. Fix: reordered TIER 1 to lead with wide-context CF models (`glm-4.7-flash` 131K → `gpt-oss-20b` 128K) and keep the 24K llama LAST for small-prompt calls only. Any 24K-or-smaller-window model must sit at the END of every chain that can carry context-heavy agent prompts.
 
 ## CE Skill Stagger Dispatch Map
 
