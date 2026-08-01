@@ -18,6 +18,15 @@ produce a good, well-triggering, safe skill. Source: https://agentskills.io
 skill — files with frontmatter inside `references/`/`assets/` are inert (safe to
 use as templates).
 
+## Path portability
+
+Skills run on every machine; a path that is absolute on one machine is broken
+on the rest. Never hardcode `/home/<user>` or `/Users/<user>`.
+
+- Use `$HOME` (shell/scripts), `~` (configs/docs), `%h` (systemd units).
+- If a skill ships a chezmoi-managed file, it must be a `.tmpl` using
+  `{{ .chezmoi.homeDir }}` — never a literal path.
+
 ## Frontmatter
 
 | Field           | Required | Rules |

@@ -159,6 +159,9 @@ let turnCounter = 0;
 ## Description
 Auto-generated skill from completed task in session \`${sessionID}\`.
 
+## Portability
+Paths in this skill use $HOME (never absolute /home/<user> paths) — any scripts reference $HOME or ~.
+
 ## Trigger
 Completed todo with priority: ${item.priority} | Score: ${analysis.score} | Reasoning: ${analysis.reasoning}
 

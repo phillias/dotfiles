@@ -28,6 +28,18 @@ All commit messages **must** follow the Conventional Commits format:
 
 Types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`, `build`
 
+## Path Portability (Parity Rule)
+
+Never hardcode an absolute home path (`/home/<user>`, `/Users/<user>`) in configs, systemd units, skills, scripts, plugins, docs, or OmO configs. Every agent installation should reach parity using its own home directory.
+
+- **Shell/scripts**: `$HOME`
+- **Configs/docs**: `~`
+- **Chezmoi templates** (`.tmpl`): `{{ .chezmoi.homeDir }}`
+- **Systemd units**: `%h` (or a chezmoi `.tmpl` — never a literal path)
+- **OpenCode configs**: `{env:HOME}`
+
+A chezmoi source file containing a home path MUST be a `.tmpl`. Historical archives (`ARCHIVE.md`/`MIGRATION.md`) may retain pre-parity paths as documentation.
+
 ## PR Workflow
 
 When pushing changes intended for a pull request:
