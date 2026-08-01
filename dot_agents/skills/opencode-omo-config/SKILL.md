@@ -352,7 +352,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 ```
 ~/.config/opencode/
 ├── opencode.json                              # Providers (Cloudflare, OpenRouter, OpenCode Zen, OpenCode Go, Agnes AI, Google, Mistral, SambaNova, Together, HuggingFace), MCPs, compaction defaults
-├── oh-my-openagent.jsonc                      # ⚠️ LEGACY ORPHAN (post-migration). Do NOT edit — runtime reads ~/.omo/omo.jsonc instead
+├── oh-my-openagent.jsonc                      # ⚠️ LEGACY ORPHAN (post-migration). Do NOT edit — runtime reads ~/.omo/omo.jsonc instead. Forgotten from chezmoi 2026-08-01; purged by run_onchange cleanup
 ├── opencode-fallback.jsonc                    # Global 11-entry free→subsidized→pay fallback chain (cloudflare Workers AI free → openrouter free → opencode-zen free → opencode-go flash → google gemini last resort)
 ├── dispatch-rules.json                        # 26 starter rules mapping task shape → task(category=..., load_skills=[...]) at Sisyphus intent-gate time
 ├── plugins/
@@ -895,7 +895,7 @@ Primary: zen/cloudflare/openrouter (free)
 |---|---|---|
 | `~/.config/opencode/opencode.json` | Root config (providers, MCPs, compaction, `plugin` declaration) | chezmoi |
 | `~/.omo/omo.jsonc` | **OmO agent + category routing + fallback_models chains + team_mode/tmux/background_task** (keys under `"[opencode]"` block). Runtime-read since 2026-07-29 migration | chezmoi (since 2026-08-01) |
-| `~/.config/opencode/oh-my-openagent.jsonc` | ⚠️ LEGACY ORPHAN — pre-migration OmO config, no longer read at runtime. Historical artifact only | chezmoi |
+| `~/.config/opencode/oh-my-openagent.jsonc` | ⚠️ LEGACY ORPHAN — pre-migration OmO config, no longer read at runtime. **Forgotten from chezmoi 2026-08-01**; purged by `run_onchange_cleanup-and-sync.sh` on every machine | ~~chezmoi~~ (forgotten) |
 | `~/.config/opencode/opencode-fallback.jsonc` | Global free→subsidized→pay fallback chain (10 entries) | chezmoi |
 | `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
 | `~/.config/opencode/AGENTS.md` | Agent behavioral rules (Dispatch Rules + Fleet State Comms sections) | chezmoi |
