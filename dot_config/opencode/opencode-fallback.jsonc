@@ -15,9 +15,13 @@
   "notify_on_fallback": true,
   "fallback_models": [
     // TIER 1: FREE — Cloudflare Workers AI (300 req/min, highest RPM)
-    "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-    "cloudflare/@cf/openai/gpt-oss-20b",
-    "cloudflare/@cf/zai-org/glm-4.7-flash",
+    // Wide-context models FIRST: this chain is also the safety net for agent
+    // calls whose prompts can exceed 24K. llama-3.3-70b-fp8-fast is hard-capped
+    // at 24K context (CF server limit, not config) and 5021-overflows on
+    // prompts > ~16K input — keep it LAST for small-prompt calls only.
+    "cloudflare/@cf/zai-org/glm-4.7-flash",        // 131K ctx
+    "cloudflare/@cf/openai/gpt-oss-20b",           // 128K ctx
+    "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",  // 24K ctx — SMALL PROMPTS ONLY
     // TIER 2: FREE — Together AI (60 RPM, 262K ctx, vision + tools)
     "together/Prism-ML/Ternary-Bonsai-27B",  // single-shot only (tool-loop failure) — last-resort fallback for non-agent calls
     // TIER 3: FREE — NVIDIA NIM (~40 RPM shared, largest catalog, 1M ctx via Inkling)
