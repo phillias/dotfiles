@@ -1338,14 +1338,6 @@
         "x-api-key": "{env:EXA_API_KEY}"
       }
     },
-    "codemem": {
-      "type": "local",
-      "command": [
-        "codemem",
-        "mcp"
-      ],
-      "enabled": false
-    },
     "co-invest": {
       "type": "remote",
       "url": "https://coinvest-computer.liquid.trade/mcp",

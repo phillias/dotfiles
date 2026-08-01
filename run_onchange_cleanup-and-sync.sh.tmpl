@@ -29,7 +29,7 @@
 # Fingerprint (opencode): {{ output "bash" "-c" "find ~/.config/opencode -maxdepth 1 -type f -o -path '*/skills/*' -type f -o -path '*/agents/*' -type f -o -path '*/plugins/*' -type f -o -path '*/themes/*' -type f -o -path '*/scripts/*' -type f -o -path '*/docs/*' -type f -o -path '*/compound-engineering/*' -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (systemd):  {{ output "bash" "-c" "find ~/.config/systemd/user -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (omoplans): {{ output "bash" "-c" "find ~/.omo/plans -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
-# Fingerprint (cleanup):  {{ output "bash" "-c" "for t in ~/.config/opencode/oh-my-openagent.json ~/.config/opencode/oh-my-openagent.jsonc ~/.config/opencode/oh-my-openagent.json.orig ~/.local/bin/oc ~/.config/opencode/profiles ~/.config/opencode/plugins/tmux-patch-keeper.ts ~/.config/opencode/.tmux-OmOTeam.conf; do [ -e $t ] && echo $t; done | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (cleanup):  {{ output "bash" "-c" "for t in ~/.config/opencode/oh-my-openagent.json ~/.config/opencode/oh-my-openagent.jsonc ~/.config/opencode/oh-my-openagent.json.orig ~/.local/bin/oc ~/.config/opencode/profiles ~/.config/opencode/plugins/tmux-patch-keeper.ts ~/.config/opencode/.tmux-OmOTeam.conf ~/.config/systemd/user/locket-infra.service ~/.config/systemd/user/codemem-serve.service ~/.config/systemd/user/default.target.wants/locket-infra.service ~/.config/systemd/user/default.target.wants/codemem-serve.service; do [ -e $t ] && echo $t; done | sha256sum | cut -d' ' -f1" }}
 set -euo pipefail
 
 # ---------------------------------------------------------------- stale-files --
@@ -43,6 +43,10 @@ STALE_TARGETS=(
     "$HOME/.config/opencode/profiles"                      # single-root config since Jul 2026
     "$HOME/.config/opencode/plugins/tmux-patch-keeper.ts"  # resolved upstream in oh-my-openagent
     "$HOME/.config/opencode/.tmux-OmOTeam.conf"            # merged into ~/.tmux.conf
+    "$HOME/.config/systemd/user/locket-infra.service"      # phillias-only locket infra stack (newrelic/llpoa) — removed 2026-08-01
+    "$HOME/.config/systemd/user/codemem-serve.service"     # codemem-serve user unit — removed 2026-08-01
+    "$HOME/.config/systemd/user/default.target.wants/locket-infra.service"
+    "$HOME/.config/systemd/user/default.target.wants/codemem-serve.service"
 )
 
 cleanup_stale() {
