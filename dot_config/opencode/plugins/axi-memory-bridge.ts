@@ -28,11 +28,17 @@ interface ScoreResult {
 
 /**
  * Score a message for memory-worthiness using observable signals only.
- * Max score: 45. Threshold: >=12.
+ * Max score: 45. Auto-save gate: user boost OR score >= 24 (was >= 12).
  *
  * Adapted from better-compaction's evaluateSkillWorthiness.
  * We lose: tool diversity, time investment, priority (todo-level signals).
  * We gain: real-time capture, lower cost, per-turn operation.
+ *
+ * The old >=12 threshold let ordinary conversational questions through
+ * (e.g. novelty:7 + risk:6 = 13), polluting the store with session chatter
+ * (task prompts, system reminders, slash-command descriptions). 24 requires
+ * ~4+ distinct signals, so only genuinely dense messages — or explicit
+ * remember/keep/save intent (boost) — auto-capture.
  */
 function scoreMessage(content: string, userBoosted: boolean): ScoreResult {
   const c = content.toLowerCase();
@@ -83,7 +89,9 @@ function scoreMessage(content: string, userBoosted: boolean): ScoreResult {
   return {
     score,
     reasoning: reasons.join(", "),
-    shouldRemember: score >= 12,
+    // Explicit remember intent always wins; otherwise require a dense
+    // multi-signal message (>=24). Prevents chatter auto-capture.
+    shouldRemember: userBoosted || score >= 24,
   };
 }
 
@@ -117,9 +125,11 @@ function inferTags(content: string): string[] {
 // --- User boost detection (from better-compaction) ---------------------------
 
 const BOOST_PHRASES = [
-  "remember that", "keep that one", "save that", "remember this", "keep this",
-  "worth remembering", "note that", "remember", "that's it", "fixed",
-  "perfect", "worked", "got it", "nailed it",
+  // Explicit save-intent only. Removed conversational acknowledgments
+  // ("fixed", "worked", "got it", "that's it", "perfect", "nailed it") and
+  // bare "remember" — they fire on ordinary chat and auto-captured chatter.
+  "remember that", "remember this", "keep that one", "keep this",
+  "save that", "worth remembering", "note that",
 ];
 
 function hasUserBoost(text: string): boolean {
@@ -315,9 +325,9 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       // Store last user message for system context injection
       lastUserMessages.set(input.sessionID, text);
 
-      // Score ALL messages — auto-save high-scoring ones immediately (threshold ≥12/45).
-      // User boost adds +15, making "remember that" nearly always cross the line.
-      // But novelty(7)+depth(7)=14 or novelty(7)+risk(6)+error(5)=18 also trigger.
+      // Score ALL messages — auto-save only on explicit remember/keep/save
+      // intent (boost) or a dense multi-signal message (>=24/45). The old
+      // >=12 threshold let conversational questions auto-capture (pollution).
       const boosted = hasUserBoost(text);
       const score = scoreMessage(text, boosted);
       if (score.shouldRemember) {
