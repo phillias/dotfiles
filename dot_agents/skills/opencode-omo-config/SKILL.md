@@ -380,6 +380,8 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 ```
 **EDIT RULE**: agent/category model changes go into **`~/.omo/omo.jsonc`** (under the `"[opencode]"` block), then `chezmoi re-add` it. Never edit the legacy `~/.config/opencode/oh-my-openagent.jsonc`.
 
+**EDIT RULE (paths)**: never hardcode `/home/<user>` in any config, unit, skill, or plugin — use `$HOME` (shell), `~` (docs/configs), `{{ .chezmoi.homeDir }}` (chezmoi `.tmpl`), `%h` (systemd). Any chezmoi source file containing a home path MUST be a `.tmpl`.
+
 ### Critical Rules
 
 1. **One config, not profiles.** `OPENCODE_CONFIG_DIR` is unset — root `~/.config/opencode/` is authoritative for opencode core. Since the 2026-07-29 unification migration, **OmO's agent/category routing lives in `~/.omo/omo.jsonc`** (under the `"[opencode]"` block). No `oc <profile>` launcher, no `profiles/` subdirectory. To switch OmO behavior, change `~/.omo/omo.jsonc` directly and chezmoi-track the change.
