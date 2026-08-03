@@ -37,11 +37,14 @@ The binary is at `~/.local/bin/mem`. If missing, run `mem init` (idempotent) fir
 | Command | Purpose | Token cost |
 |---|---|---|
 | `mem` | content-first home view (recent + counts) | ~50 tokens @ 5 memories |
-| `mem search "<query>"` | ripgrep keyword search | ~30 tokens/match |
+| `mem search "<query>"` | ripgrep keyword search, **priority-ranked** (desc) then recency | ~30 tokens/match |
 | `mem show <id>` | detail (body truncated to 500B by default) | ~100-200 tokens |
 | `mem show <id> --full` | full body | variable |
-| `mem add --type <t> --title "<Title>" [--body ...]` | create memory | ~20 tokens ack |
-| `mem list [--type t] [--tag t] [--limit n]` | filtered list | ~30 tokens/match |
+| `mem add --type <t> --title "<Title>" [--priority N]` | create memory (priority 0-100, default 50) | ~20 tokens ack |
+| `mem update <id> --body ... --priority N` | edit existing memory (bumps version, git commit) | ~20 tokens ack |
+| `mem merge <keep> <absorb> [--dry-run]` | merge two memories (body+tags, max priority/version) | ~20 tokens ack |
+| `mem dedup [--dry-run\|--apply]` | OS-side near-dup detection (Jaccard, **no LLM**) | ~30 tokens/match |
+| `mem list [--type t] [--tag t] [--limit n]` | filtered list, priority-ranked | ~30 tokens/match |
 | `mem sync` | pull + push to bare remote | ~30 tokens |
 
 ## Memory types and ids
@@ -59,6 +62,21 @@ Five first-class types. Id prefix encodes the type so ids stay unique.
 **Id shape:** `<prefix>-<datestamp>-<slug>`
 - `c-2026-07-19-use-pnpm`
 - `f-2026-07-19-jwt-decode-panic`
+
+## Ranking and lifecycle
+
+- **`priority` (0-100, default 50)** is a first-class frontmatter field and the
+  primary sort key for `search`/`list` (desc), then recency. Importance over
+  match order — constraints surface before trivia, and agents can cap injection
+  by taking the top of the list. Suggested by type: constraint 80, failure 75,
+  decision 70, howto 60, preference 50. `mem show` displays it.
+- **`version`** (starts at 1) increments on every `mem update`/`mem merge`;
+  `updated: <date>` records the last change. Ids and types are immutable —
+  title changes never re-slug. Git history gives the full diff trail.
+- **`mem dedup`** finds near-duplicate titles by normalized-token Jaccard
+  (bucket-by-first-token, zero LLM cost). Dry-run by default; `--apply` merges
+  pairs keeping the higher priority. Run after seeding batches and after
+  harvesting winning paths — re-learned lessons merge instead of duplicating.
 
 ## Typical cognitive loop
 
@@ -131,6 +149,14 @@ semantic search is the next layer. Plan: sqlite-vec as a build artifact in
 embedding (Xenova/bge-small-en-v1.5, 80MB). Activate with `--features=vector`,
 not on by default. NEVER use a hosted vector DB.
 
+**Embedding-model change detection (required in v2):** persist
+`{provider, model, dimensions}` in `$MEM_DIR/.cache/embedding-meta` when the
+index is built. On startup, diff against the current embedding config —
+any mismatch means every stored vector is invalid → drop vec tables and
+rebuild the index from the markdown source of truth. Without this guard,
+swapping the ONNX model silently corrupts retrieval (TencentDB-Agent-Memory
+solves this identically with their `embedding_meta` table).
+
 If you find yourself wanting semantic search, that's the signal — but ship v1
 first, prove the literal-search ceiling before paying the embedding tax.
 
@@ -152,13 +178,19 @@ type: decision
 title: Adopt mem as memory system
 scope: opencode
 status: active
+priority: 70
 confidence: 0.9
+version: 2
 created: 2026-07-19
+updated: 2026-08-03
 tags: ["memory","axi","toon","bash"]
 ---
 
 After codemem proved expensive to operate across three boxes, switching to a bash+git+TOON CLI. Decided on 2026-07-19.
 ```
+
+Memories added before priority/version existed simply lack the fields —
+search defaults them to 50/1 and `mem update` fills them in on first edit.
 
 ## Quick reference
 
@@ -167,7 +199,7 @@ After codemem proved expensive to operate across three boxes, switching to a bas
 mem
 
 # Capture a decision
-mem add --type decision --title "Use Cloudflare tunnel X for Y" --body "Reason..." --tags "infra,proxy"
+mem add --type decision --title "Use Cloudflare tunnel X for Y" --body "Reason..." --tags "infra,proxy" --priority 70
 
 # Find memories about auth
 mem search "auth"
@@ -175,6 +207,16 @@ mem search "jwt" --type failure --limit 5
 
 # Get the full body of one
 mem show d-2026-07-19-adopt-mem-as-memory-system --full
+
+# Update an existing memory instead of duplicating (bumps version)
+mem update h-2026-08-03-deploy-phillias-api --body "revised steps" --priority 70
+
+# Merge two overlapping memories (max priority, union tags, version+1)
+mem merge d-2026-07-19-adopt-mem d-2026-08-03-mem-v2 --dry-run
+
+# Find + merge near-duplicate titles after a seeding batch (OS-side, no LLM)
+mem dedup
+mem dedup --apply
 
 # Sync after a session
 mem sync
