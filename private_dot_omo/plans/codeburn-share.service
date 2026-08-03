@@ -1,0 +1,25 @@
+[Unit]
+Description=CodeBurn Share Service (Federation)
+After=network.target
+Documentation=https://github.com/getagentseal/codeburn
+
+[Service]
+Type=simple
+User=phillias
+Group=phillias
+WorkingDirectory=/home/phillias
+ExecStart=/home/phillias/.npm-global/bin/codeburn share --always --port 7777
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=HOME=/home/phillias
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/phillias/.config/codeburn
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
