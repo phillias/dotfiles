@@ -177,6 +177,35 @@ yourself inline:
 > - Report back: the absolute path you wrote and a one-line summary. Then STOP —
 >   do not pick the original task back up.
 
+## Review for demotion (closing the loop)
+
+The `self-learning-autocapture` plugin pre-aggregates skill usage into
+`~/.local/state/opencode-selflearning/skills_review.tsv` (empty when nothing
+needs review; raw evidence in `skill_applications.tsv` / `skill_feedback.tsv`).
+At session start, if that file is non-empty:
+
+- Read each line (`<skill>\t<loads>\t<fails>\t<idle>\t<reason>`) and report it
+  to the user in one line each — this is the flywheel's feedback loop: skills
+  earn their keep or get surfaced for correction.
+- **Never demote, move, or delete a skill without explicit user approval.** The
+  digest only *suggests* review; the plugin never deletes anything.
+- Offer the user: **keep / update / demote-to-mem / retire**.
+  - *Retire* = move the skill to a `_review/` subfolder, or convert it to a
+    low-confidence axi-memory note (`mem add --confidence 0.2`) — **never
+    delete**.
+  - Record the decision in `review-decisions.tsv` (audit trail).
+  - When retiring, append `<skill>\t<retiredTs>` to `retired.tsv` so the
+    plugin can watch for re-promotion signals.
+
+### Re-promotion (reversibility)
+
+A retired skill can come back — the flywheel's reversibility rule. The plugin
+surfaces a `re-promotion-candidate` digest line when a retired skill is loaded
+≥2× after its retirement timestamp (people keep reaching for it). Re-promotion
+is manual and user-approved: re-apply the promotion rule (passing check + named
+failure pattern + ruled-out dead-end), then remove the skill from
+`retired.tsv`. Suppression is never permanent.
+
 ## Gotchas
 
 - **Secrets never go in a skill file.** Skills get committed and open-sourced.
