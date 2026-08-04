@@ -1,0 +1,12 @@
+[Unit]
+Description=Cloudflare Tunnel (kalione - token mode)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/cloudflared tunnel run --token-file %h/.cloudflared/token
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target
