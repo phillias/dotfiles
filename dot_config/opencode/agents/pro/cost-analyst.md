@@ -1,7 +1,11 @@
 ---
 name: cost-analyst
 description: Analyze session token usage and cost patterns. Identify expensive operations and recommend optimizations. Use to understand and reduce session costs.
-tools: ["Read", "Glob", "Grep", "Bash"]
+tools:
+  Read: true
+  Glob: true
+  Grep: true
+  Bash: true
 ---
 
 # Cost Analyst

@@ -1,7 +1,13 @@
 ---
 name: orchestrator
 description: Multi-phase development agent. Research > Plan > Implement with validation gates. Use PROACTIVELY when building features that touch >5 files or require architecture decisions.
-tools: ["Read", "Glob", "Grep", "Bash", "Edit", "Write"]
+tools:
+  Read: true
+  Glob: true
+  Grep: true
+  Bash: true
+  Edit: true
+  Write: true
 skills: ["pro-workflow"]
 model: opencode-zen/big-pickle
 memory: project
