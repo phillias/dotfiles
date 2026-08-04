@@ -40,6 +40,6 @@
     // TIER 7: SUBSIDIZED — OpenCode Go ($10/mo pool)
     "opencode-go/deepseek-v4-flash",
     // TIER 8: PAY — Last resort
-    "google/gemini-2.0-flash"
+    "google/gemini-2.5-flash"
   ]
 }

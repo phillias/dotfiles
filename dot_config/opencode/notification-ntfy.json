@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/opencode-ntfy.sh/notification-ntfy.schema.json",
+  "backend": {
+    "topic": "opencode",
+    "server": "https://ntfy.phillias.cc"
+  }
+}

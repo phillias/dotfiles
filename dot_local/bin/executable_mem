@@ -126,6 +126,28 @@ jaccard() {
 # Numeric test: s >= t (float-safe via awk; no bc dependency).
 jaccard_ge() { awk -v s="$1" -v t="$2" 'BEGIN{ exit !(s+0 >= t+0) }'; }
 
+# Freshness epoch for ranking: verified > updated > created > mtime.
+# Best-effort date parse; falls back to file mtime on unparseable dates.
+freshness_of() {
+  local f="$1" d m
+  d=$(get_frontmatter "$f" verified)
+  [[ -z "$d" ]] && d=$(get_frontmatter "$f" updated)
+  [[ -z "$d" ]] && d=$(get_frontmatter "$f" created)
+  if [[ -n "$d" ]]; then
+    m=$(date -d "$d" +%s 2>/dev/null || echo 0)
+    [[ "$m" =~ ^[0-9]+$ ]] && { printf '%s' "$m"; return; }
+  fi
+  stat -c '%Y' "$f" 2>/dev/null || echo 0
+}
+
+# Security gate: obvious credential material must never land in git-backed
+# memory without an explicit --force. Returns 0 (safe) / 1 (blocked).
+SECRET_RE='sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]{10,}|(password|passwd|secret|api[_-]?key|client[_-]?secret|access[_-]?token)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9_./+-]{8,}'
+secret_hit() {
+  local content="$1"
+  [[ "$content" =~ $SECRET_RE ]]
+}
+
 # Escape a string for TOON (commas are delimiters, so escape any embedded commas)
 toon_escape() {
   local s="$1"
@@ -261,18 +283,22 @@ cmd_init() {
 cmd_search() {
   ensure_repo
   [[ $# -eq 0 ]] && die "search requires a query" 2 "valid: \`mem search <query>\` [--type <t>] [--limit <n>]"
-  local query="" type="" limit=50
+  local query="" type="" limit=50 min_prio=""
   while (($#)); do
     case "$1" in
       --type)  type="$2"; shift 2 ;;
-      --limit) limit="$2"; shift 2 ;;
+      --limit|--top) limit="$2"; shift 2 ;;
+      --min-priority) min_prio="$2"; shift 2 ;;
       --help|-h) cmd_search_help; return 0 ;;
-      --*) die "unknown flag $1 for search" 2 "valid: --type, --limit" ;;
+      --*) die "unknown flag $1 for search" 2 "valid: --type, --limit|--top, --min-priority" ;;
       *) query="$query $1"; shift ;;
     esac
   done
   query="${query# }"
   [[ -z "$query" ]] && die "search requires a query" 2
+  if [[ -n "$min_prio" ]] && ! [[ "$min_prio" =~ ^[0-9]+$ ]] || (( min_prio > 100 )); then
+    die "--min-priority must be an integer 0-100" 2
+  fi
 
   local search_root="$MEM_OBJECTS"
   [[ -n "$type" ]] && {
@@ -307,22 +333,42 @@ cmd_search() {
     return 0
   fi
 
-  # §priority: rank by priority (desc), then mtime (desc) — importance over
-  # match order. Memories without a priority field default to 50.
+  # §priority: rank by priority (desc), then freshness (verified/updated/created),
+  # then mtime — importance × freshness (harness-memory style budget cap:
+  # --min-priority is the relevance floor, --limit/--top is the injection cap).
+  # Memories without a priority field default to 50.
   local -a ranked=()
   for f in "${files[@]}"; do
-    local pr mt
+    local pr fr mt
     pr=$(get_frontmatter "$f" priority); pr="${pr:-50}"
+    if [[ -n "$min_prio" ]] && (( pr < min_prio )); then continue; fi
+    fr=$(freshness_of "$f")
     mt=$(stat -c '%Y' "$f" 2>/dev/null || echo 0)
-    ranked+=("$pr|$mt|$f")
+    ranked+=("$pr|$fr|$mt|$f")
   done
+
+  # Budget-cap semantics: total = matches above the priority floor (not raw rg
+  # hits). Guard the empty case BEFORE printf — an empty array emits a phantom
+  # blank line through printf '%s\n' (same pitfall as cmd_dedup).
+  local raw_total=$total
+  total=${#ranked[@]}
+  if (( total == 0 )); then
+    printf 'mem[0]{id,type,title,confidence}:\n'
+    if [[ -n "$min_prio" ]]; then
+      printf 'count: 0 of %d raw matches (none above --min-priority %s)\n' "$raw_total" "$min_prio"
+    else
+      printf 'count: 0 of 0 total\n'
+    fi
+    printf 'help[1]:\n  Run `mem add --type <type> --title "%s"` if this should be remembered\n' "$query"
+    return 0
+  fi
 
   local shown=$(( total < limit ? total : limit ))
   printf 'mem[%d]{id,type,title,confidence}:\n' "$shown"
   local i=0 line f
   while IFS= read -r line; do
     (( i++ >= limit )) && break
-    f="${line#*|*|}"
+    f="${line#*|*|*|}"
     local id type_t title conf
     id=$(get_frontmatter "$f" id)
     type_t=$(get_frontmatter "$f" type)
@@ -333,7 +379,7 @@ cmd_search() {
       "$(toon_escape "$type_t")" \
       "$(toon_escape "$title")" \
       "$(toon_escape "$conf")"
-  done < <(printf '%s\n' "${ranked[@]}" | sort -t'|' -k1,1rn -k2,2rn)
+  done < <(printf '%s\n' "${ranked[@]}" | sort -t'|' -k1,1rn -k2,2rn -k3,3rn)
   printf 'count: %d of %d total\n' "$shown" "$total"
   (( total > limit )) && printf 'help[1]:\n  Run `mem search "%s" --limit %d` for more\n' "$query" "$total"
   printf 'help[1]:\n  Run `mem show <id>` for full body\n'
@@ -407,7 +453,7 @@ cmd_show() {
 
 cmd_add() {
   ensure_repo
-  local type="" title="" body="" scope="" tags="" confidence="0.5" priority="50"
+  local type="" title="" body="" scope="" tags="" confidence="0.5" priority="50" verified="" force=0
   while (($#)); do
     case "$1" in
       --type)        type="$2"; shift 2 ;;
@@ -417,9 +463,11 @@ cmd_add() {
       --tags)        tags="$2"; shift 2 ;;
       --confidence)  confidence="$2"; shift 2 ;;
       --priority)    priority="$2"; shift 2 ;;
+      --verified)    verified="$2"; shift 2 ;;
+      --force)       force=1; shift ;;
       --help|-h)     cmd_add_help; return 0 ;;
-      --*)           die "unknown flag $1 for add" 2 "valid: --type, --title, --body, --scope, --tags, --confidence, --priority" ;;
-      *)             die "add takes only flags, got positional: $1" 2 "valid: --type, --title, --body, --scope, --tags, --confidence, --priority" ;;
+      --*)           die "unknown flag $1 for add" 2 "valid: --type, --title, --body, --scope, --tags, --confidence, --priority, --verified, --force" ;;
+      *)             die "add takes only flags, got positional: $1" 2 "valid: --type, --title, --body, --scope, --tags, --confidence, --priority, --verified, --force" ;;
     esac
   done
 
@@ -429,6 +477,12 @@ cmd_add() {
   [[ -z "$t" ]] && die "unknown type: $type" 2 "valid: ${ORDERED_TYPES[*]}"
   if ! [[ "$priority" =~ ^[0-9]+$ ]] || (( priority < 0 || priority > 100 )); then
     die "--priority must be an integer 0-100 (default 50)" 2
+  fi
+
+  # Security gate — credential material must never land in git-backed memory
+  # without an explicit --force (harness-memory pattern, §security gate).
+  if (( force != 1 )) && secret_hit "$title $body"; then
+    die "security gate: credential-like value detected in title/body; refusing to store" 2 "store only the LOCATION of a secret, never the value. Run with --force to override"
   fi
 
   # Generate id: <type-prefix>-<datestamp>-<slug-from-title>
@@ -466,6 +520,7 @@ cmd_add() {
     printf 'confidence: %s\n' "$confidence"
     printf 'version: 1\n'
     printf 'created: %s\n' "$datestamp"
+    [[ -n "$verified" ]] && printf 'verified: %s\n' "$verified"
     printf 'tags: %s\n' "$(yaml_tags "$tags")"
     printf -- '---\n\n'
     printf '%s\n' "$body"
@@ -491,17 +546,21 @@ cmd_add() {
 
 cmd_list() {
   ensure_repo
-  local type="" tag="" limit=100
+  local type="" tag="" limit=100 min_prio=""
   while (($#)); do
     case "$1" in
       --type)  type="$2"; shift 2 ;;
       --tag)   tag="$2"; shift 2 ;;
       --limit) limit="$2"; shift 2 ;;
+      --min-priority) min_prio="$2"; shift 2 ;;
       --help|-h) cmd_list_help; return 0 ;;
-      --*) die "unknown flag $1 for list" 2 "valid: --type, --tag, --limit" ;;
+      --*) die "unknown flag $1 for list" 2 "valid: --type, --tag, --limit, --min-priority" ;;
       *) die "list takes only flags, got positional: $1" 2 ;;
     esac
   done
+  if [[ -n "$min_prio" ]] && ! [[ "$min_prio" =~ ^[0-9]+$ ]] || (( min_prio > 100 )); then
+    die "--min-priority must be an integer 0-100" 2
+  fi
 
   local search_root="$MEM_OBJECTS"
   [[ -n "$type" ]] && {
@@ -526,19 +585,30 @@ cmd_list() {
   done
 
   local total=${#matching[@]}
-  # §priority: rank by priority (desc), then mtime (desc) — same as search.
+  # §priority: rank by priority (desc), then freshness, then mtime — same as search.
   local -a ranked=()
   for f in "${matching[@]}"; do
-    local pr mt
+    local pr fr mt
     pr=$(get_frontmatter "$f" priority); pr="${pr:-50}"
+    if [[ -n "$min_prio" ]] && (( pr < min_prio )); then continue; fi
+    fr=$(freshness_of "$f")
     mt=$(stat -c '%Y' "$f" 2>/dev/null || echo 0)
-    ranked+=("$pr|$mt|$f")
+    ranked+=("$pr|$fr|$mt|$f")
   done
+  # Guard the empty case BEFORE printf — empty array emits a phantom blank line.
+  local raw_total=$total
+  total=${#ranked[@]}
+  if (( total == 0 )); then
+    printf 'mem[0]{id,type,title,confidence}:\n'
+    printf 'count: 0 of %d total\n' "$raw_total"
+    printf 'help[1]:\n  Run `mem add --type <type> --title "<title>"` to add a memory\n'
+    return 0
+  fi
   printf 'mem[%d]{id,type,title,confidence}:\n' "$(( total < limit ? total : limit ))"
   local i=0 line f
   while IFS= read -r line; do
     (( i++ >= limit )) && break
-    f="${line#*|*|}"
+    f="${line#*|*|*|}"
     local id type_t title conf
     id=$(get_frontmatter "$f" id)
     type_t=$(get_frontmatter "$f" type)
@@ -549,10 +619,66 @@ cmd_list() {
       "$(toon_escape "$type_t")" \
       "$(toon_escape "$title")" \
       "$(toon_escape "$conf")"
-  done < <(printf '%s\n' "${ranked[@]}" | sort -t'|' -k1,1rn -k2,2rn)
+  done < <(printf '%s\n' "${ranked[@]}" | sort -t'|' -k1,1rn -k2,2rn -k3,3rn)
   printf 'count: %d of %d total\n' "$(( total < limit ? total : limit ))" "$total"
   (( total > 0 )) && printf 'help[1]:\n  Run `mem show <id>` for full body\n'
   (( total == 0 )) && printf 'help[1]:\n  Run `mem add --type <type> --title "<title>"` to add a memory\n'
+}
+
+cmd_review() {
+  ensure_repo
+  local min_conf="0.5"
+  while (($#)); do
+    case "$1" in
+      --min-confidence) min_conf="$2"; shift 2 ;;
+      --help|-h) cmd_review_help; return 0 ;;
+      --*) die "unknown flag $1 for review" 2 "valid: --min-confidence" ;;
+      *) die "review takes only flags, got positional: $1" 2 ;;
+    esac
+  done
+
+  local -a files=() f
+  while IFS= read -r f; do files+=("$f"); done < <(find "$MEM_OBJECTS" -name '*.md' -type f 2>/dev/null)
+
+  # Review inbox (harness-memory pattern): candidates = confidence below floor
+  # OR never verified. Grouped low-token digest for a human/agent pass — the
+  # agent clears items with `mem update <id> --confidence --verified`.
+  local -a cand=()
+  local total=0 id title conf pr vr created type_t vflag
+  for f in "${files[@]}"; do
+    id=$(get_frontmatter "$f" id); [[ -z "$id" ]] && continue
+    title=$(get_frontmatter "$f" title)
+    type_t=$(get_frontmatter "$f" type)
+    conf=$(get_frontmatter "$f" confidence); conf="${conf:-0.5}"
+    pr=$(get_frontmatter "$f" priority); pr="${pr:-50}"
+    vr=$(get_frontmatter "$f" verified)
+    created=$(get_frontmatter "$f" created); created="${created:-?}"
+    total=$(( total + 1 ))
+    # Candidate = confidence below floor OR never verified.
+    if awk -v a="$conf" -v b="$min_conf" 'BEGIN{exit !(a+0 < b+0)}' || [[ -z "$vr" ]]; then
+      vflag="unverified"; [[ -n "$vr" ]] && vflag="verified:${vr}"
+      cand+=("$pr|$id|$type_t|$title|$conf|$vflag|$created")
+    fi
+  done
+
+  local n=${#cand[@]}
+  # Guard the empty case BEFORE printf — empty array emits a phantom blank line.
+  if (( n == 0 )); then
+    printf 'review[0]{id,type,title,confidence,verified,created}:\n'
+    printf 'count: 0 of %d memories need review (confidence < %s or unverified)\n' "$total" "$min_conf"
+    printf 'help[1]:\n  Review inbox clean. Run `mem review --min-confidence 0.8` to raise the bar\n'
+    return 0
+  fi
+  printf 'review[%d]{id,type,title,confidence,verified,created}:\n' "$n"
+  local line
+  while IFS= read -r line; do
+    IFS='|' read -r _ id type_t title conf vflag created <<< "$line"
+    printf '  %s,%s,%s,%s,%s,%s\n' \
+      "$(toon_escape "$id")" "$(toon_escape "$type_t")" "$(toon_escape "$title")" \
+      "$(toon_escape "$conf")" "$(toon_escape "$vflag")" "$(toon_escape "$created")"
+  done < <(printf '%s\n' "${cand[@]}" | sort -t'|' -k1,1rn)
+  printf 'count: %d of %d memories need review (confidence < %s or unverified)\n' "$n" "$total" "$min_conf"
+  (( n > 0 )) && printf 'help[1]:\n  Run `mem update <id> --confidence <0.7+> --verified <date>` to clear\n'
 }
 
 cmd_sync() {
@@ -741,7 +867,7 @@ cmd_stats() {
 cmd_update() {
   ensure_repo
   [[ $# -lt 1 ]] && die "update requires an <id>" 2 "valid: \`mem update <id>\` [--title] [--body] [--priority] [--tags] [--scope] [--confidence] [--status]"
-  local id="" title="" body="" priority="" tags="" scope="" confidence="" status=""
+  local id="" title="" body="" priority="" tags="" scope="" confidence="" status="" verified=""
   local set_body=0 set_tags=0
   while (($#)); do
     case "$1" in
@@ -752,8 +878,9 @@ cmd_update() {
       --scope)      scope="$2"; shift 2 ;;
       --confidence) confidence="$2"; shift 2 ;;
       --status)     status="$2"; shift 2 ;;
+      --verified)   verified="$2"; shift 2 ;;
       --help|-h)    cmd_update_help; return 0 ;;
-      --*)          die "unknown flag $1 for update" 2 "valid: --title, --body, --priority, --tags, --scope, --confidence, --status" ;;
+      --*)          die "unknown flag $1 for update" 2 "valid: --title, --body, --priority, --tags, --scope, --confidence, --status, --verified" ;;
       *)            id="$1"; shift ;;
     esac
   done
@@ -771,6 +898,7 @@ cmd_update() {
   cur_conf=$(get_frontmatter "$f" confidence); cur_conf="${cur_conf:-0.5}"
   cur_status=$(get_frontmatter "$f" status); cur_status="${cur_status:-active}"
   cur_created=$(get_frontmatter "$f" created)
+  cur_verified=$(get_frontmatter "$f" verified)
   cur_tags=$(get_frontmatter_list "$f" tags)
   cur_version=$(get_frontmatter "$f" version); cur_version="${cur_version:-1}"
   cur_body=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$f")
@@ -783,6 +911,7 @@ cmd_update() {
   local new_scope="${scope:-$cur_scope}"
   local new_tags="$cur_tags"; [[ $set_tags -eq 1 ]] && new_tags="$tags"
   local new_body="$cur_body"; [[ $set_body -eq 1 ]] && new_body="$body"
+  local new_verified="$cur_verified"; [[ -n "$verified" ]] && new_verified="$verified"
 
   if ! [[ "$new_priority" =~ ^[0-9]+$ ]] || (( new_priority < 0 || new_priority > 100 )); then
     die "--priority must be an integer 0-100" 2
@@ -797,6 +926,7 @@ cmd_update() {
   [[ "$new_scope" != "$cur_scope" ]] && changed=1
   [[ $set_tags -eq 1 && "$new_tags" != "$cur_tags" ]] && changed=1
   [[ $set_body -eq 1 && "$new_body" != "$cur_body" ]] && changed=1
+  [[ -n "$verified" && "$new_verified" != "$cur_verified" ]] && changed=1
   if (( changed == 0 )); then
     printf 'memory:\n  id: %s\n  status: no-change (no-op)\n' "$cur_id"
     return 0
@@ -817,6 +947,7 @@ cmd_update() {
     printf 'version: %s\n' "$new_version"
     printf 'created: %s\n' "$cur_created"
     printf 'updated: %s\n' "$datestamp"
+    [[ -n "$new_verified" ]] && printf 'verified: %s\n' "$new_verified"
     printf 'tags: %s\n' "$(yaml_tags "$new_tags")"
     printf -- '---\n\n'
     printf '%s\n' "$new_body"
@@ -1084,6 +1215,7 @@ Commands:
   merge <keep> <absorb>  merge two memories (body+tags, max priority/version)
   dedup            find near-duplicate titles (OS-side Jaccard, no LLM)
   list             list memories (filter by --type / --tag)
+  review           list memories needing review (low confidence / unverified)
   status           operational health: sync state, remote, disk
   sync             git pull --rebase && git push
   stats            show usage statistics
@@ -1107,15 +1239,19 @@ cmd_search_help() {
   cat <<'EOF'
 mem search — keyword search across memories (v1: ripgrep literal + regex)
 
-Usage: mem search <query> [--type <type>] [--limit <n>]
+Usage: mem search <query> [--type <type>] [--limit <n>] [--top <n>] [--min-priority <p>]
 
 Flags:
   --type <type>     constrain to one type (constraint|decision|failure|howto|preference)
   --limit <n>       max rows in output (default: 50). Total count is always shown.
+  --top <n>         alias of --limit (injection budget cap)
+  --min-priority <p> relevance floor: memories with priority < p are excluded
+                    (budget cap pattern — top-N above a cutoff, not just truncated)
   --help            this message
 
 Output: TOON list with id, type, title, confidence fields, plus total count.
-Results are ranked by priority (desc), then recency — importance over match order.
+Results are ranked by priority (desc), then freshness (verified/updated/created),
+then recency — importance × freshness over match order.
 
 Notes:
   - v1 uses ripgrep literal/regex matching against the entire markdown file
@@ -1148,7 +1284,7 @@ cmd_add_help() {
   cat <<'EOF'
 mem add — create a new memory
 
-Usage: mem add --type <type> --title "<title>" [--body "..."] [--scope "..."] [--tags "..."] [--confidence 0.5] [--priority 50]
+Usage: mem add --type <type> --title "<title>" [--body "..."] [--scope "..."] [--tags "..."] [--confidence 0.5] [--priority 50] [--verified <date>]
 
 Required:
   --type <type>        constraint|decision|failure|howto|preference
@@ -1162,6 +1298,13 @@ Optional:
   --priority <n>       0-100 importance rank (default: 50). Search/list sort by
                        this descending. Suggested: constraint 80, failure 75,
                        decision 70, howto 60, preference 50.
+  --verified <date>    YYYY-MM-DD confirmation date (feeds freshness ranking)
+  --force              bypass the security gate (never store real secret values)
+
+Security gate:
+  Credential-like material (API keys, tokens, private keys, password= values)
+  is refused with a structured error unless --force is passed. Store the
+  LOCATION of a secret, never the value.
 
 Behavior:
   - Id is auto-generated: <type-prefix>-<date>-<slug>
@@ -1179,7 +1322,7 @@ cmd_update_help() {
   cat <<'EOF'
 mem update — edit an existing memory without touching git
 
-Usage: mem update <id> [--title "<t>"] [--body "..."] [--priority <n>] [--tags "<csv>"] [--scope "<s>"] [--confidence <f>] [--status <s>]
+Usage: mem update <id> [--title "<t>"] [--body "..."] [--priority <n>] [--tags "<csv>"] [--scope "<s>"] [--confidence <f>] [--status <s>] [--verified <date>]
 
 Flags:
   --title "<t>"       replace the title (id stays stable — slugs never change)
@@ -1189,6 +1332,7 @@ Flags:
   --scope "<s>"       replace the scope
   --confidence <f>    0.0-1.0
   --status <s>        replace the status (default: active)
+  --verified <date>   set YYYY-MM-DD confirmation date (feeds freshness ranking)
   --help              this message
 
 Behavior:
@@ -1277,6 +1421,25 @@ Examples:
 EOF
 }
 
+cmd_review_help() {
+  cat <<'EOF'
+mem review — review inbox: memories needing a human/agent decision
+
+Usage: mem review [--min-confidence <f>]
+
+Flags:
+  --min-confidence <f>  confidence floor (default: 0.5)
+
+Candidates (harness-memory "review inbox" pattern):
+  - confidence < floor, OR
+  - no `verified` date in frontmatter (never explicitly confirmed)
+
+Output: TOON list {id,type,title,confidence,verified,created}, priority-ranked.
+
+Clearing: mem update <id> --confidence <0.7+> --verified <date>
+EOF
+}
+
 cmd_status_help() {
   cat <<'EOF'
 mem status — operational health check
@@ -1333,6 +1496,7 @@ main() {
     merge)  cmd_merge  "$@" ;;
     dedup)  cmd_dedup  "$@" ;;
     list)   cmd_list   "$@" ;;
+    review) cmd_review "$@" ;;
     sync)   cmd_sync   "$@" ;;
     status) cmd_status "$@" ;;
     stats)  cmd_stats  "$@" ;;

@@ -45,6 +45,7 @@ import { homedir } from "os";
 
 const STATE_DIR = join(homedir(), ".local", "state", "opencode-selflearning");
 const CUES_FILE = join(STATE_DIR, "cues.tsv");
+const EVIDENCE_FILE = join(STATE_DIR, "evidence.tsv");
 const APPLICATIONS_FILE = join(STATE_DIR, "skill_applications.tsv");
 const FEEDBACK_FILE = join(STATE_DIR, "skill_feedback.tsv");
 const STATS_FILE = join(STATE_DIR, "skill_stats.tsv");
@@ -81,6 +82,12 @@ const EXPLICIT_RE =
 
 const HARD_WIN_RE =
   /\b(after \d+ (attempts|tries)|finally (worked|fixed|passed|succeeded|got it)|what finally worked|root cause was|the fix was|the trick was|eventually (worked|passed|succeeded|fixed))\b/i;
+
+// Model-fallback evidence: same pattern the fleet-state writer uses for its
+// "fallback" wake rows — surfaced to the agent as triage material for
+// model-budget memories.
+const FALLBACK_RE =
+  /(?:fallback|falling back|trying alternative model|model.*failed.*switching|runtime.?fallback)/i;
 
 // Conservative negative-signal regexes. False negatives are free; false
 // positives cost review tokens — so this stays narrow.
@@ -256,6 +263,12 @@ function writeCue(kind: CueKind, sessionID: string, detail: string): void {
   appendRotated(CUES_FILE, `${new Date().toISOString()}\t${kind}\t${sanitize(sessionID, 100)}\t${sanitize(detail, 200)}\n`);
 }
 
+// Failure evidence (harness-memory pattern): durable raw material for the
+// failure triage — session errors and model fallbacks, captured at the source.
+function writeEvidence(kind: "session-error" | "model-fallback", sessionID: string, detail: string): void {
+  appendRotated(EVIDENCE_FILE, `${new Date().toISOString()}\t${kind}\t${sanitize(sessionID, 100)}\t${sanitize(detail, 200)}\n`);
+}
+
 export const SelfLearningAutocapturePlugin: Plugin = async () => {
   loadStats();
   const sessions = new Map<string, SessionState>();
@@ -300,6 +313,9 @@ export const SelfLearningAutocapturePlugin: Plugin = async () => {
             appendRotated(FEEDBACK_FILE, `${new Date().toISOString()}\t<unknown>\t${sanitize(input.sessionID, 100)}\t${sanitize(text, 200)}\n`);
           }
         }
+        if (role === "assistant" && FALLBACK_RE.test(text)) {
+          writeEvidence("model-fallback", input.sessionID, text);
+        }
       } catch {
         // never throw
       }
@@ -328,6 +344,15 @@ export const SelfLearningAutocapturePlugin: Plugin = async () => {
     event: async (input: { event: { type: string; properties?: any } }) => {
       try {
         const ev = input.event;
+        if (ev.type === "session.error") {
+          const sessionID: string = ev.properties?.sessionID ?? ev.properties?.id ?? "";
+          if (sessionID) {
+            const errMsg =
+              ev.properties?.error?.message ??
+              (typeof ev.properties?.error === "string" ? ev.properties.error : "");
+            writeEvidence("session-error", sessionID, errMsg || "session error");
+          }
+        }
         if (ev.type !== "session.idle") return;
         const sessionID: string = ev.properties?.sessionID ?? ev.properties?.id ?? "";
         if (!sessionID) return;
