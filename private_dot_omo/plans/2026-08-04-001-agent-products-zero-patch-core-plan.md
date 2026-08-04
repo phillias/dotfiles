@@ -36,7 +36,7 @@ Design folds into Metis-plan. Brainstorming is always the first step of the Meti
 
 - [x] MVP drop: 8 pro-workflow agents (`agents/pro/*`, opencode-tailored), 11 fu- skills, 8 pro- skills, MVP-README (design priorities + provenance + teams reference) — PR #164
 - [x] MVP-README: team-mode activation + 3 canonical team schemas (refactor-squad, hyperplan, security-research)
-- [x] CE delta manifest (0/32 identical triage + attribution table) — `~/.config/opencode/docs/CE-DELTA-MANIFEST.md`
+- [x] CE delta manifest (0/32 identical triage + attribution table) — triage preserved in axi-memory (`d-2026-08-04-ce-delta-manifest-0-32-identical-15-stri`); doc removed 2026-08-04
 - [x] CF Workers catalog refresh in opencode-omo-config (34 LLM of 77, 7 new models flagged)
 - [x] 10 dropped CE skills installed as reference material (lfg + 9)
 - [x] Team research: config-gated activation (`team_create` by lead in main session), single-shot lifecycle, WAIT directives, owner='lead'
