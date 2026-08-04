@@ -122,11 +122,6 @@
       "why": "Prowlarr DB recovery skill handles clone-then-fix workflow."
     },
     {
-      "when": "MCP security audit / runtime guard / policy enforcement",
-      "use": { "load_skills": ["mcp-runtime-guard"] },
-      "why": "MCP security skills cover runtime content inspection + policy-as-code."
-    },
-    {
       "when": "domain modeling / ubiquitous language / ADR",
       "use": { "load_skills": ["domain-modeling"] },
       "why": "Domain-modeling skill sharpens project's domain language."
