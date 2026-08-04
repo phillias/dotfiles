@@ -40,6 +40,7 @@ STALE_TARGETS=(
     "$HOME/.config/opencode/oh-my-openagent.jsonc"        # post-2026-07-29 migration orphan — runtime reads ~/.omo/omo.jsonc; forgotten from chezmoi 2026-08-01
     "$HOME/.config/opencode/oh-my-openagent.json.orig"     # backup of the removed file
     "$HOME/.config/opencode/DESIGN.md"                     # removed from repo in dotfiles#38 — lingering orphan from pre-#38 .config/opencode layout
+    "$HOME/.config/opencode/docs"                          # nonstandard plan-doc dir (ce-plan default convention) — no worker reads it; plans live in ~/.omo/plans since 2026-08-04 (dotfiles#164)
     "$HOME/.local/bin/oc"                                  # replaced by shell alias
     "$HOME/.config/opencode/profiles"                      # single-root config since Jul 2026
     "$HOME/.config/opencode/plugins/tmux-patch-keeper.ts"  # resolved upstream in oh-my-openagent
