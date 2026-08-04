@@ -21,23 +21,42 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | nemotron-3-ultra-free | 262K | 8K | 0.7 |
 | deepseek-v4-flash-free | 131K | 8K | 0.7 |
 
-### Cloudflare Workers AI (16 models)
+### Cloudflare Workers AI (34 LLM models; 77 total in catalog — 2026-08-04)
 
-| Model | Context | Output | Temp |
-|-------|---------|--------|------|
-| @cf/meta/llama-3.3-70b-instruct-fp8-fast | 24K | 8K | 0.7 |
-| @cf/meta/llama-4-scout-17b-16e-instruct | 131K | 8K | 0.7 |
-| @cf/deepseek-ai/deepseek-r1-distill-qwen-32b | 80K | 8K | 1.0 |
-| @cf/qwen/qwen2.5-coder-32b-instruct | 32K | 8K | 0.7 |
-| @cf/qwen/qwen3-30b-a3b-fp8 | 32K | 8K | 0.7 |
-| @cf/openai/gpt-oss-120b | 128K | 8K | 0.7 |
-| @cf/openai/gpt-oss-20b | 128K | 8K | 0.7 |
-| @cf/moonshotai/kimi-k2.6 | 262K | 8K | 0.7 |
-| @cf/moonshotai/kimi-k2.7-code | 262K | 8K | 0.7 |
-| @cf/zai-org/glm-4.7-flash | 131K | 8K | 0.7 |
-| @cf/zai-org/glm-5.2 | 262K | 8K | 0.7 |
-| @cf/google/gemma-4-26b-a4b-it | 256K | 8K | 0.7 |
-| @cf/nvidia/nemotron-3-120b-a12b | 256K | 8K | 0.7 |
+User subscribes to Cloudflare Workers. Catalog scraped from developers.cloudflare.com/workers-ai/models: 77 total = 34 text-gen/chat/vision LLMs, 5 embeddings (bge-*, qwen3-embedding-0.6b, plamo-embedding-1b, embeddinggemma-300m), 1 reranker (bge-reranker-base), 3 TTS (melotts, deepgram aura-*), 3 speech (whisper*, deepgram nova-3), 2 translation (m2m100, indictrans), 2 safety (llama-guard-3-8b), ~24 image/other (flux-*, stable-diffusion-*, dreamshaper, lucid-origin, phoenix, llava, moondream).
+
+⚠️ = context not yet verified against CF docs; confirm before relying on it for routing.
+
+| Model | Context | Output | Temp | Notes |
+|-------|---------|--------|------|-------|
+| @cf/meta/llama-3.3-70b-instruct-fp8-fast | 24K | 8K | 0.7 | free-tier leader |
+| @cf/meta/llama-4-scout-17b-16e-instruct | 131K | 8K | 0.7 | |
+| @cf/meta/llama-3.1-70b-instruct | 128K | 8K | 0.7 | |
+| @cf/meta/llama-3.1-8b-instruct | 128K | 8K | 0.7 | +awq/fast/fp8 variants |
+| @cf/meta/llama-3.2-3b-instruct | 128K | 8K | 0.7 | cheap tier |
+| @cf/meta/llama-3.2-1b-instruct | 128K | 8K | 0.7 | cheapest |
+| @cf/meta/llama-3-8b-instruct | 8K | 8K | 0.7 | legacy (+awq) |
+| @cf/deepseek-ai/deepseek-r1-distill-qwen-32b | 80K | 8K | 1.0 | reasoning |
+| @cf/qwen/qwen2.5-coder-32b-instruct | 32K | 8K | 0.7 | |
+| @cf/qwen/qwen3-30b-a3b-fp8 | 32K | 8K | 0.7 | |
+| @cf/qwen/qwq-32b | 131K⚠️ | 8K | 0.7 | NEW — reasoning |
+| @cf/openai/gpt-oss-120b | 128K | 8K | 0.7 | |
+| @cf/openai/gpt-oss-20b | 128K | 8K | 0.7 | |
+| @cf/moonshotai/kimi-k2.6 | 262K | 8K | 0.7 | |
+| @cf/moonshotai/kimi-k2.7-code | 262K | 8K | 0.7 | coding |
+| @cf/moonshotai/kimi-k2.5 | 131K⚠️ | 8K | 0.7 | NEW |
+| @cf/zai-org/glm-4.7-flash | 131K | 8K | 0.7 | |
+| @cf/zai-org/glm-5.2 | 262K | 8K | 0.7 | |
+| @cf/google/gemma-4-26b-a4b-it | 256K | 8K | 0.7 | thinking model |
+| @cf/google/gemma-3-12b-it | 128K⚠️ | 8K | 0.7 | NEW |
+| @cf/aisingapore/gemma-sea-lion-v4-27b-it | 32K⚠️ | 8K | 0.7 | NEW |
+| @cf/nvidia/nemotron-3-120b-a12b | 256K | 8K | 0.7 | |
+| @cf/mistralai/mistral-small-3.1-24b-instruct | 128K⚠️ | 8K | 0.7 | NEW |
+| @cf/ibm-granite/granite-4.0-h-micro | 131K⚠️ | 8K | 0.7 | NEW |
+| @cf/meta/llama-3.2-11b-vision-instruct | 128K⚠️ | 8K | 0.7 | vision |
+| @cf/meta/llama-guard-3-8b | 8K⚠️ | — | — | safety |
+| @cf/microsoft/phi-2 | 2K⚠️ | — | — | legacy |
+| @cf/mistral/mistral-7b-instruct-v0.1 | 8K⚠️ | — | — | legacy |
 
 ### Agnes AI (5 models)
 
@@ -193,7 +212,7 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | Tier | Provider | Models | Cost | RPM | Best For |
 |------|----------|--------|------|-----|----------|
 | 🟢 **FREE** | NVIDIA NIM | 48 relevant | $0 | ~40 shared | Largest free catalog, 1M ctx (Inkling), reasoning (Nemotron Ultra) |
-| 🟢 **FREE** | Cloudflare Workers AI | 16 | $0 | 300 req/min | Free-tier leader, GPT-OSS, Kimi K2.7, GLM 5.2 |
+| 🟢 **FREE** | Cloudflare Workers AI | 34 LLM / 77 total | $0 | 300 req/min | Free-tier leader, GPT-OSS, Kimi K2.6/K2.7/K2.5, GLM 5.2, QwQ-32B, Llama 3.x, Nemotron 3, Gemma 4/3 |
 | 🟢 **FREE** | OpenRouter | 6 free | $0 | 50 req/day | Nemotron Super/Nano, Qwen3 Coder |
 | 🟢 **FREE** | OpenCode Zen | 6 free | $0 | ~200 req/day | Nemotron Ultra, DeepSeek V4 Flash, MiMo |
 | 🟢 **FREE** | Together AI | 2 (DS-R1 + Bonsai 27B) | $0 | 60 RPM, 60K TPM | DeepSeek R1 (reasoning), **Ternary Bonsai 27B (262K ctx, vision, tools) ⚠️ single-shot only — tool-loop failure** |
@@ -401,7 +420,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 | **OpenCode Zen** | 49+ (GPT-5.x, Claude-4.x, Gemini-3.x, DS-V4, GLM-5, Big Pickle, free tier) | Zen sub | Quality primary |
 | **OpenCode Go** | 24 (K2.6/2.7, DS-V4-Pro/Flash, GPT-5.x, Claude-4.x, Qwen3.x, etc.) | $10/mo | Quality pool, 24 models in routing |
 | **OpenRouter** | 22+ (DS-V4-Flash, Qwen3-Coder, GLM-5, etc.) | Free/Paid | Broadest model selection |
-| **Cloudflare** | 16 (`@cf/...` Workers AI models: Llama 3.3, GPT-OSS 120B, Kimi K2.6/K2.7, GLM 5.2, Qwen 3, Nemotron 3, Gemma 4, etc.) | Free tier | Free-tier leader in fallback chains (300 RPM) |
+| **Cloudflare** | 34 LLM of 77 total (`@cf/...` Workers AI: Llama 3.3/4/3.x, GPT-OSS 120B/20B, Kimi K2.5/K2.6/K2.7-code, GLM 4.7/5.2, Qwen 3/QwQ, Nemotron 3, Gemma 4/3, Sea Lion, Mistral Small, Granite) | Free tier | Free-tier leader in fallback chains (300 RPM) |
 | **NVIDIA NIM** | 48 relevant of 118 total (Nemotron 3 Ultra/Super/Nano, DS-V4, GLM 5.2, Kimi K2.6, Qwen 3.5, GPT-OSS, Inkling, Gemma 4, MiniMax, etc.) | Free (prototyping) | **Largest free catalog** (~40 RPM shared), 1M ctx via Inkling |
 | **Baseten** | 13 (GPT-OSS 120B, Nemotron Super/Ultra, GLM 4.7/5/5.1/5.2, Kimi K2.5/K2.6/K2.7, DS-V4-Pro, Inkling, GLM 5.2 Fast) | $30 free credits → pay-per-token | **Cheapest pay-per-token** ($0.10/M GPT-OSS 120B), 1M ctx Inkling |
 | **Mistral** | 1 (Mistral Large) | Free (1 req/s) | Reasoning, multilingual |
