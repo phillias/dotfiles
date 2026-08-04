@@ -105,6 +105,15 @@ machines (cabinkali, kalione) clone the same bare repo over their existing
 Cloudflare tunnel SSH route (`primary55522.phillias.cc`), no new tunnels
 required.
 
+**Anchor remote rule:** on the OCI anchor itself (`primary`), the git remote
+MUST be the local path `origin = /home/ubuntu/mem-bare.git` — never the
+tunnel hostname `ssh://primary55522.phillias.cc/~/mem-bare.git`. The anchor
+syncing to its own tunnel hairpins through Cloudflare edge:22, which times
+out (sshd listens on localhost:55522 behind the tunnel, served on 443 via
+`cloudflared access ssh`). If `mem sync` reports the remote unreachable on
+the anchor, check `git -C ~/memories remote -v` first. Other machines keep
+the tunnel URL + `primary55522` ssh alias (ProxyCommand path works).
+
 `mem sync` runs `git pull --rebase && git push`. Conflicts are git conflicts —
 user resolves by opening the file, merging by hand, `git add` + `git commit`.
 
