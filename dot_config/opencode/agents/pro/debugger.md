@@ -1,7 +1,11 @@
 ---
 name: debugger
 description: Specialized debugging agent. Use when facing hard bugs, test failures, or runtime errors that need systematic investigation.
-tools: ["Read", "Glob", "Grep", "Bash"]
+tools:
+  Read: true
+  Glob: true
+  Grep: true
+  Bash: true
 model: opencode-zen/big-pickle
 memory: project
 ---

@@ -1,7 +1,11 @@
 ---
 name: context-engineer
 description: Analyzes and optimizes context window usage across sessions. Use when context feels bloated, sessions run slow, or approaching compaction limits.
-tools: ["Read", "Glob", "Grep", "Bash"]
+tools:
+  Read: true
+  Glob: true
+  Grep: true
+  Bash: true
 ---
 
 # Context Engineer

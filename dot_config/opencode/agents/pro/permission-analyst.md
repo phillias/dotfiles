@@ -1,7 +1,11 @@
 ---
 name: permission-analyst
 description: Analyze permission denial patterns and generate optimized alwaysAllow/alwaysDeny rules. Use when permission prompts slow down workflow.
-tools: ["Read", "Glob", "Grep", "Bash"]
+tools:
+  Read: true
+  Glob: true
+  Grep: true
+  Bash: true
 ---
 
 # Permission Analyst

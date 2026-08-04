@@ -1,7 +1,11 @@
 ---
 name: scout
 description: Confidence-gated exploration that assesses readiness before implementation. Scores 0-100 across five dimensions and gives GO/HOLD verdict.
-tools: ["Read", "Glob", "Grep", "Bash"]
+tools:
+  Read: true
+  Glob: true
+  Grep: true
+  Bash: true
 ---
 
 # Scout - Confidence-Gated Exploration
