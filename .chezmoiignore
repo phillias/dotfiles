@@ -29,3 +29,13 @@ age-key.txt.age
 # Python build artifacts — regenerated per machine
 .agents/**/__pycache__/**
 .agents/**/__pycache__
+
+# Third-party plugin clones (each is its own git repo, not a dotfile) —
+# opencode-toon-config-plugin (locally patched for global AGENTS.toon lookup)
+# and shell-strategy instructions. Patch steps are reproducible: 2 edits to
+# src/index.ts (os import + configDir fallback in locate()) + `bun run build`.
+.config/opencode/plugin/
+
+# npm artifacts — plugins/ node_modules (auto-load dir deps; source .ts tracked)
+.config/opencode/plugins/node_modules
+.config/opencode/plugins/node_modules/**
