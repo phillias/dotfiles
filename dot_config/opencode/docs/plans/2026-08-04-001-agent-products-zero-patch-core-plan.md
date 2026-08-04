@@ -47,17 +47,39 @@ Design folds into Metis-plan. Brainstorming is always the first step of the Meti
 - Canonical schemas: refactor-squad (4 workers), hyperplan (5 adversarial), security-research (3 hunters + 2 PoC).
 - Oversight stance: a team run = ONE gated unit (approve run, review mailbox). Teams only for parallelizable work; the 4-gate core stays sequential.
 
-## Firstmate Direction (from README; deepening pending)
+## Firstmate Direction (deepened 2026-08-04 — librarian research)
 
-[kunchenguid/firstmate](https://github.com/kunchenguid/firstmate) (2.8K★, MIT, active — 329 commits, 899 forks): an **agent distro**, not a model/harness/CLI — "Talk to one agent. Ship with a crew."
-- **Roles**: captain (you) → first mate (single liaison agent) → crewmates (autonomous agents, one per tmux window/herdr/zellij tab, each in a treehouse git worktree).
-- **Two task shapes**: ship (deliver PRs/approved local merges) / scout (investigation reports).
-- **Project modes**: no-mistakes / direct-PR / local-only, optional `+yolo`.
-- **Zero-token supervision**: bash watcher sleeps on the fleet, wakes the first mate only when needed (turn-end guard backstop).
-- **OpenCode is a verified primary harness** (TUI plugin).
-- **Stack connection**: dispatch-rules birth commit `a6e88f9` = "port firstmate-style supervision as a thin wrapper around Sisyphus" — the fleet-state-writer/scripts already implement the watcher idea.
+[kunchenguid/firstmate](https://github.com/kunchenguid/firstmate) (2.8K★, MIT, active — created 2026-06-12, 329 commits, 899 forks, last push today): an **agent distro** — "Talk to one agent. Ship with a crew." Captain (you) → first mate (single liaison) → crewmates (autonomous agents, one per tmux/herdr/zellij/orca/cmux session, each in a treehouse worktree). OpenCode is a **verified primary harness** (TUI plugin). Stack connection: dispatch-rules birth commit `a6e88f9` = "port firstmate-style supervision as a thin wrapper around Sisyphus" — this stack already chose **adapt** over **adopt** once.
 
-**Working hypothesis**: an OmO team = a firstmate-style crew where each crewmate = one OmO team member — single worker, free model, concise token-saving (TOON) prompt; autonomy contained within one gated team run.
+### The mapping (user's hypothesis — confirmed at member level)
+
+| Firstmate | OmO equivalent | Fit |
+|---|---|---|
+| Crewmate (autonomous worker) | **One OmO team member** (category/subagent_type) | ⚠️ confirmed with a correction: OmO members are **single-shot task() calls** (one LLM turn, WAIT directives), NOT full-session autonomous agents |
+| First mate (liaison) | Lead agent (Sisyphus, main session) | ✅ close |
+| One dispatch+supervise cycle | One OmO team lifecycle (team_create → mailbox → gated run) | ✅ close |
+| `config/crew-dispatch.json` (NL rules, harness/model/effort, quota-balanced arrays) | `~/.omo/teams/{name}/config.json` + dispatch-rules.json | ✅ close — add model/effort fields |
+| ship/scout task shapes | implement vs research | ✅ close |
+| treehouse worktrees | ce-worktree | ✅ close |
+| Zero-token bash watcher | fleet-state-writer + system reminders | ⚠️ OmO wakes on LLM turn boundaries; firstmate classifies wakes in shell |
+| Secondmates (persistent) | — | ❌ no OmO equivalent (teams are task-scoped) |
+| Project modes (no-mistakes/direct-PR/local-only + yolo) | ce-commit-push-pr | ⚠️ no OmO config equivalent |
+
+### The honest correction on "autonomy"
+
+Firstmate crewmates are full agents in their own sessions, running to completion with independent LLM turns and external zero-token supervision. OmO team members are single-shot: one turn, then idle — bounded autonomy. **An OmO team can approximate firstmate dispatch (one gated run per crew task), not firstmate autonomy (continuous crewmates).** If true firstmate autonomy is wanted, the alternative is adopting the firstmate distro itself (OpenCode is a supported primary harness) — the fork in the road this stack already faced at `a6e88f9` and chose to adapt.
+
+### Stealable patterns (for OmO team configs + dispatch)
+
+1. **Dispatch profile schema** — NL rules → {member, model, effort}, quota-balanced arrays; adapts into team config + dispatch-rules.json.
+2. **TOON task briefs** — task-scoped brief: project, mode (ship/scout), delivery posture, yolo flag, worktree, in/out scope, outcome contract. Crewmate reports only through the lead.
+3. **Project delivery modes** — no-mistakes / direct-PR / local-only + yolo flag, gated by merge authority (captain / ci-green / auto).
+4. **Event-driven supervision** — classify wakes in shell (working: absorb / paused: recheck / merged: surface / failed: surface) before waking the LLM.
+5. **State separation** — append-only wake events vs current-state snapshot (fleet review without transcript parsing).
+
+### Recommended path
+
+Stay on **adapt** (consistent with `a6e88f9`): translate firstmate's dispatch-profile schema + TOON brief + delivery modes into OmO team configs and the 4-gate core. Prototype one team (e.g., a research/scout team: single member, free model, TOON prompt) to validate before scaling. Full firstmate distro adoption remains the fallback if bounded OmO autonomy proves insufficient.
 
 ## Open Decisions (awaiting user greenlight)
 
