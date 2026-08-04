@@ -12,11 +12,78 @@ import { z } from "zod";
  *
  * Plus: user boost detection + lightweight memory scoring
  *
+ * Tier-1 hardening (transferred from TencentDB-Agent-Memory's shouldExtractL1):
+ * - Prompt-injection veto: any message containing instruction-override
+ *   signatures is blocked from auto-capture AND from system-context search.
+ *   Without this, an injected "remember this: ..." message sails through the
+ *   user-boost path and poisons durable memory — which then re-injects into
+ *   system context every session (persistent prompt injection).
+ * - Ranked navigation-index injection: mem CLI now sorts by priority desc, so
+ *   the injected block is the top of the priority ranking; the block is capped
+ *   (drop-with-pointer, never silent truncation) and points the agent at
+ *   axi-memory-show to pull full bodies on demand (Tencent's L2 scene-nav
+ *   pattern).
+ *
  * Performance guards:
  * - System context: injected once per session (injectedSessions guard), not every turn
  * - Tool output: throttled to max 1 mem search per 5 seconds per session, with LRU cache
  * - Both use ripgrep which is fast (~0.1s) but process spawn overhead adds up at scale
  */
+
+// --- Prompt-injection veto (from Tencent shouldExtractL1) -------------------
+// Instruction-override signatures. Narrow by design: false negatives are free
+// (the message just isn't auto-captured); false positives would block
+// legitimate research seeds. Only content that tells the agent to override its
+// behavior is vetoed — topical content always passes.
+const INJECTION_RE =
+  /\b(ignore (all |any )?(previous|prior|above|earlier) (instructions?|rules?|directives?|messages?)|disregard (previous|prior|all) (instructions?|rules?|directives?)|forget (everything|all (previous|prior) (instructions?|messages?|context))|new (system )?(prompt|instructions?)|override (your|the|system) (instructions?|rules?|prompt)|do not (follow|obey) (your|the) (instructions?|programming|rules)|from now on you (must|will)|repeat (after me|everything))\b/i;
+
+function isInjection(text: string): boolean {
+  return INJECTION_RE.test(text);
+}
+
+// --- Injection budget + ranking helpers (AXI: drop-with-pointer, no silent cut) ---
+
+// Code-point-safe truncation: never split a surrogate pair. Used ONLY as a
+// hard floor for the ambient block — the injected nav index caps by dropping
+// lower-ranked rows instead (see rankAndCap).
+function safeTruncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  let cut = s.lastIndexOf("\n", max);
+  if (cut < max * 0.5) cut = max;
+  if (cut < s.length && (s.charCodeAt(cut - 1) & 0xfc00) === 0xd800) cut -= 1;
+  return s.slice(0, cut);
+}
+
+// Strip CLI help blocks ("help[N]:" + indented continuations) from injected
+// output — the agent should use axi-memory-show, not the CLI's hints. Keeps
+// the aggregate "count: N of M total" line (AXI pre-computed aggregate).
+function stripHelpBlocks(s: string): string {
+  return s.replace(/help\[\d+\]:\n(?:  .*\n?)*/g, "");
+}
+
+// Importance bias for auto-captured memories (Tencent L1 priority, 0-100).
+// Type-suggested defaults keep constraints above trivia; user boost tops out.
+function priorityForType(type: string, boosted: boolean): number {
+  if (boosted) return 90;
+  switch (type) {
+    case "constraint": return 80;
+    case "failure": return 75;
+    case "decision": return 70;
+    case "howto": return 60;
+    default: return 50; // preference
+  }
+}
+
+// Cap a mem search result for injection: rank-first (CLI already sorts by
+// priority desc), drop the tail with a pointer. Never mid-block truncation.
+const INJECT_MAX_CHARS = 600;
+function rankAndCap(result: string, maxChars: number): string {
+  const cleaned = stripHelpBlocks(result).trim();
+  if (cleaned.length <= maxChars) return cleaned;
+  const head = safeTruncate(cleaned, maxChars);
+  return `${head}\n… (more — run axi-memory-search for the rest)`;
+}
 
 // --- Lightweight scoring (adapted from better-compaction) -------------------
 
@@ -248,9 +315,13 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       injectedSessions.add(input.sessionID);
 
       try {
-        const result = await runMemSearch(query, 3);
+        // Priority-ranked nav index (CLI sorts by priority desc). Cap by
+        // dropping the tail with a pointer — never silent truncation.
+        const result = await runMemSearch(query, 10);
         if (hasResults(result)) {
-          output.system.push(`\n## axi-memory (live)\n${result}`);
+          output.system.push(
+            `\n## axi-memory (live)\n${rankAndCap(result, INJECT_MAX_CHARS)}\nRun axi-memory-show <id> to read a full memory body.`,
+          );
         }
       } catch {
         // Silent fail — axi-memory is best-effort
@@ -312,6 +383,26 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
           return { output: result };
         },
       }),
+
+      "axi-memory-show": tool({
+        description: "Show full detail of one memory (axi-memory). Use after axi-memory-search to read a specific memory's complete body on demand — the nav index only carries id/type/title. Ids may be passed as full id or date-suffix.",
+        args: {
+          id: z.string().describe("Memory id (e.g. d-2026-07-19-auth-401 or 2026-07-19-auth-401)"),
+          full: z.boolean().optional().describe("Show complete body (default: 500-byte preview with truncation hint)"),
+        },
+        execute: async (args) => {
+          const id = sanitizeShellArg(args.id, 100);
+          if (!id) return { output: "Id is required." };
+          // Direct interpolation only — never pre-built command strings
+          // (same ENOENT bug class as the search/add tools).
+          const result = args.full
+            ? await shell`mem show "${id}" --full`.quiet().nothrow().text()
+            : await shell`mem show "${id}"`.quiet().nothrow().text();
+          const out = result.trim();
+          if (!out) return { output: `No memory found for "${id}".` };
+          return { output: `axi-memory: ${out}` };
+        },
+      }),
     },
 
     // ── Capture last user message + user boost detection + auto-save ──────
@@ -321,6 +412,11 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
     ) => {
       const text = output.parts.map(p => p.text ?? "").join(" ");
       if (!text) return;
+
+      // Injection veto: instruction-override content must not enter durable
+      // memory NOR feed the system-context keyword search. The boost path
+      // ("remember this: ...") is the attack vector — block before scoring.
+      if (isInjection(text)) return;
 
       // Store last user message for system context injection
       lastUserMessages.set(input.sessionID, text);
@@ -342,8 +438,9 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
         // Save immediately — don't wait for session.idle (which may never fire)
         const memType = inferMemType(title);
         const tags = inferTags(title).join(",");
+        const priority = priorityForType(memType, boosted);
         try {
-          await shell`mem add --type ${memType} --title "${title}" --tags "${tags}" --body "Auto-captured (${score.reasoning})"`.quiet().nothrow();
+          await shell`mem add --type ${memType} --title "${title}" --tags "${tags}" --body "Auto-captured (${score.reasoning})" --priority ${priority}`.quiet().nothrow();
         } catch {
           // Silent fail — axi-memory is best-effort
         }
@@ -414,7 +511,7 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
         // (prevents rapid-fire queries even on cache hits)
         lastToolSearch.set(input.sessionID, now);
         if (hasResults(cached.result)) {
-          output.output += `\n\n[axi-memory: ${cached.result.trim()}]`;
+          output.output += `\n\n[axi-memory: ${rankAndCap(cached.result, 400)}]`;
         }
         return;
       }
@@ -431,7 +528,7 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
 
         if (hasResults(result)) {
           // Append to tool output — agent sees this as ambient context
-          output.output += `\n\n[axi-memory: ${result.trim()}]`;
+          output.output += `\n\n[axi-memory: ${rankAndCap(result, 400)}]`;
         }
       } catch {
         // Silent fail

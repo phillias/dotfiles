@@ -82,10 +82,15 @@ so hold promotion to a high bar. Only write a skill when **all three** hold:
 1. **A passing check.** The path was actually verified — a test passed, the
    command exited clean, the repro reproduced, the build went green. Record what
    the check was. "Seemed to work" is not a passing check.
-2. **A named failure pattern.** You can name the failure this path avoids or
+2. **A repeatable verification step.** The skill must carry a "Verify" section:
+   the exact command or step the next session can run to re-prove the path still
+   works. A skill without a verification step is a guess wearing authority — the
+   promotion bar is "another session can trust it without re-deriving it", which
+   requires that they *can* re-derive it cheaply.
+3. **A named failure pattern.** You can name the failure this path avoids or
    diagnoses (e.g. "stale build cache → phantom type errors"), not a vague
    "sometimes it breaks".
-3. **At least one ruled-out dead-end.** A concrete approach you tried and
+4. **At least one ruled-out dead-end.** A concrete approach you tried and
    eliminated, with the reason.
 
 If any is missing, it isn't a skill yet — leave a low-confidence axi-memory
@@ -94,9 +99,9 @@ confident guesses out of the skill set.
 
 ## Harvest procedure
 
-- [ ] 1. **Apply the promotion rule** (above). Passing check + named failure
-      pattern + one ruled-out dead-end — or it isn't a skill: note it in memory
-      or skip. Don't proceed on a confident guess.
+- [ ] 1. **Apply the promotion rule** (above). Passing check + repeatable
+      verification step + named failure pattern + one ruled-out dead-end — or it
+      isn't a skill: note it in memory or skip. Don't proceed on a confident guess.
 - [ ] 2. **Choose scope and name yourself** using the heuristics below — don't
       stop to ask. Default to project scope; pick a clear, specific `name`.
 - [ ] 3. **Dedupe.** Look for an existing skill to UPDATE rather than duplicate.
@@ -165,6 +170,8 @@ yourself inline:
 >   one-off answer. Generalize so it works next time.
 > - Capture the FAILURES too: the approaches we ruled out and why, so the next
 >   session skips the dead-ends. Put them in a "What didn't work" section.
+> - Include a `Verify` section: the exact command/step that re-proves the path
+>   still works (the repeatable verification step from the promotion rule).
 > - Enforce the promotion rule: the skill must record the passing check that
 >   verified this path, name the failure pattern it addresses, and list at least
 >   one ruled-out dead-end. If any is missing (e.g. nothing was actually
@@ -202,9 +209,9 @@ At session start, if that file is non-empty:
 A retired skill can come back — the flywheel's reversibility rule. The plugin
 surfaces a `re-promotion-candidate` digest line when a retired skill is loaded
 ≥2× after its retirement timestamp (people keep reaching for it). Re-promotion
-is manual and user-approved: re-apply the promotion rule (passing check + named
-failure pattern + ruled-out dead-end), then remove the skill from
-`retired.tsv`. Suppression is never permanent.
+is manual and user-approved: re-apply the promotion rule (passing check +
+repeatable verification step + named failure pattern + ruled-out dead-end), then
+remove the skill from `retired.tsv`. Suppression is never permanent.
 
 ## Gotchas
 
