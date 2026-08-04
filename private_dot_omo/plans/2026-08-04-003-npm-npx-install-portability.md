@@ -36,6 +36,29 @@ A single, chezmoi-committed manifest + idempotent reconciler that declares every
 
 **F10. Portability rules already in force.** `{env:HOME}` substitution works in `plugin[]`; the Parity Rule forbids hardcoded home paths in committed files; `$HOME`/`~`/`{{ .chezmoi.homeDir }}`/`%h` per target. Any new install artifact must satisfy this.
 
+## Portability mechanisms (npm-native vs chezmoi)
+
+**M1. `package.json` + lockfile = npm's own portable instruction.** `node_modules` is derived, never tracked; `pnpm install`/`npm ci` reproduces the tree from two files. Already partial in force: `plugins/package.json` pins `@opencode-ai/plugin: 1.14.39` (tracked). **Gap**: the repo convention is pnpm (`pnpm-lock.yaml` managed, per `.chezmoiignore`), but `plugins/` currently uses npm (`package-lock.json` ignored) — switch `plugins/` to pnpm so the auto-load dir deps become lockfile-reproducible cross-machine.
+
+**M2. Global-prefix manifest for `npm install -g`.** Treat `~/.npm-global` as a project root: a tracked pinned package list (or `package.json` in the prefix) + idempotent script runs `npm install -g --prefix "$HOME/.npm-global" <pinned list>`. **Pin versions in the instruction** — bare names drift across machines and time.
+
+**M3. `npx` = zero-install portability.** Shebang `#!/usr/bin/env -S npx --yes --package <pkg>@<ver> <pkg> "$@"` in committed `dot_bin/` scripts runs a tool with **no install state at all**. Trade-offs: cold-start latency + network dependence + cache re-fetch on miss. Best for rarely-run tools; wrong for hot-path CLIs.
+
+**M4. chezmoi's "instructions that execute".** `run_once_*.sh.tmpl` = run once per machine on first apply (marker-idempotent); `run_onchange_*.sh.tmpl` = re-run when its fingerprint changes (the existing cleanup-and-sync pattern). Both must be TTY-safe (`--yes`/`--force`, no prompts — the sibling hook's TTY failure is the cautionary tale).
+
+**M5. `.npmrc` tracked.** Registry, `prefix=~/.npm-global`, `fund=false`, `save=false` — committed, applies everywhere.
+
+**Boundary rule (portability test).** An install instruction is portable iff (a) it pins versions, (b) it contains no absolute home path (`$HOME`/`~`/`{{ .chezmoi.homeDir }}`/`{env:HOME}` per target), (c) its output lands in a chezmoi-ignored or explicitly-unmanaged path. Anything failing (a)–(c) is not a dotfile.
+
+**Stack mapping (instruction → tracked / state → ignored):**
+| Install | Portable instruction (tracked) | State (ignored) | Mechanism |
+|---|---|---|---|
+| Auto-load dir deps | `plugins/package.json` + `pnpm-lock.yaml` (M1) | `plugins/node_modules`, `package-lock.json` | `pnpm install` via run_onchange |
+| Global npm tools (codeburn, …) | pinned list in `scripts/install-globals.sh` (M2) | `~/.npm-global/lib/node_modules` | run_onchange, `--prefix $HOME/.npm-global` |
+| One-shot CLIs | `npx --package=<pkg>@<ver>` shebang scripts (M3) | npx cache | zero-install |
+| opencode plugins (cache) | `plugin-manifest.yaml` (D1) + `{env:HOME}` config refs | `~/.cache/opencode/packages` | reconciler (D2/D6) |
+| Clones + derived bins (toon, eval-harness, snip) | manifest entries + reproducibility notes | `plugin/`, `~/tools`, `~/go/bin`, bin symlinks | manifest + `.chezmoiignore` |
+
 ## Decisions
 
 ### D1. Single source of truth — manifest in dotfiles
@@ -67,9 +90,9 @@ plugins:
 `opencode-cli` → try first; on resolver failure fall back to `npm-global` + `{env:HOME}` path entry (F2). `clone` → `git clone` to `~/.config/opencode/plugin/<id>` (ignored in chezmoi) + optional `post_install` + array entry `./plugin/<id>`. `native` → committed `.ts` in `plugins/` (F8). `derived` → symlink into `~/.local/bin`, never tracked (F5). Working-directory installs stay in `<project>/.opencode/opencode.json`, never in the manifest (F1).
 
 ### D3. Tracked vs derived boundary (audit rule)
-**Tracked**: manifest, `opencode.json` `plugin[]`, `plugins/*.ts`, `plugins/package.json`+`tsconfig.json`, `.chezmoiignore` rules, any committed patch docs.
-**Derived/ignored**: `node_modules/**`, `package-lock.json` (in plugins/), `~/.cache/opencode/packages/**` (rm-able, F4), `plugin/` clones + their `dist/`, `~/.npm-global/**`, `~/.local/bin` symlinks, `~/go/bin` binaries, `~/tools` clones.
-Every derived path must be covered by an ignore rule or an explicit "never add" policy (F7 audit).
+**Tracked**: manifest, `opencode.json` `plugin[]`, `plugins/*.ts`, `plugins/package.json`+`tsconfig.json`+`pnpm-lock.yaml` (M1), `scripts/install-globals.sh` (M2), committed npx-shebang scripts (M3), `.npmrc` (M5), `.chezmoiignore` rules, any committed patch docs.
+**Derived/ignored**: `node_modules/**`, `package-lock.json` (in plugins/, replaced by pnpm), `~/.cache/opencode/packages/**` (rm-able, F4), `plugin/` clones + their `dist/`, `~/.npm-global/**`, `~/.local/bin` symlinks, `~/go/bin` binaries, `~/tools` clones.
+Every derived path must be covered by an ignore rule or an explicit "never add" policy (F7 audit). Enforced by the portability test (a)–(c).
 
 ### D4. Machine portability
 Manifest and reconciler use `$HOME`/`~` only. Any machine-specific value (npm prefix override, OPENCODE_CONFIG_DIR) enters via chezmoi `.tmpl` or env — never a committed absolute path (F10). Multi-profile branches (master/personal/work) inherit the same manifest; per-machine deltas live in `.tmpl`.
@@ -85,8 +108,8 @@ New `run_onchange_install-plugins.sh.tmpl` (sibling of the existing cleanup-and-
 | Phase | Deliverables | Exit criteria |
 |---|---|---|
 | 0 | Capture current state (this session's findings F1–F10) | done — this document |
-| 1 | Manifest schema + encode the 14-entry `plugin[]` + 3 derived artifacts (snip, octm, eval-harness) + 2 clones | manifest matches live installs 1:1; `verify` passes on this machine |
-| 2 | Reconciler script (`~/.config/opencode/scripts/plugin-reconcile.sh`, chezmoi-tracked) implementing D2/D5 | `plugin-reconcile` reports all-green; TOON output; exit 0/1/2 per AXI |
+| 1 | Manifest schema + encode the 14-entry `plugin[]` + 3 derived artifacts (snip, octm, eval-harness) + 2 clones; **switch `plugins/` to pnpm** (M1, track `pnpm-lock.yaml`); **add pinned `scripts/install-globals.sh`** for global npm tools (M2) | manifest matches live installs 1:1; `verify` passes; `pnpm-lock.yaml` committed; `install-globals.sh` idempotent |
+| 2 | Reconciler script (`~/.config/opencode/scripts/plugin-reconcile.sh`, chezmoi-tracked) implementing D2/D5; wire `install-globals.sh` into a run_onchange (M2/M4) | `plugin-reconcile` reports all-green; TOON output; exit 0/1/2 per AXI; global tools reconcile is a no-op when the pinned list is unchanged |
 | 3 | `run_onchange_install-plugins` hook wiring (D6) | fresh-machine apply installs the full stack; second apply is a no-op |
 | 4 | Portability proof: apply dotfiles on a second machine (or `chezmoi apply --dry-run` audit) | no node_modules/absolute-path leaks; all `verify` green |
 
@@ -100,10 +123,12 @@ New `run_onchange_install-plugins.sh.tmpl` (sibling of the existing cleanup-and-
 
 ## Definition of done
 
-Manifest + reconciler committed; live stack (14 plugin-array entries, 2 clones, 3 derived bins) matches the manifest with `verify` all-green; `run_onchange_install-plugins` performs a clean install on a fresh checkout and no-ops on the second run; no `node_modules`, `package-lock`, clone repo, or absolute home path appears in the dotfiles repo beyond the documented boundary.
+Manifest + reconciler committed; live stack (14 plugin-array entries, 2 clones, 3 derived bins) matches the manifest with `verify` all-green; `run_onchange_install-plugins` performs a clean install on a fresh checkout and no-ops on the second run; `plugins/` deps reproducible via `pnpm-lock.yaml`; global npm tools reproducible via pinned `install-globals.sh`; no `node_modules`, `package-lock`, clone repo, or absolute home path appears in the dotfiles repo beyond the documented boundary.
 
 ## Open questions
 
 1. Manifest format: YAML (readable, diff-friendly) vs JSON (schema-validatable by opencode tooling)? Lean YAML.
 2. Should `plugin[]` entries be generated from the manifest at reconcile time (single source of truth) or remain hand-maintained with the manifest as documentation? Lean: manifest is truth, reconciler patches `plugin[]` via `opencode plugin`/edit — but this touches `opencode.json` on every run, so gate behind `--update-config`.
 3. Second-machine proof: is there a live second host to validate Phase 4, or is `chezmoi apply --dry-run` + a container smoke acceptable?
+4. `plugins/` → pnpm migration (M1): do it now (lockfile churn + node_modules rebuild in one shot) or piggyback on the next `@opencode-ai/plugin` bump?
+5. `.npmrc` (M5): global scope — commit `prefix` + `fund=false`, or also enforce a registry allowlist (only `registry.npmjs.org`)?
