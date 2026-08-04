@@ -84,3 +84,28 @@ Agents surface in the orchestrator's context as **one-line descriptions** in the
 **MVP date**: 2026-08-04
 **Trial goal**: judge placement (overlay dirs vs `.omo/teams` vs `.omo/skills`) and per-piece value.
 **Next stage**: based on trial signal, either expand drops, write the `design`/`verify` agent products, or formalize the 4-gate routing in `dispatch-rules.json`.
+
+## Team Mode Activation (research 2026-08-04)
+
+Team mode is **config-gated, not command-activated** — there is no `/team` command:
+
+1. `team_mode.enabled: true` in `~/.omo/omo.jsonc` — **already enabled here** (4 parallel / 8 max, tmux viz).
+2. Restart opencode → the 12 `team_*` tools become available.
+3. Define a team: `~/.omo/teams/{name}/config.json` (or inline spec).
+4. Activate: the **lead agent (Sisyphus, main session)** calls `team_create({ teamName: "..." })` — or `team_create({ inline_spec: {...} })` for ad-hoc. **Through a plan**: a plan step instructs Sisyphus to call `team_create` with the team spec. Diagnostics: `bunx oh-my-openagent doctor`.
+
+### Canonical high-performing schemas (official oh-my-openagent repo)
+
+| Team | Design | Source |
+|---|---|---|
+| **refactor-squad** | 4 × `category` workers (2 quick mechanical + 2 unspecified-low reasoning), explicit reporting contracts (`team_send_message` + `team_task_update`), verifier runs OUTSIDE the team | [refactor.ts template](https://github.com/code-yeongyu/oh-my-openagent/blob/HEAD/src/features/builtin-commands/templates/refactor.ts) |
+| **hyperplan** | 5 adversarial roles — skeptic/validator/researcher/architect/creative, cross-critique | [hyperplan/SKILL.md](https://github.com/code-yeongyu/oh-my-openagent/blob/dev/.agents/skills/hyperplan/SKILL.md) |
+| **security-research** | 5 = 3 hunters (surface/auth-data/runtime-supply) + 2 PoC engineers (prove + falsify) | [security-research/SKILL.md](https://github.com/code-yeongyu/oh-my-openagent/blob/dev/.agents/skills/security-research/SKILL.md) |
+
+### Design rules (from docs + issue #5480 undocumented behaviors)
+
+- Lead must be `sisyphus` / `atlas` / `sisyphus-junior` in the main session. `hephaestus` conditional (`teammate: allow`). Hard-reject as members: oracle, librarian, explore, metis, momus, prometheus, multimodal-looker.
+- `kind: "category"` members REQUIRE a prompt (role boundaries + reporting contract + constraints). `kind: "subagent_type"` members inherit the agent's prompt.
+- **Members run once and exit** (single-shot) — encode WAIT directives for signal-driven work. `team_send_message` is fire-and-forget. No nested teams. Set `owner='lead'` for all tasks (state machine is forward-only; a wrong `completed` is unrecoverable).
+- Sizing: 4 = parallel cap; 5 = adversarial review. Max 8 members.
+- ⚠️ **Oversight tension**: teams are autonomous-parallel by design — treat each team run as ONE gated unit (approve the run, review the mailbox). Use only for genuinely parallelizable work (verification fan-out, multi-area search). The 4-gate core (Metis → plan → build → verify) stays sequential with per-phase approval.
