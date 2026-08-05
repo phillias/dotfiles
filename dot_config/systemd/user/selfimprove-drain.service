@@ -1,0 +1,6 @@
+[Unit]
+Description=Self-improvement drain — harvest self-learning cues into skills/memory
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/fm-selfimprove-drain.sh

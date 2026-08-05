@@ -125,6 +125,21 @@
       "when": "domain modeling / ubiquitous language / ADR",
       "use": { "load_skills": ["domain-modeling"] },
       "why": "Domain-modeling skill sharpens project's domain language."
+    },
+    {
+      "when": "document a solved problem, capture a durable learning, refresh stale learnings, consolidate docs/solutions/",
+      "use": { "load_skills": ["compound"], "mode": "headless" },
+      "why": "Compound skill is the self-contained capture+refresh flow for docs/solutions/."
+    },
+    {
+      "when": "before implementing in a documented area, search past learnings, check if this was solved before, institutional knowledge lookup",
+      "use": { "subagent_type": "solutions-research", "run_in_background": true, "load_skills": [] },
+      "why": "solutions-research is the docs/solutions/ learnings lookup agent."
+    },
+    {
+      "when": "harvest golden path from session, make me smarter next time, drain self-learning cues, self-improvement pass",
+      "use": { "subagent_type": "self-improve", "run_in_background": true, "load_skills": [] },
+      "why": "self-improve drains cues into skills/memory and compounds solved problems."
     }
   ],
   "default": {

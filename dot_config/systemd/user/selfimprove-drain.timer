@@ -1,0 +1,10 @@
+[Unit]
+Description=Run self-improvement drain every 6 hours
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=6h
+Unit=selfimprove-drain.service
+
+[Install]
+WantedBy=timers.target
