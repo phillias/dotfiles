@@ -1345,13 +1345,10 @@
     }
   },
   "plugin": [
-    "oh-my-openagent@latest",
-    "./plugins/tps-status.tsx",
     "./plugins/fleet-state-writer.ts",
     "./plugins/axi-memory-bridge.ts",
     "./plugins/go-pool-fallback.ts",
     "./plugins/go-pool-guard.ts",
-    "./plugins/tmux-subagent-activator.ts",
     "opencode-ntfy.sh",
     "opencode-log-sanitizer",
     "envsitter-guard",
