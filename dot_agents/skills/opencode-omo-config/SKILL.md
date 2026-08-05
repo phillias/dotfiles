@@ -186,6 +186,67 @@ This skill documents the architecture, decisions, and maintenance procedures for
 3. **`thinkingmachines/inkling`** — $1.00/$4.05. **1M context window** — unique capability. Multimodal.
 4. **`zai-org/GLM-5.2`** — $1.40/$4.40. **524K context**, reasoning. SWE-bench leader.
 
+### CheapestInference (cheapestinference.com) — flat-rate unlimited time-block subscriptions
+
+Investigated 2026-08-04 (live site + docs; API not probed — no key). **Not a reseller** — a cooperative-style pool operator serving open-weight models with **unlimited tokens during reserved daily 8-hour UTC time blocks** for a flat monthly fee. No per-token billing, no token counting, no overage. Open-source models only.
+
+**Cost**: Flat monthly per daily 8-hour UTC block. Reserve 1–3 blocks (`asia` 00:00–08:00, `europe` 08:00–16:00, `americas` 16:00–24:00); all three = 24/7 (≈$177/mo Frontier, ≈$38/mo Core). Annual billing = −15%. **Price lock**: renewals never cost more; price drops pass through automatically. Payment: Stripe card (auto-renew, cancel anytime); USDC on Base + x402 agent self-subscription **temporarily paused**.
+
+| Pool | Models | Price per 8h block | Annual (−15%) |
+|------|--------|--------------------|---------------|
+| **Flagship** | Kimi K3 (solo) | $149–165/mo | from $126.65/mo — **sold out, very limited seats** |
+| **Frontier** | Kimi K2.7, GLM 5.2, MiniMax M3 | $57–61/mo | from $48.45/mo |
+| **Core** | DeepSeek V4 Flash, MiMo v2.5 | $14.99–19.99/mo | from $12.74/mo |
+
+**Rate limits**: Unlimited tokens in-window — **no RPM cap, no daily quota, no monthly budget**. But **1 concurrent request per key** (fair use). Scale parallelism by buying more seats/subscriptions and combining keys (coverage windows add up; overlapping hours stack capacity). **Outside reserved blocks the key serves nothing** — availability is time-block-restricted.
+
+**Key file**: `.cheapestinference-key` → `CHEAPESTINFERENCE_API_KEY` (documented convention — **NOT created or wired into `opencode.json`**)
+
+**Endpoints**: OpenAI `https://api.cheapestinference.com/v1` (chat/completions, models, usage) + Anthropic `https://api.cheapestinference.com/anthropic/v1/messages`. Drop-in for Claude Code, Cline, Roo Code. Tools/function-calling verified against live API per vendor docs. Management API mints keys/subscriptions programmatically; MCP server available.
+
+#### Model Catalog (3 pools, 6 models)
+
+| Model | Pool | Model ID | Context | Cost basis in/out $/1M |
+|-------|------|----------|---------|------------------------|
+| Kimi K3 (Moonshot flagship) | Flagship | `kimi-k3` | 256K | $3.00 / $15.00 |
+| Kimi K2.7 | Frontier | `kimi-k2.7` | 256K | $0.45 / $2.25 |
+| GLM 5.2 | Frontier | `glm-5.2` | 198K | $1.40 / $4.40 |
+| MiniMax M3 | Frontier | `minimax-m3` | 1M | $0.60 / $2.40 |
+| DeepSeek V4 Flash | Core | `deepseek-v4-flash` | 1M | $0.14 / $0.28 |
+| MiMo v2.5 (Xiaomi) | Core | `mimo-v2.5` | ~1M | $0.14 / $0.28 |
+
+**⚠️ Verification needed before wiring**: max output tokens per model (undocumented — pull `GET /v1/models`), temperature support, tool-loop reliability under agentic load, live pool lineup. **Lineup churns**: K2.6 retired July 2026; Infrabase snapshot (June 2026) showed an earlier lineup (K2.6/GLM 4.7/MiniMax M2.5 @ $33.15/mo) — prices and models moved since.
+
+**Placement advice**: 🔴 pay-tier flat-rate option for **high-volume, low-parallelism** agents (explore, librarian, quick, sisyphus-junior) that burn frontier tokens past free-tier rate limits. **Concurrency-1 serializes subagent swarms — never a team-mode/oracle/momus primary.** Buy only the Americas block (16–24 UTC ≈ 12pm–8pm ET) for dev-hour coverage. Counterparty risk: young indie (since Sept 2025), hidden WHOIS, no published SLA, Scamadviser "average trust" — trial Core ($14.99) before Frontier.
+
+### Cheaper Inference (cheaperinference.com) — Keak discounted-capacity reseller
+
+Investigated 2026-08-04 (live site + docs; API not probed — no key). **A Keak company** (keak.com). Buys excess committed inference capacity from AI companies (sellers include OpenAI, Anthropic, Google, xAI, AWS Bedrock, Azure AI, OpenRouter) and resells it at **up to 30% below direct list price — never above list**, no routing surcharge. **Serves proprietary models (Claude, GPT, Kimi K3) — unique among the 15-provider stack.**
+
+**Cost**: Usage-based pay-per-token, no contract, no monthly commitment. Wallet-funded: min **$5**, **+$10 bonus on first funding** ($15 usable). Stripe; auto-recharge optional. Referral program ($10/$10). No free tier.
+
+**Rate limits**: **Per-key configurable** — model allowlist, IP/CIDR restriction, expiration, **RPM, concurrent requests, daily quota, monthly budget**. Gateway retries network failures + 404/408/409/425/429/5xx once, then reroutes in **price order** across eligible providers (API-level fallback, complementary to OmO `runtime_fallback`). `402` = insufficient wallet (OmO `retry_on_errors` already includes 402 → clean fallthrough). No SLA published; support <12h; status at `platform.keak.com/status`; Trust Center + DPA + subprocessor list.
+
+**Privacy boundary**: prompts not stored in app DB, but **forwarded to the serving provider** — weaker than CheapestInference's in-memory open-source story.
+
+**Key file**: `.cheaperinference-key` → `CHEAPER_INFERENCE_API_KEY` (documented convention — **NOT created or wired into `opencode.json`**)
+
+**Endpoints**: OpenAI `https://api.cheaperinference.com/v1` (chat/completions, responses, completions, images/generations, uploads, models, pricing/changes) + Anthropic-compatible Messages. Keys `ir_live_` prefix. Vision input: up to 10 images / 5MB each / 23MB decoded total; temp uploads for large payloads. Prompt caching passed through with provider-specific cache rates.
+
+#### Models (live catalog — partial list from docs)
+
+| Model | Type | Notes |
+|-------|------|-------|
+| `claude-opus-4.6` | text | Proprietary Claude — per-token access without subscription |
+| `gpt-5.4` | text | Example catalog rate $1.25 in / $10.00 out per 1M; cache-read $0.125 (10%) |
+| `kimi-k3` | text | `reasoning: {"effort": low\|high\|max}` — no `medium` |
+| `nano-banana-pro` | image | Fixed output-token per resolution (1,120 @ 1K/2K, 2,000 @ 4K) |
+| `grok-imagine` | image | `/v1/images/generations` only |
+
+**⚠️ Verification needed before wiring**: full `/v1/models` catalog (context/output limits per model, actual discounts), settled-rate vs cached-rate delta, tool-loop reliability. Rates are **market-linked**: final charge can differ from the cached rate (docs: "do not treat a locally cached rate as the final charge") — reconcile via `pricing_version` / `pricing_checked_at` / `pricing_updated_at` response fields and the `pricing/changes` feed.
+
+**Placement advice**: the stack's best **budget pay-tier** — per-token frontier (Claude/GPT-class) with hard key-level budget caps and real company backing. Fits `fallback_models` for oracle/momus/hephaestus (frontier reasoning when the opencode subscription pool is throttled) and visual-engineering (image gen) — *after* free tiers, alongside Baseten/Go. NOT for high-volume utility agents (per-token accrues; free tiers win). Not a replacement for CheapestInference's flat-rate volume economics.
+
 ### Free→Subsidized→Pay Value Analysis
 
 **Priority ranking for fallback chain placement (exhaust free → subsidized → pay):**
@@ -201,6 +262,8 @@ This skill documents the architecture, decisions, and maintenance procedures for
 | 🟡 **SUBSIDIZED** | OpenCode Go | 24 | $10/mo | — | Quality pool (K2.6, DS-V4, GLM-5.1) |
 | 🔴 **PAY** | Google | 1 | Pay-per-token | 1500/day | Gemini 2.0 Flash, 1M ctx, last resort |
 | 🔴 **PAY** | Together | 1 | Pay-per-token | 60+ | DeepSeek R1, reasoning specialist |
+| 🔴 **PAY** | CheapestInference | 6 (3 pools) | Flat $12.74–149/mo per 8h block | Unlimited in-window, 1 req/key | Open-model unlimited — DS-V4 Flash/K2.7/GLM 5.2/MiniMax M3 (1M ctx) |
+| 🔴 **PAY** | Cheaper Inference (Keak) | 5+ (live catalog) | Per-token ≤30% off list | Per-key configurable | Proprietary Claude/GPT per-token, image gen, budget caps |
 
 **Key insight**: NVIDIA NIM provides the **largest free model catalog** (48 relevant models at $0) with a shared ~40 RPM limit. This should be inserted into fallback chains **after** Cloudflare (which has higher RPM at 300 req/min) but **before** OpenRouter free (which has only 50 req/day). Baseten's $30 credits + $0.10/M GPT-OSS 120B provides a cheap subsidized tier between free and full-pay.
 
@@ -215,6 +278,8 @@ This skill documents the architecture, decisions, and maintenance procedures for
 6. Baseten ($30 credits → $0.10/M GPT-OSS 120B)
 7. OpenCode Go ($10/mo pool)
 8. Google Gemini (pay, last resort)
+
+**New pay-tier additions (2026-08-04 investigation)**: **CheapestInference** (flat-rate unlimited) and **Cheaper Inference** (Keak, discounted per-token) both slot at the 🔴 PAY end of the ladder — as *alternatives to* Baseten/Go depending on workload shape (see their sections): flat-rate wins for sustained frontier-model volume; discounted per-token wins for bursty proprietary-model access with budget caps. Neither has a free tier; neither changes the free→subsidized ordering above. Neither is wired into `opencode.json` yet — documentation only.
 
 ### Recently Added Models (2026-07-24)
 
@@ -394,7 +459,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 5. **Auto-loaded plugins.** Any `.ts`/`.tsx` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-fallback.ts`, `go-pool-guard.ts`, `self-learning-autocapture.ts`, `axi-memory-bridge.ts`, `tmux-subagent-activator.ts` (plus `tps-status.tsx`, a TUI-slot plugin). All run in-process with zero LLM cost on the write side.
 6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
-### Provider Stack (13 providers)
+### Provider Stack (15 providers)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
@@ -410,6 +475,9 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 | **Together** | 2 (DeepSeek R1 + Ternary Bonsai 27B) | Free tier | Reasoning specialist + 262K ctx ternary (vision, tools). ⚠️ Bonsai single-shot only (Known Failure) |
 | **HuggingFace** | 9 (GPT-OSS-120B, GPT-OSS-20B, DS-V4-Flash, DS-V4-Pro, Qwen3-Coder-480B, Qwen3-235B, Gemma-4-26B, Llama-3.3-70B, R1-0528) | Pass-through (HF router) | **DORMANT** — zero free models, paid-only. See Defunct Providers. |
 | **Agnes AI** | 5 (video, image, flash models) | Free tier | Multimodal (video, image generation) |
+| **InternLM** | 1 (Intern-S2-Preview-397B) | Free (official API) | Scientific reasoning, 397B MoE |
+| **CheapestInference** | 6 (3 pools: Flagship K3 / Frontier K2.7+GLM 5.2+MiniMax M3 / Core DS-V4 Flash+MiMo v2.5) | Flat $12.74–149/mo per 8h block | Flat-rate unlimited time blocks (1 concurrent req/key), open-source only — **documented, NOT wired into `opencode.json`** |
+| **Cheaper Inference** (Keak) | 5+ live catalog (Claude, GPT, Kimi K3, image) | Per-token ≤30% off list | Discounted proprietary models; per-key RPM/concurrency/quota/budget caps — **documented, NOT wired into `opencode.json`** |
 
 ### Defunct Providers (removed 2026-07-18)
 
@@ -439,6 +507,8 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 .exa-key               → EXA_API_KEY
 .nvidia-key            → NVIDIA_API_KEY           # NVIDIA NIM — free prototyping, ~40 RPM shared
 .baseten-key           → BASETEN_API_KEY          # Baseten — $30 free credits, pay-per-token after
+.cheapestinference-key → CHEAPESTINFERENCE_API_KEY  # flat-rate unlimited pools (time-block subs) — documented only, not yet created
+.cheaperinference-key  → CHEAPER_INFERENCE_API_KEY  # Keak discounted capacity (≤30% off list) — documented only, not yet created
 .google-client-id      → GOOGLE_CLIENT_ID
 .google-client-secret  → GOOGLE_CLIENT_SECRET
 .composio-key          → COMPOSIO_API_KEY
@@ -455,7 +525,7 @@ Both use the same key files. Shell profiles mirror the key files loaded by openc
 `~/.config/opencode/opencode.json` provides:
 
 - **`small_model`**: `google/gemini-2.0-flash` (1M context)
-- **`provider`**: All 11 live providers (Cloudflare, OpenCode Zen, OpenCode Go, Agnes AI, OpenRouter, Mistral, SambaNova, Google, Together, HuggingFace) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it).
+- **`provider`**: 13 live provider blocks (Cloudflare, OpenCode Zen, OpenCode Go, Agnes AI, OpenRouter, Mistral, SambaNova, Google, Together, HuggingFace, NVIDIA NIM, Baseten, InternLM) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it). **CheapestInference + Cheaper Inference are documented in this SKILL (2026-08-04) but NOT wired into `opencode.json`** — see their sections.
 - **`compaction`**: `{auto: false, prune: true, reserved: 50000, tail_turns: 40}`
 - **`mcp`**: Baseline MCPs (context7, grep_app, websearch, mcp_everything)
 - **`plugin`**: `["oh-my-openagent@latest"]` — the OmO plugin is loaded directly by root `opencode.json`
@@ -726,6 +796,30 @@ Profiles with OmO (free, team) use OmO's built-in `runtime_fallback` in `oh-my-o
   "modelConcurrency": {}
 }
 ```
+
+## Provider Rate Limits & Quotas (RPM / Concurrency / Daily Quota / Monthly Budget)
+
+Consolidated reference for all 15 providers (verified 2026-08-04 from this skill's empirical sections + live-site investigation of CheapestInference / Cheaper Inference). "—" = not published / not documented. "Per-key limits configurable?" = the provider lets you set request/concurrency/quota/budget controls on an API key — **only Cheaper Inference (Keak) offers full key-level controls** among the 15. `omo.jsonc providerConcurrency` = the config's own client-side cap from `~/.omo/omo.jsonc` `background_task.providerConcurrency` (— = provider not wired into omo.jsonc).
+
+| Provider | Provider-side RPM | Provider-side Concurrency | Daily Quota | Monthly Budget | Per-key limits configurable? | omo.jsonc providerConcurrency |
+|----------|-------------------|---------------------------|-------------|----------------|------------------------------|-------------------------------|
+| Cloudflare Workers AI | 300 req/min (free tier) | — | — | — | No | 8 |
+| OpenRouter | free: 50 req/day; paid: per-tier | — | free: 50 req/day | — | No | 4 |
+| OpenCode Zen | sub-based; free ~200 req/day | — | free ~200 req/day | — | No | 10 |
+| OpenCode Go | $10/mo pool (no published RPM) | — | — | — | No | 6 |
+| NVIDIA NIM | ~40 RPM **shared across ALL models** | — | No daily token cap | — | No | 4 |
+| Baseten | 15 (unverified) / 120 (verified) | — | TPM 100K/500K/1M per tier | — | No | 3 |
+| Mistral | free: 1 req/s | — | free-tier limits | — | No | — |
+| SambaNova | free (no published RPM) | — | — | — | No | — |
+| Google | free: 1500 req/day | — | 1500 req/day | — | No | — |
+| Together | free: 60 RPM / 60K TPM; paid 60+ | — | free: 60K TPM | — | No | 4 |
+| HuggingFace | no fixed RPM (credit-limited) | — | credit balance; **402 on exhaustion** | — | No | (removed) |
+| Agnes AI | free tier (no published RPM) | — | — | — | No | 3 |
+| InternLM | free official API (no published RPM) | — | — | — | No | 3 |
+| **CheapestInference** | **Unlimited in-window** (no RPM cap) | **1 concurrent req/key** (stack via combined keys) | none (flat-rate) | none (flat-rate) | No (fixed 1) | — |
+| **Cheaper Inference** (Keak) | **Per-key configurable** | **Per-key configurable** | **Per-key configurable** | **Per-key configurable** | **Yes — allowlist, IP, expiry, RPM, concurrency, daily quota, monthly budget** | — |
+
+**Concurrency caveat (the two new providers)**: CheapestInference's fixed 1-concurrent-per-key makes it unsuitable for parallel subagent swarms (serializes team mode) — scale parallelism only via combined keys across multiple subscriptions. Cheaper Inference supports per-key concurrency and is the only provider of the 15 where the *key itself* can enforce the exact limits the config would otherwise rely on client-side `providerConcurrency` for.
 
 ## TUI Theme
 - Active: `tokyonight` (via `tui.json`)
