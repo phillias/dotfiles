@@ -4,7 +4,7 @@
 
 **Two-stage shape: internal draft, then chat-time synthesis.** The synthesis is composed in two stages. Stage 1 is an internal three-bucket draft (Stated / Inferred / Out of scope) the agent uses to think comprehensively about scope. Stage 2 is the compressed chat-time output: a tier-shaped summary plus "Call outs" (zero or more, capped by plan depth — see the cap table under "How many call-outs are right?") — the specific forks where the user might redirect. The user only sees stage 2. The internal draft still informs the plan body via the doc-shape routing below; it just doesn't reach the user verbatim. This split exists because the comprehensive audit shape produced too much detail for the user to weigh in on, even when the granularity rules were followed.
 
-**Three-bucket structure is the internal draft, not the user-facing artifact.** It does its scope-thinking job during stage 1 and dissolves when Phase 5.2 writes the plan: Stated content informs Requirements, Inferred content informs Key Technical Decisions / Implementation Units (interactive mode) or `## Assumptions` (non-interactive mode), Out-of-scope content informs Scope Boundaries. The plan has no parallel `## Synthesis` section — only the stage-2 summary embeds, as `## Summary`. See "Doc shape after confirmation" below for the routing.
+**Three-bucket structure is the internal draft, not the user-facing artifact.** It does its scope-thinking job during stage 1 and dissolves when Phase 5.2 writes the plan: Stated content informs the Product Contract's Requirements, Inferred content informs Key Technical Decisions / Implementation Units (normal interactive mode) or the Planning Contract's `### Assumptions` (non-interactive mode, or an interactive `SKIP_SCOPING_CONFIRM` skip run), Out-of-scope content informs the Product Contract's Scope Boundaries. The plan has no parallel `## Synthesis` section — only the stage-2 summary embeds, under the Product Contract's `### Summary`. See "Doc shape after confirmation" below for the exact routing and section nesting.
 
 This content is loaded when a synthesis-summary phase fires in ce-plan. There are two variants — they share structure but differ in timing and content focus:
 
@@ -22,6 +22,8 @@ The internal draft is structured in three labeled buckets. Items may appear in t
 - **Stated** — what the user said directly (in the original prompt, prior conversation, dialogue answers, or the upstream brainstorm doc when present). Items here have explicit user-language anchors.
 - **Inferred** — what the agent assumed to fill gaps. Scope boundaries the user never explicitly named, success criteria extrapolated from intent, technical assumptions made because the brief interview didn't probe them. The Inferred list is the most actionable bucket — items here are the agent's bets that the user can correct.
 - **Out of scope** — deliberately excluded items. Adjacent work the agent considered but decided not to include, refactors, nice-to-haves, future-work items.
+
+Session-settled decisions are **Stated with provenance**, never Inferred — the user's conversation acts anchor them by definition. Carry each into the Stated bucket with its class and rejected alternative.
 
 This draft is internal. Do not paste it verbatim into chat. Compose it as a thinking step, then derive stage 2 from it.
 
@@ -65,6 +67,7 @@ Form within each section (prose, bullets, mix) follows whatever communicates bes
 
 - **No "Stated" bucket in chat** (the orientation or scope-claim covers it).
 - **No "Out of scope" bucket as a separate list** — fold a non-obvious exclusion into a call-out when it survives the keep test, otherwise drop it.
+- **Session-settled decisions render as `Carrying forward:` lines, never call-outs.** One line each — decision, class, and what it was chosen over — placed before Call outs in both templates. The keep test excludes them from call-outs: a fork the user already closed is not a fork.
 - **Source-document vocabulary.** When a brainstorm exists, use its terms. Don't invent agent-coded shorthand (e.g., "skill-instruction shape", "hooks engine selection at Step 2a entry"). When referencing acceptance examples, requirements, or flows, name them in plain terms ("the install-prompt acceptance case") — never use bare IDs.
 
 - **Pre-emit mechanical checks.** Before emitting the synthesis, scan the output:
@@ -137,6 +140,16 @@ No open decisions to weigh in on — proceeding to [research / plan-write]. Inte
 The announcement is mandatory when skipping — silent proceeding is not allowed. The "why" (no forks worth flagging) must be visible.
 
 For Standard/Deep with zero call-outs, the confirmation template still fires; the "Call outs:" header is simply omitted. The user gets the summary plus the explicit confirmation request.
+
+There is a third skip condition: the **opt-in `SKIP_SCOPING_CONFIRM` setting** (Phase 0.0 — `confirm:auto` token or the `plan_skip_scoping_confirm` config key). When it resolves to skip, the gate auto-proceeds for *any* tier or call-out count — the user has pre-authorized it. The announcement is still mandatory (it names that confirmation is off and that inferred scope landed in `## Assumptions`), and the skip is scoped to this confirmation only: genuine blocking questions and the Phase 5.4 menu still fire. This differs from headless mode only in that announcement — headless has no synchronous user to announce to.
+
+When the opt-in skip applies, emit this announcement — **not** the auto-proceed template above. The opt-in skip fires for *any* tier and call-out count, so claiming "No open decisions to weigh in on" would be false whenever call-outs survived; the announcement instead names that confirmation is off and that inferred scope is recorded under `## Assumptions`:
+
+```
+Planning: [1-3 line scope claim]
+
+Scoping confirmation is off, so I'm proceeding to [research / plan-write] without waiting. Inferred scope is recorded under Assumptions in the plan — interrupt if I have it wrong.
+```
 
 ---
 
@@ -231,7 +244,7 @@ Each guard is an explicit conditional in SKILL.md, not implicit. R2 solo does NO
 
 **Content focus**: full-breadth internal draft. Phase 0.4 bootstrap is brief by design ("ask one or two clarifying questions"), so the agent has made substantial inferences before Phase 0.7 fires. The Inferred bucket in the internal draft is especially load-bearing here — the agent's bets are widest. Stage 2 compression still applies: most of those inferences will not survive the keep test, and that is correct — the user should only see the forks they can meaningfully redirect.
 
-**Counter-warning for rich-context invocations.** When the inference source is *not* just Phase 0.4 bootstrap — e.g., a prior in-conversation validation agent, completed sibling work units earlier in the same session, or a planning artifact already in the conversation — the temptation is to dump that material into call-outs verbatim. The granularity rules tighten in this case, not loosen: the agent has more material to compress, not more material to expose. A bet that's already been validated upstream is **Stated** (internal), not Inferred (internal); a bet whose specifics belong in plan-body is named at decision-level in the call-out regardless of how much detail upstream context provided. If recent turns produced detailed code, file paths, or research artifacts, expect the internal draft to over-share and compress proactively before stage 2.
+**Counter-warning for rich-context invocations.** When the inference source is *not* just Phase 0.4 bootstrap — e.g., a prior in-conversation validation agent, completed sibling work units earlier in the same session, or a planning artifact already in the conversation — the temptation is to dump that material into call-outs verbatim. The granularity rules tighten in this case, not loosen: the agent has more material to compress, not more material to expose. A bet that's already been validated upstream is **Stated** (internal), not Inferred (internal); a bet whose specifics belong in plan-body is named at decision-level in the call-out regardless of how much detail upstream context provided. If recent turns produced detailed code, file paths, or research artifacts, expect the internal draft to over-share and compress proactively before stage 2. A session-settled decision is the strongest form of already-validated content — carry it forward as a `Carrying forward:` line, never re-ask it.
 
 **Why pre-research, not pre-write**: research effort would be wasted if scope is wrong. Catching scope errors before sub-agent dispatch (Phase 1.1's repo-research-analyst, learnings-researcher, etc.) saves token and time cost.
 
@@ -243,15 +256,20 @@ Each guard is an explicit conditional in SKILL.md, not implicit. R2 solo does NO
 
 **Confirmation template (fires for Standard/Deep regardless of call-out count, or for any tier with one or more call-outs surviving):**
 
+The opener defaults to "Based on your request" — add "and our brief discussion" only when the Phase 0.4 bootstrap actually involved back-and-forth clarifying questions. Solo invocations often proceed with no dialogue, and claiming a discussion the user didn't have reads as off.
+
 ```
-Based on your request and our brief discussion, here's the scope I'm proposing to plan against:
+Based on your request, here's the scope I'm proposing to plan against:
 
 [scope claim — what the plan will target, what it will not; affirm-or-redirect level; NOT an enumeration of Implementation Units]
+
+**Carrying forward:** (omit this header when no session-settled decisions exist)
+- [settled decision in 1 line: decision — class; chosen over <alternative>]
 
 **Call outs:** (omit this header when zero forks survived the keep test)
 - [decision-level fork in 1-2 lines: name the choice and optional one-clause trade-off in parens. NO multi-sentence rationale, NO "my default is X" pitch — those belong in Key Technical Decisions in the plan body, not the synthesis]
 
-Confirm and I'll proceed to research, drawing on this scope. (You can also redirect to /ce-brainstorm if this is bigger than you initially thought — I'll stop here and load it for you.)
+Confirm and I'll proceed to research, drawing on this scope. (You can also redirect to `ce-brainstorm` if this is bigger than you initially thought — I'll stop here and load it for you.)
 ```
 
 **Auto-proceed template (fires only for Lightweight with zero call-outs):**
@@ -283,7 +301,7 @@ Items to surface in the internal draft:
 
 Most of these will not survive the keep test as separate call-outs. Surface only the forks where another reasonable agent might choose differently and the user can correct cheaply now.
 
-**Reads from doc body, not a synthesis section**: brainstorm docs do not have a `## Synthesis` section (the synthesis is a chat-time artifact in ce-brainstorm; only the prose summary embeds, as `## Summary`). Phase 5.1.5 derives plan-time decisions from the brainstorm doc's body sections — Summary, Problem Frame, Requirements, Key Decisions, Scope Boundaries — plus Phase 1 research. Older brainstorms that may have a legacy `## Synthesis` section work fine; that content is treated as supplementary, not authoritative, with the body sections taking precedence.
+**Reads from the Product Contract, not a synthesis section**: the upstream artifact is a requirements-only unified plan (`product_contract_source: ce-brainstorm`), not a separate brainstorm doc, and it has no `## Synthesis` section (the synthesis is a chat-time artifact in ce-brainstorm; only the prose summary embeds, under the Product Contract). Phase 5.1.5 derives plan-time decisions from the Product Contract's sections — Summary, Problem Frame, Requirements, Key Flows, Scope Boundaries — plus Phase 1 research. Legacy standalone requirements docs (`origin: docs/brainstorms/...`) and older brainstorms that may carry a legacy `## Synthesis` section still work; that content is treated as supplementary, not authoritative, with the Product Contract / body sections taking precedence.
 
 **Why pre-write, not pre-research**: brainstorm doc + R1 synthesis already validated WHAT, so research is well-targeted. Plan-time decisions emerge during research and structuring (Phases 1-4), so pre-write catches them at the latest cheap moment — before Phase 5.2 commits the plan to disk.
 
@@ -299,6 +317,9 @@ Most of these will not survive the keep test as separate call-outs. Surface only
 The brainstorm scopes [1-2 sentence restatement of the brainstorm's scope as orientation; in the brainstorm's own vocabulary; NOT an enumeration of Implementation Units, constraints, or acceptance examples].
 
 This plan [plan-specific scoping: what's covered vs. deferred vs. expanded relative to the brainstorm; test scope; any adjacent refactors pulled in or held out. Prose or bullets per substance].
+
+**Carrying forward:** (omit this header when no session-settled decisions exist)
+- [settled decision in 1 line: decision — class; chosen over <alternative>]
 
 **Call outs:** (omit this header when zero forks survived the keep test)
 - [plan-time fork in 1-2 lines: name the choice and optional one-clause trade-off in parens. NO multi-sentence rationale, NO "my default is X" pitch — those belong in Key Technical Decisions in the plan body, not the synthesis]
@@ -347,12 +368,13 @@ When the skill is invoked from an automated workflow such as LFG or any `disable
 **Shared behavior across both variants:**
 
 - **No user prompt; no stage 2; no auto-proceed announcement.** All three are moot.
-- **Route internal-draft content with mode-aware shape:**
-  - **Stated** content → Requirements (user-stated constraints, traced to origin's R-IDs when present)
-  - **Out-of-scope** content → Scope Boundaries
-  - **Inferred** content → `## Assumptions` section in the plan — explicitly labeled as un-validated agent bets. Do NOT route Inferred items into Key Technical Decisions or Implementation Units; that would make un-validated bets indistinguishable from user-confirmed decisions.
+- **Route internal-draft content with mode-aware shape** (nested under Product Contract / Planning Contract in a `ce-unified-plan/v1` artifact; top-level `##` headings in a legacy standalone plan):
+  - **Stated** content → Product Contract `### Requirements` (user-stated constraints, traced to origin's R-IDs when present)
+  - **Out-of-scope** content → Product Contract `### Scope Boundaries`
+  - **Inferred** content → Planning Contract `### Assumptions` — explicitly labeled as un-validated agent bets. Do NOT route Inferred items into Key Technical Decisions or Implementation Units; that would make un-validated bets indistinguishable from user-confirmed decisions.
+  - **Session-settled decisions** (including those from a passed brief) → settled product decisions route to their labeled Product Contract Key Decisions with exact `Governs R…` links; settled planning/how decisions route to labeled Key Technical Decisions. Neither belongs in `### Assumptions` — they are user-confirmed; the Assumptions firewall covers agent-inferred bets only. A brief entry that fails the settlement test (cannot state its rejected alternative) demotes to a directive or open area instead.
 
-The `## Assumptions` section appears in non-interactive plans only. Interactive plans don't need it (Inferred bets either get user-corrected via call-outs and become Key Technical Decisions, are revised away, or were judged not-fork material by the keep test and dissolved into Implementation Units silently).
+The `### Assumptions` section appears in non-interactive plans and in interactive plans where the user opted into `SKIP_SCOPING_CONFIRM` — both cases proceed without confirming Inferred bets, so those bets must stay visibly labeled. A normal interactive plan doesn't need it (Inferred bets either get user-corrected via call-outs and become Key Technical Decisions, are revised away, or were judged not-fork material by the keep test and dissolved into Implementation Units silently).
 
 This restores the audit visibility the original design intended (un-validated bets must not propagate as authoritative content), but surfaces them under their own label rather than hiding them. Downstream review (ce-doc-review, ce-work, human PR review) can scrutinize Assumptions specifically.
 
@@ -362,8 +384,8 @@ This restores the audit visibility the original design intended (un-validated be
 
 If the user response indicates they're in the wrong skill or want a different workflow:
 
-- **Solo variant**: common redirects include "this is bigger than I thought — let me brainstorm first" (suggest `/ce-brainstorm`), "this is just a fix, no plan needed" (suggest `/ce-work`), or "I need to investigate first" (suggest `/ce-debug`).
-- **Brainstorm-sourced variant**: less common, but possible — "actually this scope is wrong, take it back to brainstorm" (suggest `/ce-brainstorm` to revise the upstream doc).
+- **Solo variant**: common redirects include "this is bigger than I thought — let me brainstorm first" (suggest `ce-brainstorm`), "this is just a fix, no plan needed" (suggest `ce-work`), or "I need to investigate first" (suggest `ce-debug`).
+- **Brainstorm-sourced variant**: less common, but possible — "actually this scope is wrong, take it back to brainstorm" (suggest `ce-brainstorm` to revise the upstream doc).
 
 In either case: stop ce-plan, suggest the alternative skill, offer to load it in-session. Don't push back or argue — the user's redirect signal is the deliberate choice.
 
@@ -371,18 +393,18 @@ In either case: stop ce-plan, suggest the alternative skill, offer to load it in
 
 ## Doc shape after confirmation
 
-After user confirmation (or after the soft-cut decision proceeds), Phase 5.2 writes the plan doc. The internal draft does NOT carry into the plan as a `## Synthesis` section. Only the stage-2 summary embeds, replacing the existing `## Overview` slot in the plan template (renamed to `## Summary` for terminology consistency). Internal-draft content dissolves into the plan's body sections:
+After user confirmation (or after the soft-cut decision proceeds), Phase 5.2 writes the plan doc. The internal draft does NOT carry into the plan as a `## Synthesis` section. Only the stage-2 summary embeds, under the Product Contract's `### Summary`. Internal-draft content dissolves into the unified plan's sections. In a `ce-unified-plan/v1` artifact these destinations are nested — Summary, Problem Frame, Requirements, and Scope Boundaries live under `## Product Contract`; Key Technical Decisions and Assumptions live under `## Planning Contract`; Implementation Units is its own top-level section. (Legacy standalone plans without `artifact_contract` keep these as top-level `##` headings.)
 
-| Internal-draft element | Where it goes in the plan |
+| Internal-draft element | Where it goes in the unified plan |
 |---|---|
-| Summary (stage 2) | `## Summary` (1-3 lines prose, forward-looking) — rewrite to plan convention if the chat-time summary used bullets. Solo variant: scope being targeted. Brainstorm-sourced: implementation approach |
-| Stated bullets | `## Requirements` (R-IDs) and where relevant `## Problem Frame` for narrative context |
-| Inferred bullets | `## Key Technical Decisions` (with rationale) and Implementation Units when the bet drives a structural choice. In non-interactive mode, route to `## Assumptions` instead — see Headless mode above. |
-| Out-of-scope bullets | `## Scope Boundaries` — including the `### Deferred to Follow-Up Work` subsection when relevant |
+| Summary (stage 2) | Product Contract `### Summary` (1-3 lines prose, forward-looking) — rewrite to plan convention if the chat-time summary used bullets. Solo variant: scope being targeted. Brainstorm-sourced: implementation approach |
+| Stated bullets | Product Contract `### Requirements` (R-IDs) and where relevant `### Problem Frame` for narrative context |
+| Inferred bullets | Planning Contract `### Key Technical Decisions` (with rationale) and Implementation Units when the bet drives a structural choice. In non-interactive mode **or an interactive `SKIP_SCOPING_CONFIRM` skip run**, route to Planning Contract `### Assumptions` instead — both proceed without confirming the bets, so they must stay labeled; see Headless mode above. |
+| Out-of-scope bullets | Product Contract `### Scope Boundaries` — including the `#### Deferred to Follow-Up Work` subsection when relevant |
 
 No italic capture-context note (e.g., "Captured at Phase 0.7..."). It would leak engineering process into an artifact whose readers do not need that signal.
 
-The plan's `## Summary` and `## Problem Frame` must serve distinct purposes: Summary answers "what is this plan proposing?" (forward-looking, 1-3 lines); Problem Frame answers "why does this proposal exist?" (backward-looking, paragraphs). Don't restate the proposal in Problem Frame; don't pad Summary with situational context.
+The Product Contract's `### Summary` and `### Problem Frame` must serve distinct purposes: Summary answers "what is this plan proposing?" (forward-looking, 1-3 lines); Problem Frame answers "why does this proposal exist?" (backward-looking, paragraphs). Don't restate the proposal in Problem Frame; don't pad Summary with situational context.
 
 ---
 

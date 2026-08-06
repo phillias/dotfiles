@@ -1,7 +1,7 @@
 # Global agent rules — TOON encoding of AGENTS.md (converted 2026-08-04).
 # Original snapshot: ~/.config/opencode/AGENTS.md.bak
 
-rules: "set_git_identity_before_commit|conventional_commits|no_hardcoded_home_paths|no_commit_without_request|no_type_error_suppression|no_speculation_about_unread_code|never_leave_broken_state|no_force_push_without_approval|no_config_edits_unasked|no_lfg"
+rules: "set_git_identity_before_commit|conventional_commits|no_hardcoded_home_paths|no_commit_without_request|no_type_error_suppression|no_speculation_about_unread_code|never_leave_broken_state|no_force_push_without_approval|no_config_edits_unasked"
 
 git:
   identity: "before any commit: GIT_AUTHOR_NAME + GIT_COMMITTER_NAME = <active-model>@<hostname>"
@@ -11,7 +11,7 @@ git:
   types: "feat|fix|chore|docs|style|refactor|perf|test|ci|build"
 
 paths:
-  rule: "never hardcode /home/<user> or /Users/<user> in configs|units|skills|scripts|plugins|docs|omo configs"
+  rule: "never hardcode /home/<user> or /Users/<user> in configs|units|skills|scripts|plugins|docs"
   shell_scripts: "$HOME"
   configs_docs: "~"
   chezmoi_tmpl: "{{ .chezmoi.homeDir }}"
@@ -32,7 +32,7 @@ docker:
   why: "the runtime knows where a running container came from; the filesystem does not"
 
 ce:
-  integration: "when compound-engineering installed (~/.agents/skills/ce-*), route planning/execution through CE skills, not the built-in OmO plan agent"
+  integration: "when compound-engineering installed (~/.agents/skills/ce-*), route planning/execution through CE skills"
   domain_alignment: "CONTEXT.md exists + non-trivial scope -> offer /grill-with-docs before planning"
   domain_no_ctx: "no CONTEXT.md + fuzzy terminology -> optionally offer grill-with-docs"
   domain_greenfield: "greenfield + large feature -> offer initial CONTEXT.md via grill-with-docs"
@@ -41,9 +41,9 @@ ce:
   routing_clear: "/ce-plan -> plan -> /ce-work -> execute -> /ce-code-review -> ship"
   routing_ambiguous: "/ce-brainstorm -> requirements doc -> /ce-plan -> /ce-work"
   routing_bug: "/ce-debug -> fix -> /ce-compound (optional)"
-  plan_storage: "docs/plans/ by default; .omo/plans/ when .omo/ exists (triggers OmO Momus review)"
+  plan_storage: "docs/plans/ by default; global fleet plans in firstmate docs/plans/"
   execution: "/ce-work <plan-path> after ce-plan"
-  review_chain: "ce-doc-review after ce-plan (headless)|Momus on .omo/plans/|ce-code-review after ce-work|ce-resolve-pr-feedback post-PR"
+  review_chain: "ce-doc-review after ce-plan (headless)|ce-code-review after ce-work|ce-resolve-pr-feedback post-PR"
 
 guardrails: "no git push --force|--force-with-lease without explicit confirmation|no git reset --hard on branch with unpushed commits|no git branch -D|no git rebase --onto on shared branches|no deleting files outside project scope|no modifying ~/.config/opencode/ without being asked"
 
@@ -55,7 +55,7 @@ ce_skills:
   brainstorm: "ce-brainstorm: interactive requirements exploration -> requirements doc"
   optimize: "ce-optimize: iterative optimization loops with measurement gates"
   strategy: "ce-strategy: create/maintain STRATEGY.md"
-  invocation: "use the skill tool with name: ce-<skill>; never use /lfg (removed - token-heavy, conflicts with ultrawork discipline)"
+  invocation: "use the skill tool with name: ce-<skill>; /lfg runs the full autonomous shipping pipeline (captain-approved, explicit hands-off only)"
 
 model_budget: "CE sub-agents are pinned to budget-optimized models - never override their model assignments; session model used for skill entry points only"
 

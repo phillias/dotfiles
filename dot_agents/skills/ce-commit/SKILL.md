@@ -1,96 +1,56 @@
 ---
 name: ce-commit
-description: Create a git commit with a clear, value-communicating message. Use when the user says "commit", "commit this", "save my changes", "create a commit", or wants to commit staged or unstaged work. Produces well-structured commit messages that follow repo conventions when they exist, and defaults to conventional commit format otherwise.
+description: Create a git commit with a clear, value-communicating message. Use when the user asks to commit/save staged or unstaged changes with a repo-appropriate message.
 ---
 
 # Git Commit
 
-Create a single, well-crafted git commit from the current working tree changes.
+Create well-crafted local commit(s) from the current working tree. No push, no PR — use `ce-commit-push-pr` for the full ship flow.
+
+**Done when:** each logical change is committed with an explicit file list and a message that states the outcome, and `git status` is clean of those changes. **Stop when:** the tree is clean (nothing to commit).
 
 ## Context
 
-On platforms other than Claude Code, skip to "Context fallback" and run the command there. In Claude Code, the five labeled sections contain pre-populated data — use them directly.
+Gather context with each command as its **own** shell tool call (program + args only). Do **not** join with `;`, `&&`, `||`, pipes, `$(...)`, or redirects — that syntax fails under Windows PowerShell. A non-zero exit is a normal state to interpret, not a failure to suppress.
 
-context[5]{name,command}:
-  Git status,!`git status`
-  Working tree diff,!`git diff HEAD`
-  Current branch,!`git branch --show-current`
-  Recent commits,!`git log --oneline -10`
-  Remote default branch,!`git rev-parse --abbrev-ref origin/HEAD 2>/dev/null || echo '__DEFAULT_BRANCH_UNRESOLVED__'`
+| Command | Purpose | Non-zero / empty means |
+| --- | --- | --- |
+| `git status` | Working-tree state | Not a git repo — stop |
+| `git diff HEAD` | Uncommitted changes | Unborn repo / no commits yet |
+| `git branch --show-current` | Current branch | Empty = detached HEAD |
+| `git log --oneline -10` | Recent message style | Unborn repo — no history |
+| `git rev-parse --abbrev-ref origin/HEAD` | Remote default branch | No `origin/HEAD` / bare `HEAD` — try `gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name'`, else `main` |
 
-### Context fallback
+Treat this as a snapshot. Re-read branch and staged set immediately before committing if anything may have changed.
 
-In Claude Code, skip this section — data above is already available.
-
-```
-printf '=== STATUS ===\n'; git status; printf '\n=== DIFF ===\n'; git diff HEAD; printf '\n=== BRANCH ===\n'; git branch --show-current; printf '\n=== LOG ===\n'; git log --oneline -10; printf '\n=== DEFAULT_BRANCH ===\n'; git rev-parse --abbrev-ref origin/HEAD 2>/dev/null || echo '__DEFAULT_BRANCH_UNRESOLVED__'
-```
-
----
+**Default branch name:** strip a leading `origin/` from `origin/HEAD` (so `origin/trunk` → `trunk`). Use that bare name for all “on the default branch?” checks — never compare against `origin/<name>`.
 
 ## Workflow
 
-### Step 1: Gather context
+0. **Gather** — run every Context command above (own shell call each), then continue.
 
-Use context above — do not re-run commands.
+1. **Nothing to commit** — if `git status` shows no staged, modified, or untracked files, report that and stop. Do not use `git diff HEAD` alone as cleanliness (it misses untracked files).
 
-Remote default branch returns `origin/main`; strip `origin/` prefix. If `__DEFAULT_BRANCH_UNRESOLVED__` or bare `HEAD`:
-```
-gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name'
-```
-If both fail, fall back to `main`.
+2. **Branch first** — if detached HEAD, or on the default branch (`main` / `master` / the bare default name above), create a feature branch from the change content (`git checkout -b <name>`), then re-read `git branch --show-current`. Do not ask — commit-only still must not leave work only on a detached HEAD or the default branch. If the derived name exists, pick a non-conflicting suffix.
 
-If clean working tree (no staged, modified, untracked files): report nothing to commit and stop.
+3. **Convention** — match project commit conventions already in context; else match the recent log pattern; else conventional commits (`type(scope): description`). When using conventional commits and `fix`/`feat` both fit, default to `fix:` (remedying broken or missing behavior); reserve `feat:` for new capabilities. User override wins.
 
-If detached HEAD: explain branch required → ask to create feature branch. Use blocking question tool: AskUserQuestion in Claude Code, request_user_input in Codex, ask_user in Gemini, ask_user in Pi. Fall back to chat only when no blocking tool exists. Never silently skip.
+4. **Logical commits** — if changed files clearly split into distinct concerns, make separate commits (file level only, 2–3 max, no `git add -p`). If ambiguous, one commit.
 
-- If user creates branch: derive name from content, `git checkout -b <branch-name>`, re-run `git branch --show-current`
-- If user declines: continue with detached HEAD commit
+5. **Message** — subject is imperative and names the outcome (what is now possible or fixed), not the file list. Body only when motivation or trade-offs are not obvious from the subject.
 
-### Step 2: Determine commit message convention
+   - Bad: `Update checkout.rb` / `Add tests and fix stuff`
+   - Good: `Fix double-submit on checkout`
 
-Priority order:
+6. **Stage and commit** — stage **named files only** (never `git add -A` or `git add .`). Prefer one shell call per commit group:
 
-convention-rules[3]{priority,source,action}:
-  1,Repo conventions in context,Follow those — do not re-read files
-  2,Recent commit history,Examine 10 most recent commits — match pattern
-  3,Default: conventional commits,type(scope): description
-
-Conventional commit types: feat, fix, docs, refactor, test, chore, perf, ci, style, build.
-
-Where fix: and feat: both fit, default to fix: (remedies broken/missing behavior). Reserve feat: for new capabilities. User may override.
-
-### Step 3: Consider logical commits
-
-Scan changed files for distinct concerns. If clearly separate, create separate commits.
-
-commit-grouping[3]{rule,detail}:
-  File level only,No git add -p or splitting hunks
-  Obvious separation,Split (different features, unrelated fixes)
-  Ambiguous,One commit is fine
-
-Sweet spot: 2-3 logical commits. Do not over-slice.
-
-### Step 4: Stage and commit
-
-If on main/master/default branch: warn user → ask to continue or create feature branch. Use blocking question tool. If user creates branch: `git checkout -b <branch-name>`.
-
-Commit message:
-- **Subject**: Concise, imperative mood, focused on *why* not *what*. Follow Step 2 convention.
-- **Body** (when needed): Blank line separator. Explain motivation, trade-offs, future reader context. Omit for obvious single-purpose changes.
-
-Stage and commit in single call. Prefer specific files over `git add -A` / `git add .` to avoid .env, credentials, unrelated changes. Use a heredoc to preserve formatting:
-
-```
+```bash
 git add file1 file2 file3 && git commit -m "$(cat <<'EOF'
 type(scope): subject line here
 
-Optional body explaining why this change was made,
-not just what changed.
+Optional body when the why is not obvious from the subject.
 EOF
 )"
 ```
 
-### Step 5: Confirm
-
-Run `git status` after commit. Report commit hash(es) and subject line(s).
+7. **Confirm** — `git status`; report hash(es) and subject(s).

@@ -1,6 +1,7 @@
 ---
 name: ce-product-pulse
-description: "Generate a time-windowed pulse report on what users experienced and how the product performed - usage, quality, errors, signals worth investigating. Use when the user says 'run a pulse', 'show me the pulse', 'how are we doing', 'weekly recap', 'launch-day check', or passes a time window like '24h' or '7d'. Configures via .compound-engineering/config.local.yaml and saves reports to docs/pulse-reports/."
+description: "Generate time-windowed product pulse reports from configured signals."
+disable-model-invocation: true
 argument-hint: "[lookback window, e.g. '24h', '7d', '1h'; default 24h]"
 allowed-tools:
   - Read
@@ -13,19 +14,19 @@ allowed-tools:
 
 # Product Pulse
 
-`ce-product-pulse` queries the product's data sources for a given time window and produces a compact, single-page report covering usage, performance, errors, and followups. The report is saved to `docs/pulse-reports/` and the key points are surfaced in chat.
+`ce-product-pulse` queries the product's data sources for a given time window and produces a compact, single-page report covering usage, performance, errors, and followups. The report is saved to `<root>/pulse-reports/` and the key points are surfaced in chat.
 
-The skill does not mutate the product, the database, or any external system. Its only writes are pulse settings appended to `.compound-engineering/config.local.yaml` (the unified CE local config, gitignored, machine-local) and the report file (`docs/pulse-reports/...`). MCP and other data-source tools are invoked read-only; if a tool offers write modes, do not use them.
+The skill does not mutate the product, the database, or any external system. Its only writes are pulse settings appended to `.compound-engineering/config.local.yaml` (the unified CE local config, gitignored, machine-local) and the report file (`<root>/pulse-reports/...`). MCP and other data-source tools are invoked read-only; if a tool offers write modes, do not use them.
 
 ## Interaction Method
 
-Default to the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_user` in Gemini, `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to numbered options in chat only when no blocking tool exists in the harness or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question.
+Default to the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_question` in Antigravity CLI (`agy`), `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to numbered options in chat only when no blocking tool exists in the harness or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question.
 
 Ask one question at a time. Reserve multi-select for first-run configuration only.
 
 ## Lookback Window
 
-<lookback> #$ARGUMENTS </lookback>
+The **lookback window** is the time range this skill was invoked with (e.g. `24h`, `7d`) — present in the current prompt or conversation, whether the user gave it directly or a calling skill passed it.
 
 Interpret the argument as a time window. Common forms:
 
@@ -37,13 +38,25 @@ If the argument is empty, default to `pulse_lookback_default` from config (resol
 
 Apply a **15-minute trailing buffer** to the window's upper bound. Many analytics and tracing tools have ingestion lag; querying right up to `now` under-reports the most recent events. For a `24h` window, query `[now - 24h - 15m, now - 15m]`.
 
+## Artifact Root
+
+This skill writes pulse reports under `<root>/pulse-reports/`. Resolve `<root>` when you first compose a `<root>/` path (per the block below), never before you need it. A write to `<root>/...` and a read of `<root>/solutions/` both count as composing a `<root>/` path, so either one triggers resolution; only a run that touches no `<root>/` path at all -- a scratch-only or no-repo flow -- skips it.
+
+<!-- ce-docs-root:start -->
+**Resolve the CE artifact root `<root>` before composing any artifact path.**
+
+- **Read** `docs_root` from `<repo-root>/.compound-engineering/config.local.yaml`, then `config.yaml`; first non-empty value wins (`<repo-root>` = `git rev-parse --show-toplevel`). Unset -> `<root>` is `docs`, exactly as before.
+- **Validate** a set value: a repo-relative directory whose real, symlink-resolved path stays inside the repo and is neither the repo root nor under `.git/`. Otherwise stop with an error naming `docs_root` and the value -- never fall back to `docs`.
+- **Use** `<root>` as the sole artifact location: create it if absent, compose each path as `<root>/<subdir>` with this skill's own subdirectory, and never also read `docs`.
+<!-- ce-docs-root:end -->
+
 ## Core Principles
 
 1. **Read it like a founder.** No hardcoded thresholds. Do not label things "bad" or "good" by default - present the numbers and let the reader judge.
 2. **Single page.** Target 30-40 lines of terminal output. If the report is getting long, cut.
 3. **No PII in saved reports.** Do not include user emails, account IDs, or message content in the report written to disk.
 4. **Parallel where safe, serial where it matters.** Analytics and tracing queries run in parallel. Database queries run serially to avoid load.
-5. **Memory through saved reports.** Every run writes to `docs/pulse-reports/` so past pulses are browseable as a timeline.
+5. **Memory through saved reports.** Every run writes to `<root>/pulse-reports/` so past pulses are browseable as a timeline.
 6. **Read-only database access only.** If a database is used as a data source, the connection must be read-only. The interview refuses to accept read-write credentials. Database access is optional - many products complete the pulse with analytics and tracing alone.
 7. **Strategy-seeded when available.** If `STRATEGY.md` exists, the interview reads it before asking questions and carries forward the product name and key metrics as seeds. The goal of data-source setup is to wire up whatever connections are needed to actually measure those metrics.
 
@@ -51,28 +64,23 @@ Apply a **15-minute trailing buffer** to the window's upper bound. Many analytic
 
 ### Phase 0: Route by Config State
 
-**Config (pre-resolved):**
-!`(top=$(git rev-parse --show-toplevel 2>/dev/null); [ -n "$top" ] && cat "$top/.compound-engineering/config.local.yaml" 2>/dev/null) || echo '__NO_CONFIG__'`
-
-If the block above contains YAML key-value pairs, extract values for the `pulse_*` keys listed under "Config keys" below.
-If it shows `__NO_CONFIG__`, the file does not exist — treat this as a first run.
-If it shows an unresolved command string, read `.compound-engineering/config.local.yaml` from the repo root using the native file-read tool (e.g., Read in Claude Code, read_file in Codex). If the file does not exist, treat as first run.
+**Read config.** Resolve `<repo-root>` at runtime by running `git rev-parse --show-toplevel` with the shell tool. Then read `<repo-root>/.compound-engineering/config.local.yaml` with the native file-read tool (e.g., Read in Claude Code, read_file in Codex). If the root cannot be resolved or the file does not exist, treat this as a first run. Otherwise extract values for the `pulse_*` keys listed under "Config keys" below.
 
 **Config keys:**
-config_keys[14]{key,details}: pulse_product_name,string — used in report titles. Required for routing: if unset, skill is unconfigured.
-config_keys[14]{key,details}: pulse_lookback_default,one of 1h/24h/7d/30d (default: 24h)
-config_keys[14]{key,details}: pulse_primary_event,string — the engagement event name
-config_keys[14]{key,details}: pulse_value_event,string — the value-realization event name
-config_keys[14]{key,details}: pulse_completion_events,comma-separated string of 0-3 event names
-config_keys[14]{key,details}: pulse_quality_scoring,true or default false (AI products only)
-config_keys[14]{key,details}: pulse_quality_dimension,string scored 1-5 when pulse_quality_scoring is true; ignored otherwise
-config_keys[14]{key,details}: pulse_analytics_source,string — identifying analytics provider (e.g., posthog, mixpanel, custom)
-config_keys[14]{key,details}: pulse_tracing_source,string — identifying tracing provider (e.g., sentry, datadog, custom)
-config_keys[14]{key,details}: pulse_payments_source,string — identifying payments provider (e.g., stripe, custom); omit if not used
-config_keys[14]{key,details}: pulse_db_enabled,true or default false — when true, read-only DB access is part of the pulse
-config_keys[14]{key,details}: pulse_metric_sources,comma-separated metric=source pairs giving per-strategy-metric source overrides (e.g., retention_d7=posthog,nps=delighted). Strategy metrics not listed fall back to pulse_analytics_source and are rendered with a (default source) marker so the implicit routing is visible.
-config_keys[14]{key,details}: pulse_pending_metrics,comma-separated string of strategy-doc metric names awaiting instrumentation — rendered as no data in each pulse report until instrumentation lands
-config_keys[14]{key,details}: pulse_excluded_metrics,comma-separated string of strategy-doc metric names intentionally excluded from the pulse — the metric stays in STRATEGY.md but is not surfaced in pulse reports
+- `pulse_product_name` -- string, used in report titles. Required for routing: if unset, skill is unconfigured.
+- `pulse_lookback_default` -- one of `1h`, `24h`, `7d`, `30d` (default: `24h`)
+- `pulse_primary_event` -- string, the engagement event name
+- `pulse_value_event` -- string, the value-realization event name
+- `pulse_completion_events` -- comma-separated string of 0-3 event names
+- `pulse_quality_scoring` -- `true` or default `false` (AI products only)
+- `pulse_quality_dimension` -- string scored 1-5 when `pulse_quality_scoring` is true; ignored otherwise
+- `pulse_analytics_source` -- string identifying analytics provider (e.g., `posthog`, `mixpanel`, `custom`)
+- `pulse_tracing_source` -- string identifying tracing provider (e.g., `sentry`, `datadog`, `custom`)
+- `pulse_payments_source` -- string identifying payments provider (e.g., `stripe`, `custom`); omit if not used
+- `pulse_db_enabled` -- `true` or default `false`; when `true`, read-only DB access is part of the pulse
+- `pulse_metric_sources` -- comma-separated `metric=source` pairs giving per-strategy-metric source overrides (e.g., `retention_d7=posthog,nps=delighted`). Strategy metrics not listed fall back to `pulse_analytics_source` and are rendered with a `(default source)` marker so the implicit routing is visible.
+- `pulse_pending_metrics` -- comma-separated string of strategy-doc metric names awaiting instrumentation; rendered as `no data` in each pulse report until instrumentation lands
+- `pulse_excluded_metrics` -- comma-separated string of strategy-doc metric names intentionally excluded from the pulse; the metric stays in `STRATEGY.md` but is not surfaced in pulse reports
 
 **Routing:**
 
@@ -113,7 +121,7 @@ Apply the pushback rules in `references/interview.md` for each section. Treat ev
 
 If the user offers read-write database access, refuse and offer the alternatives documented in `references/interview.md` section 6.
 
-Write the captured config to `<repo-root>/.compound-engineering/config.local.yaml` as flat `pulse_*` keys, using the schema in `references/interview.md` under "Config file shape". Resolve the repo root with `git rev-parse --show-toplevel`. To write: (1) if the file or directory does not exist, create `.compound-engineering/` and write the YAML file; (2) if the file exists, merge new keys into the existing YAML, preserving any non-pulse keys (e.g., `work_delegate_*`) untouched. If `.compound-engineering/config.local.yaml` is not already covered by the repo's `.gitignore`, offer to add the entry before writing. Show the resulting pulse block to the user in chat and offer one round of edits.
+Write the captured config to `<repo-root>/.compound-engineering/config.local.yaml` as flat `pulse_*` keys, using the schema in `references/interview.md` under "Config file shape". Resolve the repo root with `git rev-parse --show-toplevel`. To write: (1) if the file or directory does not exist, create `.compound-engineering/` and write the YAML file; (2) if the file exists, merge new keys into the existing YAML, preserving any non-pulse keys (e.g., `plan_*`) untouched. If `.compound-engineering/config.local.yaml` is not already covered by the repo's `.gitignore`, offer to add the entry before writing. Show the resulting pulse block to the user in chat and offer one round of edits.
 
 After the config is written, run the **scheduling recommendation** from `references/interview.md` section 9: offer to set up a recurring run so the user gets the pulse on a cadence instead of having to remember to run it. Accept yes/no/later. If yes, hand off to whichever scheduling primitive the current harness exposes — the in-plugin `schedule` skill if it is installed, otherwise note that scheduling is platform-specific (cron, GitHub Actions, the host's own automation) and emit a brief hint covering what would need to run. Do not schedule inline. Then proceed to Phase 2.
 
@@ -154,7 +162,7 @@ Keep the total to 30-40 lines. If a section is thin, leave it thin; do not pad.
 
 #### 2.4 Write the Report
 
-Save to `docs/pulse-reports/YYYY-MM-DD_HH-MM.md` using the local time of the run. Create `docs/pulse-reports/` if it does not exist.
+Save to `<root>/pulse-reports/YYYY-MM-DD_HH-MM.md` using the local time of the run. Create `<root>/pulse-reports/` if it does not exist.
 
 Surface the Headlines and top Followup in chat. Provide the full file path so the user can open the saved report.
 
@@ -169,11 +177,11 @@ Never schedule automatically. Any scheduling handoff requires explicit confirmat
 
 ## What This Skill Does Not Do
 
-not_done[5]{limitation}: Does not report "what shipped." Shipped work lives in the issue tracker and commit history, not here. Pulse is strictly about user experience and system performance.
-not_done[5]{limitation}: Does not set thresholds or alert the user. The reader interprets.
-not_done[5]{limitation}: Does not persist PII in saved reports.
-not_done[5]{limitation}: Does not mutate the database or any external system. All queries are read-only.
-not_done[5]{limitation}: Does not replace tracing dashboards or analytics tools. It consolidates a single-page read; deep investigation still uses the native tools.
+- Does not report "what shipped." Shipped work lives in the issue tracker and commit history, not here. Pulse is strictly about user experience and system performance.
+- Does not set thresholds or alert the user. The reader interprets.
+- Does not persist PII in saved reports.
+- Does not mutate the database or any external system. All queries are read-only.
+- Does not replace tracing dashboards or analytics tools. It consolidates a single-page read; deep investigation still uses the native tools.
 
 ## Learn More
 

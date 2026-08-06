@@ -1,177 +1,175 @@
 ---
 name: ce-commit-push-pr
-description: Commit, push, and open a PR with an adaptive, value-first description that scales in depth with the change. Use when the user says "commit and PR", "ship this", "create a PR", or "open a pull request". Also handles description-only flows ("write a PR description", "rewrite the PR body", "describe this PR") without committing or pushing.
+description: Commit, push, and open a PR. Use when asked to ship/open a PR, or for PR-description-only flows like writing, rewriting, or describing a PR body.
+argument-hint: "[PR ref] [mode:pipeline] [archive:on|off] [branding:on|off] [babysit:off|continuous|checkpoint]"
 ---
 
 # Git Commit, Push, and PR
 
-Asking the user: use the platform's blocking question tool: AskUserQuestion in Claude Code, request_user_input in Codex, ask_user in Gemini, ask_user in Pi. Fall back to chat only when no blocking tool exists. Never silently skip the question.
+**Asking the user:** When this skill says "ask the user", use the platform's blocking question tool: `AskUserQuestion` in Claude Code (call `ToolSearch` with `select:AskUserQuestion` first if its schema isn't loaded), `request_user_input` in Codex, `ask_question` in Antigravity CLI (`agy`), `ask_user` in Pi (requires the `pi-ask-user` extension). Fall back to presenting the question in chat only when no blocking tool exists in the harness or the call errors (e.g., Codex edit modes) — not because a schema load is required. Never silently skip the question.
 
 ## Mode
 
-modes[3]{mode,trigger,steps}:
-  Description-only,"write/draft a PR description",Step 4 only — print result, apply if asked
-  Description update,refresh/rewrite existing PR description,Step 4 (PR mode) → Step 5 (preview, confirm, apply via gh pr edit)
-  Full workflow,anything else,Steps 1-5 in order
+- **Description-only** — user wants *just* a description ("write/draft a PR description", "describe this PR", or pasted a PR URL/number alone). Run Step 4 only; print the result. Apply only if the user asks. If a PR ref was pasted, pass it to Step 4 so Pre-A resolves the right range.
+- **Description update** — user wants to refresh/rewrite an existing PR's description with no commit/push intent. Determine PR presence with the same rule used everywhere: only an exit-0 `[]` from the existing-PR check means "no open PR" (report and stop); a non-zero check is **unknown** (resolve `gh auth status` / connectivity first — never treat it as "no PR"). With an open PR, run Step 4 (PR mode using the existing PR's URL), then Step 5 to preview, confirm, and apply via `gh pr edit`.
+- **Full workflow** — otherwise. Run Steps 1-5 in order. When user intent or standing preference wants a **PR stack**, enter **Stack mode** (below) instead of ordinary single-PR create in Step 5; do not add `posture:` to this skill's argument-hint.
 
-If a PR ref was pasted, pass it to Step 4 so Pre-A resolves the right range.
+**`mode:pipeline` modifier** — set by orchestrated callers (e.g., `lfg`). Run the resolved mode non-interactively: suppress every blocking ask. Step 5's existing-PR rewrite question defaults to **not rewriting**; in description-update mode the preview ask is skipped and the rewrite applies directly (the update invocation itself is the apply intent); any other suppressed ask takes its conservative documented default (keep the current branch; if Pre-A cannot resolve a base, stop and report rather than guess). Pipeline stack mode uses only intent/scope already on the invocation — never ask; pass posture into the babysit handoff args when stacking.
+
+## Stack mode (opt-in)
+
+**Opt-in only.** Enter stack mode when user intent or standing preference wants a multi-PR stack. Prefer intent over keyword matching. **Do not** proactively suggest PR stacks. **Refuse** nonsense stacks (one logical change, artificial slices) and stay on the single-PR path.
+
+When stack mode is active, load `references/stack-submit.md` **before Step 3**. At this point follow only its Probe, Topology, and, when needed, Retrospective construction sections; do not submit. When that reference constructs a retrospective stack, its layer-by-layer commit flow replaces ordinary Step 3. Step 5 exclusively owns stack submission and the reference's post-submit metadata route for PRs created in this run. Soft-depend on `gh stack` CLI only. On missing/unavailable CLI: required stack intent → hard-stop with residual; soft intent → residual + ordinary single-PR create.
+
+After successful submit with ready (non-draft) PRs, continue to the babysit handoff below using the **bottom open non-draft** PR. Derive babysit posture from ship intent: default `posture:stack-ready`; use `posture:stack-land` only when land/merge-when-green intent is explicit. Pass that posture on the `ce-babysit-pr` invocation (do not put `posture:` on this skill's argument-hint). Draft-only submit → hard residual before babysit when babysit is on.
 
 ## Context
 
-On platforms other than Claude Code, run the Context fallback. In Claude Code, the labeled sections contain pre-populated data — use them directly.
+Gather the repository context by running each command below as its **own** shell tool call — a single argv-style invocation (just the program and its arguments). Do **not** join them with `;`, `&&`, `||`, pipes, `$(...)`, or redirects like `2>/dev/null`: that syntax parses only under POSIX shells and aborts under Windows PowerShell. Read each command's exit status directly — a non-zero exit is a normal state to interpret (no PR yet, no `origin/HEAD`, detached HEAD), not a failure to suppress.
 
-context[7]{name,command}:
-  Git status,!`git status`
-  Working tree diff,!`git diff HEAD`
-  Current branch,!`git branch --show-current`
-  Recent commits,!`git log --oneline -10`
-  Remote default branch,!`git rev-parse --abbrev-ref origin/HEAD 2>/dev/null || echo 'DEFAULT_BRANCH_UNRESOLVED'`
-  Existing PR check,!`gh pr view --json url,title,state 2>/dev/null || echo 'NO_OPEN_PR'`
-  Branch drift detection,!`BRANCH=$(git branch --show-current); if [ -n "$BRANCH" ]; then git fetch origin --quiet 2>/dev/null; LOCAL=$(git rev-parse HEAD); REMOTE=$(git rev-parse "origin/$BRANCH" 2>/dev/null); if [ "$LOCAL" = "$REMOTE" ]; then echo "SYNCHRONIZED"; elif git merge-base --is-ancestor HEAD "origin/$BRANCH" 2>/dev/null; then echo "BEHIND (fast-forward possible)"; elif git merge-base --is-ancestor "origin/$BRANCH" HEAD 2>/dev/null; then echo "AHEAD (safe to push)"; else echo "DIVERGED (local: ${LOCAL:0:8}, remote: ${REMOTE:0:8})"; fi; else echo "NO_UPSTREAM"; fi`
+Run them in order — the existing-PR check needs the branch name from `git branch --show-current`:
 
-### Context fallback
+| Command | Purpose | Non-zero exit / empty output means |
+| --- | --- | --- |
+| `git rev-parse --show-toplevel` | Repo root | Not a git repository — report and stop |
+| `git status` | Working-tree state | (fails only outside a repo) |
+| `git diff HEAD` | Uncommitted changes | Unborn repo with no commits yet |
+| `git branch --show-current` | Current branch (`<branch>`) | Empty output = detached HEAD (Step 1 handles it) |
+| `git log --oneline -10` | Recent commit / PR-title style | Unborn repo — no history yet |
+| `git rev-parse --abbrev-ref origin/HEAD` | Remote default branch | No `origin/HEAD` set — resolve per Step 1 |
+| `gh pr list --head <branch> --state open --json number,url,title,body,state,isDraft,headRefName,headRepositoryOwner` | Open PR for this branch (run only once `<branch>` is non-empty) | Exit 0 with `[]` = no open PR. Non-zero = `gh` missing, unauthenticated, or offline — PR state is **unknown**, not "none"; never treat a non-zero check as "no PR"; re-check before creating (Step 5) |
 
-```
-printf '=== STATUS ===\n'; git status; printf '\n=== DIFF ===\n'; git diff HEAD; printf '\n=== BRANCH ===\n'; git branch --show-current; printf '\n=== LOG ===\n'; git log --oneline -10; printf '\n=== DEFAULT_BRANCH ===\n'; git rev-parse --abbrev-ref origin/HEAD 2>/dev/null || echo 'DEFAULT_BRANCH_UNRESOLVED'; printf '\n=== PR_CHECK ===\n'; gh pr view --json url,title,state 2>/dev/null || echo 'NO_OPEN_PR'
-```
+Substitute `<branch>` with the current branch from `git branch --show-current`, and pass the branch **name only**. Two traps:
+
+- **Empty branch (detached HEAD):** skip the PR check entirely — `gh pr list` with an empty `--head` drops the filter and lists unrelated PRs. Resolve it after Step 1 creates a branch.
+- **Fork checkout:** do **not** pass `<owner>:<branch>` — `gh pr list --head` does not accept that syntax and silently returns `[]` for it, which reads as "no PR" and opens a duplicate. The PR lives on the base repo, so make `gh` target the base: rely on its default-repo resolution, or pass `-R <base-owner>/<repo>` explicitly when the default is the fork.
+
+Everything gathered here is a snapshot taken before any action — treat it as a hint, not ground truth. Re-verify the branch, remote, and existing-PR state immediately before each consequential step (push in Step 3, `gh pr create` in Step 5), since they can change between gathering and acting.
 
 ---
 
+## Artifact Root
+
+When PR concept-teaching archival is on, this skill writes an explainer under `<root>/explainers/`. Resolve `<root>` once before that write and use it everywhere a `<root>/` path appears below.
+
+<!-- ce-docs-root:start -->
+**Resolve the CE artifact root `<root>` before composing any artifact path.**
+
+- **Read** `docs_root` from `<repo-root>/.compound-engineering/config.local.yaml`, then `config.yaml`; first non-empty value wins (`<repo-root>` = `git rev-parse --show-toplevel`). Unset -> `<root>` is `docs`, exactly as before.
+- **Validate** a set value: a repo-relative directory whose real, symlink-resolved path stays inside the repo and is neither the repo root nor under `.git/`. Otherwise stop with an error naming `docs_root` and the value -- never fall back to `docs`.
+- **Use** `<root>` as the sole artifact location: create it if absent, compose each path as `<root>/<subdir>` with this skill's own subdirectory, and never also read `docs`.
+<!-- ce-docs-root:end -->
+
 ## Step 1: Resolve branch and PR state
 
-Remote default branch returns something like `origin/main`; strip `origin/` prefix. If `DEFAULT_BRANCH_UNRESOLVED` or bare `HEAD`, try `gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name'`. If both fail, fall back to `main`.
+The remote default branch returns something like `origin/main`; strip the `origin/` prefix. If that command exited non-zero (no `origin/HEAD` set) or returned bare `HEAD`, try `gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name'`. If both fail, fall back to `main`. For the existing-PR check: an empty `[]` array means no open PR for this branch; a non-zero exit means `gh` is missing, unauthenticated, or offline — treat PR state as **unknown** (not "no PR") and re-run the check, or `gh auth status`, before creating a new PR in Step 5 rather than assuming none exists.
 
-branch-routing[4]{state,action}:
-  Detached HEAD,Explain branch required → ask to create feature branch → derive name from content → Step 3 if yes, stop if no
-  Default branch with work,Ask to create feature branch (pushing default not supported) → Step 3 if yes, stop if no
-  Default branch no work,Report no feature branch work → stop
-  Feature branch,Continue
+Branch routing:
 
-Note existing PR URL from PR check if `state: OPEN`. Step 5 uses it for new-PR vs existing-PR routing.
+- **Detached HEAD** — automatically create a feature branch from the current `HEAD` before continuing. Derive the branch name from the change content, run `git checkout -b <branch-name>`, re-read `git branch --show-current`, and use that result for the rest of the workflow. Do not ask whether to create the branch — invoking the full commit/push/PR workflow is already confirmation that the work should become branch-backed. If the derived branch name already exists, choose a non-conflicting suffix or ask only if the conflict cannot be resolved safely.
+- **On default branch with work to do** (uncommitted, unpushed, or no upstream) — automatically create a feature branch (pushing the default directly is not supported). Derive a name from the change content and continue at Step 3, which handles branch creation safely. Do not ask whether to branch — committing on the default is not an option here.
+- **On default branch with no work** — report no feature branch work and stop.
+- **Feature branch** — continue.
+
+If the PR check returned a non-empty array, do **not** blindly take index 0 — in a base repo with multiple forks, another contributor's PR can share the same branch name (`--head` filters by branch only, not `<owner>:<branch>`). Select the entry whose `headRepositoryOwner` and `headRefName` match the current head — the branch/fork this workflow is pushing. Note the URL and body from that entry (all entries are open — the check filtered `--state open`). If exactly one entry matches, use it; if multiple entries share the branch name from different owners and none can be confirmed as the current head's, treat it as ambiguous and stop/surface rather than acting on the wrong PR. Step 5 uses the URL to route between new-PR and existing-PR application. Step 4 uses the existing body as preservation context when rewriting.
 
 ## Step 2: Determine conventions
 
-Match repo style (project instructions > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — `fix:` remedies broken/missing behavior; `feat:` adds capabilities user couldn't previously accomplish. User may override.
+Match repo style for commit messages and PR titles (project instructions in context > recent commits > conventional commits as default). With conventional commits, default to `fix:` over `feat:` when ambiguous — adding code to remedy broken or missing behavior is `fix:`. Reserve `feat:` for capabilities the user could not previously accomplish. The user may override. The description reference's title step uses this same type default.
 
 ## Step 3: Commit and push
 
-Set commit identity before any commits. Author/committer name must be `<model>@<hostname>`:
+If the stack reference constructed and committed retrospective layers before this step, skip ordinary single-branch commit/push and continue to Step 4; `gh stack submit` in Step 5 pushes the stack.
 
-```
-export GIT_AUTHOR_NAME="$(opencode debug config 2>/dev/null | grep '"model"' | head -1 | grep -oP ':\s*"[^"]*"' | sed 's/.*"\(.*\)".*/\1/' || echo "unknown")@$(hostname -s)"
-export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
-```
+If on the default branch, branch creation needs to handle stale local `<base>`, unpushed commits on local `<base>`, and uncommitted changes that collide with the fresh remote base. Read `references/branch-creation.md` and follow its decision flow before continuing.
 
-If `opencode debug config` unavailable, fall back to `$OPENCODE_MODEL` or placeholder. Format is always `<model>@<hostname>` (e.g., `big-pickle@nasbox`).
+Scan changed files for naturally distinct concerns. If they clearly group into separate logical changes, create separate commits (2-3 max). Group at file level only — no `git add -p`. When ambiguous, one commit is fine.
 
-Drift detection before push — if branch has upstream, check before committing:
+Stage and commit each group. **Avoid `git add -A` and `git add .`** — they sweep in `.env`, build artifacts, and generated files:
 
-```
-git fetch origin
-LOCAL_SHA=$(git rev-parse HEAD)
-REMOTE_SHA=$(git rev-parse origin/$(git branch --show-current) 2>/dev/null)
-if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
-  if git merge-base --is-ancestor HEAD origin/$(git branch --show-current); then
-    echo "Branch is behind remote. Fast-forwarding..."
-    git merge --ff-only origin/$(git branch --show-current)
-  else
-    echo "WARNING: Local and remote have diverged."
-    echo "Local:  $LOCAL_SHA"
-    echo "Remote: $REMOTE_SHA"
-    echo "Rebase or resolve before pushing."
-    exit 1
-  fi
-fi
-```
-
-If drift cannot be resolved automatically, **stop and report**. Never force-push without explicit user confirmation.
-
-If on default branch, read `references/branch-creation.md` and follow its decision flow before continuing.
-
-Scan changed files for distinct concerns. If clearly separate, create 2-3 commits max. Group at file level only — no `git add -p`. When ambiguous, one commit is fine.
-
-Stage and commit each group. **Avoid `git add -A` and `git add .`** — they sweep in `.env`, build artifacts, generated files:
-
-```
+```bash
 git add file1 file2 file3 && git commit -m "$(cat <<'EOF'
 commit message here
 EOF
 )"
 ```
 
-Then push: `git push -u origin HEAD`
+Then push. Immediately before pushing, re-confirm you are on the intended feature branch (`git branch --show-current`) — the branch gathered in Context is a hint, and Step 1 may have created or switched branches since. Push the live `HEAD` so it reflects the current checkout, never a stale branch name:
 
-If working tree clean and all commits pushed, this step is a no-op.
+```bash
+git push -u origin HEAD
+```
+
+If the working tree is clean and all commits are already pushed, this step is a no-op.
 
 ## Step 4: Compose the PR title and body
 
-**You MUST read `references/pr-description-writing.md`** in full — the core principle at the top governs every step.
+**You MUST read `references/pr-description-writing.md`** in full — it owns value-first framing, sizing, program altitude, related-work references (preserve existing `Related:` / `Fixes` on rewrite), branding body rules, and the pre-apply audit. The only input it needs from this skill is the PR ref, if one was identified by mode dispatch (description-only with a pasted URL, description update, or confirmed existing-PR rewrite in full workflow). If Step 1 found an existing PR, pass its URL to Step 4 when rewriting so PR mode fetches the existing body. In Stack mode, Step 5 follows the post-submit route in `references/stack-submit.md` instead of composing one default-base body here.
 
-Evidence decision before composition:
+**Evidence decision** before composition. CE does not own a capture workflow — use harness capture tools or user-supplied artifacts, never invent/upload evidence or launch another CE skill.
 
-evidence-rules[3]{condition,action}:
-  User explicitly asked for evidence,Proceed directly to capture — if impossible, note briefly and proceed without
-  Agent judgment: non-observable change,Skip prompt without asking (plumbing, type-only, backend refactor, docs/changelog/CI/test-only, pure refactors)
-  Observable behavior and evidence not blocked,"Ask: 'This PR has observable behavior. Capture evidence for the PR description?'"
+1. **User supplied** (URL, markdown image/embed, local path) — incorporate as `## Demo`, `## Screenshots`, or `## Evidence`.
+2. **User asked for evidence but supplied none** — ask for the artifact or tell them to capture with the harness and return.
+3. **No material observable claim** (internal plumbing, type-only, pure refactor, inert docs) — skip without asking. Classify by runtime purpose, not extension (runtime agent instructions / config / product content / policy YAML is not auto-skippable as "docs").
+4. **Otherwise** (UI, CLI, API, workflow, ranking, deploy/config behavior) — concise validation note of what was exercised; if a real run was impossible (credentials, paid services, deploy-only, hardware, missing setup), say so. Do not block PR creation for missing visuals; test/manual notes are fine — never label test output "Demo" or "Screenshots."
 
-evidence-options[3]{choice,action}:
-  Capture now,Load ce-demo-reel → returns Tier/Description/URL/Path → splice as ## Demo section or note local save
-  Use existing evidence,Ask for URL or markdown embed → splice as ## Demo section
-  Skip,Proceed without evidence section
+**Concept teaching gate** before composition. Use the repo root gathered in Context (resolving it with `git rev-parse --show-toplevel` if you don't already have it — description-only/update can skip the Context snapshot) and read `<repo-root>/.compound-engineering/config.local.yaml` with the native file-read tool. Only an **active (non-commented)** `pr_teaching_section:` key counts — lines starting with `#` are YAML comments; matching commented template keys would silently flip the gate. Off only when the active value is exactly `false`; missing file/key or any other value → default **on**. Same read resolves `pr_teaching_archive:` — on only when active value is exactly `true`, else **off**; per-run `archive:on|off` overrides for this invocation.
 
-Then continue with Steps A through G from the reference.
+- Gate **on** — judge novelty and compose per **Step B2** of the reference. When off, skip judgment, section, Step 5 trailer/offer, and archival entirely.
+- Gate **off** — compose without concept handling.
+
+**PR branding gate** before composition. Branding is **off unless this invocation includes `branding:on` or the user explicitly asks in the current prompt to add Compound Engineering branding**; normalize that natural-language request to `branding:on`. `branding:off` forces off when `branding:on` is absent. If both tokens are present, stop and report the conflict rather than guessing. Pass the resolved gate and new-vs-existing PR into Step D of the reference (body rules live there).
+
+Then continue with the reference (Steps A–E, including Step B2 when the teaching gate is on). Step E must run before the body is returned.
 
 ## Step 5: Apply and report
 
-apply-rules[4]{mode,action}:
-  Description-only,Print title and body — stop unless user asks to apply
-  New PR (full workflow),Apply via gh pr create — report URL
-  Existing PR (full workflow),Commits already on PR from Step 3 — report URL, ask to rewrite description → Step 4 + preview + apply if yes
-  Description update or rewrite confirmed,Preview: ask "New title: `<title>` (`<N>` chars). Summary leads with: `<first two sentences>`. Total body: `<L>` lines. Apply?" → gh pr edit if confirmed
+**Description-only mode** — print the title and body. Stop unless the user asks to apply.
 
-## Step 6: Post-PR cleanup
+**New PR** (full workflow, no existing PR from Step 1) — if **Stack mode** is active, follow the Submit section of `references/stack-submit.md` instead of `gh pr create`; then report the bottom open non-draft PR URL and continue to babysit handoff. Otherwise, immediately before creating, **always** re-run `gh pr list --head <branch> --state open --json number,url,isDraft,headRefName,headRepositoryOwner` (branch name only; target the base repo on a fork, per Context) so a PR that appeared since Step 1, or was missed because the Step 1 check came back **unknown**, is not duplicated. If it now shows a PR whose `headRepositoryOwner`/`headRefName` match the current head, switch to the existing-PR path; disambiguate multi-fork matches by head owner as in Step 1 rather than assuming index 0. If this re-check itself exits non-zero, resolve `gh auth status` / connectivity before creating rather than assuming none exists. Otherwise apply per "Applying via gh" below using `gh pr create`. Report the URL.
 
-If PR was just created:
+**Existing PR** (full workflow, found in Step 1) — if **Stack mode** is active, still follow the Submit section of `references/stack-submit.md` so remaining stack layers submit / sync (mid-stack ship is normal); then report the bottom open non-draft PR URL and continue to babysit handoff with derived posture. Otherwise the new commits are already on the PR from Step 3. Report the PR URL, then ask whether to rewrite the description.
 
-cleanup[3]{action,command}:
-  Switch to default branch,git checkout <default_branch>
-  Delete local feature branch,git branch -d <feature_branch>
-  Prune stale remote-tracking refs,git fetch origin --prune
+- **No** — done.
+- **Yes** — run Step 4 if not already done, then preview and apply (see below).
 
-Use `-D` only if branch has unpushed commits (shouldn't happen after Step 3).
+**Description update mode, or existing-PR rewrite confirmed** — preview before applying. First compare the proposed title and body with the existing PR. If they are identical, keep the existing title and body and do not call `gh pr edit`. If the only difference is a branding-only delta and the user did not explicitly request that exact branding change, also keep the existing title and body; branding alone never creates apply intent. Otherwise ask: "New title: `<title>` (`<N>` chars). Summary leads with: `<first two sentences>`. Total body: `<L>` lines. Apply?" If declined, the user may pass focus text back for a regenerate; do not apply. If confirmed, apply per "Applying via gh" below using `gh pr edit` and report the URL.
 
-If PR already existed and new commits pushed: no cleanup needed.
+**Explainer archival** — runs only in full workflow, with `pr_teaching_archive` on, a composed `## New concepts` section, and the apply confirmed (new-PR create, or existing-PR rewrite accepted); a declined rewrite skips archival entirely so no unlinked doc commit is left behind. All paths resolve from the repo root gathered in Context, never the CWD. With two taught concepts, write one file per concept and stage both in the single commit. Execute as explicit transitions immediately before the `gh` call:
 
-If user is on merged branch: offer to clean up:
-```
-git branch --merged origin/<default_branch> | grep -v "^\*" | grep -v "<default_branch>"
-git branch -d <merged_branch>
-```
+1. `git check-ignore -q <root>/explainers/YYYY-MM-DD-<concept-slug>.md` (from the repo root) — the check works on not-yet-created paths. If the path is ignored, print a one-line warning and skip archival entirely, writing nothing (never `git add -f`).
+2. Write the file (create the directory if needed) with YAML frontmatter `title`, `date`, `input_shape: concept`, `subject`, and the teaching content. If the file already exists from a prior run, overwrite it.
+3. `git add` those file(s) only (never `-A`), commit with `docs(explainer): teach <concept>[, <concept>]`, and push. If the commit reports nothing to commit, the doc is already committed from a prior run — keep the link and continue.
+4. Splice a head-branch blob URL per doc into the `## New concepts` section before applying. Build the URL for the repo's actual host — e.g. `gh browse -n -b <head-branch> -- <path>` (prints the link on whatever host `gh` targets, GitHub Enterprise included) — do not hardcode `github.com`, or the link 404s on GHE.
 
-Remote branch deletion — after PR merge, GitHub may auto-delete. If not:
-```
-gh pr close <pr_number> --delete-branch  # only if merged, not just closed
-```
+If the doc write, commit, or push fails, warn and continue to PR creation without the link — never strand the flow between commit and PR.
 
-Do NOT auto-delete remote branches without user confirmation.
+**User-runnable invocation rendering.** For the output handoffs below, default to `/ce-explain <name>`. Use `$ce-explain <name>` only when the active host is Codex or explicitly documents dollar-prefixed skill invocation. Render only the invocation as inline code and output one form only.
+
+**Concept trailer** — when a body applied by this run contains a `## New concepts` section, print one line after the PR URL in every mode: `New concepts: <name>[, <name>]`. In interactive full-workflow runs follow it with one line per taught concept telling the user to invoke `ce-explain <name>` using the rendering rule above. No trailer when this run applied no body — including a rewrite that was declined or pipeline-defaulted to no — or no PR exists.
+
+**Babysit handoff — default on; completion gate.** After reporting a newly-created PR URL, a successful **stack submit**, or new commits landing on an existing open PR (interactive full workflow **or** `mode:pipeline` when stack mode submitted this run), this run is **not done** until `ce-babysit-pr` owns follow-on for that PR — or an explicit skip below applies. Reporting the PR URL alone is not success. **Auto-hand off by default:** announce in one non-blocking line (e.g. "Babysitting toward merge-ready — pass `babysit:off` to skip"), then invoke `ce-babysit-pr` through the host's normal skill-invocation mechanism with the PR URL — never ask yes/no. After **stack submit**, hand off the **bottom open non-draft** PR and include the derived posture (`posture:stack-ready` by default; `posture:stack-land` when land intent was explicit) plus stack-wide scope for `mode:pipeline` when applicable. Announce that stack babysit ownership transferred so an outer orchestrator (e.g. `lfg` step 9) does not start a second bare babysit on the current branch. **Success** = `ce-babysit-pr` has started on that PR; in `mode:pipeline`, wait for its pipeline stop and return the structured result to the caller (started-only is not enough for an orchestrator DONE). Never start babysit mechanics yourself (`pr-snapshot`, arming a watcher, reconstructing its loop). **Never substitute** `ci-watcher`, `gh pr checks --watch`, ad-hoc polls, or "I'll babysit later." **Handoff blocked:** if `ce-babysit-pr` cannot be loaded or started, stop and report blocked (name the failure). Do not invent a parallel or narrower watch. *Off is the explicit choice:* **`babysit:off`** skips this run; **`babysit:continuous`** / **`babysit:checkpoint`** forces that mode; **`auto_babysit: false`** in config.local.yaml is a standing opt-out (same active-key semantics as `pr_teaching_section`: only exact active `false` disables; missing/other → default **on**; `babysit:off` overrides for this run).
+
+**Do not fire (auto-detected, no flag needed):** `mode:pipeline` **except** when this run completed a stack-mode submit (then hand off with derived posture as above), description-only / description-update, no PR created or updated this run, non-GitHub, **draft PR** this run created/updated (author not-ready signal — announce skip; can start `ce-babysit-pr` once ready; explicit `babysit:continuous` / `babysit:checkpoint` still forces watch — pass `watch` / `checkpoint` into the invocation so its draft boundary arms), or **a head branch you cannot push to**. **Fork PRs are drivable — not a hard-off** when you can push the head (common for a branch this skill just pushed): babysit reads state on the **base** repo and pushes fixes to the **head** repo. Hard-off only when the head is not pushable. **Soft-degrade (after successful handoff only):** checkpoint-only harness runs one tick + resume command — not a substitute for a failed handoff.
 
 ---
 
 ## Applying via gh
 
-The body **must** be written to a temp file and passed via `--body-file <path>`. Never use `--body-file -`, stdin pipes, heredoc-to-stdin, or `--body "$(cat ...)"` — wrappers can silently produce empty PR body while `gh` exits 0.
+The body **must** be written to a temp file and passed via `--body-file <path>`. Never use `--body-file -`, stdin pipes, heredoc-to-stdin, or `--body "$(cat ...)"` — wrappers and stdin handling can silently produce an empty PR body while `gh` still exits 0 and returns a URL.
 
-```
-BODY_FILE=$(mktemp "${TMPDIR:-/tmp}/ce-pr-body.XXXXXX") && cat > "$BODY_FILE" <<'__CE_PR_BODY_END__'
+```bash
+BODY_FILE=$(mktemp "${TMPDIR:-/tmp}/ce-pr-body.XXXXXX") && cat >> "$BODY_FILE" <<'__CE_PR_BODY_END__'
 <the composed body markdown goes here, verbatim>
 __CE_PR_BODY_END__
 ```
 
-The quoted sentinel keeps `$VAR`, backticks, and literal `EOF` inside the body from being expanded.
+The quoted sentinel keeps `$VAR`, backticks, and any literal `EOF` inside the body from being expanded.
 
-For `<TITLE>`: substitute verbatim. If it contains `"`, `` ` ``, `$`, or `\`, escape or use single quotes.
+For `<TITLE>`: substitute verbatim. If it contains `"`, `` ` ``, `$`, or `\`, escape them or switch to single quotes.
 
-```
+```bash
 gh pr create --title "<TITLE>" --body-file "$BODY_FILE"   # new PR
 gh pr edit   --title "<TITLE>" --body-file "$BODY_FILE"   # existing PR
 ```
