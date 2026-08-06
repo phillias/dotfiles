@@ -1347,7 +1347,6 @@
   "plugin": [
     "./plugins/fleet-state-writer.ts",
     "./plugins/axi-memory-bridge.ts",
-    "./plugins/go-pool-fallback.ts",
     "./plugins/go-pool-guard.ts",
     "opencode-ntfy.sh",
     "opencode-log-sanitizer",
