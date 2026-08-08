@@ -1,7 +1,4 @@
 {
   "$schema": "https://opencode.ai/tui.json",
-  "theme": "tokyonight",
-  "plugin": [
-    "oh-my-openagent@latest"
-  ]
+  "theme": "tokyonight"
 }
