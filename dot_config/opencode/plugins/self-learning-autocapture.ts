@@ -295,7 +295,12 @@ export const SelfLearningAutocapturePlugin: Plugin = async () => {
         const state = sessionCue(input.sessionID) ?? { cues: new Set<CueKind>(), toolCalls: 0 };
         if (!sessions.has(input.sessionID)) sessions.set(input.sessionID, state);
 
-        if ((role === "user" || role === "") && EXPLICIT_RE.test(text)) {
+        // Skip command-palette / auto-slash-command expansions: their
+        // descriptions embed trigger words (e.g. /axi-memory's "save this
+        // as a memory") and are not user intent — they caused 5 false
+        // positive explicit cues on Aug 1-2.
+        const isCommandExpansion = text.includes("<auto-slash-command>");
+        if (!isCommandExpansion && (role === "user" || role === "") && EXPLICIT_RE.test(text)) {
           cueOnce(state, "explicit", input.sessionID, text);
         }
         if (role === "assistant" && HARD_WIN_RE.test(text)) {
