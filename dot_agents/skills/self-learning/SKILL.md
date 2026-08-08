@@ -213,6 +213,30 @@ is manual and user-approved: re-apply the promotion rule (passing check +
 repeatable verification step + named failure pattern + ruled-out dead-end), then
 remove the skill from `retired.tsv`. Suppression is never permanent.
 
+## Improvements (2026-08): mermaid as a derived index
+
+Findings from studying TencentDB-Agent-Memory's memory layering, adopted as a
+trial:
+
+- **The transferable idea is the layering, not the graph syntax.** Keep a
+  token-cheap structural index on top and lossless detail below, with
+  deterministic drill-down. Their 3-tier stack (raw `refs/*.md` → jsonl step
+  summaries → mermaid canvas of state transitions) attends only to the top
+  layer in context; every node carries an id that drills to evidence. Summaries
+  stay reversible because the layers below are never discarded.
+- **Golden-path decision maps.** Harvested skills with multi-branch procedures
+  may carry a small mermaid flowchart in `references/` encoding the branch
+  structure (happy path, dead-ends to avoid, verify points) so the next session
+  reads the map first, then pulls exact commands from the detail sections.
+  `SKILL.md` stays under budget — the map lives in references.
+- **Flywheel-review graph (proposed).** Back the review aggregates with a Turso
+  (libSQL) query layer instead of parsing TSVs by hand. Scope decision: plain
+  SQL for the keep/update/demote decision; add BM25 (FTS5) now and embeddings +
+  reciprocal rank fusion later for harvest-time dedupe ("have we already
+  captured this?"). RRF is a retrieval mode for recall, not an aggregation tool
+  for the review graph.
+- Trial flowchart: see `references/harvest-flow.md`.
+
 ## Gotchas
 
 - **Secrets never go in a skill file.** Skills get committed and open-sourced.
