@@ -1351,11 +1351,10 @@
     "opencode-ntfy.sh",
     "opencode-log-sanitizer",
     "envsitter-guard",
-    "./plugin/opencode-toon-config-plugin",
     "{env:HOME}/.npm-global/lib/node_modules/@tarquinen/opencode-dcp",
     "opencode-telemetry"
   ],
   "instructions": [
-    "~/.config/opencode/plugin/shell-strategy/shell_strategy.md"
+    "~/.config/opencode/plugins/notty-shell-hang-guardrails/notty-shell-hang-guardrails.md"
   ]
 }
