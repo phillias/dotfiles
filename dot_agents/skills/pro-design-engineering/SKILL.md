@@ -104,3 +104,7 @@ When reviewing UI code, output a single markdown table, one row per issue, with
 | `transform: scale(0)` | `scale(0.95); opacity: 0` | Nothing appears from nothing |
 | `ease-in` on a dropdown | strong `ease-out` | `ease-in` reads as sluggish |
 | no `:active` state | `scale(0.97)` on `:active` | Presses must feel responsive |
+
+## Provenance
+
+Adapted from [rohitg00/pro-workflow](https://github.com/rohitg00/pro-workflow) (MIT, Rohit G.), an independent CE-inspired pro-workflow suite. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

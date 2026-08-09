@@ -25,3 +25,7 @@ Examples teach one path and quietly fence off the others: shown three ways to ca
 - Irreversible and high-stakes operations are the exception to all of the above: there, explicit constraint and confirmation beat elegance.
 - Never redesign a signature without first finding every existing caller.
 - Terseness is not the goal; expressiveness is. Cutting a description that carried real behavior is a worse outcome than a description that ran long.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

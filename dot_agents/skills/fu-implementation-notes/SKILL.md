@@ -23,3 +23,7 @@ No amount of planning removes every unknown; some only appear once the code is o
 - The notes file is temporary working memory, not documentation. Keep entries to 2-3 lines each.
 - Never let the notes drift from reality — an unlogged deviation is worse than no notes at all, because the file claims completeness.
 - "Conservative" means reversible, not necessarily simple.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

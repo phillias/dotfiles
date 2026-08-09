@@ -146,3 +146,7 @@ Show effort delta: manual estimate vs AI-assisted estimate.
 Scope check first — contained (do it) vs unbounded (break it down).
 Re-state project, branch, and task before presenting options.
 ```
+
+## Provenance
+
+Adapted from [rohitg00/pro-workflow](https://github.com/rohitg00/pro-workflow) (MIT, Rohit G.), an independent CE-inspired pro-workflow suite. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

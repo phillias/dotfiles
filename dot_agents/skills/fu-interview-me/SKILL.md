@@ -23,3 +23,7 @@ Brainstorming is over and there are still gaps between the user's map and the te
 - One question at a time means one. No question bundles.
 - Never ask a question whose answer is discoverable from the codebase; go look instead.
 - If an answer contradicts an earlier decision, flag the conflict immediately rather than silently taking the newest answer.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

@@ -23,3 +23,7 @@ Some requirements are too intricate or too tacit to write down, but working code
 - The reference defines *what*; the target codebase's conventions define *how*.
 - If the reference itself turns out to be buggy or inconsistent, surface that instead of faithfully reproducing the bug.
 - Respect licenses: extracting semantics is fine; copying incompatible code is not.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

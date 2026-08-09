@@ -24,3 +24,7 @@ Reviewers start with the same unknowns the builder started with, plus one more: 
 - Never oversell: a pitch that hides a known weakness converts one approval into a permanent credibility loss.
 - The "what an expert would ask" section is the heart. If it's easy to write, the questions aren't hard enough.
 - If the work isn't actually ready, the honest pitch is a status update, and saying so is part of this skill.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

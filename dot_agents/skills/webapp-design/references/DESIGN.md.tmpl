@@ -1,0 +1,113 @@
+# DESIGN — <Project Name>
+
+House design contract scaffolded from the webapp-design skill
+(`~/.agents/skills/webapp-design/`). House defaults are the "unless overridden" baseline;
+fill every `DECIDE:` field with the real per-product decision.
+
+## Brand (DECIDE each)
+
+- Palette: DECIDE: primary / accent / surface / text tokens (avoid AI-purple defaults)
+- Typography: DECIDE: type scale + fonts (UI + display)
+- Tone: DECIDE: voice (professional / warm / playful) — applies to copy
+- Audience: DECIDE: who this product is for
+- Motion: DECIDE: default easing + duration (default ease-out; `:active` scale(0.97))
+
+## Taste guardrails (house — do not weaken)
+
+- No em-dashes / en-dashes in UI copy (use " - "). No hero-label cliches, scroll cues, decorative status dots.
+- No lorem ipsum — real data or honest placeholders.
+- Semantic HTML, accessible-first. No AI-purple gradients/glow as default.
+- CI gate: `npx impeccable detect` over generated HTML when a Node toolchain exists.
+
+## Stack
+
+- Rust (Axum) + HTMX 4 + SQLite (sqlx), server-rendered. Radix UI + TS islands only where
+  genuinely complex interactivity needs them. No-API: JSON only for mobile/external.
+
+## Engineering patterns
+
+### Templates (Rust)
+
+- askama (default, compile-time typed, Jinja-like) or maud (HTML macros / component streaming).
+- No runtime template engine by default. Auto-escape by default; raw/safe only for trusted content.
+- No stringly-typed template names — the type system is the namespace (kills the Go
+  dynamic-name / ParseGlob-collision failure class). Precompilation is inherent (compiled in).
+
+### HTMX 4 patterns
+
+- `HX-Request` header distinguishes full page vs fragment from the same handler.
+- `hx-target` extended selectors (closest / next / find / this); `hx-swap` table (innerHTML,
+  outerHTML, beforeend, afterbegin, delete, none).
+- Error responses are swapable HTML fragments; use `hx-status:422` / `hx-status:500` targeting.
+- `hx-indicator` for loading states (`.htmx-request` toggled automatically).
+- `hx-swap-oob` for multi-element updates; native SSE (`connect:` + `swap:`) with axum `Sse` + tokio broadcast.
+
+### Project structure (Axum)
+
+```
+src/main.rs            # entry: router, state, middleware chain
+src/routes/mod.rs      # Router composition
+src/routes/pages.rs    # full-page handlers
+src/routes/fragments.rs# HTMX fragment handlers (no layout)
+src/routes/api.rs      # JSON API (mobile/external only)
+src/state.rs           # AppState: pool, templates, broadcast channels
+src/db.rs              # sqlx pool / rusqlite
+src/domain/            # models + business logic
+templates/             # askama sources
+static/                # embedded via rust-embed (unless CDN)
+```
+
+Middleware order (tower): CORS -> trace -> recovery -> security headers (CSP) -> rate limit -> CSRF.
+
+### Forms
+
+- Multi-step = one HTMX request per step (`hx-target` + `hx-swap="outerHTML"`).
+- Validation errors returned as HTML fragments, not JSON (`HX-Retarget` / `hx-status:422`);
+  validate with the `validator` crate + axum extractors.
+- Flash messages via `HX-Trigger` + an OOB toast element.
+
+### Performance
+
+- Compile-time templates (zero runtime parsing); `write!`/`format!` into a `Vec<u8>`/`String` —
+  no string concatenation in loops; embedded assets (`rust-embed`) — single-binary deploy.
+
+### Security
+
+- CSRF: same-origin HTMX + `HX-CSRF-Token` header check via middleware (axum-csrf or hand-rolled); 403 on mismatch.
+- CSP: `default-src 'self'; script-src 'self' 'unsafe-inline'`, `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`. Tighten script-src once inline scripts are removed.
+- Sanitization: auto-escape by default; raw/safe only for trusted content; validate path/query
+  params; escape attribute context for user content placed in `hx-*` attributes.
+
+### Testing
+
+- Handler tests: `tower::ServiceExt::oneshot` + `axum::body::to_bytes`; assert both full-page
+  and `HX-Request` fragment responses.
+- Snapshot tests: `insta` over rendered HTML fragments (first-class replacement for golden files).
+- E2E: Playwright for HTMX interactions (navigate, click, fill, wait for swapped selectors).
+
+### Docker
+
+- Static binary: `rustup target add x86_64-unknown-linux-musl`, or `rust:*-alpine` builder with
+  a `distroless/static` runtime. Verify `file <bin>` reports "statically linked".
+- `.dockerignore` can silently exclude the binary — check it before debugging `COPY` checksum errors.
+- Templates are compiled in: a production template change requires a rebuild
+  (`cargo-watch` is dev-only; in prod rebuild the image or `docker cp` the new binary + restart).
+
+### Cloudflare Workers escalation (when the house default isn't enough)
+
+Escalate from single-binary self-host when: global edge distribution, zero-ops serverless,
+per-tenant isolation at scale, real-time/coordinated state, or free-tier prototyping is the
+driving constraint. The frontend (HTMX 4 + Radix islands + PWA) is unchanged.
+
+- **D1** (default Cloudflare relational layer, SQLite semantics): read-heavy workloads, free
+  global read replicas, per-tenant database sharding (10 GB/DB, 100 cols, 2 MB rows, 100 KB SQL,
+  1000 queries/invocation paid; 50/invocation free), HTTP API for non-Worker tooling.
+- **Durable Objects (SQLite-backed)**: stateful per-entity compute + storage colocated —
+  single-threaded, globally unique, strictly serializable. Use for WebSockets, presence,
+  coordination, per-user/per-entity state (~1,000 req/s soft limit per object; 10 GB/object).
+- **R2** for PWA/assets/media (no egress charges); **KV** for config/routing metadata only.
+- Same SQL limits apply in both (2 MB rows, 100 cols, 100 KB statements); writes are row-billed
+  (paid: first 50M writes/mo included, then $1/M; reads first 25B/mo, then $0.001/M).
+- Do NOT escalate when: single-region/small app, heavy writes, large/complex SQL, or when
+  in-process sqlite latency is the point. Self-hosted sqlite is faster than any remote DB.

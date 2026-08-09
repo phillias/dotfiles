@@ -21,3 +21,7 @@ A plan's job is not to prove you thought of everything. It's to put the reversib
 - If a genuinely better approach appears mid-planning, present the pivot as its own decision — don't silently re-plan.
 - Keep it reviewable in minutes. A plan too long to read gets skimmed, and skimmed plans hide bad decisions.
 - The plan should leave room for improvisation during implementation; over-specified plans fail exactly where the territory disagrees with the map.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

@@ -23,3 +23,7 @@ The user is about to work in territory they don't know well. Your job is not to 
 - Do not start implementing. This skill ends at understanding.
 - Prioritize unknowns that would change the architecture or the approach over trivia.
 - If the area turns out to be simpler than the user feared, say so plainly. "You have no significant blindspots here" is a valid and valuable result.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

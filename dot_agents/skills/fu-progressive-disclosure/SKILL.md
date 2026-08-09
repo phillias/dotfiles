@@ -24,3 +24,7 @@ A long instruction file is paid for on every single turn, including the turns th
 - A pointer that never fires has made the material invisible, which is worse than leaving it inline. When the triggering condition can't be stated crisply, that section stays put.
 - Verify that the target harness actually ships sibling files alongside `SKILL.md` before relying on them; installers differ, and a pointer to a file that didn't travel is a broken skill.
 - Stop when the entry file is legible. Splitting past that point trades one kind of unreadability for another.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.
