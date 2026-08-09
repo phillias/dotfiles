@@ -1,6 +1,6 @@
 # OpenCode Runtime Systems — Design
 
-Design authority for the three custom runtime systems that keep this agent fleet
+Design authority for the four custom runtime systems that keep this agent fleet
 operating headlessly:
 
 1. **Self-learning flywheel** — the DETECT → GATE → HARVEST → COMPOUND loop that
@@ -9,6 +9,9 @@ operating headlessly:
    the proactive catalog-promotion gate that keeps chains healthy.
 3. **axi-memory // self-learning routing** — the triage rules that decide whether
    a lesson becomes a skill, a memory, or nothing.
+4. **Fleet state communications** — the zero-token sidecar that recovers
+   dispatched-task status and authored decisions when the chat-message hook
+   chain is disrupted.
 
 This document lives in `opencode-config/references/` (house pattern from PR #176)
 so it sits next to the config reference (`SKILL.md`) and the model snapshot
@@ -276,7 +279,127 @@ flowchart TD
 
 ---
 
-## 4. Maintenance & Evolution
+## 4. Fleet State Communications (Zero-Token Background-Task Status)
+
+Background-task completion notifications delivered via
+`<system-reminder>[BACKGROUND TASK COMPLETED]...</system-reminder>` are fragile:
+they ride the `chat.message` hook chain, which can be disrupted by compaction
+(`experimental.session.compacting`), model fallback, or other plugins
+intercepting the chain mid-turn. To recover dispatched-task status regardless of
+chat-message delivery, a **sidecar state tree** is maintained on disk — a terse
+index, never the transcript source of truth (that lives in `opencode.db`).
+
+### 4.1 Architecture
+
+```mermaid
+flowchart TD
+    SESS["session.* lifecycle events"] --> W["Writer plugin<br/>fleet-state-writer.ts"]
+    CHAT["chat.message<br/>(mined for [BACKGROUND TASK *] headers)"] --> W
+    TOOL["tool.execute.after<br/>(background_output → resulted)"] --> W
+    W -->|"append-only"| WL["wake.log (TSV)"]
+    W -->|"rewrite in place"| SJ["state.json"]
+    W -->|"regenerate"| DT["digest.txt (TSV)"]
+    W -->|"tag displacement"| WL
+    NOTE["fleet-note.sh<br/>(harness-agnostic CLI)"] -->|"append"| WL
+    NOTE -->|"append-only sidecar"| DCT["decisions.tsv"]
+    READ["fleet-digest.sh<br/>(pure bash, zero LLM)"] --> DT
+    READ --> WL
+    READ --> DCT
+    READ --> SIS["Sisyphus / any agent<br/>(glanceable block)"]
+    WL -.->|"recovery when<br/>chat chain broke"| SIS
+```
+
+Key invariant: every write path is **non-LLM** (TypeScript plugin handlers + a
+bash CLI), and the readable summary is pure bash. A decision record is a direct
+filesystem write — it rides no hook chain, so it survives exactly the fragility
+the sidecar exists to defeat.
+
+### 4.2 State tree
+
+`~/.local/state/opencode-fleet/`
+
+| File | Format | Owner | Purpose |
+|---|---|---|---|
+| `wake.log` | TSV append-only: `<ISO>\t<type>\t<session_id>\t<digest>` | writer plugin + `fleet-note.sh` | Raw event log. Rotates >1MB to last 1000 lines. Types: `session.*`, `chat.message.bg`, `tool.background_output`, `fleet.gc`, `fleet.decision`, `fleet.replaced`. |
+| `state.json` | JSON snapshot, rewritten in place | **writer plugin only** | Current state of every dispatched task; `tasks` map keyed by session_id/task_id. Terminal states (`completed`/`failed`/`cancelled`) are never overwritten. |
+| `digest.txt` | TSV: `<key>\t<status>\t<type>\t<digest>\t<age> ago` | writer plugin | Regenerated whenever `state.json` changes. |
+| `decisions.tsv` | TSV append-only: `<key>\t<ISO>\t<type>\t<decision>\t<rationale>` | **`fleet-note.sh` only** | Sidecar of authored decisions. Never written by the plugin → cannot race `state.json` rewrites. Surfaced by `fleet-digest.sh`. |
+
+Single-writer discipline: `state.json` is the plugin's whole-file rewrite;
+`decisions.tsv` is `fleet-note.sh`'s append. Two writers, two files, no races.
+
+### 4.3 Writer plugin (`plugins/fleet-state-writer.ts`)
+
+Subscribes to `event` (all `session.*`), `chat.message` (mines
+`[BACKGROUND TASK RESULT READY|COMPLETED|CANCELLED|INTERRUPTED|ERROR]` headers),
+and `tool.execute.after` (marks `bg_...` tasks `resulted` when their output is
+fetched). Never throws — every handler catches + logs.
+
+Two transition protections in `updateTask`:
+
+- **Terminal guard:** never overwrite `completed`/`failed`/`cancelled`.
+- **`fleet.replaced` flag:** when a record's `digest` is overwritten with a
+  different reason, append `fleet.replaced` (`prev=<old> -> <new>`) so no
+  transition is silently swallowed — the displaced reason stays recoverable by
+  name alongside the append-only `wake.log`.
+
+### 4.4 Decision authoring (`scripts/fleet-note.sh`)
+
+Fail-closed, harness-agnostic CLI:
+
+```bash
+scripts/fleet-note.sh <key> --decision "<text>" [--rationale "<text>"] [--type dispatch|merge|teardown|other]
+```
+
+Records a decision at two points (any orchestrating agent — Sisyphus, firstmate,
+or another harness — calls the same CLI):
+
+- **At dispatch:** `--type dispatch --decision "<why this task is running>"`
+- **At terminal outcome:** `--type merge|teardown --decision "<merged / PR opened / discarded>"`
+
+Survives chat-chain fragility by design (direct filesystem write, no hook
+delivery). `fleet-digest.sh` surfaces the latest decision per key in its
+`== decisions ==` section.
+
+### 4.5 Reader (`scripts/fleet-digest.sh`)
+
+Pure bash, zero LLM. Emits a single glanceable block:
+
+```bash
+scripts/fleet-digest.sh              # state + decisions + wakes from last 30m
+scripts/fleet-digest.sh --since 60   # last 60m of wakes
+scripts/fleet-digest.sh --wakes-only # just recent wake events
+scripts/fleet-digest.sh --json       # raw state.json
+```
+
+### 4.6 When to consult
+
+- **At session start** — `bash scripts/fleet-digest.sh` to ground yourself
+- **After a background-task system-reminder** — verify against `state.json`
+- **Before dispatching** — glance at `digest.txt` to avoid duplicate dispatches
+- **When the user asks "what's running?"** — `fleet-digest.sh --since 240`
+
+### 4.7 Failure modes
+
+- `state.json` empty/missing → sidecar not loaded; fall back to
+  `background_output` API.
+- `wake.log` corrupted → truncate and let the plugin repopulate.
+- The state tree is **never** the transcript source of truth (`opencode.db`
+  `session`/`message`/`part` tables are). It is a **terse index** for fast
+  reads.
+
+### 4.8 Drill-down map
+
+| Topic | Where |
+|---|---|
+| Writer plugin wiring & wake types | `plugins/fleet-state-writer.ts` |
+| Reader output format & flags | `scripts/fleet-digest.sh` |
+| Decision authoring contract | `scripts/fleet-note.sh`, `~/.config/opencode/AGENTS.md` §"Fleet State Communications" |
+| Decision consumption in agent turns | global `AGENTS.md` fleet-state section |
+
+---
+
+## 5. Maintenance & Evolution
 
 **systemd units (user):** `catalog-drift.{service,timer}` (drift detection),
 `selfimprove-drain.{service,timer}` (cue drain, 6h). Neither currently writes a

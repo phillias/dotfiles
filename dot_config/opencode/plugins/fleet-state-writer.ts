@@ -132,6 +132,18 @@ function updateTask(
       return; // Already terminal — don't overwrite
     }
 
+    // Replaced-transition flag: when a record's digest is overwritten with a
+    // different reason, tag the displacement so no state transition is
+    // silently swallowed. The old reason still lives in wake.log (append-only),
+    // but the fleet.replaced wake names it explicitly for the reader.
+    if (existing && partial.digest !== existing.digest) {
+      appendWake(
+        "fleet.replaced",
+        existing.session_id,
+        `prev=${existing.digest.slice(0, 80)} -> ${partial.digest.slice(0, 80)}`,
+      );
+    }
+
     const t: TaskState = {
       task_id: partial.task_id ?? existing?.task_id,
       session_id: partial.session_id,
