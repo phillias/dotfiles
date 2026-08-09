@@ -40,6 +40,3 @@ age-key.txt.age
 # npm artifacts — plugins/ node_modules (auto-load dir deps; source .ts tracked)
 .config/opencode/plugins/node_modules
 .config/opencode/plugins/node_modules/**
-# nested plugin repos keep their own .git — never manage it
-.config/opencode/plugins/notty-shell-hang-guardrails/.git
-.config/opencode/plugins/notty-shell-hang-guardrails/.git/**
