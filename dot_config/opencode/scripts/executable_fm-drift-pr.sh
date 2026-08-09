@@ -102,6 +102,5 @@ PR_URL=$(gh pr create --repo phillias/dotfiles --base "$BASE_BRANCH" --head "$BR
 
 - Re-added chezmoi-managed files: ${STAGED[*]##*/}
 - $summary
-- Gate criteria: captain-approved 2026-08-08 (removals auto; >=25% blended tokens-per-dollar two-sided; strict-domination new models; proposals for cross-tier / primary / known-failure changes)." \
-  --json url --jq .url)
+- Gate criteria: captain-approved 2026-08-08 (removals auto; >=25% blended tokens-per-dollar two-sided; strict-domination new models; proposals for cross-tier / primary / known-failure changes).")
 echo "PR: $PR_URL"
