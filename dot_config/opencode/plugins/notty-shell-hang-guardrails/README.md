@@ -1,4 +1,4 @@
-# opencode-shell-strategy
+# opencode-notty-shell-hang-guardrails
 
 OpenCode instructions for running shell commands safely in a non-interactive environment.
 
@@ -20,7 +20,7 @@ Add the remote instruction file to your OpenCode configuration:
 
 Restart OpenCode. The rules load automatically at the start of each session.
 
-A local clone is optional. If you want to edit or contribute, clone the repository and point your config at the local `shell_strategy.md` path instead.
+A local clone is optional. If you want to edit or contribute, clone the repository and point your config at the local `notty-shell-hang-guardrails.md` path instead.
 
 ## What it covers
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# POSIX shell fixture for shell_strategy.md and README.md
+# POSIX shell fixture for notty-shell-hang-guardrails.md and README.md
 #
 # Scans fenced sh/bash/zsh blocks for prohibited unsafe patterns and checks the
 # README installation section. No dependencies beyond POSIX shell, awk, and grep.
@@ -13,7 +13,7 @@ set -u
 
 DOCS_DIR="${DOCS_DIR:-.}"
 README="$DOCS_DIR/README.md"
-STRATEGY="$DOCS_DIR/shell_strategy.md"
+STRATEGY="$DOCS_DIR/notty-shell-hang-guardrails.md"
 PROG=$(basename "$0")
 
 PHASE="${1:-green}"
@@ -28,11 +28,11 @@ if [ ! -f "$README" ]; then
   exit 1
 fi
 if [ ! -f "$STRATEGY" ]; then
-  echo "FAIL: shell_strategy.md not found: $STRATEGY" >&2
+  echo "FAIL: notty-shell-hang-guardrails.md not found: $STRATEGY" >&2
   exit 1
 fi
 
-tmp="${TMPDIR:-/tmp}/shell-strategy-fixture-$$"
+tmp="${TMPDIR:-/tmp}/notty-shell-hang-guardrails-fixture-$$"
 if ! mkdir "$tmp"; then
   echo "FAIL: cannot create temporary directory: $tmp" >&2
   exit 1

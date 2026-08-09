@@ -1355,6 +1355,6 @@
     "opencode-telemetry"
   ],
   "instructions": [
-    "~/.config/opencode/plugins/shell-strategy/shell_strategy.md"
+    "~/.config/opencode/plugins/notty-shell-hang-guardrails/notty-shell-hang-guardrails.md"
   ]
 }
