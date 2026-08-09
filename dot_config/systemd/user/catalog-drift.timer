@@ -1,0 +1,10 @@
+[Unit]
+Description=Run catalog drift check daily
+
+[Timer]
+OnBootSec=10min
+OnCalendar=daily
+Unit=catalog-drift.service
+
+[Install]
+WantedBy=timers.target
