@@ -35,7 +35,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`
 
 ## Path Portability (Parity Rule)
 
-Never hardcode an absolute home path (`/home/<user>`, `/Users/<user>`) in configs, systemd units, skills, scripts, plugins, docs, or OmO configs. Every agent installation should reach parity using its own home directory.
+Never hardcode an absolute home path (`/home/<user>`, `/Users/<user>`) in configs, systemd units, skills, scripts, plugins, or docs. Every agent installation should reach parity using its own home directory.
 
 - **Shell/scripts**: `$HOME`
 - **Configs/docs**: `~`
@@ -66,9 +66,9 @@ docker inspect <container> | grep -iE 'WorkingDir|com.docker.compose.*Working.*D
 
 The runtime always knows where a running container came from; the filesystem does not.
 
-## Compound-Engineering Integration (OmO + CE)
+## Compound-Engineering Integration
 
-When the compound-engineering plugin is installed (skills present at `~/.agents/skills/ce-*`), route planning and execution through CE skills instead of the built-in OmO plan agent:
+When the compound-engineering plugin is installed (skills present at `~/.agents/skills/ce-*`), route planning and execution through CE skills:
 
 ### Pre-Planning Domain Alignment
 
@@ -97,7 +97,7 @@ Deployment: tracked in dotfiles via `chezmoi apply`. To install manually: `npx s
 
 ### Plan Storage
 
-CE plans are written to `docs/plans/` by default. When `.omo/` exists at the repo root (OmO project), ce-plan auto-detects it and writes to `.omo/plans/` instead — this triggers the OmO built-in Momus review hook.
+CE plans are written to `docs/plans/` by default.
 
 ### Execution
 
@@ -106,9 +106,8 @@ After ce-plan produces a plan, execute with `/ce-work <plan-path>`. The shipping
 ### Review Chain
 
 1. **ce-doc-review** runs automatically after ce-plan writes the plan (headless mode)
-2. **Momus** reviews plans written to `.omo/plans/` (built-in OmO hook)
-3. **ce-code-review** runs after ce-work completes implementation
-4. **ce-resolve-pr-feedback** handles review threads post-PR
+2. **ce-code-review** runs after ce-work completes implementation
+3. **ce-resolve-pr-feedback** handles review threads post-PR
 
 ## Safety Guardrails
 
@@ -134,12 +133,6 @@ The following CE skills are available and should be used automatically when the 
 - **`/ce-strategy`** — Create or maintain `STRATEGY.md`. Use when establishing or updating product strategy.
 
 **Invocation:** Use the `skill` tool with `name: ce-<skill>`. Each CE skill spawns specialized sub-agents pre-configured with budget-optimized models (GLM-5.1 for code review, Kimi K2.6 for architecture, Nemotron free for research, Big Pickle for document review).
-
-**Do not use** `/lfg` (removed — token-heavy autonomous pipeline that conflicts with ultrawork discipline of manual QA and scenario contracts).
-
-## Ultrawork Discipline
-
-When in ultrawork mode (`/ulw`), follow the strict RED → GREEN → SURFACE cycle with scenario contracts and manual QA. Do not delegate CE skills inside ultrawork — the protocol is hands-on. CE skills may be used *before* entering ultrawork (e.g., `/ce-plan` to create a plan, then `/ulw` to execute it with TDD discipline).
 
 ## Model Budget Awareness
 
@@ -177,7 +170,7 @@ infrastructure, or code review — it would be noise.
 
 ## Dispatch Rules (Crew-Dispatch Upgrade)
 
-Sisyphus reads `~/.config/opencode/dispatch-rules.json` at **Phase 0 Intent Gate** to translate task shape into `task(category=..., load_skills=[...], run_in_background=..., subagent_type=...)` calls. The file is the user-edited equivalent of firstmate's `crew-dispatch.json`, expressed against OmO's existing routing primitives (categories + subagents + skills).
+Sisyphus reads `~/.config/opencode/dispatch-rules.json` at **Phase 0 Intent Gate** to translate task shape into `task(category=..., load_skills=[...], run_in_background=..., subagent_type=...)` calls. The file is the user-edited equivalent of firstmate's `crew-dispatch.json`, expressed against opencode's routing primitives (categories + subagents + skills).
 
 ### Format
 
