@@ -777,6 +777,82 @@ Per-agent `fallback_models` in `opencode.json` `agent` blocks take priority over
 
 Profiles with OmO (free, team) use OmO's built-in `runtime_fallback` in `oh-my-openagent.json` instead:
 
+## Runtime Fallback Plugin (`opencode-runtime-fallback`)
+
+A local opencode plugin (`~/.config/opencode/plugins/opencode-runtime-fallback.ts`, core in `~/.config/opencode/lib/opencode-runtime-fallback-core.ts`) implementing OmO-style model fallback for this home, added 2026-08-08. OmO's behavior is the reference; the config follows the OmO shape. It replaces the removed `go-pool-fallback` plugin and drives the global `opencode-fallback.jsonc` ladder plus per-agent/category chains. All chezmoi-tracked.
+
+### Behavior
+
+Two independent fallback systems, mirroring OmO:
+
+- **Reactive `runtime-fallback`**: on a retryable provider failure (codes from `retry_on_errors`, classified key errors, provider retry signals) the session steps to the next model in its resolved chain, marks the failed model into cooldown (no hot-looping), stamps the title `[fallback: <model>]`, and toasts when `notify_on_fallback` is set. The primary auto-recovers when its cooldown expires.
+- **Proactive `model-fallback`**: per-agent/category `fallback_models` resolved per session via `chat.params`; per-entry settings (`temperature`, `maxOutputTokens`, options) are promoted only when that entry is active, cleared on `session.deleted`.
+
+### Model resolution order
+
+1. UI-selected session model
+2. Agent `fallback_models` (from `opencode-fallback.jsonc` `agents`)
+3. Category `fallback_models` (`categories`)
+4. Global `fallback_models` ladder (free → subsidized → pay)
+5. OpenCode system default
+
+### Agent-aware surfaces (know, not operate)
+
+- A `fallback-status` tool returns chain state in TOON: `active`, `remaining`, `cooldown`. Chain-healthy sessions print a definitive empty state (`chain: healthy`).
+- A one-line system-context annotation is appended via `experimental.chat.system.transform` while a fallback is active: `[model: active on <model>; N left in fallback chain]`.
+- Durable state at `~/.local/state/opencode-fleet/fallback.json` (sessions, chain, cooldowns) — restart-proof, readable by the session-start digest.
+- Healthy chains produce zero agent-visible output. `tui.prompt.append` exists only as a TUI event in this plugin API version, not as a server hook, so annotation rides the system-transform hook instead.
+
+### Chain source
+
+Chains seeded 2026-08-08 from the recovered OmO config (`~/.omo/omo.jsonc`, chezmoi history `055dc6b^:private_dot_omo/omo.jsonc`) plus the Tier 1/2/3 model-selection tables above: 14 agents and 8 categories, effort-graded (quality agents degrade to free, utility agents start free, specialized agents keep capability constraints). KTD6 constraints enforced: GPT models only via the `opencode/` prefix; Ternary Bonsai single-shot only, never an agent primary; at most 1-2 NVIDIA NIM models per chain (~40 RPM shared); `400` stays in `retry_on_errors`.
+
+### Layer D — deferred (decision 2026-08-08)
+
+An agent-callable tool to switch/reorder its own fallback chain is out of scope. Rationale (captain): every such judgment is a cost decision that would gravitate toward the highest-performing/highest-cost model; it spends tokens to reach that judgment; both diverge from AXI token discipline. Effort intent is already expressed at dispatch time via categories. Agent awareness stays at "know, not operate". Prior art exists (Hermes `model_switch` shipped, deepagents `switch_model` proposed) but was consciously not adopted.
+
+### Architecture
+
+```mermaid
+flowchart TB
+  CFG[opencode-fallback.jsonc<br/>single-root OmO shape] --> CORE[Chain engine]
+  EV[event hooks<br/>session.status / session.error] --> CORE
+  CORE --> STEP[advance chain<br/>skip cooldown]
+  STEP --> UPD[client.session.update<br/>+ title marker]
+  STEP --> CHP[chat.params<br/>per-model settings]
+  CORE --> CD[per-model cooldown]
+  CORE --> AXS[AXI + agent-aware surfaces]
+  AXS --> TOOL[fallback-status tool<br/>TOON]
+  AXS --> PROMPT[system-transform<br/>one-line annotation]
+  AXS --> STATE[durable state file]
+```
+
+```mermaid
+sequenceDiagram
+  participant M as Model call
+  participant H as Plugin hooks
+  participant E as Chain engine
+  participant S as Session
+  M->>H: retryable error (400/429/5xx/529)
+  H->>E: classify + resolve chain
+  E->>S: session.update fallback model
+  E->>S: title marker [fallback: ...]
+  E->>H: toast if notify_on_fallback
+  H->>M: system annotation on next turn
+  Note over E: cooldown primary; attempts++
+  E-->>H: chain empty → structured exhaustion
+```
+
+```mermaid
+stateDiagram-v2
+  [*] --> healthy
+  healthy --> degraded: retryable error
+  degraded --> cooldown: model enters cooldown
+  cooldown --> healthy: cooldown expires → auto-recover primary
+  degraded --> exhausted: chain empty or max attempts
+  exhausted --> [*]
+```
+
 ## Provider Concurrency Limits (Team Profile)
 
 ```json
@@ -858,7 +934,7 @@ When modifying `~/.config/opencode/` files (root config, OmO config, fallback ch
 
 - `opencode.json` — providers, MCPs, compaction, `plugin` declaration
 - `~/.omo/omo.jsonc` — per-agent `model` + `fallback_models` arrays, category routing, concurrency
-- `opencode-fallback.jsonc` — global free→subsidized→pay fallback chain (10 entries)
+- `opencode-fallback.jsonc` — single-root fallback config: global free→subsidized→pay ladder + per-agent/category `fallback_models` chains (15 global entries)
 - `dispatch-rules.json` — 26 starter rules consumed by Sisyphus at intent-gate time
 
 All four are chezmoi-tracked. `chezmoi re-add` each after edits, then standard commit flow.
@@ -1012,7 +1088,13 @@ Primary: zen/cloudflare/openrouter (free)
 | `~/.config/opencode/opencode.json` | Root config (providers, MCPs, compaction, `plugin` declaration) | chezmoi |
 | `~/.omo/omo.jsonc` | **OmO agent + category routing + fallback_models chains + team_mode/tmux/background_task** (keys under `"[opencode]"` block). Runtime-read since 2026-07-29 migration | chezmoi (since 2026-08-01) |
 | `~/.config/opencode/oh-my-openagent.jsonc` | ⚠️ LEGACY ORPHAN — pre-migration OmO config, no longer read at runtime. **Forgotten from chezmoi 2026-08-01**; purged by `run_onchange_cleanup-and-sync.sh` on every machine | ~~chezmoi~~ (forgotten) |
-| `~/.config/opencode/opencode-fallback.jsonc` | Global free→subsidized→pay fallback chain (10 entries) | chezmoi |
+| `~/.config/opencode/opencode-fallback.jsonc` | Single-root fallback config: global free→subsidized→pay ladder + per-agent/category `fallback_models` chains (seeded 2026-08-08 from recovered OmO config) | chezmoi |
+| `~/.config/opencode/plugins/opencode-runtime-fallback.ts` | Auto-loaded plugin: reactive + proactive model fallback (OmO-style) | chezmoi |
+| `~/.config/opencode/lib/opencode-runtime-fallback-core.ts` | Pure core of the fallback plugin (config parse, classification, chain resolution) — unit-tested | chezmoi |
+| `~/.local/state/opencode-fleet/fallback.json` | Runtime fallback state (sessions, chains, cooldowns) — written by the plugin, live file not tracked | live state (not tracked) |
+| `~/.config/opencode/scripts/catalog-drift.mjs` | Catalog drift checker (Node, zero deps): fetch models.dev + Zen, diff against snapshot, write TOON report; `--seed` regenerates the snapshot | chezmoi |
+| `~/.config/systemd/user/catalog-drift.service` + `.timer` | Daily timer running the drift checker (zero-token detection; LLM gate applies write criteria only on drift) | chezmoi |
+| `~/.agents/skills/opencode-omo-config/models.snapshot.json` | Committed model snapshot (config-referenced + free-tier models of tracked providers) the checker diffs against | chezmoi |
 | `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
 | `~/.config/opencode/AGENTS.md` | Agent behavioral rules (Dispatch Rules + Fleet State Comms sections) | chezmoi |
 | `~/.config/opencode/plugins/*.ts(x)` | Auto-loaded TypeScript plugins (better-compaction, fleet-state-writer, go-pool-guard, self-learning-autocapture, axi-memory-bridge, tmux-subagent-activator, tps-status) | chezmoi |
