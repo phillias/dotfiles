@@ -1,0 +1,31 @@
+# PRODUCT — <Project Name>
+
+House product contract scaffolded from the webapp-design skill
+(`~/.agents/skills/webapp-design/`). Fill every `DECIDE:` field.
+
+## What this product is
+
+DECIDE: one paragraph — the problem, the user, the outcome.
+
+## Who it's for
+
+DECIDE: primary audience + adjacent audiences. Be specific; never "everyone".
+
+## Constraints
+
+DECIDE: hard constraints (platform, compliance, data, time).
+
+## Non-goals (by default)
+
+DECIDE: what this product deliberately does NOT do right now.
+
+## Stack (house defaults — override only with a stated reason)
+
+- Rust (Axum/tokio) + HTMX 4 + SQLite (sqlx), server-rendered hypermedia.
+- React + Radix UI + TypeScript islands only for genuinely complex interactivity.
+- No-API: the server returns HTML fragments to its own frontend; JSON only for mobile/external.
+- Single-binary deploy, TTFB < 50ms, minimal dependencies.
+
+## Success signal
+
+DECIDE: the one metric that would make this product obviously working.

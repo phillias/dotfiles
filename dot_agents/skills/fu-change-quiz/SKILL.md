@@ -26,3 +26,7 @@ After a long session the agent has often done more than the user realizes, and a
 - The quiz covers the change and its blast radius, not general knowledge.
 - If the user can't pass after two rounds, the recommendation is to simplify the change or split it, not to keep quizzing.
 - Never mark the user correct out of politeness. A false pass defeats the skill.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

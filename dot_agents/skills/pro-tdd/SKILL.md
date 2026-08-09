@@ -49,3 +49,7 @@ a test asserts nothing a human would not eyeball.
 Show each red-green transition, not just the final green. If a test is hard to
 write, say what the difficulty reveals about the design - untestable code is
 usually badly-seamed code, and that is a finding, not an obstacle.
+
+## Provenance
+
+Adapted from [rohitg00/pro-workflow](https://github.com/rohitg00/pro-workflow) (MIT, Rohit G.), an independent CE-inspired pro-workflow suite. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

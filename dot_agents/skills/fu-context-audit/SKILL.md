@@ -27,3 +27,7 @@ A prompt is written for one task; context is reused across every task, so it can
 - Judge instructions by whether they change behavior, not by whether they sound wise. A line the model already follows by default costs tokens to say nothing.
 - If the harness ships its own rightsizing command, this runs alongside it, not instead of it.
 - An audit that deletes a real invariant costs far more than the tokens it saved. When a line's purpose is unclear, that ambiguity is the finding — report it rather than guessing.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

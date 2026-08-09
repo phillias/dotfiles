@@ -19,6 +19,8 @@ Use [TOON](https://toonformat.dev/) (Token-Oriented Object Notation) as the outp
 TOON provides ~40% token savings over equivalent JSON while remaining readable by agents.
 Convert to TOON at the output boundary — keep internal logic on JSON.
 
+**Attribution survives conversion.** When converting an existing artifact (skill, doc, config, AGENTS file) to TOON — for example migrating markdown tables or bulleted lists to TOON tabular form — preserve every provenance element from the source: source repository, author, license, and any existing attribution. Carry them forward in the converted output (frontmatter or a provenance section) exactly as the source had them. If the source artifact lacks attribution, record where it came from (origin repo, commit, license) in the converted output rather than silently dropping or inventing it. Attribution is metadata, not content to be compressed away.
+
 ```
 tasks[2]{id,title,status,assignee}:
   "1",Fix auth bug,open,alice

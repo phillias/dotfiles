@@ -23,3 +23,7 @@ The user has unknown knowns: criteria they can't verbalize but will recognize on
 - Nothing produced here is production code. Say so, and don't wire prototypes into the real app.
 - Do not converge early to the variation you'd pick. The point is spanning the space.
 - If the user reacts to none of them, that's signal too: the decision space was framed wrong. Reframe and rerun rather than generating more of the same.
+
+## Provenance
+
+Adapted from [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT), a distillation of Thariq Shihipar's "Finding Your Unknowns" essay. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

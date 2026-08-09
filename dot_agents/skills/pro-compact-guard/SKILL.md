@@ -73,3 +73,7 @@ COMPACT GUARD
 - Prioritize the file you're actively editing as #1 to restore
 - If auto-compact fires unexpectedly, immediately re-read your working file
 - Keep CLAUDE.md under 60 lines to leave room for actual context
+
+## Provenance
+
+Adapted from [rohitg00/pro-workflow](https://github.com/rohitg00/pro-workflow) (MIT, Rohit G.), an independent CE-inspired pro-workflow suite. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

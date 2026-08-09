@@ -86,3 +86,7 @@ These slash commands ship without a skill of the same name: `/commit`, `/develop
 ## Naming the invocation mode
 
 Every skill declares one intent. `[human]` skills are deliberate, side-effectful, or session rituals and carry `user-invocable: true`. `[auto]` skills earn their place in context by a description precise enough to fire on the right prompt and stay quiet otherwise. See [`rules/skill-conventions.mdc`](../../rules/skill-conventions.mdc) for the full convention and the write-operation rules for state-changing skills.
+
+## Provenance
+
+Adapted from [rohitg00/pro-workflow](https://github.com/rohitg00/pro-workflow) (MIT, Rohit G.), an independent CE-inspired pro-workflow suite. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.

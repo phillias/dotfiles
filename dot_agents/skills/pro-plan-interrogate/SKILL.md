@@ -70,3 +70,7 @@ No hedging. If the user declines to decide a node, mark it `DEFERRED` with
 the reason the user gave - this is not the same as open. When you write
 `CONTEXT.md` or a decision record, keep it in the project's language, not a
 generic template.
+
+## Provenance
+
+Adapted from [rohitg00/pro-workflow](https://github.com/rohitg00/pro-workflow) (MIT, Rohit G.), an independent CE-inspired pro-workflow suite. Imported 2026-08-04 in the firstmate zero-patch MVP skill drop; content preserved under the original MIT license.
