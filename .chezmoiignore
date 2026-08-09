@@ -35,12 +35,11 @@ age-key.txt.age
 .agents/**/__pycache__/**
 .agents/**/__pycache__
 
-# Third-party plugin clones (each is its own git repo, not a dotfile) —
-# opencode-toon-config-plugin (locally patched for global AGENTS.toon lookup)
-# and shell-strategy instructions. Patch steps are reproducible: 2 edits to
-# src/index.ts (os import + configDir fallback in locate()) + `bun run build`.
-.config/opencode/plugin/
+# shell-strategy loads via the opencode.json instructions key (md path).
 
 # npm artifacts — plugins/ node_modules (auto-load dir deps; source .ts tracked)
 .config/opencode/plugins/node_modules
 .config/opencode/plugins/node_modules/**
+# nested plugin repos keep their own .git — never manage it
+.config/opencode/plugins/shell-strategy/.git
+.config/opencode/plugins/shell-strategy/.git/**
