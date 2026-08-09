@@ -2,14 +2,19 @@
 
 ## Git Commit Identity
 
-Before any `git commit`, the agent **must** set the commit author identity dynamically:
+Before any `git commit`, the agent **must** set the commit author identity dynamically from the deterministic session model:
 
 ```bash
-export GIT_AUTHOR_NAME="$(opencode debug config 2>/dev/null | grep '"model"' | head -1 | grep -oP ':\s*"[^"]*"' | sed 's/.*"\(.*\)".*/\1/' || echo "unknown")@$(hostname -s)"
+# Chain: $OPENCODE_MODEL (user convention) → opencode.db session record → unknown
+model="${OPENCODE_MODEL:-}"
+if [ -z "$model" ] && command -v sqlite3 >/dev/null 2>&1 && [ -f "$HOME/.local/share/opencode/opencode.db" ]; then
+  model="$(sqlite3 "$HOME/.local/share/opencode/opencode.db" "SELECT model FROM session ORDER BY time_updated DESC LIMIT 1;" 2>/dev/null | sed -n 's/.*"id":"\([^"]*\)".*/\1/p')"
+fi
+export GIT_AUTHOR_NAME="${model:-unknown}@$(hostname -s)"
 export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
 ```
 
-Alternatively, if `opencode debug config` is slow/unavailable, check the session's active model via the `$OPENCODE_MODEL` environment variable or fall back to a known model name placeholder and prompt the user on first commit.
+`opencode.db` is SQLite at `~/.local/share/opencode/opencode.db`; the `session` table's `model` column stores JSON like `{"id":"big-pickle","providerID":"opencode"}`. `ORDER BY time_updated DESC LIMIT 1` selects the active session. If resolution yields `unknown`, prompt the user for the model name on first commit.
 
 The format is always: **`<model>@<hostname>`** — e.g., `big-pickle@nasbox` or `gpt-oss-120b@phillias-dev`.
 
