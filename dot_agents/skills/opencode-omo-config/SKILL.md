@@ -807,6 +807,10 @@ Two independent fallback systems, mirroring OmO:
 
 Chains seeded 2026-08-08 from the recovered OmO config (`~/.omo/omo.jsonc`, chezmoi history `055dc6b^:private_dot_omo/omo.jsonc`) plus the Tier 1/2/3 model-selection tables above: 14 agents and 8 categories, effort-graded (quality agents degrade to free, utility agents start free, specialized agents keep capability constraints). KTD6 constraints enforced: GPT models only via the `opencode/` prefix; Ternary Bonsai single-shot only, never an agent primary; at most 1-2 NVIDIA NIM models per chain (~40 RPM shared); `400` stays in `retry_on_errors`.
 
+### Promotion gate (PR to dotfiles master = captain approval)
+
+Any auto-write the gate applies to chezmoi-managed files (25%-value swaps, removals, strict-domination insertions, snapshot/docs refresh) ends with the **final step**: `~/.config/opencode/scripts/fm-drift-pr.sh`, which re-adds the changed files into the chezmoi source tree, branches from dotfiles `master`, pushes, and opens a PR (`chore(opencode): <drift summary>`). Merging that PR is the **captain's approval gate for promotion to the opencode fleet** — dotfiles auto-sync (cron) propagates `master` to machines only after merge. The drift system never writes dotfiles `master` directly. This is the scripted equivalent of the `/dotfiles` + `/ce-commit-push-pr` workflow, run automatically as the gate's last step (per captain decision 2026-08-08).
+
 ### Layer D — deferred (decision 2026-08-08)
 
 An agent-callable tool to switch/reorder its own fallback chain is out of scope. Rationale (captain): every such judgment is a cost decision that would gravitate toward the highest-performing/highest-cost model; it spends tokens to reach that judgment; both diverge from AXI token discipline. Effort intent is already expressed at dispatch time via categories. Agent awareness stays at "know, not operate". Prior art exists (Hermes `model_switch` shipped, deepagents `switch_model` proposed) but was consciously not adopted.
@@ -1093,6 +1097,7 @@ Primary: zen/cloudflare/openrouter (free)
 | `~/.config/opencode/lib/opencode-runtime-fallback-core.ts` | Pure core of the fallback plugin (config parse, classification, chain resolution) — unit-tested | chezmoi |
 | `~/.local/state/opencode-fleet/fallback.json` | Runtime fallback state (sessions, chains, cooldowns) — written by the plugin, live file not tracked | live state (not tracked) |
 | `~/.config/opencode/scripts/catalog-drift.mjs` | Catalog drift checker (Node, zero deps): fetch models.dev + Zen, diff against snapshot, write TOON report; `--seed` regenerates the snapshot | chezmoi |
+| `~/.config/opencode/scripts/fm-drift-pr.sh` | Promotion helper: re-add gate-applied chezmoi files, branch from dotfiles master, push, open the captain's approval-gate PR | chezmoi |
 | `~/.config/systemd/user/catalog-drift.service` + `.timer` | Daily timer running the drift checker (zero-token detection; LLM gate applies write criteria only on drift) | chezmoi |
 | `~/.agents/skills/opencode-omo-config/models.snapshot.json` | Committed model snapshot (config-referenced + free-tier models of tracked providers) the checker diffs against | chezmoi |
 | `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
