@@ -6,7 +6,7 @@ import { join } from "path";
 const HOME = homedir();
 const STATE_DIR = join(HOME, ".local", "state", "opencode-fleet");
 const CACHE_DIR = join(HOME, ".cache", "opencode-models");
-const SNAP = join(HOME, ".agents", "skills", "opencode-omo-config", "models.snapshot.json");
+const SNAP = join(HOME, ".agents", "skills", "opencode-config", "models.snapshot.json");
 const OUT_JSON = join(STATE_DIR, "catalog-drift.json");
 const OUT_TXT = join(STATE_DIR, "catalog-drift.txt");
 const ZEN_KEY = join(HOME, ".config", "opencode", ".zen-key");

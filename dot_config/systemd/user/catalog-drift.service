@@ -1,5 +1,5 @@
 [Unit]
-Description=Catalog drift check — detect model cost/catalog changes vs opencode-omo-config snapshot
+Description=Catalog drift check — detect model cost/catalog changes vs opencode-config snapshot
 
 [Service]
 Type=oneshot

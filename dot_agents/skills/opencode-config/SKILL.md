@@ -1,8 +1,12 @@
-# OpenCode/Oh-My-OpenAgent Configuration Skill
+# OpenCode Configuration Skill
 
 ## Purpose
 
-This skill documents the architecture, decisions, and maintenance procedures for the OpenCode and Oh-My-OpenAgent (OmO) configuration. As of 2026-07-18, this is a single-root config — profiles were phased out after they were identified as the source of the `cloudflare/` vs `@cf/` prefix bug (root config was correct, profiles shadowed it with bare model names). **As of 2026-07-29, OmO's config lives in `~/.omo/omo.jsonc` (migration `2026-07-opencode-config-unification`); the legacy `~/.config/opencode/oh-my-openagent.jsonc` is an orphan.**
+This skill documents the architecture, decisions, and maintenance procedures for the OpenCode configuration on this home: the provider stack, model catalog, fallback system, drift pipeline, and per-provider gotchas.
+
+**OmO is retired (2026-08-09).** The Oh-My-OpenAgent plugin was purged from `opencode.json` and `node_modules`; its recovered config (`~/.omo/omo.jsonc`, migration `2026-07-opencode-config-unification`) seeded the local `opencode-fallback.jsonc` ladder and remains only as provenance. All fallback behavior is now implemented by the local `opencode-runtime-fallback.ts` plugin. This skill was renamed from `opencode-omo-config` to `opencode-config` on 2026-08-09 to reflect that OmO is no longer part of the config. Historical OmO-era notes below are retained as accurate history, not current runtime state.
+
+As of 2026-07-18, this is a single-root config — profiles were phased out after they were identified as the source of the `cloudflare/` vs `@cf/` prefix bug (root config was correct, profiles shadowed it with bare model names).
 
 ## Model Specifications
 
@@ -454,7 +458,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 │   └── go-pool-switch.sh                      # Switch Go pool off if exhausted
 ├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
 ├── docs/plans/                                # Plan archive (not actively consumed at runtime)
-├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .agnes-key, .exa-key, .nvidia-key, .baseten-key  # API keys (secret; .groq-key + any other defunct-key files removed)
+├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .agnes-key, .exa-key, .nvidia-key, .baseten-key, .groq-key  # API keys (secret; .groq-key retained as dormant — re-enabled 2026-08-09)
 ├── .google-client-id, .google-client-secret   # OAuth creds for Google Workspace MCP
 └── skills/                                    # OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, etc.)
 ```
@@ -497,15 +501,17 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 | **CheapestInference** | 6 (3 pools: Flagship K3 / Frontier K2.7+GLM 5.2+MiniMax M3 / Core DS-V4 Flash+MiMo v2.5) | Flat $12.74–149/mo per 8h block | Flat-rate unlimited time blocks (1 concurrent req/key), open-source only — **documented, NOT wired into `opencode.json`** |
 | **Cheaper Inference** (Keak) | 5+ live catalog (Claude, GPT, Kimi K3, image) | Per-token ≤30% off list | Discounted proprietary models; per-key RPM/concurrency/quota/budget caps — **documented, NOT wired into `opencode.json`** |
 
-### Defunct Providers (removed 2026-07-18)
+### Disabled / Dormant Providers
 
-| Provider | Removed because | Date | Cleanup scope |
+Providers whose blocks remain in `opencode.json` (so they appear in the Models pane for manual selection) but are **referenced nowhere** in fallback chains, agents, or `small_model` — presence in config = available, absence from chains = never auto-used. That is opencode's "disabled" mechanism; there is no `enabled: false` flag on providers.
+
+| Provider | Status | Date | Cleanup scope |
 |---|---|---|---|
-| **Groq** | Groq free-tier TPM limits (12K/8K) were chronically hitting rate limits on agentic workloads. Eliminated from all configs; `.groq-key` deleted; no functional replacement needed (Cloudflare has identical GPT-OSS and Llama 3.3 70B models at higher concurrency) | 2026-07-18 | Provider block + all fallback chain entries (all 8 profile subdirs also deleted root-only config introduced same day) |
+| **Groq** | **DORMANT — re-added 2026-08-09, configured-but-disabled.** Groq free-tier TPM limits (12K/8K) were chronically hitting rate limits on agentic workloads, so it was removed from all chains 2026-07-18. Re-added as a provider block (gpt-oss-120b, gpt-oss-20b, llama-3.3-70b-versatile, llama-4-scout-17b-16e-instruct; `@ai-sdk/openai-compatible`, baseURL `https://api.groq.com/openai/v1`) wired to `.groq-key` for **manual selection only** — deliberately absent from `opencode-fallback.jsonc`, `agents/*`, and `small_model`. (Earlier doc claimed `.groq-key` was deleted; it was never actually removed — the key survived, making re-enablement a config-only change.) | 2026-07-18 removed; 2026-08-09 dormant re-add | Provider block + all fallback chain entries removed (all 8 profile subdirs also deleted root-only config introduced same day). To re-enable fully: add `groq/*` entries to `opencode-fallback.jsonc` chains / agent fallbacks and restart. |
 | **Cerebras** | Account lacked model access despite valid `.cerebras-key`. Verified empirically: every retry attempt returned `Not Found: Model does not exist or you do not have access to it` against `cerebras/llama3.3-70b` and `cerebras/gpt-oss-120b` (observed 3× consecutive failures this session). Dormant provider block retained in `opencode.json` for potential re-enablement, but no agent references it. | 2026-07-18 | Stripped from 8 fallback chains in `~/.omo/omo.jsonc` (sisyphus, prometheus, ultrabrain, deep, artistry, quick, unspecified-high, writing). Provider block + `.cerebras-key` retained as dormant. |
 | **HuggingFace** | HF Inference Providers has **zero free models** — `is_free: false` on all 127 models across all 17 providers (verified via `/v1/models` API 2026-07-22). The `$0.10/mo` "free credits" is a one-time starting balance, not a renewable tier. Credits exhaust same-day → 402 on everything. Additional gotchas: Gemma 4 26B is a thinking model (content=null, reasoning tokens consume max_tokens); Llama 3.3 70B novita provider caps context at 5K (!). Provider block retained in `opencode.json` for manual/direct use; removed from all OmO agent/category fallback chains. | 2026-07-22 | Stripped from 6 fallback chains (explore, librarian, multimodal-looker, artistry, quick, writing). ProviderConcurrency entry removed. Provider block + `.hf-key` retained. |
 
-Verification of these removals: schema audit of upstream opencode JSON schema (`https://opencode.ai/config.json` `$defs`) confirmed zero native `fallback` or `retry` keywords. All fallback handling is an OmO-feature, parsed by the OmO plugin, not by opencode core. Free→subsidized→pay progression is enforced by OmO at request-failure time.
+Verification of these removals: schema audit of upstream opencode JSON schema (`https://opencode.ai/config.json` `$defs`) confirmed zero native `fallback` or `retry` keywords. All fallback handling is plugin-level — originally OmO's `runtime_fallback`, now implemented by the local `opencode-runtime-fallback.ts` plugin driving `opencode-fallback.jsonc` (not by opencode core). Free→subsidized→pay progression is enforced at request-failure time.
 
 For Groq-equivalent and Cerebras-equivalent free-tier capacity, see **Cloudflare Workers AI** in the provider stack above — it now leads every fallback chain via `opencode-fallback.jsonc` (11-entry progressive chain).
 
@@ -543,10 +549,10 @@ Both use the same key files. Shell profiles mirror the key files loaded by openc
 `~/.config/opencode/opencode.json` provides:
 
 - **`small_model`**: `google/gemini-2.0-flash` (1M context)
-- **`provider`**: 13 live provider blocks (Cloudflare, OpenCode Zen, OpenCode Go, Agnes AI, OpenRouter, Mistral, SambaNova, Google, Together, HuggingFace, NVIDIA NIM, Baseten, InternLM) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it). **CheapestInference + Cheaper Inference are documented in this SKILL (2026-08-04) but NOT wired into `opencode.json`** — see their sections.
+- **`provider`**: 14 live provider blocks (Cloudflare, OpenCode Zen, OpenCode Go, Agnes AI, OpenRouter, Mistral, SambaNova, Google, Together, HuggingFace, NVIDIA NIM, Baseten, InternLM, Groq) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it). **Groq is configured-but-disabled** (see Disabled/Dormant Providers — Models-pane manual selection only, absent from all chains). **CheapestInference + Cheaper Inference are documented in this SKILL (2026-08-04) but NOT wired into `opencode.json`** — see their sections.
 - **`compaction`**: `{auto: false, prune: true, reserved: 50000, tail_turns: 40}`
 - **`mcp`**: Baseline MCPs (context7, grep_app, websearch, mcp_everything)
-- **`plugin`**: `["oh-my-openagent@latest"]` — the OmO plugin is loaded directly by root `opencode.json`
+- **`plugin`**: local plugin stack — `./plugins/fleet-state-writer.ts`, `./plugins/axi-memory-bridge.ts`, `./plugins/go-pool-guard.ts`, `opencode-ntfy.sh`, `opencode-log-sanitizer`, `envsitter-guard`, `{env:HOME}/.npm-global/lib/node_modules/@tarquinen/opencode-dcp`, `opencode-telemetry` — plus `./plugins/opencode-runtime-fallback.ts` (fallback engine, reads `opencode-fallback.jsonc`; **not** in `plugin[]` — it hooks `session.error`/`retry` via its own registration). The Oh-My-OpenAgent plugin is **gone** (purged 2026-08-09).
 
 `~/.config/opencode/opencode-fallback.jsonc` provides the global fallback chain for agents without their own `fallback_models` array:
 
@@ -612,7 +618,7 @@ These are declared in `opencode.json` directly (no profile indirection):
 1. **Big Pickle as Sisyphus primary**: 200K context, tool calling, reasoning, structured output. Free on OpenCode Zen (limited time).
 2. **Gemma 4 12B for Multimodal-Looker**: Encoder-free architecture, 256K context, beats Gemma 3 27B at half the size.
 3. **Free→subsidized→pay global fallback**: The global `opencode-fallback.jsonc` chain has 11 entries in progressive order: cloudflare Workers AI free (`@cf/meta/llama-3.3-70b`, `@cf/openai/gpt-oss-20b`, `@cf/zai-org/glm-4.7-flash`) → together free (`Prism-ML/Ternary-Bonsai-27B` — 262K ctx, vision, tools; **single-shot only, see Known Failure**) → openrouter free (`nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-nano-30b-a3b:free`) → opencode-zen free (`nemotron-3-ultra-free`, `deepseek-v4-flash-free`, `mimo-v2.5-free`) → subsidized opencode-go (`deepseek-v4-flash`) → pay-tier last resort `google/gemini-2.0-flash`. Free tier is exhausted first by OmO's failure-driven fallback; pays last.
-4. **OmO is the only plugin**: As of 2026-07-18, `opencode.json` declares `["oh-my-openagent@latest"]` as the sole plugin. Profile variants (`opencode-runtime-fallback` for desk/web, no-plugin for pure/test) are obsolete — deleted with the rest of `profiles/`. Skills from `~/.agents/skills/` continue to load via OpenCode core, not OmO.
+4. **OmO is the only plugin** (**RETIRED 2026-08-09**): As of 2026-07-18, `opencode.json` declared `["oh-my-openagent@latest"]` as the sole plugin; profile variants (`opencode-runtime-fallback` for desk/web, no-plugin for pure/test) are obsolete — deleted with the rest of `profiles/`. **On 2026-08-09 OmO was retired: `oh-my-openagent` removed from `plugin[]` and purged from `node_modules`; fallback responsibility moved to the local `opencode-runtime-fallback.ts` plugin driving `opencode-fallback.jsonc` (its config was seeded from the recovered `~/.omo/omo.jsonc`).** Skills from `~/.agents/skills/` continue to load via OpenCode core, not OmO.
 5. **Go pool merged in** (Jun 2026): The former `go` and `zen` profile variants were consolidated into root config. 24 Go pool models (K2.6/K2.7, DS-V4-Pro/Flash, GPT-5.x, Qwen3.x) and Zen-aligned critics (gpt-5.4) are all in `~/.omo/omo.jsonc` directly now.
 6. **MoE preference**: All selected models use Mixture of Experts for efficiency.
 7. **Auto-compaction**: `opencode.json` declares `{auto: false, prune: true, reserved: 50000, tail_turns: 40}` — manual compaction only. This avoids disrupting background-task `<system-reminder>` delivery on the `chat.message` hook chain, which was identified as a known failure mode in 2026-07. Project-level `<project>/.opencode/opencode.json` can override to `{auto: true}` if a specific project wants auto-compaction back.
@@ -925,9 +931,9 @@ Consolidated reference for all 15 providers (verified 2026-08-04 from this skill
 
 ## Maintenance
 
-### Updating OpenCode/OmO Config
+### Updating OpenCode Config
 
-When modifying `~/.config/opencode/` files (root config, OmO config, fallback chain, keys, plugins):
+When modifying `~/.config/opencode/` files (root config, fallback chain, keys, plugins):
 
 1. Make changes on disk
 2. Verify with `chezmoi diff` to see what drifted
@@ -937,7 +943,7 @@ When modifying `~/.config/opencode/` files (root config, OmO config, fallback ch
 ### Updating the Root Config Layers
 
 - `opencode.json` — providers, MCPs, compaction, `plugin` declaration
-- `~/.omo/omo.jsonc` — per-agent `model` + `fallback_models` arrays, category routing, concurrency
+- `~/.omo/omo.jsonc` — **provenance only since 2026-08-09**: the recovered OmO config that seeded `opencode-fallback.jsonc`. No longer read at runtime; kept for history (do NOT route edits here — the fallback system reads `opencode-fallback.jsonc` + agent `fallback_models`).
 - `opencode-fallback.jsonc` — single-root fallback config: global free→subsidized→pay ladder + per-agent/category `fallback_models` chains (15 global entries)
 - `dispatch-rules.json` — 26 starter rules consumed by Sisyphus at intent-gate time
 
