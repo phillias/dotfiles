@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # fleet-digest.sh — terse summary of recent fleet state.
 #
-# Reads ~/.local/state/opencode-fleet/{digest.txt,wake.log,state.json}
+# Reads ~/.local/state/opencode-fleet/{digest.txt,wake.log,state.json,decisions.tsv}
 # and emits a single block Sisyphus can scan in one glance.
 #
 # Usage:
-#   fleet-digest.sh              # show digest + wakes from last 30 minutes
+#   fleet-digest.sh              # show digest + decisions + wakes from last 30 minutes
 #   fleet-digest.sh --since 60   # show wakes from last 60 minutes
 #   fleet-digest.sh --wakes-only # just recent wake events
 #   fleet-digest.sh --json       # raw state.json
@@ -13,6 +13,10 @@
 # Output format (default):
 #   == fleet state (ISO timestamp) ==
 #   <key>\t<status>\t<type>\t<digest>\t<age> ago
+#   ...
+#
+#   == decisions ==
+#   <key>\t[<type>]\t<decision>
 #   ...
 #
 #   == wakes since 30m ago (cutoff ISO) ==
@@ -27,6 +31,7 @@ STATE_DIR="${HOME}/.local/state/opencode-fleet"
 WAKE="${STATE_DIR}/wake.log"
 DIGEST="${STATE_DIR}/digest.txt"
 STATE="${STATE_DIR}/state.json"
+DECISIONS="${STATE_DIR}/decisions.tsv"
 
 SINCE_MIN=30
 WAKES_ONLY=false
@@ -73,6 +78,27 @@ if ! $WAKES_ONLY; then
     cat "$DIGEST"
   else
     echo "(empty — no dispatched tasks recorded yet)"
+  fi
+fi
+
+if ! $WAKES_ONLY; then
+  echo ""
+  echo "== decisions =="
+  if [[ -s "$DECISIONS" ]]; then
+    # decisions.tsv is append-only; tail the most recent rows, then show the
+    # latest row per key, most recent keys first (bounded to 10).
+    tail -n 20 "$DECISIONS" | awk -F'\t' '{
+      if (!($1 in last)) { order[++n]=$1 }
+      last[$1]=$0
+    }
+    END {
+      for (i=n; i>=1 && (n-i)<10; i--) {
+        split(last[order[i]], f, "\t")
+        printf "%s\t[%s]\t%s\n", f[1], f[3], substr(f[4],1,120)
+      }
+    }'
+  else
+    echo "(none recorded)"
   fi
 fi
 

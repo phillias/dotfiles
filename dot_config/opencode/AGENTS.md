@@ -35,7 +35,7 @@ Types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`
 
 ## Path Portability (Parity Rule)
 
-Never hardcode an absolute home path (`/home/<user>`, `/Users/<user>`) in configs, systemd units, skills, scripts, plugins, docs, or OmO configs. Every agent installation should reach parity using its own home directory.
+Never hardcode an absolute home path (`/home/<user>`, `/Users/<user>`) in configs, systemd units, skills, scripts, plugins, or docs. Every agent installation should reach parity using its own home directory.
 
 - **Shell/scripts**: `$HOME`
 - **Configs/docs**: `~`
@@ -66,9 +66,9 @@ docker inspect <container> | grep -iE 'WorkingDir|com.docker.compose.*Working.*D
 
 The runtime always knows where a running container came from; the filesystem does not.
 
-## Compound-Engineering Integration (OmO + CE)
+## Compound-Engineering Integration
 
-When the compound-engineering plugin is installed (skills present at `~/.agents/skills/ce-*`), route planning and execution through CE skills instead of the built-in OmO plan agent:
+When the compound-engineering plugin is installed (skills present at `~/.agents/skills/ce-*`), route planning and execution through CE skills:
 
 ### Pre-Planning Domain Alignment
 
@@ -97,7 +97,7 @@ Deployment: tracked in dotfiles via `chezmoi apply`. To install manually: `npx s
 
 ### Plan Storage
 
-CE plans are written to `docs/plans/` by default. When `.omo/` exists at the repo root (OmO project), ce-plan auto-detects it and writes to `.omo/plans/` instead — this triggers the OmO built-in Momus review hook.
+CE plans are written to `docs/plans/` by default.
 
 ### Execution
 
@@ -106,9 +106,8 @@ After ce-plan produces a plan, execute with `/ce-work <plan-path>`. The shipping
 ### Review Chain
 
 1. **ce-doc-review** runs automatically after ce-plan writes the plan (headless mode)
-2. **Momus** reviews plans written to `.omo/plans/` (built-in OmO hook)
-3. **ce-code-review** runs after ce-work completes implementation
-4. **ce-resolve-pr-feedback** handles review threads post-PR
+2. **ce-code-review** runs after ce-work completes implementation
+3. **ce-resolve-pr-feedback** handles review threads post-PR
 
 ## Safety Guardrails
 
@@ -134,12 +133,6 @@ The following CE skills are available and should be used automatically when the 
 - **`/ce-strategy`** — Create or maintain `STRATEGY.md`. Use when establishing or updating product strategy.
 
 **Invocation:** Use the `skill` tool with `name: ce-<skill>`. Each CE skill spawns specialized sub-agents pre-configured with budget-optimized models (GLM-5.1 for code review, Kimi K2.6 for architecture, Nemotron free for research, Big Pickle for document review).
-
-**Do not use** `/lfg` (removed — token-heavy autonomous pipeline that conflicts with ultrawork discipline of manual QA and scenario contracts).
-
-## Ultrawork Discipline
-
-When in ultrawork mode (`/ulw`), follow the strict RED → GREEN → SURFACE cycle with scenario contracts and manual QA. Do not delegate CE skills inside ultrawork — the protocol is hands-on. CE skills may be used *before* entering ultrawork (e.g., `/ce-plan` to create a plan, then `/ulw` to execute it with TDD discipline).
 
 ## Model Budget Awareness
 
@@ -177,7 +170,7 @@ infrastructure, or code review — it would be noise.
 
 ## Dispatch Rules (Crew-Dispatch Upgrade)
 
-Sisyphus reads `~/.config/opencode/dispatch-rules.json` at **Phase 0 Intent Gate** to translate task shape into `task(category=..., load_skills=[...], run_in_background=..., subagent_type=...)` calls. The file is the user-edited equivalent of firstmate's `crew-dispatch.json`, expressed against OmO's existing routing primitives (categories + subagents + skills).
+Sisyphus reads `~/.config/opencode/dispatch-rules.json` at **Phase 0 Intent Gate** to translate task shape into `task(category=..., load_skills=[...], run_in_background=..., subagent_type=...)` calls. The file is the user-edited equivalent of firstmate's `crew-dispatch.json`, expressed against opencode's routing primitives (categories + subagents + skills).
 
 ### Format
 
@@ -223,9 +216,10 @@ Background-task completion notifications delivered via `<system-reminder>[BACKGR
 
 | File | Format | Purpose |
 |---|---|---|
-| `wake.log` | TSV append-only, one line per event: `<ISO-ts>\t<type>\t<session_id>\t<digest>` | Raw event log. Rotates >1MB to last 1000 lines. |
-| `state.json` | JSON snapshot, rewritten in place | Current state of every dispatched task. `tasks` map keyed by session_id or task_id. |
+| `wake.log` | TSV append-only, one line per event: `<ISO-ts>\t<type>\t<session_id>\t<digest>` | Raw event log. Rotates >1MB to last 1000 lines. Types include `session.*`, `chat.message.bg`, `tool.background_output`, `fleet.gc`, `fleet.decision` (decision authored via `fleet-note.sh`), and `fleet.replaced` (a record's digest was overwritten with a different reason). |
+| `state.json` | JSON snapshot, rewritten in place | Current state of every dispatched task. `tasks` map keyed by session_id or task_id. Writer-owned — never edited by scripts. Terminal states (`completed`/`failed`/`cancelled`) are never overwritten. |
 | `digest.txt` | TSV snapshot: `<key>\t<status>\t<type>\t<digest>\t<age> ago` | Last computed human-readable summary, regenerated whenever state.json changes. |
+| `decisions.tsv` | TSV append-only: `<key>\t<ISO>\t<type>\t<decision>\t<rationale>` | Sidecar of authored decisions. Written only by `fleet-note.sh`, never by the plugin, so it cannot race `state.json` rewrites. Surfaced by `fleet-digest.sh`. |
 
 ### Writer plugin
 
@@ -235,7 +229,24 @@ Background-task completion notifications delivered via `<system-reminder>[BACKGR
 - `chat.message` — mines incoming message text for any of `[BACKGROUND TASK RESULT READY]`, `[BACKGROUND TASK COMPLETED]`, `[BACKGROUND TASK CANCELLED]`, `[BACKGROUND TASK INTERRUPTED]`, `[BACKGROUND TASK ERROR]` headers and writes structured event
 - `tool.execute.after` — when Sisyphus calls `background_output(task_id=bg_...)`, marks task as `resulted` (inspected by Sisyphus)
 
+On every non-terminal `updateTask` whose incoming `digest` differs from the existing record, the plugin appends a `fleet.replaced` wake (`prev=<old> -> <new>`) so no state transition is silently swallowed — the displaced reason stays recoverable by name alongside the append-only `wake.log`.
+
 Plugin never throws (all handlers catch + log). Zero LLM cost on the write side — TypeScript handlers run in the opencode plugin process, not in the LLM.
+
+### Decision authoring
+
+`~/.config/opencode/scripts/fleet-note.sh` — fail-closed, harness-agnostic CLI that records a durable decision + rationale for a fleet task key:
+
+```bash
+scripts/fleet-note.sh <key> --decision "<text>" [--rationale "<text>"] [--type dispatch|merge|teardown|other]
+```
+
+It appends one `fleet.decision` line to `wake.log` and one row to `decisions.tsv`, flock-guarded, and **never touches `state.json`** (the plugin owns that whole-file rewrite). Any agent orchestrating work — Sisyphus, firstmate, or another harness — records the decision at two points:
+
+- **At dispatch**: `--type dispatch --decision "<why this task is running>"`
+- **At terminal outcome**: `--type merge|teardown --decision "<merged / PR opened / discarded>" [--rationale "<...>"]`
+
+The record survives chat-message-chain fragility by design (direct filesystem write, no hook delivery). `fleet-digest.sh` surfaces the latest decision per key in its `== decisions ==` section.
 
 ### Reader
 
