@@ -1,292 +1,194 @@
 {
-  // Global free → subsidized → pay fallback chain.
-  // Used by non-agent model calls (small_model, compaction, title gen),
-  // and as safety net when per-agent/category fallback chains are exhausted.
+  // PAID-FIRST fallback policy (captain decision 2026-08-12, DESIGN.md §2.6).
+  // Order: exhaust Command Code GOAT ($70 pool) → OpenCode Go ($60 pool) →
+  // OpenCode Zen free tier → free providers → Google (pay last resort).
+  // GOAT leads (decision B) so its exhaustion rate is observable; may be
+  // re-ordered after experience. go-pool-guard.ts retired 2026-08-12 —
+  // reactive chain stepping here is the single owner of exhaustion handling.
   //
-  // Per-agent and per-category fallback chains live in the `agents` and
-  // `categories` blocks below (seeded 2026-08-08 from the recovered OmO
-  // config ~/.omo/omo.jsonc, per docs/plans/2026-08-08-001). Resolution order:
-  // session model → agent fallback_models → category fallback_models → this
-  // global chain → opencode system default. Effort-graded: Tier 1 quality
-  // agents start at frontier and degrade to free; Tier 2 utility agents start
-  // free; the global chain is the final free→subsidized→pay ladder.
+  // Fleet taxonomy (the retired OmO agent keys are gone): the global ladder is
+  // firstmate's + every secondmate's session chain (no agent name → resolves
+  // here). `agents` covers crewmate subagent types + the ce-* persona swarm.
+  // `categories` covers firstmate's dispatch categories. Resolution order:
+  // session model → agent (exact, then longest `*` wildcard) → category →
+  // global ladder. Specialized entries set `no_global_tail` so the chain ends
+  // at Zen and FAILS visibly instead of silently downgrading to the free tier.
   //
-  // KTD6 corrections applied to the seed: GPT models only via the `opencode/`
-  // prefix (zen/go reject GPT model names); Ternary Bonsai is single-shot only
-  // and never an agent primary; NVIDIA NIM shares ~40 RPM so chains hold at
-  // most 1-2 NIM models; `400` stays in retry_on_errors for GPT zen 400s.
-  //
-  // Progression: Cloudflare free (300 RPM) → Together free (60 RPM, 262K ctx) →
-  // NIM free (~40 RPM shared) → OpenRouter free (50 req/day) → Zen free (200 req/day) → Baseten subsidized
-  // ($30 credits) → Go subsidized ($10/mo) → Google pay (last resort).
+  // Decision A: utility agents (firstmate/crewmate/secondmate) run
+  // big-pickle → GOAT → Go → Zen → Free. Reasoning/high-effort/visual/looker/
+  // special agents keep their pinned models and fall back GOAT → Go → Zen only.
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
   "max_fallback_attempts": 15,
   "cooldown_seconds": 60,
   "timeout_seconds": 120,
   "notify_on_fallback": true,
+
+  // GLOBAL LADDER — firstmate & secondmate main sessions (agent=undefined),
+  // and the deduped tail of every non-no_global_tail chain.
   "fallback_models": [
-    // TIER 1: FREE — Cloudflare Workers AI (300 req/min, highest RPM)
-    // Wide-context models FIRST: this chain is also the safety net for agent
-    // calls whose prompts can exceed 24K. llama-3.3-70b-fp8-fast is hard-capped
-    // at 24K context (CF server limit, not config) and 5021-overflows on
-    // prompts > ~16K input — keep it LAST for small-prompt calls only.
-    "cloudflare/@cf/zai-org/glm-4.7-flash",        // 131K ctx
-    "cloudflare/@cf/openai/gpt-oss-20b",           // 128K ctx
-    "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",  // 24K ctx — SMALL PROMPTS ONLY
-    // TIER 2: FREE — Together AI (60 RPM, 262K ctx, vision + tools)
-    "together/Prism-ML/Ternary-Bonsai-27B",  // single-shot only (tool-loop failure) — last-resort fallback for non-agent calls
-    // TIER 3: FREE — NVIDIA NIM (~40 RPM shared, largest catalog, 1M ctx via Inkling)
-    "nvidia/deepseek-ai/deepseek-v4-flash",
-    "nvidia/nvidia/nemotron-3-super-120b-a12b",
-    // TIER 4: FREE — OpenRouter (50 req/day)
-    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-    "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
-    "openrouter/poolside/laguna-s-2.1:free",
-    // TIER 5: FREE — OpenCode Zen (~200 req/day)
-    "opencode-zen/nemotron-3-ultra-free",
-    "opencode-zen/deepseek-v4-flash-free",
-    "opencode-zen/mimo-v2.5-free",
-    // TIER 6: SUBSIDIZED — Baseten ($30 credits → $0.10/M GPT-OSS 120B)
-    "baseten/openai/gpt-oss-120b",
-    // TIER 7: SUBSIDIZED — OpenCode Go ($10/mo pool)
+    // STAGE 0: session primary (utility)
+    "opencode-zen/big-pickle",
+    // STAGE 1: Command Code GOAT ($70 pool, $14/$35/$70 windows) — exhaust first
+    "commandcode/moonshotai/Kimi-K2.6",
+    "commandcode/deepseek/deepseek-v4-flash",
+    // STAGE 2: OpenCode Go ($60 pool, $12/$30/$60 windows)
+    "opencode-go/kimi-k2.6",
     "opencode-go/deepseek-v4-flash",
-    // TIER 8: PAY — Last resort
+    // STAGE 3: OpenCode Zen free tier
+    "opencode-zen/deepseek-v4-flash-free",
+    "opencode-zen/nemotron-3-ultra-free",
+    // STAGE 4: FREE providers
+    "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+    "cloudflare/@cf/zai-org/glm-4.7-flash",
+    "nvidia/deepseek-ai/deepseek-v4-flash",
+    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+    "baseten/openai/gpt-oss-120b",
+    // STAGE 5: PAY last resort
     "google/gemini-2.5-flash"
   ],
+
+  // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Tier 1 — quality agents: frontier primaries, chains preserve reasoning
-    // class while degrading, pay-tier last.
-    "sisyphus": {
+    // Utility crewmates: big-pickle primary → GOAT → Go → Zen (global tail adds free)
+    "general": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "nvidia/deepseek-ai/deepseek-v4-flash",
+        "commandcode/moonshotai/Kimi-K2.6",
+        "commandcode/deepseek/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "baseten/openai/gpt-oss-120b",
-        "mistral/mistral-large-latest",
-        "google/gemini-2.0-flash"
-      ]
-    },
-    "hephaestus": {
-      // GPT prefix corrected from opencode-go per KTD6 (GPT rejected on go/zen).
-      "model": "opencode/gpt-5.5",
-      "fallback_models": [
-        "opencode-zen/gpt-5.5",
-        "opencode-zen/gpt-5.4",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "opencode-zen/nemotron-3-ultra-free",
-        "openrouter/qwen/qwen3-coder:free"
-      ]
-    },
-    "prometheus": {
-      "model": "opencode-zen/big-pickle",
-      "fallback_models": [
-        "nvidia/deepseek-ai/deepseek-v4-flash",
-        "opencode-go/kimi-k2.6",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "opencode-go/deepseek-v4-pro"
-      ]
-    },
-    "metis": {
-      "model": "opencode-go/glm-5.1",
-      "temperature": 0.3,
-      "fallback_models": [
-        "nvidia/z-ai/glm-5.2",
-        "cloudflare/@cf/zai-org/glm-5.2",
-        "opencode-zen/glm-5.1",
-        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/deepseek-v4-flash"
-      ]
-    },
-    "momus": {
-      "model": "opencode/gpt-5.5",
-      "variant": "xhigh",
-      "fallback_models": [
-        "opencode-zen/gpt-5.5-pro",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "opencode-zen/big-pickle",
-        "opencode/deepseek-v4-pro",
-        "opencode-zen/kimi-k2.6"
-      ]
-    },
-    "atlas": {
-      "model": "opencode-go/deepseek-v4-flash",
-      "fallback_models": [
-        "nvidia/deepseek-ai/deepseek-v4-flash",
-        "cloudflare/@cf/qwen/qwen2.5-coder-32b-instruct",
-        "opencode-go/kimi-k2.6",
-        "sambanova/Meta-Llama-3.3-70B-Instruct"
-      ]
-    },
-    "oracle": {
-      "model": "opencode/gpt-5.5",
-      "variant": "xhigh",
-      "fallback_models": [
-        "opencode-zen/gpt-5.5-pro",
-        "nvidia/thinkingmachines/inkling",
-        "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "opencode-zen/big-pickle",
-        "baseten/openai/gpt-oss-120b",
-        "opencode/deepseek-v4-pro",
-        "together/deepseek-ai/DeepSeek-R1"
-      ]
-    },
-    // Tier 2 — high-volume utility agents: free primaries, chains stay mostly
-    // free with the Go pool as the subsidized edge.
-    "sisyphus-junior": {
-      "model": "opencode-zen/nemotron-3-ultra-free",
-      "fallback_models": [
-        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "agnes/agnes-1.5-flash",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/deepseek-v4-flash"
-      ]
-    },
-    "explore": {
-      "model": "opencode-zen/deepseek-v4-flash-free",
-      "temperature": 0.1,
-      "fallback_models": [
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/openai/gpt-oss-120b",
-        "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "nvidia/deepseek-ai/deepseek-v4-flash",
-        "openrouter/poolside/laguna-s-2.1:free",
         "opencode-go/deepseek-v4-flash",
-        "google/gemini-2.0-flash"
-      ]
-    },
-    "librarian": {
-      "model": "opencode-zen/deepseek-v4-flash-free",
-      "temperature": 0.1,
-      "fallback_models": [
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/openai/gpt-oss-120b",
-        "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "nvidia/deepseek-ai/deepseek-v4-flash",
-        "openrouter/poolside/laguna-s-2.1:free",
-        "opencode-go/deepseek-v4-flash",
-        "google/gemini-2.0-flash"
-      ]
-    },
-    "quick": {
-      "model": "opencode-zen/nemotron-3-ultra-free",
-      "fallback_models": [
-        "nvidia/nvidia/nemotron-3-super-120b-a12b",
-        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "openrouter/poolside/laguna-s-2.1:free",
-        "agnes/agnes-1.5-flash",
         "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/deepseek-v4-flash"
-      ]
-    },
-    "unspecified-low": {
-      "model": "opencode-zen/nemotron-3-ultra-free",
-      "fallback_models": [
-        "nvidia/nvidia/nemotron-3-super-120b-a12b",
-        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "openrouter/poolside/laguna-s-2.1:free",
-        "agnes/agnes-1.5-flash",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/deepseek-v4-flash"
-      ]
-    },
-    // Tier 3 — specialized.
-    "multimodal-looker": {
-      // Bonsai OK here — single-shot vision look_at calls, no tool loop.
-      "model": "together/Prism-ML/Ternary-Bonsai-27B",
-      "fallback_models": [
-        "cloudflare/@cf/google/gemma-4-26b-a4b-it",
-        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
-        "opencode-zen/mimo-v2.5-free",
         "opencode-zen/nemotron-3-ultra-free"
       ]
     },
-    "science": {
-      "model": "intern/intern-s2-preview-397b",
-      "description": "Scientific reasoning, biomolecular design, material structure, multimodal scientific tasks",
+    "explore": {
+      "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "nvidia/thinkingmachines/inkling",
-        "opencode-go/glm-5.1",
-        "opencode-zen/big-pickle"
-      ]
-    }
-  },
-  "categories": {
-    "visual-engineering": {
-      "model": "opencode/gpt-5.3-codex",
-      "fallback_models": [
-        "opencode-zen/gpt-5.3-codex",
-        "openrouter/nvidia/nemotron-nano-12b-v2-vl:free",
+        "commandcode/moonshotai/Kimi-K2.6",
+        "commandcode/deepseek/deepseek-v4-flash",
+        "opencode-go/kimi-k2.6",
+        "opencode-go/deepseek-v4-flash",
         "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-zen/nemotron-3-ultra-free"
       ]
     },
+    // Specialized flywheel agents: models pinned, fallback GOAT→Go→Zen only.
+    "self-improve": {
+      "model": "opencode-zen/glm-5.1",
+      "fallback_models": [
+        "commandcode/zai-org/GLM-5.1",
+        "opencode-go/glm-5.1",
+        "opencode-zen/kimi-k2.6"
+      ],
+      "no_global_tail": true
+    },
+    "solutions-research": {
+      "model": "opencode-zen/nemotron-3-ultra-free",
+      "fallback_models": [
+        "commandcode/moonshotai/Kimi-K2.6",
+        "opencode-go/kimi-k2.6",
+        "opencode-zen/kimi-k2.6"
+      ],
+      "no_global_tail": true
+    },
+    // ce-* review/research personas: models stay pinned in their agent .md
+    // files. On error fall back GOAT → Zen only (no free downgrade; chain end
+    // surfaces as a visible failure). Go stage omitted deliberately — 35 of 51
+    // personas are already Go-pinned as their primary, so listing Go models
+    // here would let a pinned Go primary's failure skip the GOAT stage.
+    "ce-*": {
+      "fallback_models": [
+        "commandcode/moonshotai/Kimi-K2.6",
+        "commandcode/zai-org/GLM-5.1",
+        "commandcode/deepseek/deepseek-v4-flash",
+        "opencode-zen/kimi-k2.6"
+      ],
+      "no_global_tail": true
+    }
+  },
+
+  // DISPATCH CATEGORIES — firstmate picks at the intent gate via
+  // dispatch-rules.json → task(category=...).
+  "categories": {
+    // UTILITY (decision A): big-pickle primary → GOAT → Go → Zen → Free.
+    "quick": {
+      "model": "opencode-zen/big-pickle",
+      "fallback_models": [
+        "commandcode/moonshotai/Kimi-K2.6",
+        "commandcode/deepseek/deepseek-v4-flash",
+        "opencode-go/kimi-k2.6",
+        "opencode-go/deepseek-v4-flash",
+        "opencode-zen/deepseek-v4-flash-free",
+        "opencode-zen/nemotron-3-ultra-free"
+      ]
+    },
+    "unspecified-low": {
+      "model": "opencode-zen/big-pickle",
+      "fallback_models": [
+        "commandcode/moonshotai/Kimi-K2.6",
+        "commandcode/deepseek/deepseek-v4-flash",
+        "opencode-go/kimi-k2.6",
+        "opencode-go/deepseek-v4-flash",
+        "opencode-zen/deepseek-v4-flash-free",
+        "opencode-zen/nemotron-3-ultra-free"
+      ]
+    },
+    // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback
+    // GOAT→Go→Zen only — no free downgrade; exhaustion fails loudly.
     "ultrabrain": {
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
-        "nvidia/deepseek-ai/deepseek-v4-pro",
-        "cloudflare/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
-        "opencode-zen/big-pickle",
-        "baseten/nvidia/Nemotron-120B-A12B",
-        "mistral/mistral-large-latest"
-      ]
+        "commandcode/deepseek/deepseek-v4-pro",
+        "opencode-zen/deepseek-v4-pro"
+      ],
+      "no_global_tail": true
     },
     "deep": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "nvidia/deepseek-ai/deepseek-v4-pro",
-        "cloudflare/@cf/openai/gpt-oss-120b",
+        "commandcode/moonshotai/Kimi-K2.6",
         "opencode-go/kimi-k2.6",
-        "baseten/openai/gpt-oss-120b"
-      ]
-    },
-    "artistry": {
-      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
-      "fallback_models": [
-        "opencode-zen/mimo-v2.5-free",
-        "openrouter/horizon-beta"
-      ]
-    },
-    "quick": {
-      "model": "cloudflare/@cf/openai/gpt-oss-20b",
-      "fallback_models": [
-        "nvidia/nvidia/nemotron-3-super-120b-a12b",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
-        "agnes/agnes-1.5-flash",
-        "opencode-zen/mimo-v2.5-free"
-      ]
-    },
-    "unspecified-low": {
-      "model": "opencode-zen/nemotron-3-ultra-free",
-      "fallback_models": [
-        "nvidia/nvidia/nemotron-3-super-120b-a12b",
-        "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-        "agnes/agnes-1.5-flash",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-go/deepseek-v4-flash"
-      ]
+        "opencode-zen/kimi-k2.6"
+      ],
+      "no_global_tail": true
     },
     "unspecified-high": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "nvidia/deepseek-ai/deepseek-v4-flash",
+        "commandcode/moonshotai/Kimi-K2.6",
         "opencode-go/kimi-k2.6",
-        "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-        "baseten/openai/gpt-oss-120b",
-        "mistral/mistral-large-latest"
-      ]
+        "opencode-zen/kimi-k2.6"
+      ],
+      "no_global_tail": true
+    },
+    "visual-engineering": {
+      "model": "opencode/gpt-5.3-codex",
+      "fallback_models": [
+        "commandcode/gpt-5.6-luna",
+        "opencode-zen/gpt-5.3-codex"
+      ],
+      "no_global_tail": true
+    },
+    "artistry": {
+      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
+      "fallback_models": [
+        "commandcode/xiaomi/mimo-v2.5",
+        "commandcode/thinkingmachines/inkling",
+        "opencode-go/mimo-v2.5",
+        "opencode-zen/mimo-v2.5-free"
+      ],
+      "no_global_tail": true
     },
     "writing": {
       "model": "opencode-zen/deepseek-v4-flash-free",
       "fallback_models": [
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
-        "opencode-zen/mimo-v2.5-free",
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-        "google/gemini-2.0-flash"
-      ]
+        "commandcode/deepseek/deepseek-v4-flash",
+        "opencode-go/deepseek-v4-flash",
+        "opencode-zen/big-pickle"
+      ],
+      "no_global_tail": true
     }
   }
 }

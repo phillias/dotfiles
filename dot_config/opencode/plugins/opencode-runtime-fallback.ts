@@ -13,6 +13,7 @@ import {
   parseModel,
   classifyError,
   resolveChain,
+  lookupChain,
   nextCandidate,
   remaining,
   primaryAvailable,
@@ -151,8 +152,8 @@ function toonStatus(sessionID: string): string {
 
 function entrySettingsFor(s: SessionState): { temperature?: number; maxOutputTokens?: number; options?: Record<string, unknown> } | undefined {
   const cfg = loadConfig();
-  const ag: ChainCfg | undefined = s.agent ? cfg.agents?.[s.agent] : undefined;
-  const cat: ChainCfg | undefined = s.agent ? cfg.categories?.[s.agent] : undefined;
+  const ag = lookupChain(cfg.agents, s.agent);
+  const cat = lookupChain(cfg.categories, s.agent);
   const entries: ChainEntry[] = [...(ag?.fallback_models ?? []), ...(cat?.fallback_models ?? [])];
   for (const e of entries) {
     if (typeof e === "object" && entryModel(e) === s.activeModel) return entrySettings(e);
