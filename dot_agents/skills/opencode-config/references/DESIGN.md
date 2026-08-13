@@ -173,12 +173,13 @@ stateDiagram-v2
 Classification is retryable on status code, `ProviderAuthError`, or the
 RETRYABLE_PATTERN regex (`rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust`).
 
-**Global ladder (8 tiers, cost-ascending):** CF free (small-prompts only) →
+**Global ladder:** **paid-first since 2026-08-12** — big-pickle → Command Code
+GOAT → opencode-go → opencode-zen free → CF free (small-prompts only) →
 together Ternary-Bonsai (single-shot only) → nvidia NIM (~40 RPM shared, max
-1-2 per chain) → openrouter free → opencode-zen free → baseten subsidized →
-opencode-go ($10/mo pool) → google/gemini-2.5-flash (paid last resort). KTD6
-constraints: GPT-class models only via `opencode/` prefix; Ternary Bonsai never
-primary; 400 stays in `retry_on_errors`.
+1-2 per chain) → openrouter free → baseten subsidized → google/gemini-2.5-flash
+(paid last resort). KTD6 constraints: GPT-class models only via `opencode/`
+prefix; Ternary Bonsai never primary; 400 stays in `retry_on_errors`. Full
+policy and rationale in §2.6.
 
 **Per-entry settings** (`temperature`/`maxOutputTokens`/`options`) are promoted
 **only when that entry is active** — from the agent or category fallback entry —
@@ -208,19 +209,53 @@ unavailable in this API version so the annotation rides system-transform.
   `${OPENCODE_MODEL:-firstmate}@$(hostname -s)` (deliberate, not the opencode.db
   chain).
 
-### 2.6 Go pool guard
+### 2.6 Paid-first fallback policy (GOAT → Go → Zen → free)
 
-`go-pool-guard.ts` polls `https://opencode.ai/zen/go/v1/usage`; at ≥95% rolling
-usage it rewrites every `opencode-go/*` reference in `cfg.agents` /
-`cfg.categories` to free alternatives (recursive `replaceWithFree`). It is a
-**complementary** proactive guard: the fallback plugin reacts per-call, the pool
-guard rewrites the config pre-session when the shared pool is exhausted.
+**2026-08-12 (captain decision):** fallback reverses from free-first to
+**paid-first** — prepaid flat-rate pools are spent before throttled free tiers:
+**Command Code GOAT** ($70 pool) → **OpenCode Go** ($60 pool) → **OpenCode Zen**
+(free tier) → free providers (Cloudflare/NVIDIA/OpenRouter/Together/Baseten) →
+Google (pay last resort). Decision B: GOAT leads so its exhaustion rate is
+observable; ordering may change after experience.
+
+**`go-pool-guard.ts` retired 2026-08-12.** The proactive guard (polled
+`https://opencode.ai/zen/go/v1/usage`) was purged along with its
+`go-pool-*.sh` helpers: the usage endpoint now returns 401 (no auth sent → the
+guard silently no-opped) and its redirect-to-free behavior conflicts with
+paid-first. Reactive chain stepping in the runtime-fallback plugin is the single
+owner of exhaustion handling (`classifyError` treats 429/402/403 +
+`pool.*exhaust` as retryable; a windowed pool error advances the chain).
+
+**Fleet integration** (the `agents`/`categories`/global blocks map to the live
+fleet, not the retired OmO taxonomy):
+
+- **Firstmate session** — the main session has no agent name, so
+  `resolveChain` falls straight to the **global `fallback_models` ladder**,
+  which leads with `opencode-zen/big-pickle`, then GOAT → Go → Zen → free.
+- **Crewmates** (`task(subagent_type=...)`) — `agents.<type>` chains. Utility
+  types (`general`, `explore`, ...): big-pickle primary, fallback
+  GOAT → Go → Zen → free. Specialized types (oracle, metis, momus, looker,
+  science): models stay pinned, fallback GOAT → Go → Zen **only** — no free
+  downgrade; chain end surfaces as a visible failure for the captain to fix.
+- **Categories** (`task(category=...)`) — `categories.<name>` chains. Utility
+  categories (`quick`, `unspecified-low`): big-pickle + GOAT → Go → Zen → free.
+  High-intensity/specialized categories (`ultrabrain`, `deep`,
+  `unspecified-high`, `visual-engineering`, `artistry`, `writing`): models stay
+  pinned, fallback GOAT → Go → Zen only.
+- **Secondmates** — same chezmoi-synced config; their main sessions resolve the
+  global ladder (big-pickle → GOAT → Go → Zen → free).
+
+The LLM determines a subagent's model by choosing the task shape at the intent
+gate (dispatch-rules.json → `task(category=...)` / `task(subagent_type=...)`);
+`chat.params.agent` → `resolveChain` → agent > category > global ladder. This is
+the "know, not operate" contract — the LLM picks the class of work, never the
+specific model (Layer D stays deferred).
 
 ### 2.7 Drill-down map
 
 | Topic | Where |
 |---|---|
-| Full provider/limits reference (15 providers) | `SKILL.md` (Provider Rate Limits section) |
+| Full provider/limits reference (16 providers) | `SKILL.md` (Provider Rate Limits section) |
 | Concurrency profiles (team + free) | `SKILL.md` |
 | Fallback config (chains, agents, categories) | `opencode-fallback.jsonc` |
 | Chain engine (pure functions, unit-tested) | `lib/opencode-runtime-fallback-core.ts` |

@@ -84,14 +84,82 @@ User subscribes to Cloudflare Workers. Catalog scraped from developers.cloudflar
 | google/gemini-2.5-flash | 1M | 64K | 0.7 |
 | deepseek/deepseek-chat | 131K | 8K | 0.7 |
 
-### OpenCode Go (12 models)
+### OpenCode Go (19 documented / ~22-25 via API — UPDATED 2026-08-12)
 
-| Model | Context | Output | Temp |
-|-------|---------|--------|------|
-| kimi-k2.6 | 200K | 32K | 0.7 |
-| deepseek-v4-pro | 131K | 8K | 1.0 |
-| deepseek-v4-flash | 131K | 8K | 0.7 |
-| glm-5.1 | 131K | 8K | 0.7 |
+Low-cost subscription: **$5 first month, then $10/mo** → **$60 of usage (6× multiplier)**.
+Rolling limits: 5h **$12** · weekly **$30** · monthly **$60** (dollar value, not requests).
+ZDR by default (Grok 4.5 / GPT-5.6 Luna retain 30 days). "Use with any agent" — OpenAI- and Anthropic-compatible endpoints from US/EU/Singapore (`opencode.ai/go`), also served via the built-in `opencode-go` provider in the binary.
+Deals (2026-08-12): DeepSeek V4 Flash 2× usage through Aug 31; 2026-08-11 price cuts — DS V4 Pro and MiMo V2.5 Pro $1.74→$0.435, MiniMax M3 $0.60→$0.30.
+
+| Model | Context | In $/M | Out $/M | Allowance | Req/mo |
+|-------|---------|--------|---------|-----------|--------|
+| DeepSeek V4 Flash | 1M | $0.14 (eff $0.07) | $0.28 (eff $0.14) | $60 | 158,150 |
+| MiMo V2.5 | 1M | $0.14 | $0.28 | $60 | 150,400 |
+| Qwen3.7 Plus | 1M | $0.40 | $1.60 | $60 | 21,600 |
+| Hy3 | 256K | $0.14 | $0.58 | $60 | 21,500 |
+| MiniMax M2.7 | 205K | $0.30 | $1.20 | $60 | 17,000 |
+| MiniMax M3 | 1M | $0.30 | $1.20 | $60 | 16,000 |
+| Qwen3.6 Plus | 1M | $0.50 | $3.00 | $60 | 16,300 |
+| DeepSeek V4 Pro | 1M | $0.435 | $0.87 | $15 | 17,150 |
+| MiMo V2.5 Pro | 1M | $0.435 | $0.87 | $15 | 16,300 |
+| GLM-5.2 | 1M | $1.40 | $4.40 | $60 | 4,300 |
+| GLM-5.1 | 203K | $1.40 | $4.40 | $60 | 4,300 |
+| Kimi K2.7 Code | 262K | $0.95 | $4.00 | $60 | 6,750 |
+| Kimi K2.6 | 262K | $0.95 | $4.00 | $60 | 5,750 |
+| MiniMax M2.5 | 205K | $0.30 | $1.20 | $60 | (deprecated) |
+| Qwen3.7 Max | 1M | $2.50 | $7.50 | $60 | 1,690 |
+| GPT-5.6 Luna | 1M | $0.10 | $0.60 | $15 | 10,250 |
+| Grok 4.5 | 500K | $2.00 | $6.00 | $15 | 600 |
+| Kimi K3 | 1M | $3.00 | $15.00 | $15 | 490 |
+| Qwen3.8 Max | 1M | $2.00 | $6.00 | $15 | 810 |
+
+Deprecated/retired per 2026-08 tracker: GLM-5, Kimi K2.5, Qwen3.5 Plus, MiMo V2 Pro, MiMo V2 Omni.
+
+### Command Code GOAT (Langbase, Inc. — commandcode.ai) — 34 models
+
+Flat-rate credit subscription for open models with **per-model dollar allowances**, plus API access on every plan except the $1 Go. Captain subscribed 2026-08-12; key at `~/.config/opencode/.command-code.key` (chezmoi age-encrypted). OpenCode Go and GOAT share an almost identical open-model lineup; GOAT's edge is the bigger pool ($70) and closed-model access.
+
+**Cost**: $10/mo → **$70 of usage (7× multiplier)** — highest of any $10 coding plan; with deals stretches past $100 (up to 10×). Rolling limits: 5h **$14** (20%) · weekly **$35** (50%) · monthly **$70**. Extra credits buyable at model cost, roll over, never expire, **never window-throttled** (when over a window, CC spends on-demand credits first, preserving the monthly pool). "Never trains, never stores"; ZDR default; infra US/EU/Singapore.
+
+**GOAT per-model monthly allowances**: GLM-5.2 **$70**, GPT-5.6 Luna **$70** (~51,800 req/mo — largest Luna allowance of any $10 plan), Tencent Hy3 **$70**, DS V4 Flash **$60** (~195K req), Kimi K2.7 Code **$60**, MiniMax M3 **$47**, Qwen Max/Plus **$33**, MiMo V2.5 **$30**; new/negotiating models 2× = **$20**: DS V4 Pro, MiMo V2.5 Pro, Kimi K3, Kimi K2.6, Grok 4.5/4.6, Muse Spark 1.2, Inkling, Nemotron 3 Ultra, Step, GLM-5.2 Fast, K2.7 HighSpeed. Free: Laguna S 2.1, Ling 3.0 Flash.
+
+| Model (GOAT) | API ID (`/provider/v1/models`) | Context |
+|----|----|----|
+| GLM-5.2 | `zai-org/GLM-5.2` | 1M |
+| GPT-5.6 Luna | `gpt-5.6-luna` | 1.05M |
+| DeepSeek V4 Flash | `deepseek/deepseek-v4-flash` | 1M |
+| DeepSeek V4 Pro | `deepseek/deepseek-v4-pro` | 1M |
+| Kimi K2.7 Code | `moonshotai/Kimi-K2.7-Code` | 256K |
+| Kimi K2.6 | `moonshotai/Kimi-K2.6` | 256K |
+| Kimi K2.5 | `moonshotai/Kimi-K2.5` | 256K |
+| Kimi K3 | `moonshotai/Kimi-K3` | 1M |
+| GLM-5.1 | `zai-org/GLM-5.1` | 200K |
+| GLM-5 | `zai-org/GLM-5` | 200K |
+| Qwen 3.7 Max | `Qwen/Qwen3.7-Max` | 1M |
+| Qwen 3.8 Max | `Qwen/Qwen3.8-Max` | 1M |
+| Qwen 3.7 Plus | `Qwen/Qwen3.7-Plus` | 1M |
+| Qwen 3.6 Plus | `Qwen/Qwen3.6-Plus` | 200K |
+| MiniMax M3 | `MiniMaxAI/MiniMax-M3` | 1M |
+| MiniMax M2.7 | `MiniMaxAI/MiniMax-M2.7` | 200K |
+| MiniMax M2.5 | `MiniMaxAI/MiniMax-M2.5` | 200K |
+| Tencent Hy3 | `tencent/hy3-paid` | 262K |
+| Grok 4.5 / 4.6 | `xai/grok-4.5` / `xai/grok-4.6` | 500K |
+| Muse Spark 1.2 | `meta/muse-spark-1.2` | 1M |
+| Inkling | `thinkingmachines/inkling` | 256K |
+| Inkling Small | `thinkingmachines/inkling-small` | 1M |
+| Nemotron 3 Ultra | `nvidia/nemotron-3-ultra-550b-a55b` | 1M |
+| MiMo V2.5 / Pro | `xiaomi/mimo-v2.5` / `xiaomi/mimo-v2.5-pro` | 1M |
+| Step 3.7 / 3.5 Flash | `stepfun/Step-3.7-Flash` | 256K / 1M |
+| Laguna S 2.1 (free) | `poolside/laguna-s-2.1-free` | 256K |
+| GLM-5.2 Fast | `zai-org/GLM-5.2-Fast` | 1M |
+| K2.7 Code HighSpeed | `moonshotai/Kimi-K2.7-Code-Highspeed` | 262K |
+
+Premium models in the catalog (NOT on GOAT — need Pro/Max): `claude-*` (7), `gpt-5.6-sol/terra`, `gpt-5.5`, `gpt-5.4`, `gpt-5.3-codex`, `gpt-5.4-mini`, `google/gemini-*` (4), `sakana/fugu-ultra`, `meta/muse-spark-1.1`.
+
+**Endpoints**: OpenAI `https://api.commandcode.ai/provider/v1/chat/completions` + Anthropic `https://api.commandcode.ai/provider/v1/messages` + `GET /provider/v1/models`. Model IDs are vendor-prefixed and case-sensitive. OpenAI-compatible → wire into opencode as a custom `@ai-sdk/openai-compatible` provider (all 34 GOAT models are open/GPT/Grok → `/chat/completions`; Claude isn't on GOAT so no `/messages` needed).
+**Deals**: GPT-5.6 Luna 50% off to 2026-08-13; DS V4 Pro 4× permanent; MiMo V2.5/Pro up to 99% off; MiniMax M3 2×.
+**Key file**: `~/.config/opencode/.command-code.key` → COMMANDCODE_API_KEY (chezmoi age-encrypted 2026-08-12; referenced `{file:...}` like agnes).
+**Placement advice**: 🔴 PAID subscription. Under the captain's proposed 2026-08-12 fallback order (GOAT → Go → Zen → free, PENDING approval) it leads every chain. Best at $10 for Luna/Grok closed-model access, DS-V4-Pro/Hy3/MiMo-Pro volume, and the widest catalog. Counterparty: Langbase, Inc.; open-sourcing the harness "later this month" (2026-08).
 
 ### Other Providers
 
@@ -282,7 +350,8 @@ Investigated 2026-08-04 (live site + docs; API not probed — no key). **A Keak 
 | 🟢 **FREE** | OpenCode Zen | 6 free | $0 | ~200 req/day | Nemotron Ultra, DeepSeek V4 Flash, MiMo |
 | 🟢 **FREE** | Together AI | 2 (DS-R1 + Bonsai 27B) | $0 | 60 RPM, 60K TPM | DeepSeek R1 (reasoning), **Ternary Bonsai 27B (262K ctx, vision, tools) ⚠️ single-shot only — tool-loop failure** |
 | 🟡 **SUBSIDIZED** | Baseten | 13 | $30 credits | 15-120 | GPT-OSS 120B at $0.10/M, Inkling at 1M ctx |
-| 🟡 **SUBSIDIZED** | OpenCode Go | 24 | $10/mo | — | Quality pool (K2.6, DS-V4, GLM-5.1) |
+| 🟡 **SUBSIDIZED** | OpenCode Go | 19-22 | $5 first mo, $10/mo | $12/5h, $30/wk, $60/mo | Quality pool (K2.6, DS-V4, GLM-5.1/5.2) |
+| 🟡 **SUBSIDIZED** | Command Code GOAT | 34 | $10/mo → $70 usage | $14/5h, $35/wk, $70/mo | Quality pool + closed models (Luna, Grok, Muse Spark) |
 | 🔴 **PAY** | Google | 1 | Pay-per-token | 1500/day | Gemini 2.0 Flash, 1M ctx, last resort |
 | 🔴 **PAY** | Together | 1 | Pay-per-token | 60+ | DeepSeek R1, reasoning specialist |
 | 🔴 **PAY** | CheapestInference | 6 (3 pools) | Flat $12.74–149/mo per 8h block | Unlimited in-window, 1 req/key | Open-model unlimited — DS-V4 Flash/K2.7/GLM 5.2/MiniMax M3 (1M ctx) |
@@ -301,6 +370,8 @@ Investigated 2026-08-04 (live site + docs; API not probed — no key). **A Keak 
 6. Baseten ($30 credits → $0.10/M GPT-OSS 120B)
 7. OpenCode Go ($10/mo pool)
 8. Google Gemini (pay, last resort)
+
+> **2026-08-12 (captain, pending approval)**: proposed **paid-first** policy — exhaust Command Code GOAT → OpenCode Go → OpenCode Zen → free providers. Would supersede the free-first order above for agent chains once the `commandcode` provider is wired into `opencode.json`. Rationale: prepaid flat-rate pools should be spent before throttled free tiers; GOAT covers nearly every model this home routes through `opencode-go`.
 
 **New pay-tier additions (2026-08-04 investigation)**: **CheapestInference** (flat-rate unlimited) and **Cheaper Inference** (Keak, discounted per-token) both slot at the 🔴 PAY end of the ladder — as *alternatives to* Baseten/Go depending on workload shape (see their sections): flat-rate wins for sustained frontier-model volume; discounted per-token wins for bursty proprietary-model access with budget caps. Neither has a free tier; neither changes the free→subsidized ordering above. Neither is wired into `opencode.json` yet — documentation only.
 
@@ -441,21 +512,21 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 ~/.config/opencode/
 ├── opencode.json                              # Providers (Cloudflare, OpenRouter, OpenCode Zen, OpenCode Go, Agnes AI, Google, Mistral, SambaNova, Together, HuggingFace), MCPs, compaction defaults
 ├── oh-my-openagent.jsonc                      # ⚠️ LEGACY ORPHAN (post-migration). Do NOT edit — runtime reads ~/.omo/omo.jsonc instead. Forgotten from chezmoi 2026-08-01; purged by run_onchange cleanup
-├── opencode-fallback.jsonc                    # Global 11-entry free→subsidized→pay fallback chain (cloudflare Workers AI free → openrouter free → opencode-zen free → opencode-go flash → google gemini last resort)
+├── opencode-fallback.jsonc                    # PAID-FIRST fallback (2026-08-12): big-pickle → Command Code GOAT → opencode-go → zen free → free providers → google. Fleet taxonomy agents/categories, no_global_tail carve-outs for specialized, ce-* wildcard. DESIGN.md §2.6
 ├── dispatch-rules.json                        # 26 starter rules mapping task shape → task(category=..., load_skills=[...]) at Sisyphus intent-gate time
 ├── plugins/
 │   ├── better-compaction.ts                   # Auto-loaded: todo tracking, skill generation, codemem
 │   ├── fleet-state-writer.ts                  # Auto-loaded: zero-LLM-cost state wire (writes ~/.local/state/opencode-fleet/{state.json,wake.log,digest.txt})
 │   ├── fleet-digest.sh                        # (in scripts/, not plugins/) — pure bash reader for fleet state
-│   ├── go-pool-guard.ts                       # Auto-loaded: redirect to free when Go exhausted (only safety net for bare-opencode runs; no-op when OmO loads)
 │   ├── self-learning-autocapture.ts           # Auto-loaded: golden-path cues + skill feedback loop (writes ~/.local/state/opencode-selflearning/; digest skills_review.tsv consumed at session start)
 │   ├── axi-memory-bridge.ts                   # Auto-loaded: axi-memory injection — system context, axi-memory-* tools, ambient tool-output search (throttled + cached)
 │   ├── tps-status.tsx                         # TUI plugin: TPS + cumulative token totals + workspace dir in prompt-right slot
 │   └── tmux-subagent-activator.ts             # Auto-loaded: respawns placeholder subagent panes with `opencode attach` so they stream immediately (replaces retired tmux-patch-keeper; OmO >= 4.19 spawns placeholders in plain tmux)
 ├── scripts/
 │   ├── fleet-digest.sh                        # Pure bash reader for fleet state (terse TSV summary)
-│   ├── go-pool-check.sh                       # Go pool usage probe helper
-│   └── go-pool-switch.sh                      # Switch Go pool off if exhausted
+│   ├── fleet-note.sh                          # Durable decision authoring (fleet.decision wakes; see AGENTS.md Fleet State Comms)
+│   ├── catalog-drift.mjs                      # Catalog drift detection (models.dev + zen snapshot vs models.snapshot.json)
+│   └── fm-drift-pr.sh                         # Drift promotion gate: chezmoi re-add + dotfiles PR = captain approval
 ├── AGENTS.md                                  # Agent behavioral rules (Dispatch Rules + Fleet State Comms sections appended 2026-07-18)
 ├── docs/plans/                                # Plan archive (not actively consumed at runtime)
 ├── .cloudflare-key, .zen-key, .google-key, .go-key, .together-key, .sambanova-key, .mistral-key, .hf-key, .agnes-key, .exa-key, .nvidia-key, .baseten-key, .groq-key  # API keys (secret; .groq-key retained as dormant — re-enabled 2026-08-09)
@@ -478,15 +549,16 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 2. **Global config defines providers and MCPs.** `opencode.json` has all 13 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
 3. **OmO owns agent + category routing.** `~/.omo/omo.jsonc` (the `"[opencode]"` block) declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain. **The legacy `~/.config/opencode/oh-my-openagent.jsonc` is an orphan — editing it does nothing.**
 4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 11 agents that don't specify their own `fallback_models` arrays.
-5. **Auto-loaded plugins.** Any `.ts`/`.tsx` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `go-pool-guard.ts`, `self-learning-autocapture.ts`, `axi-memory-bridge.ts`, `tmux-subagent-activator.ts` (plus `tps-status.tsx`, a TUI-slot plugin). All run in-process with zero LLM cost on the write side.
+5. **Auto-loaded plugins.** Any `.ts`/`.tsx` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `self-learning-autocapture.ts`, `axi-memory-bridge.ts`, `tmux-subagent-activator.ts` (plus `tps-status.tsx`, a TUI-slot plugin). All run in-process with zero LLM cost on the write side.
 6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
-### Provider Stack (15 providers)
+### Provider Stack (16 providers)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
 | **OpenCode Zen** | 49+ (GPT-5.x, Claude-4.x, Gemini-3.x, DS-V4, GLM-5, Big Pickle, free tier) | Zen sub | Quality primary |
-| **OpenCode Go** | 24 (K2.6/2.7, DS-V4-Pro/Flash, GPT-5.x, Claude-4.x, Qwen3.x, etc.) | $10/mo | Quality pool, 24 models in routing |
+| **OpenCode Go** | 19 documented / ~22-25 via API (DS-V4 Flash/Pro, GLM-5.1/5.2, Kimi K2.5/2.6/2.7/K3, Qwen3.x, MiniMax M2.5/2.7/M3, MiMo V2.5/Pro, Hy3, Luna, Grok 4.5) | $5 first mo, then $10/mo | Quality pool, subsidized |
+| **Command Code (GOAT)** | 34 (DS-V4 Flash/Pro, GLM-5/5.1/5.2/Fast, Kimi K2.5/2.6/2.7/K3, Qwen3.5-3.8, MiniMax M2.5/2.7/M3, MiMo V2.5/Pro, Hy3, Grok 4.5/4.6, Luna, Muse Spark 1.2, Inkling, Nemotron 3 Ultra, Step, Laguna free) | $10/mo → $70 usage | Quality pool + closed-model access |
 | **OpenRouter** | 22+ (DS-V4-Flash, Qwen3-Coder, GLM-5, etc.) | Free/Paid | Broadest model selection |
 | **Cloudflare** | 34 LLM of 77 total (`@cf/...` Workers AI: Llama 3.3/4/3.x, GPT-OSS 120B/20B, Kimi K2.5/K2.6/K2.7-code, GLM 4.7/5.2, Qwen 3/QwQ, Nemotron 3, Gemma 4/3, Sea Lion, Mistral Small, Granite) | Free tier | Free-tier leader in fallback chains (300 RPM) |
 | **NVIDIA NIM** | 48 relevant of 118 total (Nemotron 3 Ultra/Super/Nano, DS-V4, GLM 5.2, Kimi K2.6, Qwen 3.5, GPT-OSS, Inkling, Gemma 4, MiniMax, etc.) | Free (prototyping) | **Largest free catalog** (~40 RPM shared), 1M ctx via Inkling |
@@ -533,6 +605,7 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 .baseten-key           → BASETEN_API_KEY          # Baseten — $30 free credits, pay-per-token after
 .cheapestinference-key → CHEAPESTINFERENCE_API_KEY  # flat-rate unlimited pools (time-block subs) — documented only, not yet created
 .cheaperinference-key  → CHEAPER_INFERENCE_API_KEY  # Keak discounted capacity (≤30% off list) — documented only, not yet created
+.command-code.key      → COMMANDCODE_API_KEY        # Command Code GOAT — created 2026-08-12, chezmoi age-encrypted; wired via {file:...} like agnes
 .google-client-id      → GOOGLE_CLIENT_ID
 .google-client-secret  → GOOGLE_CLIENT_SECRET
 .composio-key          → COMPOSIO_API_KEY
@@ -552,7 +625,7 @@ Both use the same key files. Shell profiles mirror the key files loaded by openc
 - **`provider`**: 14 live provider blocks (Cloudflare, OpenCode Zen, OpenCode Go, Agnes AI, OpenRouter, Mistral, SambaNova, Google, Together, HuggingFace, NVIDIA NIM, Baseten, InternLM, Groq) with connection details and `{env:VAR}` key refs. Plus the dormant Cerebras block (no agent references it). **Groq is configured-but-disabled** (see Disabled/Dormant Providers — Models-pane manual selection only, absent from all chains). **CheapestInference + Cheaper Inference are documented in this SKILL (2026-08-04) but NOT wired into `opencode.json`** — see their sections.
 - **`compaction`**: `{auto: false, prune: true, reserved: 50000, tail_turns: 40}`
 - **`mcp`**: Baseline MCPs (context7, grep_app, websearch, mcp_everything)
-- **`plugin`**: local plugin stack — `./plugins/fleet-state-writer.ts`, `./plugins/axi-memory-bridge.ts`, `./plugins/go-pool-guard.ts`, `opencode-ntfy.sh`, `opencode-log-sanitizer`, `envsitter-guard`, `{env:HOME}/.npm-global/lib/node_modules/@tarquinen/opencode-dcp`, `opencode-telemetry` — plus `./plugins/opencode-runtime-fallback.ts` (fallback engine, reads `opencode-fallback.jsonc`; **not** in `plugin[]` — it hooks `session.error`/`retry` via its own registration). The Oh-My-OpenAgent plugin is **gone** (purged 2026-08-09).
+- **`plugin`**: local plugin stack — `./plugins/fleet-state-writer.ts`, `./plugins/axi-memory-bridge.ts`, `opencode-ntfy.sh`, `opencode-log-sanitizer`, `envsitter-guard`, `{env:HOME}/.npm-global/lib/node_modules/@tarquinen/opencode-dcp`, `opencode-telemetry` — plus `./plugins/opencode-runtime-fallback.ts` (fallback engine, reads `opencode-fallback.jsonc`; **not** in `plugin[]` — it hooks `session.error`/`retry` via its own registration). The Oh-My-OpenAgent plugin is **gone** (purged 2026-08-09); `go-pool-guard.ts` and its `go-pool-*.sh` helpers purged 2026-08-12 (usage endpoint now returns 401; reactive fallback is the single owner).
 
 `~/.config/opencode/opencode-fallback.jsonc` provides the global fallback chain for agents without their own `fallback_models` array:
 
@@ -580,6 +653,13 @@ These are declared in `opencode.json` directly (no profile indirection):
 | **google-tasks-calendar** | local | mybrain project only | Minimal Google Tasks MCP — moved from zen to `~/mybrain/.opencode/` |
 
 ## Model Selection Priorities (Team Profile, merged with Go pool)
+
+> **SUPERSEDED 2026-08-12.** The OmO-era per-agent tables below are retained as
+> history. Live chains live in `opencode-fallback.jsonc` organized by the fleet
+> taxonomy (global ladder = firstmate/secondmate; `agents` = crewmates + `ce-*`
+> wildcard; `categories` = dispatch) under the **paid-first** policy
+> GOAT → Go → Zen → Free (captain decision; DESIGN.md §2.6). Specialized agents
+> keep pinned models with `no_global_tail` (fail loudly, no free downgrade).
 
 ### Tier 1 — Quality Agents (lower volume, frontier models)
 
@@ -617,7 +697,7 @@ These are declared in `opencode.json` directly (no profile indirection):
 
 1. **Big Pickle as Sisyphus primary**: 200K context, tool calling, reasoning, structured output. Free on OpenCode Zen (limited time).
 2. **Gemma 4 12B for Multimodal-Looker**: Encoder-free architecture, 256K context, beats Gemma 3 27B at half the size.
-3. **Free→subsidized→pay global fallback**: The global `opencode-fallback.jsonc` chain has 11 entries in progressive order: cloudflare Workers AI free (`@cf/meta/llama-3.3-70b`, `@cf/openai/gpt-oss-20b`, `@cf/zai-org/glm-4.7-flash`) → together free (`Prism-ML/Ternary-Bonsai-27B` — 262K ctx, vision, tools; **single-shot only, see Known Failure**) → openrouter free (`nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-nano-30b-a3b:free`) → opencode-zen free (`nemotron-3-ultra-free`, `deepseek-v4-flash-free`, `mimo-v2.5-free`) → subsidized opencode-go (`deepseek-v4-flash`) → pay-tier last resort `google/gemini-2.0-flash`. Free tier is exhausted first by OmO's failure-driven fallback; pays last.
+3. **Free→subsidized→pay global fallback**: The global `opencode-fallback.jsonc` chain has 11 entries in progressive order: cloudflare Workers AI free (`@cf/meta/llama-3.3-70b`, `@cf/openai/gpt-oss-20b`, `@cf/zai-org/glm-4.7-flash`) → together free (`Prism-ML/Ternary-Bonsai-27B` — 262K ctx, vision, tools; **single-shot only, see Known Failure**) → openrouter free (`nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-nano-30b-a3b:free`) → opencode-zen free (`nemotron-3-ultra-free`, `deepseek-v4-flash-free`, `mimo-v2.5-free`) → subsidized opencode-go (`deepseek-v4-flash`) → pay-tier last resort `google/gemini-2.0-flash`. Free tier is exhausted first by OmO's failure-driven fallback; pays last. **SUPERSEDED 2026-08-12 by the paid-first policy (DESIGN.md §2.6): GOAT → Go → Zen → free; no_global_tail carve-outs keep specialized chains from degrading to free.**
 4. **OmO is the only plugin** (**RETIRED 2026-08-09**): As of 2026-07-18, `opencode.json` declared `["oh-my-openagent@latest"]` as the sole plugin; profile variants (`opencode-runtime-fallback` for desk/web, no-plugin for pure/test) are obsolete — deleted with the rest of `profiles/`. **On 2026-08-09 OmO was retired: `oh-my-openagent` removed from `plugin[]` and purged from `node_modules`; fallback responsibility moved to the local `opencode-runtime-fallback.ts` plugin driving `opencode-fallback.jsonc` (its config was seeded from the recovered `~/.omo/omo.jsonc`).** Skills from `~/.agents/skills/` continue to load via OpenCode core, not OmO.
 5. **Go pool merged in** (Jun 2026): The former `go` and `zen` profile variants were consolidated into root config. 24 Go pool models (K2.6/K2.7, DS-V4-Pro/Flash, GPT-5.x, Qwen3.x) and Zen-aligned critics (gpt-5.4) are all in `~/.omo/omo.jsonc` directly now.
 6. **MoE preference**: All selected models use Mixture of Experts for efficiency.
@@ -747,28 +827,30 @@ The global `opencode-fallback.jsonc` chain is used for:
 
 Since all agents in `~/.omo/omo.jsonc` have their own `fallback_models`, the global chain primarily serves as the "last resort before failure" for any model call not routed through a specific agent.
 
-Profiles using `opencode-runtime-fallback` (desk, web) get model fallback via the plugin. The global config at `~/.config/opencode/opencode-fallback.jsonc`:
+Profiles using `opencode-runtime-fallback` (desk, web) get model fallback via the plugin. The global config at `~/.config/opencode/opencode-fallback.jsonc` — **paid-first since 2026-08-12** (full file: fleet taxonomy `agents`/`categories` + `no_global_tail` carve-outs; see DESIGN.md §2.6):
 
 ```jsonc
 {
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
-  "max_fallback_attempts": 6,
+  "max_fallback_attempts": 15,
   "cooldown_seconds": 60,
   "timeout_seconds": 120,
   "notify_on_fallback": true,
   "fallback_models": [
-    "cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-    "cloudflare/@cf/openai/gpt-oss-20b",
-    "cloudflare/@cf/zai-org/glm-4.7-flash",
-    "together/Prism-ML/Ternary-Bonsai-27B",  // single-shot only (tool-loop failure) — kept for non-agent calls
-    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-    "openrouter/nvidia/nemotron-3-nano-30b-a3b:free",
-    "opencode-zen/nemotron-3-ultra-free",
-    "opencode-zen/deepseek-v4-flash-free",
-    "opencode-zen/mimo-v2.5-free",
+    "opencode-zen/big-pickle",                    // STAGE 0: session primary
+    "commandcode/moonshotai/Kimi-K2.6",           // STAGE 1: GOAT ($70 pool)
+    "commandcode/deepseek/deepseek-v4-flash",
+    "opencode-go/kimi-k2.6",                      // STAGE 2: OpenCode Go ($60)
     "opencode-go/deepseek-v4-flash",
-    "google/gemini-2.0-flash"
+    "opencode-zen/deepseek-v4-flash-free",        // STAGE 3: Zen free
+    "opencode-zen/nemotron-3-ultra-free",
+    "cloudflare/@cf/moonshotai/kimi-k2.7-code",   // STAGE 4: FREE providers
+    "cloudflare/@cf/zai-org/glm-4.7-flash",
+    "nvidia/deepseek-ai/deepseek-v4-flash",
+    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+    "baseten/openai/gpt-oss-120b",
+    "google/gemini-2.5-flash"                     // STAGE 5: pay last resort
   ]
 }
 ```
@@ -910,7 +992,8 @@ Consolidated reference for all 15 providers (verified 2026-08-04 from this skill
 | Cloudflare Workers AI | 300 req/min (free tier) | — | — | — | No | 8 |
 | OpenRouter | free: 50 req/day; paid: per-tier | — | free: 50 req/day | — | No | 4 |
 | OpenCode Zen | sub-based; free ~200 req/day | — | free ~200 req/day | — | No | 10 |
-| OpenCode Go | $10/mo pool (no published RPM) | — | — | — | No | 6 |
+| OpenCode Go | $10/mo pool (no published RPM) | — | $12/5h, $30/wk, $60/mo | — | No | 6 |
+| Command Code GOAT | $10/mo pool (no published RPM) | — | $14/5h, $35/wk, $70/mo | — | No | (planned) |
 | NVIDIA NIM | ~40 RPM **shared across ALL models** | — | No daily token cap | — | No | 4 |
 | Baseten | 15 (unverified) / 120 (verified) | — | TPM 100K/500K/1M per tier | — | No | 3 |
 | Mistral | free: 1 req/s | — | free-tier limits | — | No | — |
@@ -1108,8 +1191,8 @@ Primary: zen/cloudflare/openrouter (free)
 | `~/.agents/skills/opencode-omo-config/models.snapshot.json` | Committed model snapshot (config-referenced + free-tier models of tracked providers) the checker diffs against | chezmoi |
 | `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
 | `~/.config/opencode/AGENTS.md` | Agent behavioral rules (Dispatch Rules + Fleet State Comms sections) | chezmoi |
-| `~/.config/opencode/plugins/*.ts(x)` | Auto-loaded TypeScript plugins (better-compaction, fleet-state-writer, go-pool-guard, self-learning-autocapture, axi-memory-bridge, tmux-subagent-activator, tps-status) | chezmoi |
-| `~/.config/opencode/scripts/*.sh` | Bash reader scripts (fleet-digest.sh, go-pool-check.sh, go-pool-switch.sh) | chezmoi (executable bit preserved) |
+| `~/.config/opencode/plugins/*.ts(x)` | Auto-loaded TypeScript plugins (better-compaction, fleet-state-writer, self-learning-autocapture, axi-memory-bridge, tmux-subagent-activator, tps-status) | chezmoi |
+| `~/.config/opencode/scripts/*.sh` | Bash reader scripts (fleet-digest.sh, fleet-note.sh) | chezmoi (executable bit preserved) |
 | `~/.local/state/opencode-fleet/` | Fleet state tree (state.json + wake.log + digest.txt) — written by `fleet-state-writer.ts`, read by `fleet-digest.sh` | chezmoi tracks `.keep`; live files not tracked |
 | `~/.config/opencode/.*-key` | API key files (secret) | chezmoi (encrypted with age) |
 | `~/.agents/skills/` | OpenCode skills directory (axi, ce-*, dotfiles, dotfiles-chezmoi, grill-with-docs, opencode-omo-config, etc.) | chezmoi |

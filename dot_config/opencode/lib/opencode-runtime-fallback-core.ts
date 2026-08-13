@@ -11,6 +11,10 @@ export interface ChainCfg {
   variant?: string;
   temperature?: number;
   fallback_models?: ChainEntry[];
+  /** When true, skip appending the global `fallback_models` ladder — the
+   *  chain ends here and surfaces a visible failure instead of degrading to
+   *  the free tier (specialized/pinned-agent carve-out). */
+  no_global_tail?: boolean;
 }
 
 export interface FallbackConfig {
@@ -93,6 +97,24 @@ export function classifyError(err: unknown, cfg: FallbackConfig): string {
   return "none";
 }
 
+/** Resolve a chain config for an agent name: exact key wins, then the longest
+ *  trailing-`*` wildcard prefix (e.g. `ce-*` covers every ce-* persona). */
+export function lookupChain(map: Record<string, ChainCfg> | undefined, name: string | undefined): ChainCfg | undefined {
+  if (!map || !name) return undefined;
+  if (map[name]) return map[name];
+  let best: ChainCfg | undefined;
+  let bestLen = -1;
+  for (const [key, v] of Object.entries(map)) {
+    if (!key.endsWith("*")) continue;
+    const prefix = key.slice(0, -1);
+    if (name.startsWith(prefix) && key.length > bestLen) {
+      best = v;
+      bestLen = key.length;
+    }
+  }
+  return best;
+}
+
 export function resolveChain(cfg: FallbackConfig, agentName: string | undefined): ChainEntry[] {
   const merged: ChainEntry[] = [];
   const push = (list: ChainEntry[] | undefined) => {
@@ -101,15 +123,18 @@ export function resolveChain(cfg: FallbackConfig, agentName: string | undefined)
       if (!merged.some((x) => entryModel(x) === m)) merged.push(e);
     }
   };
-  const ag = agentName ? cfg.agents?.[agentName] : undefined;
-  const cat = agentName ? cfg.categories?.[agentName] : undefined;
+  const ag = lookupChain(cfg.agents, agentName);
+  const cat = lookupChain(cfg.categories, agentName);
+  let tail = true;
   push(ag?.model ? [ag.model] : undefined);
   push(ag?.fallback_models);
+  if (ag?.no_global_tail) tail = false;
   if (!ag) {
     push(cat?.model ? [cat.model] : undefined);
     push(cat?.fallback_models);
+    if (cat?.no_global_tail) tail = false;
   }
-  push(cfg.fallback_models);
+  if (tail) push(cfg.fallback_models);
   return merged;
 }
 
