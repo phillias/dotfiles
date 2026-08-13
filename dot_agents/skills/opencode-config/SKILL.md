@@ -515,13 +515,12 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 ├── opencode-fallback.jsonc                    # PAID-FIRST fallback (2026-08-12): big-pickle → Command Code GOAT → opencode-go → zen free → free providers → google. Fleet taxonomy agents/categories, no_global_tail carve-outs for specialized, ce-* wildcard. DESIGN.md §2.6
 ├── dispatch-rules.json                        # 26 starter rules mapping task shape → task(category=..., load_skills=[...]) at Sisyphus intent-gate time
 ├── plugins/
-│   ├── better-compaction.ts                   # Auto-loaded: todo tracking, skill generation, codemem
 │   ├── fleet-state-writer.ts                  # Auto-loaded: zero-LLM-cost state wire (writes ~/.local/state/opencode-fleet/{state.json,wake.log,digest.txt})
 │   ├── fleet-digest.sh                        # (in scripts/, not plugins/) — pure bash reader for fleet state
 │   ├── self-learning-autocapture.ts           # Auto-loaded: golden-path cues + skill feedback loop (writes ~/.local/state/opencode-selflearning/; digest skills_review.tsv consumed at session start)
 │   ├── axi-memory-bridge.ts                   # Auto-loaded: axi-memory injection — system context, axi-memory-* tools, ambient tool-output search (throttled + cached)
-│   ├── tps-status.tsx                         # TUI plugin: TPS + cumulative token totals + workspace dir in prompt-right slot
-│   └── tmux-subagent-activator.ts             # Auto-loaded: respawns placeholder subagent panes with `opencode attach` so they stream immediately (replaces retired tmux-patch-keeper; OmO >= 4.19 spawns placeholders in plain tmux)
+│   └── tps-status.tsx                         # TUI plugin: TPS + cumulative token totals + workspace dir in prompt-right slot
+│   # RETIRED: better-compaction.ts (divested 2026-08-02, dotfiles#156), tmux-subagent-activator.ts (OmO-era, removed 2026-08-13) — both enforced-removed by run_onchange_cleanup
 ├── scripts/
 │   ├── fleet-digest.sh                        # Pure bash reader for fleet state (terse TSV summary)
 │   ├── fleet-note.sh                          # Durable decision authoring (fleet.decision wakes; see AGENTS.md Fleet State Comms)
@@ -549,7 +548,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 2. **Global config defines providers and MCPs.** `opencode.json` has all 13 live providers with connection details (baseURL, `{env:VAR}` key refs) and populated model lists. The dormant Cerebras provider block is retained in `opencode.json` for potential re-enablement; no agent references it.
 3. **OmO owns agent + category routing.** `~/.omo/omo.jsonc` (the `"[opencode]"` block) declares per-agent `model` + `fallback_models` arrays, per-category model variants, and `concurrency` limits. Per-agent `fallback_models` take priority over the global `opencode-fallback.jsonc` chain. **The legacy `~/.config/opencode/oh-my-openagent.jsonc` is an orphan — editing it does nothing.**
 4. **`opencode-fallback.jsonc` is global default fallback.** First-match-wins resolution: `.opencode/opencode-fallback.jsonc` (project) > `~/.config/opencode/opencode-fallback.jsonc` (global). Used by the 11 agents that don't specify their own `fallback_models` arrays.
-5. **Auto-loaded plugins.** Any `.ts`/`.tsx` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `better-compaction.ts`, `fleet-state-writer.ts`, `self-learning-autocapture.ts`, `axi-memory-bridge.ts`, `tmux-subagent-activator.ts` (plus `tps-status.tsx`, a TUI-slot plugin). All run in-process with zero LLM cost on the write side.
+5. **Auto-loaded plugins.** Any `.ts`/`.tsx` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `fleet-state-writer.ts`, `self-learning-autocapture.ts`, `axi-memory-bridge.ts` (plus `tps-status.tsx`, a TUI-slot plugin). All run in-process with zero LLM cost on the write side. Retired from this list: `better-compaction.ts` (divested 2026-08-02, dotfiles#156), `tmux-subagent-activator.ts` (OmO-era, removed 2026-08-13) — both enforced-removed by the `run_onchange_cleanup` hook.
 6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
 ### Provider Stack (16 providers)
@@ -615,7 +614,7 @@ All keys stored in `~/.config/opencode/.*-key` files, loaded by two mechanisms:
 
 Both use the same key files. Shell profiles mirror the key files loaded by opencode core at startup.
 
-> **Note:** The `~/.local/bin/oc` launcher script was deprecated in favor of the `oc` shell function (`.zshrc`/`.bashrc`), which launches one OpenCode server per host with `opencode --port 42069` (override via `OPENCODE_PORT`). Multiple simultaneous OpenCode instances are intentionally unsupported. The pinned port matters (verified 2026-07-31): a bare `opencode` TUI binds an ephemeral port whose embedded server serves **only** `/` — every REST route 404s, so `opencode attach` (used by tmux-subagent-activator for subagent panes) fails with "Error: not found". `opencode --port N` serves the full API. The activator probes `input.serverUrl` (self) first, then `OPENCODE_SERVE_URL`, then `OPENCODE_PORT || 4096`.
+> **Note:** The `~/.local/bin/oc` launcher script was deprecated in favor of the `oc` shell function (`.zshrc`/`.bashrc`), which launches one OpenCode server per host with `opencode --port 42069` (override via `OPENCODE_PORT`). Multiple simultaneous OpenCode instances are intentionally unsupported. The pinned port matters (verified 2026-07-31): a bare `opencode` TUI binds an ephemeral port whose embedded server serves **only** `/` — every REST route 404s, so `opencode attach` (for subagent panes) fails with "Error: not found". `opencode --port N` serves the full API. The retired OmO-era `tmux-subagent-activator` (removed 2026-08-13) probed `input.serverUrl` (self) first, then `OPENCODE_SERVE_URL`, then `OPENCODE_PORT || 4096`.
 
 ### Config Defaults
 
@@ -1191,7 +1190,7 @@ Primary: zen/cloudflare/openrouter (free)
 | `~/.agents/skills/opencode-omo-config/models.snapshot.json` | Committed model snapshot (config-referenced + free-tier models of tracked providers) the checker diffs against | chezmoi |
 | `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
 | `~/.config/opencode/AGENTS.md` | Agent behavioral rules (Dispatch Rules + Fleet State Comms sections) | chezmoi |
-| `~/.config/opencode/plugins/*.ts(x)` | Auto-loaded TypeScript plugins (better-compaction, fleet-state-writer, self-learning-autocapture, axi-memory-bridge, tmux-subagent-activator, tps-status) | chezmoi |
+| `~/.config/opencode/plugins/*.ts(x)` | Auto-loaded TypeScript plugins (fleet-state-writer, self-learning-autocapture, axi-memory-bridge, tps-status) | chezmoi |
 | `~/.config/opencode/scripts/*.sh` | Bash reader scripts (fleet-digest.sh, fleet-note.sh) | chezmoi (executable bit preserved) |
 | `~/.local/state/opencode-fleet/` | Fleet state tree (state.json + wake.log + digest.txt) — written by `fleet-state-writer.ts`, read by `fleet-digest.sh` | chezmoi tracks `.keep`; live files not tracked |
 | `~/.config/opencode/.*-key` | API key files (secret) | chezmoi (encrypted with age) |

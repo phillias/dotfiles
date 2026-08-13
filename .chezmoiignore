@@ -27,6 +27,7 @@ age-key.txt.age
 .config/opencode/pnpm-workspace.yaml
 .config/opencode/plugins/package.json
 .config/opencode/plugins/package-lock.json
+.config/opencode/plugins/bun.lock
 
 # Machine-local LSP install decisions
 .config/opencode/lsp-install-decisions.json
@@ -45,3 +46,8 @@ age-key.txt.age
 .agents/skills/x-research/data/cache/*.json
 .agents/skills/x-research/data/watchlist.json
 .agents/skills/x-research/node_modules/**
+
+# skywork-skills ships as its own git repo — the nested .git is the skill's
+# own VCS, not dotfiles material (2026-08-13)
+.agents/skills/skywork-skills/.git
+.agents/skills/skywork-skills/.git/**
