@@ -94,7 +94,7 @@ state is agent-visible, client-owned state is a black box.
 
 ## Scaffolding a project (run at project intake)
 
-1. Copy `references/PRODUCT.md` and `references/DESIGN.md` into the project root as
+1. Copy `references/PRODUCT.md.tmpl` and `references/DESIGN.md.tmpl` into the project root as
    `PRODUCT.md` and `DESIGN.md`.
 2. Fill every `DECIDE:` field with the real per-product decision. House defaults elsewhere apply
    as-is; never inherit a decision blindly.
