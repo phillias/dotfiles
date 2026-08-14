@@ -21,7 +21,8 @@ DECIDE: what this product deliberately does NOT do right now.
 
 ## Stack (house defaults — override only with a stated reason)
 
-- Rust (Axum/tokio) + HTMX 4 + SQLite (sqlx), server-rendered hypermedia.
+- Go (stdlib http.ServeMux + a-h/templ) + HTMX + Alpine.js 3.x + SQLite (modernc), server-rendered
+  hypermedia. Rust (Axum) escalation when external-facing performance/safety guarantees are load-bearing.
 - React + Radix UI + TypeScript islands only for genuinely complex interactivity.
 - No-API: the server returns HTML fragments to its own frontend; JSON only for mobile/external.
 - Single-binary deploy, TTFB < 50ms, minimal dependencies.
