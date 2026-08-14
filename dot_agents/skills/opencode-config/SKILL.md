@@ -338,6 +338,48 @@ Investigated 2026-08-04 (live site + docs; API not probed — no key). **A Keak 
 
 **Placement advice**: the stack's best **budget pay-tier** — per-token frontier (Claude/GPT-class) with hard key-level budget caps and real company backing. Fits `fallback_models` for oracle/momus/hephaestus (frontier reasoning when the opencode subscription pool is throttled) and visual-engineering (image gen) — *after* free tiers, alongside Baseten/Go. NOT for high-volume utility agents (per-token accrues; free tiers win). Not a replacement for CheapestInference's flat-rate volume economics.
 
+### Hetzner Inference (experiments.hetzner.com) — Experimental EU AI API
+
+Investigated 2026-08-13 (vendor docs + third-party benchmarks; **API not probed — signup-blocked**, see Registration Gate below). Hetzner's first step into managed inference: a single-model OpenAI-compatible API on Hetzner's own Germany/Finland infrastructure, **free during the test phase** (billing not built yet). Experimental — explicitly no SLA, no DPA, no published rate limits. Not a reseller; runs open-weight models on Hetzner-operated GPU fleet.
+
+**Cost**: Free — Hetzner has not built billing; token metering does not exist. Strategic intent (third-party read, not Hetzner's own words): gauge demand before committing to a paid product with SLA+DPA at "Hetzner prices" (history: 4–10× below US hyperscalers on cloud compute).
+
+**Model catalog (1)**:
+
+| Model | Params | Active | Context | Quant | Modalities |
+|-------|--------|--------|---------|-------|------------|
+| `Qwen/Qwen3.6-35B-A3B-FP8` | 35B MoE | ~3B | 262K | FP8 | text + vision in |
+
+**Performance** (independent, 2026-07-23): ~153 ms TTFT, ~224 output tok/s — fast for the active-param count, but reflects a 3B-active MoE, not a frontier model.
+
+**Endpoint**: OpenAI-compatible (`POST /v1/chat/completions`); create API token in the Experiments dashboard at `experiments.hetzner.com` (requires a verified Hetzner Cloud account). EU-only regions (Germany/Finland) — outside US CLOUD Act; a strategic differentiator if/when this becomes a paid product with DPA.
+
+**Underlying hardware** (Hetzner Cloud dedicated GPU lineup — relevant for the self-hosted fallback case below):
+- GEX44 · NVIDIA RTX 4000 SFF Ada · 20 GB VRAM · €184/mo (~$211) — fits ~32B Q4; sweet spot for 7–14B production inference on bare metal.
+- GEX131 · NVIDIA RTX PRO 6000 Blackwell Max-Q · 96 GB VRAM · €889/mo (~$989) — fits 70B+ at full precision, training, fine-tuning. Configurable to 256/512/768 GB RAM + 4×3.84 TB NVMe.
+- No A100/H100/B200 in the public lineup → no GLM-5- or Claude-class self-host today.
+
+**Criteria check (opencode-config hard gates)**:
+
+| Gate | Status |
+|------|--------|
+| SLA | ❌ None — explicit experiment status |
+| DPA | ❌ None — Art. 28 GDPR basis missing; no personal data in production |
+| Published rate limits | ❌ Undocumented (no RPM/TPM) |
+| Catalog size | ❌ 1 model |
+| Token-metered cost | ✅ Free (but unusable for credit spend, see Worth-it below) |
+
+**⚠️ Registration Gate (2026-08-13, first-hand)**: U.S. signup returned **401 unauthorized** after credit-card confirmation — Hetzner's automated fraud-prevention KYC revokes the in-flight session before completion; not a credential failure. Common triggers: free email provider (gmail/outlook), VPN or Apple iCloud Private Relay active at signup, IP / billing-address mismatch, virtual/prepaid card. Recovery path:
+1. Disable VPN + Private Relay, use a custom-domain or work email, re-register.
+2. If rejected again, email **cda-review@hetzner.com** with the client number (starts `K`) from the rejected account for manual review.
+3. Accepted verification routes: (a) passport/ID upload (auto-deleted post-review), or (b) ~$25 credit-card preorder / €20 PayPal prepayment — **both convert to account credit**, not a fee.
+
+**Placement advice**: 🔴 **WATCH — NOT chain-placed today.** Fails three opencode-config hard gates (SLA, DPA, published rate limits) and is strict-dominated on every measurable axis by existing free-tier leaders: Cloudflare Workers AI (77-model catalog, 300 RPM, $0), NVIDIA NIM (48 models, 1M-ctx Inkling, reasoning Nemotron Ultra), Together AI free (262K-ctx Ternary Bonsai 27B, vision+tools — though single-shot only). Hetzner's single 3B-active MoE adds nothing the free tier doesn't already out-class. Re-evaluate when Hetzner ships an SLA + DPA + published rate limits — then position in `opencode-fallback.jsonc` AFTER the Cloudflare/Together/NVIDIA free tiers and before paid providers, ONLY if the catalog expands beyond the 3B-active MoE.
+
+**Worth the ~$25 verification charge?** Only if the captain has nearer-term Hetzner Cloud use beyond this inference experiment — self-hosted GPU inference on GEX44/GEX131 bare metal at $211–989/mo fixed is 2–4× cheaper than AWS/GCP on-demand past ~60% always-on utilization and beats every pay-tier per-token API on cost-per-tok once utilization crosses ~60%; or EU-data-residency-pinned workloads; or spare CI runners. The $25 returns as account credit; experiment inference itself is free, so the credit cannot be consumed by the experiment and would sit idle without adjacent Cloud usage. If the only goal is to probe the inference API, **wait** — not chain-worthy until DPA+SLA+limits land.
+
+**Key file**: `.hetzner-key` — **NOT created** (account not yet verified).
+
 ### Free→Subsidized→Pay Value Analysis
 
 **Priority ranking for fallback chain placement (exhaust free → subsidized → pay):**
@@ -551,7 +593,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 5. **Auto-loaded plugins.** Any `.ts`/`.tsx` file in `~/.config/opencode/plugins/` loads for every opencode session regardless of config — currently: `fleet-state-writer.ts`, `self-learning-autocapture.ts`, `axi-memory-bridge.ts` (plus `tps-status.tsx`, a TUI-slot plugin). All run in-process with zero LLM cost on the write side. Retired from this list: `better-compaction.ts` (divested 2026-08-02, dotfiles#156), `tmux-subagent-activator.ts` (OmO-era, removed 2026-08-13) — both enforced-removed by the `run_onchange_cleanup` hook.
 6. **No symlinks, no env switching.** Environment homogeneity: every machine running this chezmoi-tracked config runs the same root config. Machine-specific differences live in chezmoi templates (`.tmpl` files) and per-machine `/etc/` overrides — not in opencode profile subdirs.
 
-### Provider Stack (16 providers)
+### Provider Stack (17 providers)
 
 | Provider | Models | Cost | Role |
 |---|---|---|---|
@@ -571,6 +613,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 | **InternLM** | 1 (Intern-S2-Preview-397B) | Free (official API) | Scientific reasoning, 397B MoE |
 | **CheapestInference** | 6 (3 pools: Flagship K3 / Frontier K2.7+GLM 5.2+MiniMax M3 / Core DS-V4 Flash+MiMo v2.5) | Flat $12.74–149/mo per 8h block | Flat-rate unlimited time blocks (1 concurrent req/key), open-source only — **documented, NOT wired into `opencode.json`** |
 | **Cheaper Inference** (Keak) | 5+ live catalog (Claude, GPT, Kimi K3, image) | Per-token ≤30% off list | Discounted proprietary models; per-key RPM/concurrency/quota/budget caps — **documented, NOT wired into `opencode.json`** |
+| **Hetzner Inference** | 1 (`Qwen/Qwen3.6-35B-A3B-FP8`, 3B-active MoE, 262K ctx, vision) | Free (experiment; no billing yet) | OpenAI-compatible EU (DE/FI) API — outside US CLOUD Act; **experimental, no SLA + no DPA + no rate-limit publication → WATCH, NOT chain-placed** until gates clear. Registration KYC gate on U.S. signups (401, see section) — **documented, NOT wired into `opencode.json`** |
 
 ### Disabled / Dormant Providers
 
