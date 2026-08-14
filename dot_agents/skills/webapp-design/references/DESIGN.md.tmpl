@@ -21,10 +21,111 @@ fill every `DECIDE:` field with the real per-product decision.
 
 ## Stack
 
-- Rust (Axum) + HTMX 4 + SQLite (sqlx), server-rendered. Radix UI + TS islands only where
-  genuinely complex interactivity needs them. No-API: JSON only for mobile/external.
+Performance-first language choice, per project (see house rule): default to **Go** for
+bootstrap / internal / all-else-equal; **Rust** when externally-facing performance or safety
+guarantees are load-bearing. Both are single-binary hypermedia + SQLite (WAL), no-API.
+
+- **Go**: stdlib `http.ServeMux` (Go 1.22+ method routing) + a-h/templ + modernc.org/sqlite +
+  embedded htmx 2.x. No node; the only build step is `templ generate`.
+- **Rust (Axum) + HTMX + SQLite (sqlx)**: when the compiler's guarantees are the point.
+- **Alpine.js 3.x** (embedded, pinned like htmx) owns browser-local UI state: dropdowns,
+  modals, tabs, accordions, client-side filtering. htmx owns server round-trips. ~15KB, no
+  build step.
+- Radix UI + TS islands only where genuinely complex interactivity needs them. No-API: JSON only for mobile/external.
 
 ## Engineering patterns
+
+### Templates (Go)
+
+- a-h/templ (default) — `.templ` files compile to typed Go functions (`templ generate`, no
+  node, <500ms); wrong prop type is a build error, not a 500.
+- `templ.Handler(component, templ.WithStreaming())` for HTMX partials; branch on the
+  `HX-Request` header to return fragment vs full page from the same handler.
+- Fallback: stdlib `html/template` only for zero-codegen minimal apps (loses composition +
+  type checking).
+- Pass Go data into Alpine state via `x-data={ templ.JSONString(data) }` (attribute-escaped
+  valid JSON); `templ.JSONScript("id", data)` passes JSON in a script element and supports
+  CSP nonces (`templ.CSPNonceFromContext`).
+- `templ.OnceHandle` renders a global script (Alpine store init, plugin registration) once
+  per response. Do not drive `x-*` attributes from templ `script` components (they compile to
+  `__templ_*` functions) - pass data via attributes, behavior via `Alpine.data()` factories.
+
+### SQLite driver + pooling (Go)
+
+- Driver: **modernc.org/sqlite v1.55** (pure-Go transpilation, `CGO_ENABLED=0` static binary;
+  same query planner/WAL semantics as CGO mattn; perf delta unobservable at single-VPS scale).
+- DSN pragmas (pocketbase/headscale/gitea-proven), `busy_timeout` FIRST:
+  `_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)&_txlock=immediate`
+- Pool: **`SetMaxOpenConns(1)`** — SQLite has exactly one writer; multiple pooled connections
+  interleaving WAL checkpoints causes `SQLITE_NOTADB`/WAL-desync corruption
+  (charmbracelet/crush). Keep one transaction per request (single-conn pools deadlock on nested tx).
+- Access layer: sqlc v1.31.1 (typed codegen) or sqlx v1.4.0; no ORMs. Migrations: goose v3.27.2.
+- WAL-reset corruption bug fixed in SQLite 3.51.3 (2026-03-13) — pin ≥ that in driver + litestream.
+
+### Replication / backup (Litestream)
+
+- Litestream v0.5.15 sidecar (or `replicate -exec` supervisor) streams WAL pages as LTX files;
+  RPO ≈ sync-interval (default 1s; raise to `1m` for low-write apps), restore via
+  `litestream restore [-timestamp ...]`. No `verify` subcommand — verify via
+  `restore -integrity-check full` + `PRAGMA integrity_check`.
+- OCI Object Storage target: explicit `endpoint: https://<ns>.compat.objectstorage.<region>.oraclecloud.com`,
+  `region: us-east-1` (never your OCI region id), Customer Secret Keys (not API keys),
+  DELETE-only lifecycle rules (IA/Archive breaks restore), separate bucket from restic.
+- Config: `snapshot.interval: 1h` (default 24h restores too slow), `snapshot.retention: 168h`,
+  `l0-retention: 15m`, `heartbeat-url` dead-man's switch. One replica destination per DB (v0.5 rule).
+- Layering: Litestream (RPO ~1s) + nightly `VACUUM INTO` snapshot to object storage. Never
+  `cp` a live WAL db. Long-lived read txs stall checkpoints → set `truncate-page-n: 0` +
+  alert on `-wal` size.
+
+### HTMX patterns (shared)
+
+- `HX-Request` header distinguishes full page vs fragment from the same handler.
+- `hx-target` extended selectors (closest / next / find / this); `hx-swap` table (innerHTML,
+  outerHTML, beforeend, afterbegin, delete, none).
+- Error responses are swapable HTML fragments; use `hx-status:422` / `hx-status:500` targeting.
+- `hx-indicator` for loading states (`.htmx-request` toggled automatically).
+- `hx-swap-oob` for multi-element updates; SSE via `hx-trigger="sse:..."` + `EventSource`.
+- Go: `go:embed htmx.min.js` (pin htmx 2.0.9 GitHub release tag — npm `latest` dist-tag is broken).
+  Helper: `angelofallars/htmx-go` optional; most apps just read `HX-Request`.
+
+### Alpine.js patterns (shared)
+
+- **Ownership split**: htmx owns network + DOM swapping; Alpine owns local UI state and
+  coordination. The glue is events, not direct API calls.
+- **Debuggability bias**: prefer an htmx round-trip over Alpine client state for anything
+  correctness-related (filters, form progress, flags) - server-owned state is what an agent
+  can assert from HTML + logs. Alpine for pure-UI state only.
+- Loading flags: listen `htmx:beforeRequest` / `htmx:afterRequest` on `window`, scope the
+  reaction with `$el.contains($event.target)` so nested requests don't leak across components.
+- Alpine -> htmx: `$dispatch` a custom event that `hx-trigger` listens for, or call
+  `htmx.ajax('GET', url, '#target')` directly from `@click`.
+- htmx -> Alpine: `@htmx:after-request` on the swapped fragment (e.g. close a modal on
+  submit); or a global `htmx:afterSwap` listener updating an `Alpine.store`.
+- An htmx swap destroys Alpine state in the replaced region - write components idempotent:
+  state via `Alpine.data()` factories, listeners on the element, no global side effects.
+  Alpine's mutation observer auto-initializes swapped-in `x-*` content; htmx attributes in
+  Alpine-rendered DOM need `x-init="$nextTick(() => htmx.process($el))"`.
+- Register reusable components with `Alpine.data()` (one init cost, shared prototype); keep
+  large datasets out of `x-data`; `$watch` sparingly, `x-effect` for reactive effects.
+- Plugins: focus (`x-trap` for accessible modals; `.inert` / `.noscroll`), collapse (height
+  animation), intersect (lazy init). Animate `opacity`/`transform` only; respect
+  `prefers-reduced-motion`. Prefer `x-show` over `x-if` for frequently toggled elements.
+- Pin + embed Alpine like htmx (`go:embed` the pinned release build); Alpine stores/plugins
+  live under `static/`.
+
+### Project structure (Go)
+
+```
+cmd/app/main.go       # entry: mux, middleware, sql pools
+internal/routes/      # page handlers (full page) + fragment handlers (no layout)
+internal/db/          # sqlc/sqlx queries, pools (single-conn writer)
+internal/domain/      # models + business logic
+internal/views/       # templ sources (generated .go alongside)
+static/               # go:embed htmx.min.js + alpine.min.js + assets
+migrations/           # goose sql migrations
+```
+
+Middleware order: security headers (CSP) -> recoverer -> request logging -> rate limit -> CSRF.
 
 ### Templates (Rust)
 
@@ -32,15 +133,6 @@ fill every `DECIDE:` field with the real per-product decision.
 - No runtime template engine by default. Auto-escape by default; raw/safe only for trusted content.
 - No stringly-typed template names — the type system is the namespace (kills the Go
   dynamic-name / ParseGlob-collision failure class). Precompilation is inherent (compiled in).
-
-### HTMX 4 patterns
-
-- `HX-Request` header distinguishes full page vs fragment from the same handler.
-- `hx-target` extended selectors (closest / next / find / this); `hx-swap` table (innerHTML,
-  outerHTML, beforeend, afterbegin, delete, none).
-- Error responses are swapable HTML fragments; use `hx-status:422` / `hx-status:500` targeting.
-- `hx-indicator` for loading states (`.htmx-request` toggled automatically).
-- `hx-swap-oob` for multi-element updates; native SSE (`connect:` + `swap:`) with axum `Sse` + tokio broadcast.
 
 ### Project structure (Axum)
 
@@ -63,42 +155,70 @@ Middleware order (tower): CORS -> trace -> recovery -> security headers (CSP) ->
 
 - Multi-step = one HTMX request per step (`hx-target` + `hx-swap="outerHTML"`).
 - Validation errors returned as HTML fragments, not JSON (`HX-Retarget` / `hx-status:422`);
-  validate with the `validator` crate + axum extractors.
+  Go: validate in the handler and re-render the form fragment; Rust: `validator` crate + axum extractors.
 - Flash messages via `HX-Trigger` + an OOB toast element.
+- Alpine for instant client-side feedback (required/format checks, disable-on-submit) as a
+  complement; server validation stays authoritative and returns the rendered fragments.
 
 ### Performance
 
-- Compile-time templates (zero runtime parsing); `write!`/`format!` into a `Vec<u8>`/`String` —
-  no string concatenation in loops; embedded assets (`rust-embed`) — single-binary deploy.
+- Compile-time templates (templ/askama/maud — zero runtime parsing); render into a buffer, no
+  string concatenation in loops; embedded assets (`go:embed` / `rust-embed`) — single-binary deploy.
+- Go image ~15–25MB stripped with modernc; `-trimpath -ldflags="-s -w" -tags netgo,osusergo`.
+- SQLite: `synchronous=NORMAL` in WAL (one fsync per checkpoint, not per commit).
+- Alpine: `x-show` over `x-if` for frequently toggled elements; `Alpine.data()` factories over
+  inline `x-data` when many instances share a shape; animate `opacity`/`transform` only
+  (`x-collapse` for accordions); `x-init` + `$nextTick` for expensive setup.
 
 ### Security
 
-- CSRF: same-origin HTMX + `HX-CSRF-Token` header check via middleware (axum-csrf or hand-rolled); 403 on mismatch.
+- CSRF: same-origin HTMX + `HX-CSRF-Token` header check via middleware (Go: hand-rolled /
+  gorilla-csrf; Rust: axum-csrf); 403 on mismatch.
 - CSP: `default-src 'self'; script-src 'self' 'unsafe-inline'`, `X-Content-Type-Options: nosniff`,
-  `X-Frame-Options: DENY`. Tighten script-src once inline scripts are removed.
-- Sanitization: auto-escape by default; raw/safe only for trusted content; validate path/query
-  params; escape attribute context for user content placed in `hx-*` attributes.
+  `X-Frame-Options: DENY`. Tighten script-src once inline scripts are removed. `connect-src
+  'self'` (or the `default-src` fallback) permits `hx-*` requests.
+- Alpine: standard build needs `script-src 'unsafe-eval'` (it evaluates `x-*` expressions via
+  `new Function`). Internal apps add it. The CSP build (`@alpinejs/csp`) runs without
+  `unsafe-eval` under `script-src 'nonce-*' 'strict-dynamic'` but limits expressions to named
+  properties/methods (`Alpine.data()` factories; no `x-model`, no inline expressions).
+  PCI-DSS 4.0 (2025-04-01+) requires strict CSP on payment pages - write components against
+  `Alpine.data()` factories from day one so the CSP migration stays cheap.
+- Sanitization: auto-escape by default (templ/askama/maud auto-escape; html/template does too);
+  raw/safe only for trusted content; validate path/query params; escape attribute context for
+  user content placed in `hx-*` / `x-*` attributes.
+- SQLite ≥ 3.51.3 in app + litestream (WAL-reset corruption bug, fixed 2026-03-13).
 
 ### Testing
 
-- Handler tests: `tower::ServiceExt::oneshot` + `axum::body::to_bytes`; assert both full-page
-  and `HX-Request` fragment responses.
-- Snapshot tests: `insta` over rendered HTML fragments (first-class replacement for golden files).
+- Go: `httptest` + `net/http/httptest.ResponseRecorder`; assert both full-page and
+  `HX-Request` fragment responses (read `r.Header.Get("HX-Request")`).
+- Rust: `tower::ServiceExt::oneshot` + `axum::body::to_bytes`; assert both full-page and
+  `HX-Request` fragment responses.
+- Snapshot tests over rendered HTML fragments (Go: `go-cmp`/golden files; Rust: `insta`).
 - E2E: Playwright for HTMX interactions (navigate, click, fill, wait for swapped selectors).
+- E2E: assert Alpine state across swaps - state reset on swap is intended, so assert the fresh
+  baseline; any server-visible state change must be assertable from the returned HTML.
 
 ### Docker
 
-- Static binary: `rustup target add x86_64-unknown-linux-musl`, or `rust:*-alpine` builder with
-  a `distroless/static` runtime. Verify `file <bin>` reports "statically linked".
+- Go static binary: `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -extldflags '-static'"`
+  `-tags netgo,osusergo` in a `golang:1.x-alpine` builder; runtime `cgr.dev/chainguard/static`
+  (distroless, no shell) or `alpine:3.x` nonroot; optionally `ko` (builds distroless from source).
+- Rust static binary: `rustup target add x86_64-unknown-linux-musl`, or `rust:*-alpine` builder
+  with a `distroless/static` runtime. Verify `file <bin>` reports "statically linked".
 - `.dockerignore` can silently exclude the binary — check it before debugging `COPY` checksum errors.
 - Templates are compiled in: a production template change requires a rebuild
-  (`cargo-watch` is dev-only; in prod rebuild the image or `docker cp` the new binary + restart).
+  (dev watchers are dev-only; in prod rebuild the image or `docker cp` the new binary + restart).
+- Litestream: sidecar container sharing the named volume with the app (both Linux-host),
+  `litestream/litestream:0.5-scratch`, or supervisor pattern `litestream replicate -exec "app"`;
+  restore-on-start guarded by `if [ ! -f "$DB_PATH" ]` + `-if-replica-exists`; delete stale
+  `-wal`/`-shm` before restore.
 
 ### Cloudflare Workers escalation (when the house default isn't enough)
 
 Escalate from single-binary self-host when: global edge distribution, zero-ops serverless,
 per-tenant isolation at scale, real-time/coordinated state, or free-tier prototyping is the
-driving constraint. The frontend (HTMX 4 + Radix islands + PWA) is unchanged.
+driving constraint. The frontend (HTMX + Radix islands + PWA) is unchanged.
 
 - **D1** (default Cloudflare relational layer, SQLite semantics): read-heavy workloads, free
   global read replicas, per-tenant database sharding (10 GB/DB, 100 cols, 2 MB rows, 100 KB SQL,
