@@ -442,10 +442,11 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
           const priority = priorityForType(memType, boosted);
           await shell`mem add --type ${memType} --title "${title}" --tags "${tags}" --body "Auto-captured (${score.reasoning})" --priority ${priority}`.quiet().nothrow();
         }
-      } catch {
+      } catch (err) {
         // Never throw into the chat.message chain — a throw here can disrupt
         // the wake/message pipeline for other subscribers (fleet-state,
         // self-learning, watch-arm). Best-effort memory capture only.
+        console.error("[axi-memory-bridge]", err);
       }
     },
 
