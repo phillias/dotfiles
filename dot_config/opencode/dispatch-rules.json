@@ -77,6 +77,11 @@
       "why": "CE debug skill provides systematic root-cause analysis with test-first fixes."
     },
     {
+      "when": "clear feature or fix, ship to PR, lfg autonomous pipeline, build and ship end-to-end",
+      "use": { "category": "unspecified-low", "load_skills": ["lfg"] },
+      "why": "/lfg is a coordinator: it orchestrates plan→implement→review→PR→CI via sub-agents with their own pinned models. The entry point routes and monitors — normal-low intensity."
+    },
+    {
       "when": "plan complex multi-step feature, software architecture work",
       "use": { "load_skills": ["ce-plan"] },
       "why": "CE plan produces durable plan document in docs/plans/."

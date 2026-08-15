@@ -88,26 +88,17 @@ Deployment: tracked in dotfiles via `chezmoi apply`. To install manually: `npx s
 
 ### Routing Matrix
 
+`/lfg` is the default gateway: the full autonomous shipping pipeline (plan → implement → review/fix → commit → push → PR → CI-to-green) in one command. Other skills handle plan-first, ambiguous, and bug paths.
+
 | Request Type | Route To | Domain Variant |
 |---|---|---|
 | **Trivial** (1-2 files, no behavioral change, typo, config) | Execute directly — no plan needed | — |
-| **Clear feature/fix** (multi-step, well-understood scope) | `/ce-plan` → plan → `/ce-work` → execute → `/ce-code-review` → ship | With CONTEXT.md: `/grill-with-docs` → plan → execute |
+| **Clear feature/fix** (multi-step, ship intent) | `/lfg` — full pipeline to a green PR | With CONTEXT.md: `/grill-with-docs` → `/lfg` |
+| **Plan-first** (ship intent unclear; a reviewable plan is wanted before building) | `/ce-plan` → plan → `/ce-work` | With CONTEXT.md: `/grill-with-docs` → plan → execute |
 | **Ambiguous/complex** (WHAT is unclear, product decisions needed) | `/ce-brainstorm` → requirements doc → `/ce-plan` → `/ce-work` | With CONTEXT.md: `/grill-with-docs` → brainstorm → plan → execute |
 | **Bug report / error** | `/ce-debug` → fix → `/ce-compound` (optional) | — |
 
-### Plan Storage
-
-CE plans are written to `docs/plans/` by default.
-
-### Execution
-
-After ce-plan produces a plan, execute with `/ce-work <plan-path>`. The shipping workflow (code review → PR) runs within ce-work's Phase 3-4.
-
-### Review Chain
-
-1. **ce-doc-review** runs automatically after ce-plan writes the plan (headless mode)
-2. **ce-code-review** runs after ce-work completes implementation
-3. **ce-resolve-pr-feedback** handles review threads post-PR
+`/lfg` is for hands-off ship-to-PR only; use `/ce-plan` when the captain wants a plan gate first. CE plans are written to `docs/plans/`; review chain: ce-doc-review (after plan) → ce-code-review (after implement) → ce-resolve-pr-feedback (post-PR).
 
 ## Safety Guardrails
 
@@ -122,17 +113,19 @@ The agent **must not** perform the following without explicit user confirmation:
 
 ## Compound Engineering Skills
 
-The following CE skills are available and should be used automatically when the task matches their purpose:
+Short references; full trigger conditions and behavior live in each skill's `SKILL.md` (`~/.agents/skills/ce-*`):
 
-- **`/ce-plan`** — Structured planning with confidence gating. Use when the user says "plan this", "how should we build", or when a brainstorm doc is ready. Produces durable plans in `docs/plans/`.
-- **`/ce-code-review`** — Parallel multi-agent code review with tiered personas. Use when reviewing code changes before creating a PR. Supports `mode:autofix` for hands-off fixing and `mode:report-only` for read-only review.
-- **`/ce-debug`** — Systematic root cause analysis with test-first fixes. Use when debugging errors, investigating test failures, or tracing causal chains.
-- **`/ce-compound`** — Document solved problems to compound team knowledge. Use after fixing a non-trivial issue to capture context in `docs/solutions/`.
-- **`/ce-brainstorm`** — Interactive requirements exploration. Use when scope is unclear or the user presents a vague feature request. Outputs a requirements document for `/ce-plan`.
-- **`/ce-optimize`** — Iterative optimization loops with measurement gates. Use for performance tuning or systematic improvement.
-- **`/ce-strategy`** — Create or maintain `STRATEGY.md`. Use when establishing or updating product strategy.
+- **`/lfg`** — full autonomous shipping pipeline to a green PR (plan → implement → review/fix → commit → push → PR → CI). Default gateway for clear ship requests.
+- **`/ce-plan`** — structured planning with confidence gating; durable plans in `docs/plans/`.
+- **`/ce-brainstorm`** — interactive requirements exploration; outputs a requirements doc for `/ce-plan`.
+- **`/ce-work`** — execute a plan end-to-end (implementation → review → PR within Phases 3-4).
+- **`/ce-code-review`** — parallel multi-agent review (`mode:autofix` for hands-off fixing, `mode:report-only` for read-only).
+- **`/ce-debug`** — root-cause analysis with test-first fixes.
+- **`/ce-compound`** — capture solved problems as durable learnings in `docs/solutions/`.
+- **`/ce-optimize`** — metric-driven improvement loops.
+- **`/ce-strategy`** — create or maintain `STRATEGY.md`.
 
-**Invocation:** Use the `skill` tool with `name: ce-<skill>`. Each CE skill spawns specialized sub-agents pre-configured with budget-optimized models (GLM-5.1 for code review, Kimi K2.6 for architecture, Nemotron free for research, Big Pickle for document review).
+**Invocation:** Use the `skill` tool with `name: ce-<skill>` (e.g. `name: lfg`). Sub-agents are pinned to budget-optimized models — do not override.
 
 ## Model Budget Awareness
 
@@ -140,137 +133,43 @@ All CE sub-agents are pinned to budget-optimized models. Do not override their m
 
 ## Token Budget Discipline
 
-Token budget is a first-class design constraint. Every tool output, API response format, and skill
-instruction must minimize token consumption without sacrificing signal.
+Token budget is a first-class design constraint. The authoritative source is the **AXI skill** (`~/.agents/skills/axi/SKILL.md`), which defines 10 principles for agent-ergonomic CLIs (TOON output, minimal schemas, content truncation, pre-computed aggregates, definitive empty states, structured errors, ambient context, content-first, contextual disclosure, consistent help).
 
-The authoritative source for this discipline is the **AXI skill** (`~/.agents/skills/axi/SKILL.md`),
-which defines 10 design principles for building agent-ergonomic CLIs. Load it when designing or
-reviewing any tool, CLI, or structured output that an agent will consume.
-
-**The 10 AXI Principles (index):**
-
-1. Token-efficient output (TOON format — ~40% fewer tokens than JSON)
-2. Minimal default schemas (3-4 fields, not 10)
-3. Content truncation (large output with size hints + `--full`)
-4. Pre-computed aggregates (total counts in list output)
-5. Definitive empty states (state the zero with context)
-6. Structured errors and exit codes (errors to stdout, no interactive prompts)
-7. Ambient context (session hooks before skills)
-8. Content first (no args = live data, not usage text)
-9. Contextual disclosure (next-step suggestions after output)
-10. Consistent help (`--help` per subcommand)
-
-**Directive:** When building or reviewing agent-facing tools, CLIs, or skill outputs, treat token
-count as a measurable cost. Prefer TOON over JSON. Default to 3-4 fields, not 10. Truncate large
-output with size hints. Include aggregate counts. Fail with structure, not noise.
-
-**When to load the full AXI skill:** Any task involving CLI design, tool output formatting,
-AXI compliance review, or agent-facing tooling. Do NOT load it for general coding, debugging,
-infrastructure, or code review — it would be noise.
+**Directive:** Treat token count as a measurable cost when building or reviewing agent-facing tools, CLIs, or structured output. Prefer TOON over JSON; default to 3-4 fields, not 10; truncate large output with size hints; include aggregates; fail with structure, not noise. **Load the full AXI skill** for CLI design, output formatting, or AXI review — not for general coding, debugging, or code review.
 
 ## Dispatch Rules (Crew-Dispatch Upgrade)
 
-Sisyphus reads `~/.config/opencode/dispatch-rules.json` at **Phase 0 Intent Gate** to translate task shape into `task(category=..., load_skills=[...], run_in_background=..., subagent_type=...)` calls. The file is the user-edited equivalent of firstmate's `crew-dispatch.json`, expressed against opencode's routing primitives (categories + subagents + skills).
-
-### Format
-
-```jsonc
-{
-  "rules": [
-    {
-      "when": "<natural language task shape>",
-      "use": { /* task() call parameters */ },
-      "why": "<one-line rationale>"
-    }
-    // ... rules evaluated in order, first match wins
-  ],
-  "default": { /* fallback when no rule matches */ }
-}
-```
-
-`use` accepts any parameter valid for the `task()` tool: `category`, `subagent_type`, `load_skills`, `run_in_background`. Sisyphus applies judgment: rules are advisory, not literal — explicit user overrides always win, ambiguous tasks may consultar Metis / oracle before dispatching.
-
-### Evaluation order
-
-1. User gave explicit instructions in this turn → use those, ignore rules
-2. Read `dispatch-rules.json` → first matching rule
-3. No match → use `default` block
-
-### When not to consult dispatch rules
-
-- Trivially obvious task (single-file typo, single grep) → just do it
-- User is mid-clarification conversation → don't dispatch yet
-- Task is already in flight with dispatched agent → let it finish before re-routing
-
-### Editing the file
-
-Edit `~/.config/opencode/dispatch-rules.json` directly. Changes take effect on next Sisyphus turn (Sisyphus should re-read the file at intent-gate time if the modification time is newer than the cached read).
+Sisyphus reads `~/.config/opencode/dispatch-rules.json` at the Phase-0 intent gate to translate task shape into `task(...)` calls. Schema and examples live in the file itself. **Evaluation order:** (1) explicit user instruction this turn wins; (2) first matching rule in `rules[]`; (3) `default` block. Rules are advisory — Sisyphus applies judgment; ambiguous tasks may consult an oracle before dispatching. Skip the file for trivially obvious single-step tasks, mid-clarification conversations, or work already in flight. Edit the file directly; re-read it when its mtime is newer than the cached read.
 
 ## Fleet State Communications (Zero-Token Background-Task Status)
 
-Background-task completion notifications delivered via `<system-reminder>[BACKGROUND TASK COMPLETED]...` are fragile: they ride the `chat.message` hook chain, which can be disrupted by compaction (`experimental.session.compacting`), model fallback, or other plugins intercepting the chain mid-turn. To ensure Sisyphus can recover the status of dispatched tasks regardless of chat-message delivery, a sidecar state tree is maintained on disk.
+Background-task completion notifications ride the `chat.message` hook chain and can be disrupted by compaction, model fallback, or plugins intercepting mid-turn. A sidecar state tree at `~/.local/state/opencode-fleet/` survives those drops:
 
-### State tree location
+| File | Purpose |
+|---|---|
+| `wake.log` | TSV append-only event log (rotates >1MB to last 1000 lines). |
+| `state.json` | Current state of every dispatched task (writer-owned; terminal states never overwritten). |
+| `digest.txt` | TSV snapshot: `<key>\t<status>\t<type>\t<digest>\t<age>`. Regenerated on every state change. |
+| `decisions.tsv` | Authored decisions (written only by `fleet-note.sh`, never by the plugin). |
 
-`~/.local/state/opencode-fleet/`
+**Writer:** `plugins/fleet-state-writer.ts` (auto-loaded) subscribes to `event` (session.* lifecycle), `chat.message` (mines `[BACKGROUND TASK *]` headers), and `tool.execute.after` (`background_output` calls). All handlers catch+log — zero LLM cost. On every non-terminal update whose digest differs, it appends a `fleet.replaced` wake so no transition is silently swallowed.
 
-| File | Format | Purpose |
-|---|---|---|
-| `wake.log` | TSV append-only, one line per event: `<ISO-ts>\t<type>\t<session_id>\t<digest>` | Raw event log. Rotates >1MB to last 1000 lines. Types include `session.*`, `chat.message.bg`, `tool.background_output`, `fleet.gc`, `fleet.decision` (decision authored via `fleet-note.sh`), and `fleet.replaced` (a record's digest was overwritten with a different reason). |
-| `state.json` | JSON snapshot, rewritten in place | Current state of every dispatched task. `tasks` map keyed by session_id or task_id. Writer-owned — never edited by scripts. Terminal states (`completed`/`failed`/`cancelled`) are never overwritten. |
-| `digest.txt` | TSV snapshot: `<key>\t<status>\t<type>\t<digest>\t<age> ago` | Last computed human-readable summary, regenerated whenever state.json changes. |
-| `decisions.tsv` | TSV append-only: `<key>\t<ISO>\t<type>\t<decision>\t<rationale>` | Sidecar of authored decisions. Written only by `fleet-note.sh`, never by the plugin, so it cannot race `state.json` rewrites. Surfaced by `fleet-digest.sh`. |
+**Decision authoring:** `scripts/fleet-note.sh <key> --decision "<text>" [--type dispatch\|merge\|teardown]` — flock-guarded filesystem write that never touches `state.json`. Record at dispatch and at terminal outcome.
 
-### Writer plugin
+**Reader:** `scripts/fleet-digest.sh` (pure bash, zero LLM cost): default = snapshot + wakes from last 30m; `--since N` = last N minutes; `--wakes-only`; `--json` = raw state.json.
 
-`~/.config/opencode/plugins/fleet-state-writer.ts` — auto-loaded by opencode (any `.ts` file in `plugins/`). Subscribes to:
+### When to consult fleet state
 
-- `event` — all `session.*` lifecycle events (`session.idle`/`.error`/`.deleted`/`.compacted`/`.created`)
-- `chat.message` — mines incoming message text for any of `[BACKGROUND TASK RESULT READY]`, `[BACKGROUND TASK COMPLETED]`, `[BACKGROUND TASK CANCELLED]`, `[BACKGROUND TASK INTERRUPTED]`, `[BACKGROUND TASK ERROR]` headers and writes structured event
-- `tool.execute.after` — when Sisyphus calls `background_output(task_id=bg_...)`, marks task as `resulted` (inspected by Sisyphus)
-
-On every non-terminal `updateTask` whose incoming `digest` differs from the existing record, the plugin appends a `fleet.replaced` wake (`prev=<old> -> <new>`) so no state transition is silently swallowed — the displaced reason stays recoverable by name alongside the append-only `wake.log`.
-
-Plugin never throws (all handlers catch + log). Zero LLM cost on the write side — TypeScript handlers run in the opencode plugin process, not in the LLM.
-
-### Decision authoring
-
-`~/.config/opencode/scripts/fleet-note.sh` — fail-closed, harness-agnostic CLI that records a durable decision + rationale for a fleet task key:
-
-```bash
-scripts/fleet-note.sh <key> --decision "<text>" [--rationale "<text>"] [--type dispatch|merge|teardown|other]
-```
-
-It appends one `fleet.decision` line to `wake.log` and one row to `decisions.tsv`, flock-guarded, and **never touches `state.json`** (the plugin owns that whole-file rewrite). Any agent orchestrating work — Sisyphus, firstmate, or another harness — records the decision at two points:
-
-- **At dispatch**: `--type dispatch --decision "<why this task is running>"`
-- **At terminal outcome**: `--type merge|teardown --decision "<merged / PR opened / discarded>" [--rationale "<...>"]`
-
-The record survives chat-message-chain fragility by design (direct filesystem write, no hook delivery). `fleet-digest.sh` surfaces the latest decision per key in its `== decisions ==` section.
-
-### Reader
-
-`~/.config/opencode/scripts/fleet-digest.sh` — pure bash, zero LLM cost. Emits terse summary:
-
-```bash
-scripts/fleet-digest.sh              # snapshot + wakes from last 30m
-scripts/fleet-digest.sh --since 60   # last 60m of wakes
-scripts/fleet-digest.sh --wakes-only # just wake events, no current snapshot
-scripts/fleet-digest.sh --json       # raw state.json
-```
-
-### When Sisyphus should consult fleet state
-
-- **At session start**: `bash scripts/fleet-digest.sh` to ground yourself in fleet state before responding
-- **After waking from a system-reminder that suggests a background task completed**: verify against `state.json` rather than trusting only the reminder
-- **Before dispatching a new task**: glance at `digest.txt` to see what's already running, avoid duplicate dispatches
-- **When user asks "what's running?"**: run `fleet-digest.sh --since 240` for the last 4 hours
+- **At session start:** `fleet-digest.sh` to ground in fleet state before responding.
+- **After a background-task system-reminder:** verify against `state.json`, don't trust only the reminder.
+- **Before dispatching:** glance at `digest.txt` to avoid duplicate dispatches.
+- **"What's running?":** `fleet-digest.sh --since 240`.
 
 ### Failure modes
 
-- If `state.json` is empty/missing: sidecar not loaded yet, fall back to `background_output` API
-- If `wake.log` is corrupted: truncate and let the plugin repopulate
-- The state tree is **never** the source of truth for the actual task transcript — that lives in opencode.db (`session`, `message`, `part` tables). State tree is just a **terse index** for fast Sisyphus reads.
+- `state.json` empty/missing → sidecar not loaded; fall back to `background_output` API.
+- `wake.log` corrupted → truncate; the plugin repopulates.
+- The state tree is a **terse index**, never the task transcript (that lives in `opencode.db`).
 
 ## Self-Learning & Memory
 

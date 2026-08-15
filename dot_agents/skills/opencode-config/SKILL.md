@@ -555,7 +555,7 @@ Since the **2026-07-29 OmO upgrade** (`2026-07-opencode-config-unification` migr
 ├── opencode.json                              # Providers (Cloudflare, OpenRouter, OpenCode Zen, OpenCode Go, Agnes AI, Google, Mistral, SambaNova, Together, HuggingFace), MCPs, compaction defaults
 ├── oh-my-openagent.jsonc                      # ⚠️ LEGACY ORPHAN (post-migration). Do NOT edit — runtime reads ~/.omo/omo.jsonc instead. Forgotten from chezmoi 2026-08-01; purged by run_onchange cleanup
 ├── opencode-fallback.jsonc                    # PAID-FIRST fallback (2026-08-12): big-pickle → Command Code GOAT → opencode-go → zen free → free providers → google. Fleet taxonomy agents/categories, no_global_tail carve-outs for specialized, ce-* wildcard. DESIGN.md §2.6
-├── dispatch-rules.json                        # 26 starter rules mapping task shape → task(category=..., load_skills=[...]) at Sisyphus intent-gate time
+├── dispatch-rules.json                        # 30 starter rules mapping task shape → task(category=..., load_skills=[...]) at Sisyphus intent-gate time
 ├── plugins/
 │   ├── fleet-state-writer.ts                  # Auto-loaded: zero-LLM-cost state wire (writes ~/.local/state/opencode-fleet/{state.json,wake.log,digest.txt})
 │   ├── fleet-digest.sh                        # (in scripts/, not plugins/) — pure bash reader for fleet state
@@ -1070,7 +1070,7 @@ When modifying `~/.config/opencode/` files (root config, fallback chain, keys, p
 - `opencode.json` — providers, MCPs, compaction, `plugin` declaration
 - `~/.omo/omo.jsonc` — **provenance only since 2026-08-09**: the recovered OmO config that seeded `opencode-fallback.jsonc`. No longer read at runtime; kept for history (do NOT route edits here — the fallback system reads `opencode-fallback.jsonc` + agent `fallback_models`).
 - `opencode-fallback.jsonc` — single-root fallback config: global free→subsidized→pay ladder + per-agent/category `fallback_models` chains (15 global entries)
-- `dispatch-rules.json` — 26 starter rules consumed by Sisyphus at intent-gate time
+- `dispatch-rules.json` — 30 starter rules consumed by Sisyphus at intent-gate time
 
 All four are chezmoi-tracked. `chezmoi re-add` each after edits, then standard commit flow.
 
@@ -1231,7 +1231,7 @@ Primary: zen/cloudflare/openrouter (free)
 | `~/.config/opencode/scripts/fm-drift-pr.sh` | Promotion helper: re-add gate-applied chezmoi files, branch from dotfiles master, push, open the captain's approval-gate PR | chezmoi |
 | `~/.config/systemd/user/catalog-drift.service` + `.timer` | Daily timer running the drift checker (zero-token detection; LLM gate applies write criteria only on drift) | chezmoi |
 | `~/.agents/skills/opencode-omo-config/models.snapshot.json` | Committed model snapshot (config-referenced + free-tier models of tracked providers) the checker diffs against | chezmoi |
-| `~/.config/opencode/dispatch-rules.json` | 26 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
+| `~/.config/opencode/dispatch-rules.json` | 30 starter dispatch rules consumed by Sisyphus at intent gate | chezmoi |
 | `~/.config/opencode/AGENTS.md` | Agent behavioral rules (Dispatch Rules + Fleet State Comms sections) | chezmoi |
 | `~/.config/opencode/plugins/*.ts(x)` | Auto-loaded TypeScript plugins (fleet-state-writer, self-learning-autocapture, axi-memory-bridge, tps-status) | chezmoi |
 | `~/.config/opencode/scripts/*.sh` | Bash reader scripts (fleet-digest.sh, fleet-note.sh) | chezmoi (executable bit preserved) |

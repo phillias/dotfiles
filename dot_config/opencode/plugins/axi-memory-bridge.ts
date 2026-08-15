@@ -405,45 +405,49 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       }),
     },
 
-    // ── Capture last user message + user boost detection + auto-save ──────
+    // ── chat.message: injection veto → store last message → score → auto-save ─
+    // Wrapped in try/catch so a throw never disrupts other chat.message subscribers.
     "chat.message": async (
       input: { sessionID: string; agent?: string; model?: any; messageID?: string; variant?: string },
       output: { message: any; parts: any[] },
     ) => {
-      const text = output.parts.map(p => p.text ?? "").join(" ");
-      if (!text) return;
+      try {
+        const text = output.parts.map(p => p.text ?? "").join(" ");
+        if (!text) return;
 
-      // Injection veto: instruction-override content must not enter durable
-      // memory NOR feed the system-context keyword search. The boost path
-      // ("remember this: ...") is the attack vector — block before scoring.
-      if (isInjection(text)) return;
+        // Injection veto: instruction-override content must not enter durable
+        // memory NOR feed the system-context keyword search. The boost path
+        // ("remember this: ...") is the attack vector — block before scoring.
+        if (isInjection(text)) return;
 
-      // Store last user message for system context injection
-      lastUserMessages.set(input.sessionID, text);
+        // Store last user message for system context injection
+        lastUserMessages.set(input.sessionID, text);
 
-      // Score ALL messages — auto-save only on explicit remember/keep/save
-      // intent (boost) or a dense multi-signal message (>=24/45). The old
-      // >=12 threshold let conversational questions auto-capture (pollution).
-      const boosted = hasUserBoost(text);
-      const score = scoreMessage(text, boosted);
-      if (score.shouldRemember) {
-        // Dedup: don't save the same title twice in this session
-        const sessionCaptures = capturedThisSession.get(input.sessionID) ?? new Set<string>();
-        if (!capturedThisSession.has(input.sessionID)) capturedThisSession.set(input.sessionID, sessionCaptures);
-        
-        const title = sanitizeTitle(text);
-        if (sessionCaptures.has(title)) return; // Already captured this turn
-        sessionCaptures.add(title);
+        // Score ALL messages — auto-save only on explicit remember/keep/save
+        // intent (boost) or a dense multi-signal message (>=24/45). The old
+        // >=12 threshold let conversational questions auto-capture (pollution).
+        const boosted = hasUserBoost(text);
+        const score = scoreMessage(text, boosted);
+        if (score.shouldRemember) {
+          // Dedup: don't save the same title twice in this session
+          const sessionCaptures = capturedThisSession.get(input.sessionID) ?? new Set<string>();
+          if (!capturedThisSession.has(input.sessionID)) capturedThisSession.set(input.sessionID, sessionCaptures);
 
-        // Save immediately — don't wait for session.idle (which may never fire)
-        const memType = inferMemType(title);
-        const tags = inferTags(title).join(",");
-        const priority = priorityForType(memType, boosted);
-        try {
+          const title = sanitizeTitle(text);
+          if (sessionCaptures.has(title)) return; // Already captured this turn
+          sessionCaptures.add(title);
+
+          // Save immediately — don't wait for session.idle (which may never fire)
+          const memType = inferMemType(title);
+          const tags = inferTags(title).join(",");
+          const priority = priorityForType(memType, boosted);
           await shell`mem add --type ${memType} --title "${title}" --tags "${tags}" --body "Auto-captured (${score.reasoning})" --priority ${priority}`.quiet().nothrow();
-        } catch {
-          // Silent fail — axi-memory is best-effort
         }
+      } catch (err) {
+        // Never throw into the chat.message chain — a throw here can disrupt
+        // the wake/message pipeline for other subscribers (fleet-state,
+        // self-learning, watch-arm). Best-effort memory capture only.
+        console.error("[axi-memory-bridge]", err);
       }
     },
 
