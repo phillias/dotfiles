@@ -405,7 +405,8 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       }),
     },
 
-    // ── Capture last user message + user boost detection + auto-save ──────
+    // ── chat.message: injection veto → store last message → score → auto-save ─
+    // Wrapped in try/catch so a throw never disrupts other chat.message subscribers.
     "chat.message": async (
       input: { sessionID: string; agent?: string; model?: any; messageID?: string; variant?: string },
       output: { message: any; parts: any[] },
