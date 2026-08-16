@@ -249,14 +249,14 @@ fleet, not the retired OmO taxonomy):
 - **Crewmates** (`task(subagent_type=...)`) — `agents.<type>` chains. Utility
   types (`general`, `explore`, ...): big-pickle primary, fallback
   GOAT → Go → Cloudflare → Zen → free. Specialized types (oracle, metis, momus,
-  looker, science): models stay pinned, fallback GOAT → Go → Cloudflare → Zen
+  looker, science): models stay pinned, fallback GOAT → Go → Zen
   **only** — no free downgrade; chain end surfaces as a visible failure for the
   captain to fix.
 - **Categories** (`task(category=...)`) — `categories.<name>` chains. Utility
   categories (`quick`, `unspecified-low`): big-pickle + GOAT → Go → Cloudflare →
   Zen → free. High-intensity/specialized categories (`ultrabrain`, `deep`,
   `unspecified-high`, `visual-engineering`, `artistry`, `writing`): models stay
-  pinned, fallback GOAT → Go → Cloudflare → Zen only.
+  pinned, fallback GOAT → Go → Zen only.
 - **Secondmates** — same chezmoi-synced config; their main sessions resolve the
   global ladder (big-pickle → GOAT → Go → Cloudflare → Zen → free).
 

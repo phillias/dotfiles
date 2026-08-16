@@ -10,7 +10,7 @@ Live agent/category chain design. **Authoritative source: `~/.config/opencode/op
 
 **Resolution order:** session model → agent (exact match, then longest `*` wildcard) → category → global ladder. `no_global_tail` entries fail visibly at Zen (no free downgrade).
 
-**Decision A (captain, 2026-08-12):** utility agents run big-pickle → GOAT → Go → Cloudflare → Zen → free; specialized agents keep pinned models with fallback GOAT → Go → Cloudflare → Zen only. **Decision B:** GOAT leads so its exhaustion rate is observable.
+**Decision A (captain, 2026-08-12):** utility agents run big-pickle → GOAT → Go → Cloudflare → Zen → free; specialized agents keep pinned models with fallback GOAT → Go → Zen only. **Decision B:** GOAT leads so its exhaustion rate is observable.
 
 ## Global ladder (2026-08-16)
 
