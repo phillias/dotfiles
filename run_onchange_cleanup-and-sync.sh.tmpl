@@ -27,8 +27,26 @@
 # Fingerprint (agents):   {{ output "bash" "-c" "find ~/.agents -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (opencode): {{ output "bash" "-c" "find ~/.config/opencode -maxdepth 1 -type f -o -path '*/skills/*' -type f -o -path '*/agents/*' -type f -o -path '*/plugins/*' -type f -o -path '*/themes/*' -type f -o -path '*/scripts/*' -type f -o -path '*/docs/*' -type f -o -path '*/compound-engineering/*' -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (systemd):  {{ output "bash" "-c" "find ~/.config/systemd/user -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
-# Fingerprint (cleanup):  {{ output "bash" "-c" "for t in ~/.config/opencode/oh-my-openagent.json ~/.config/opencode/oh-my-openagent.jsonc ~/.config/opencode/oh-my-openagent.json.orig ~/.config/opencode/DESIGN.md ~/.local/bin/oc ~/.config/opencode/profiles ~/.config/opencode/plugins/tmux-patch-keeper.ts ~/.config/opencode/plugins/better-compaction.ts ~/.config/opencode/plugins/tmux-subagent-activator.ts ~/.config/opencode/.tmux-OmOTeam.conf ~/.config/systemd/user/locket-infra.service ~/.config/systemd/user/codemem-serve.service ~/.config/systemd/user/default.target.wants/locket-infra.service ~/.config/systemd/user/default.target.wants/codemem-serve.service ~/.config/opencode/plugins/docker-backup-status.js ~/.config/opencode/plugins/go-pool-fallback.ts ~/.config/systemd/user/codemem-anchor-watchdog.service ~/.config/systemd/user/codemem-anchor-watchdog.timer ~/.config/systemd/user/codemem-coordinator.service; do [ -e $t ] && echo $t; done | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (cleanup):  {{ output "bash" "-c" "for t in ~/.config/opencode/oh-my-openagent.json ~/.config/opencode/oh-my-openagent.jsonc ~/.config/opencode/oh-my-openagent.json.orig ~/.config/opencode/DESIGN.md ~/.local/bin/oc ~/.config/opencode/profiles ~/.config/opencode/plugins/tmux-patch-keeper.ts ~/.config/opencode/plugins/better-compaction.ts ~/.config/opencode/plugins/tmux-subagent-activator.ts ~/.config/opencode/.tmux-OmOTeam.conf ~/.config/systemd/user/locket-infra.service ~/.config/systemd/user/codemem-serve.service ~/.config/systemd/user/default.target.wants/locket-infra.service ~/.config/systemd/user/default.target.wants/codemem-serve.service ~/.config/opencode/plugins/docker-backup-status.js ~/.config/opencode/plugins/go-pool-fallback.ts ~/.config/opencode/plugins/go-pool-guard.ts ~/.config/opencode/scripts/go-pool-check.sh ~/.config/opencode/scripts/go-pool-switch.sh ~/.config/opencode/AGENTS.md.bak ~/.config/opencode/AGENTS.toon ~/.config/systemd/user/codemem-anchor-watchdog.service ~/.config/systemd/user/codemem-anchor-watchdog.timer ~/.config/systemd/user/codemem-coordinator.service; do [ -e $t ] && echo $t; done | sha256sum | cut -d' ' -f1" }}
 set -euo pipefail
+
+# Dry-run: `bash run_onchange_cleanup-and-sync.sh --dry-run` (or -n) prints
+# what would be removed without removing anything — preview between applies.
+DRY_RUN=0
+case "${1:-}" in
+    --dry-run|-n) DRY_RUN=1 ;;
+esac
+
+# Remove a target, honoring --dry-run.
+remove_verbose() {
+    local target="$1" verb="$2"
+    if (( DRY_RUN )); then
+        echo "would ${verb}: ${target/#$HOME/~}"
+    else
+        rm -rf "$target"
+        echo "${verb}: ${target/#$HOME/~}"
+    fi
+}
 
 # ---------------------------------------------------------------- stale-files --
 # Anything here should not exist. Re-created junk is caught by the cleanup
@@ -51,6 +69,11 @@ STALE_TARGETS=(
     "$HOME/.config/systemd/user/default.target.wants/codemem-serve.service"
     "$HOME/.config/opencode/plugins/docker-backup-status.js"   # orphan plugin — not in opencode.json plugin array (purged 2026-08-06)
     "$HOME/.config/opencode/plugins/go-pool-fallback.ts"       # removed via PR #170 (2026-08-06) — purge unmanaged leftovers on any machine
+    "$HOME/.config/opencode/plugins/go-pool-guard.ts"          # Go-pool fallback plugin — deprecated 2026-08-16 (retired with the go-pool toolset)
+    "$HOME/.config/opencode/scripts/go-pool-check.sh"          # Go-pool status check — deprecated 2026-08-16 (retired with the go-pool toolset)
+    "$HOME/.config/opencode/scripts/go-pool-switch.sh"         # Go-pool config toggle — deprecated 2026-08-16 (retired with the go-pool toolset)
+    "$HOME/.config/opencode/AGENTS.md.bak"                     # stale backup of the previous global AGENTS.md
+    "$HOME/.config/opencode/AGENTS.toon"                       # stale TOON snapshot of AGENTS.md (2026-08-04)
     "$HOME/.config/systemd/user/codemem-anchor-watchdog.service"  # purged 2026-08-06
     "$HOME/.config/systemd/user/codemem-anchor-watchdog.timer"    # purged 2026-08-06
     "$HOME/.config/systemd/user/codemem-coordinator.service"      # purged 2026-08-06
@@ -60,8 +83,7 @@ cleanup_stale() {
     local t
     for t in "${STALE_TARGETS[@]}"; do
         if [[ -e "$t" ]]; then
-            rm -rf "$t"
-            echo "cleaned stale: $t"
+            remove_verbose "$t" "clean stale"
         fi
     done
 }
@@ -130,8 +152,7 @@ prune_deprecated() {
     local name
     for name in "${DEPRECATED_SKILLS[@]}"; do
         if [[ -e "$dir/$name" ]]; then
-            rm -rf "$dir/$name"
-            echo "pruned deprecated skill: $name"
+            remove_verbose "$dir/$name" "prune deprecated skill"
         fi
     done
 }
@@ -143,8 +164,7 @@ prune_auto_generated() {
     for skill in "$dir"/*/; do
         [[ -d "$skill" ]] || continue
         if grep -q "$AUTO_GENERATED_MARKER" "$skill/SKILL.md" 2>/dev/null; then
-            rm -rf "$skill"
-            echo "pruned auto-generated skill: $(basename "$skill")"
+            remove_verbose "$skill" "prune auto-generated skill"
         fi
     done
 }
@@ -161,8 +181,7 @@ prune_config_side_duplicates() {
         [[ -d "$skill" ]] || continue
         name=$(basename "$skill")
         if [[ -d "$agents/$name" ]]; then
-            rm -rf "$skill"
-            echo "pruned config-side duplicate (canonical in ~/.agents): $name"
+            remove_verbose "$skill" "prune config-side duplicate"
         fi
     done
 }

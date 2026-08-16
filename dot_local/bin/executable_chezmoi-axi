@@ -130,9 +130,9 @@ readd_one() {
 cmd_status() {
   local managed_count changed_count encrypted_count last_sync="never"
 
-  managed_count=$(chezmoi managed 2>/dev/null | wc -l)
-  changed_count=$(chezmoi diff 2>/dev/null | grep '^diff --git' | wc -l)
-  encrypted_count=$(find "$CHEZMOI_SRC" -name 'encrypted_*' -type f 2>/dev/null | wc -l)
+  managed_count=$(chezmoi managed 2>/dev/null | wc -l || true)
+  changed_count=$(chezmoi diff 2>/dev/null | grep '^diff --git' | wc -l || true)
+  encrypted_count=$(find "$CHEZMOI_SRC" -name 'encrypted_*' -type f 2>/dev/null | wc -l || true)
 
   # Last sync: most recent commit in chezmoi source
   if [[ -d "$CHEZMOI_SRC/.git" ]]; then
@@ -214,7 +214,7 @@ cmd_list() {
 
   local count=${#files[@]}
   local total
-  total=$(chezmoi managed 2>/dev/null | wc -l)
+  total=$(chezmoi managed 2>/dev/null | wc -l || true)
 
   if (( count == 0 )); then
     echo "files: 0 ${filter} files found"
@@ -267,7 +267,7 @@ cmd_diff() {
   if [[ -n "$target" ]]; then
     # Diff specific file
     local src_path
-    src_path=$(chezmoi managed --include files 2>/dev/null | grep -i "$(basename "$target")" | head -1)
+    src_path=$(chezmoi managed --include files 2>/dev/null | grep -i "$(basename "$target")" | head -1 || true)
     if [[ -z "$src_path" ]]; then
       die "file not managed by chezmoi: $target" "Run \`chezmoi-axi add $target\` to start tracking it"
     fi
@@ -463,9 +463,9 @@ cmd_verify() {
 
   # Check for untracked files (files on disk not in source state)
   local untracked
-  untracked=$(chezmoi managed --include files 2>/dev/null | wc -l)
+  untracked=$(chezmoi managed --include files 2>/dev/null | wc -l || true)
   local target_files
-  target_files=$(find "${HOME}" -maxdepth 1 -name '.*' -type f 2>/dev/null | wc -l)
+  target_files=$(find "${HOME}" -maxdepth 1 -name '.*' -type f 2>/dev/null | wc -l || true)
 
   echo "verify: all tracked files match source state"
   help_hint "Run \`chezmoi-axi list\` to see managed files" \
