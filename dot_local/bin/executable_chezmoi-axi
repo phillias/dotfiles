@@ -474,15 +474,17 @@ cmd_verify() {
 }
 
 cmd_sync() {
-  local preview=false
+  local preview=false force=false
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --preview|-n) preview=true; shift ;;
+      --force|-f)   force=true; shift ;;
       -h|--help)
-        echo "Usage: chezmoi-axi sync [--preview]"
+        echo "Usage: chezmoi-axi sync [--preview] [--force]"
         echo "  --preview  Fetch remote and show diff without applying"
+        echo "  --force    Apply without prompting (resolves local drift, for cron)"
         exit 0 ;;
-      *) die "unknown flag: $1" "chezmoi-axi sync [--preview]" ;;
+      *) die "unknown flag: $1" "chezmoi-axi sync [--preview] [--force]" ;;
     esac
   done
 
@@ -492,13 +494,17 @@ cmd_sync() {
   local remote_commits
   remote_commits=$(chezmoi git -- log --oneline HEAD..origin/master 2>/dev/null | wc -l || echo 0)
 
-  if [[ "$remote_commits" -eq 0 ]]; then
+  if [[ "$remote_commits" -eq 0 && "$force" != "true" ]]; then
     echo "sync: already up to date"
     help_hint "Run \`chezmoi-axi status\` for current state"
     return 0
   fi
 
-  echo "found: ${remote_commits} new commits on remote"
+  if [[ "$remote_commits" -gt 0 ]]; then
+    echo "found: ${remote_commits} new commits on remote"
+  else
+    echo "sync: no new commits, applying to resolve local drift"
+  fi
 
   if [[ "$preview" == "true" ]]; then
     echo "diffs:"
@@ -507,8 +513,18 @@ cmd_sync() {
     return 0
   fi
 
-  chezmoi update 2>/dev/null
-  echo "sync: pulled and applied ${remote_commits} commits"
+  local update_args=()
+  [[ "$force" == "true" ]] && update_args+=(--force)
+
+  local output
+  if output=$(chezmoi update "${update_args[@]}" 2>&1); then
+    echo "sync: pulled and applied${force:+ (force)}"
+  else
+    echo "error: chezmoi update failed"
+    echo "$output" | head -10
+    help_hint "Run \`chezmoi-axi diff\` to review what failed"
+    return 1
+  fi
   help_hint "Run \`chezmoi-axi verify\` to confirm state"
 }
 
@@ -577,7 +593,7 @@ cmd_help() {
   echo "  re-add       Capture on-disk changes [--all]"
   echo "  apply        Apply source state to installed files"
   echo "  verify       Check files match source state"
-  echo "  sync         Pull remote and apply [--preview]"
+  echo "  sync         Pull remote and apply [--preview] [--force]"
   echo "  commit       Commit, push, and open PR"
   echo "  help         Show this help"
   echo ""
