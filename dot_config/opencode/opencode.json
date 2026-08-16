@@ -1636,6 +1636,28 @@
           "temperature": true
         }
       }
+    },
+    "pokee": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Pokee AI",
+      "options": {
+        "baseURL": "https://api.pokee.ai/v1",
+        "apiKey": "{env:POKEE_API_KEY}"
+      },
+      "models": {
+        "pokee-isaac": {
+          "name": "Pokee-Isaac 28B",
+          "limit": {
+            "context": 10000000,
+            "output": 60000
+          },
+          "temperature": true,
+          "pricing": {
+            "input": 0.15,
+            "output": 1.0
+          }
+        }
+      }
     }
   },
   "compaction": {
