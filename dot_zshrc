@@ -263,13 +263,6 @@ if [ -f /etc/zsh_command_not_found ]; then
     . /etc/zsh_command_not_found
 fi
 
-export ANTHROPIC_BASE_URL="https://openrouter.ai"
-export ANTHROPIC_AUTH_TOKEN=""
-export ANTHROPIC_API_KEY=""
-export ENABLE_TOOL_SEARCH=false
-export ANTHROPIC_COMPATIBILITY_MODE=1
-export API_TIMEOUT_MS=600000
-
 
 # opencode
 export PATH=$HOME/.npm-global/bin:$PATH
