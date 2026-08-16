@@ -434,7 +434,73 @@ scripts/fleet-digest.sh --json       # raw state.json
 
 ---
 
-## 5. Maintenance & Evolution
+## 5. Hook Collision Risk Assessment (firstmate on opencode)
+
+Collision analysis performed 2026-08-15 for a firstmate deployment running
+exclusively on the opencode harness. Verdict: runtime-fallback, the axi-memory
+flywheel (bridge + autocapture), and fleet-state-writer each provide more value
+than risk; net collision risk is low and was priced in at design time. The
+sections below record the risk paths and their mitigations.
+
+### 5.1 Hook surface map
+
+| Plugin | Hooks | Overlap with firstmate |
+|---|---|---|
+| runtime-fallback | `event` (session.status retry / session.error / session.deleted), `chat.params`, `experimental.chat.system.transform`, `tool.fallback-status` | No `chat.message`; no shared `event` types; `chat.params` is fallback-only |
+| axi-memory-bridge | `chat.message` (try/catch-wrapped), `experimental.chat.system.transform`, `tool.execute.after` | Pushes alongside on `system.transform` — additive, compatible |
+| self-learning-autocapture | `chat.message`, `tool.execute.after`, `event` (session.idle) | Shares `event` session.idle with firstmate's turn-end guard and watch-arm; all three coexist |
+| fleet-state-writer | `event` (all session.*), `chat.message` (mined), `tool.execute.after` | Firstmate consumes its sidecar output; handlers never throw |
+| firstmate (project-local) | `event` (session.created/idle), `tool.execute.before` | Disjoint from fallback surfaces by construction |
+
+### 5.2 Risk path 1 — `chat.params` auto-recovery overrides dispatched models
+
+The fallback's `chat.params` handler reverts any session whose active model sits
+at chain index > 0 back to the chain primary (`big-pickle`) as soon as the
+primary is healthy — on the first turn if it is not cooling. It cannot
+distinguish "fell back on a runtime error" from "explicitly dispatched to a
+mid-chain model." Under an opencode-exclusive firstmate every crewmate is an
+opencode-harness spawn, so this fires **per dispatch** whenever crew-dispatch
+resolves a mid-chain model for opencode work. It is a behavioral override, not
+a crash.
+
+**Tuning rule:** resolve crew-dispatch profiles for opencode-harness spawns only
+to the chain-top model (`big-pickle`) or a non-chain model, so auto-recovery
+never fires and dispatched model choices stick. No `no-auto-recover` flag exists
+in the fallback config today — one would require a plugin change.
+
+### 5.3 Risk path 2 — mid-turn stepping vs the `chat.message` chain
+
+Already documented in §4: mid-turn model fallback can disrupt the `chat.message`
+hook chain, and fleet-state-writer's disk sidecar exists to survive exactly that.
+Consequence for the flywheel: a mid-turn step could swallow a harvest cue or
+memory-score event in autocapture / axi-memory-bridge. Recoverable — cues
+re-derive from session transcripts — and the price of keeping the session alive.
+
+### 5.4 Non-risks (additive or disjoint surfaces)
+
+- `experimental.chat.system.transform` — the fallback annotation and memory
+  injection both push to `output.system`; no overwrite.
+- `event` types — fallback consumes session.status/error/deleted; firstmate
+  consumes session.created/idle. Disjoint.
+- `chat.message` consumers — fleet-state-writer, axi-memory-bridge, and
+  autocapture are all catch-wrapped; axi-memory-bridge ships an explicit
+  "never throw into the chain" contract plus a dedicated test
+  (`axi-memory-bridge-chat-guard.test.ts`).
+- `tool.execute.before` is firstmate-owned (pretool / cd checks) and shared with
+  no runtime plugin.
+
+### 5.5 Drill-down map
+
+| Topic | Where |
+|---|---|
+| Fallback `chat.params` auto-recovery logic | `plugins/opencode-runtime-fallback.ts` (chat.params handler) |
+| `chat.message` chain disruption (design rationale) | this doc §4 |
+| Flywheel consumer contract | `plugins/axi-memory-bridge.ts`, `plugins/self-learning-autocapture.ts` |
+| Crew-dispatch model resolution | firstmate `config/crew-dispatch.json` + `bin/fm-spawn.sh` |
+
+---
+
+## 6. Maintenance & Evolution
 
 **systemd units (user):** `catalog-drift.{service,timer}` (drift detection),
 `selfimprove-drain.{service,timer}` (cue drain, 6h). Neither currently writes a
