@@ -12,16 +12,16 @@ description: >
 # dotfiles
 
 Runbook for maintaining a chezmoi-managed dotfiles repo across multiple machines.
+Deep reference (machine setup, run scripts, setup & recovery): read `refs/DESIGN.md`.
 
 ## Skills
 
 skills[2]{name,description}:
   chezmoi-axi,Agent-friendly chezmoi wrapper with TOON output — status, list, diff, add, re-add, apply, verify, sync, commit
-  /ce-commit-push-pr,Full PR workflow — branching, committing, PR creation, post-PR cleanup
+  no-mistakes,PR pipeline — review, push, and open a PR; this repo declares no_ci so the gate treats an empty checks response as passed
 
-> **DEFAULT WORKFLOW**: Any dotfiles change that isn't a trivial local-only fix must use `/ce-commit-push-pr`.
-> This handles branching, committing, pushing, PR creation, and post-PR branch cleanup.
-> `chezmoi-axi commit` is ONLY for direct-to-master pushes (rare — usually cron syncs or quick hotfixes).
+> **DEFAULT WORKFLOW**: Any dotfiles change that ships goes through the Commit and PR Flow below
+> (no-mistakes, no-ci). `chezmoi-axi commit` is ONLY for trivial local-only direct-to-master fixes.
 
 ## Health Check
 
@@ -39,43 +39,6 @@ chezmoi-axi diff                # show pending differences
 
 ---
 
-## Bootstrap a New Machine
-
-One-liner (installs chezmoi, tools, decrypts secrets, applies dotfiles):
-
-```
-curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/setup.sh | bash
-```
-
-What the script does:
-
-steps[12]{n,action}:
-  1,Install chezmoi (latest, updates if outdated)
-  2,Install GitHub CLI (gh)
-  3,Install Bitwarden CLI (bw)
-  4,Install cloudflared
-  5,Install opencode (user-local ~/.opencode via npm/bun)
-  6,Set up PATH in .bashrc and .zshrc
-  7,Generate SSH deploy key and register on GitHub
-  8,Prompt for profile branch (master/personal/work)
-  9,Clone dotfiles repo
-  10,Authenticate Bitwarden and decrypt age key
-  11,Apply dotfiles
-  12,Set up cron auto-sync every 30 min
-
-Interactive prompts you'll answer:
-
-prompts[5]{item}:
-  GitHub token (if gh not authenticated)
-  Profile branch choice
-  Bitwarden master password + 2FA
-  Bitwarden API key (optional, for cron)
-  Age key passphrase (auto-fetched from Bitwarden if available)
-
-Prerequisites: curl, python3, ssh-keygen, Node.js or Bun, sudo (optional)
-
----
-
 ## What are you trying to do?
 
 situations[10]{situation,go-to}:
@@ -86,9 +49,9 @@ situations[10]{situation,go-to}:
   Changes not showing on another machine,Sync changes across machines
   Stop tracking a file,Remove a file
   Exclude files from chezmoi,Manage .chezmoiignore
-  Run cleanup/setup scripts during apply,Run scripts
-  Encrypted files skipped during apply,Troubleshoot: age key
-  Permission denied on init/push,Troubleshoot: SSH deploy key
+  Run cleanup/setup scripts during apply,refs/DESIGN.md — Run scripts
+  Encrypted files skipped during apply,refs/DESIGN.md — Setup & Recovery
+  New machine or broken SSH deploy key,refs/DESIGN.md — Setup
 
 ---
 
@@ -96,7 +59,7 @@ situations[10]{situation,go-to}:
 
 ### Add a new file
 
-Before you begin: All configs go on master. Secrets encrypted with age.
+Before you begin: All configs ship from a topic branch off master. Secrets encrypted with age.
 
 ```
 chezmoi-axi add ~/.tmux.conf                           # unencrypted
@@ -105,7 +68,7 @@ chezmoi-axi add --encrypt ~/.config/some-app/token     # encrypted
 
 Verify: `chezmoi-axi diff` — no differences.
 
-Commit: **Load `/ce-commit-push-pr`** (creates branch, commits, opens PR, cleans up).
+Ship: **run no-mistakes (no-ci)** per the Commit and PR Flow.
 
 ---
 
@@ -118,7 +81,7 @@ chezmoi-axi re-add --all          # all changed files
 
 Verify: `chezmoi-axi diff` — should be clean.
 
-Commit: **Load `/ce-commit-push-pr`** (creates branch, commits, opens PR, cleans up).
+Ship: **run no-mistakes (no-ci)** per the Commit and PR Flow.
 
 ---
 
@@ -136,7 +99,7 @@ chezmoi reencrypt ~/.local/share/chezmoi/dot_config/opencode/encrypted_dot_cloud
 
 Verify: `chezmoi cat ~/.config/opencode/.cloudflare-key` — shows decrypted content. `chezmoi diff` — clean.
 
-Commit: **Load `/ce-commit-push-pr`**.
+Ship: **run no-mistakes (no-ci)** per the Commit and PR Flow.
 
 Note: .groq-key removed 2026-07-18 (Groq free-tier TPM limits). Examples use .cloudflare-key.
 
@@ -149,7 +112,7 @@ chezmoi cat ~/.config/opencode/.cloudflare-key         # view (stdout)
 chezmoi edit ~/.config/opencode/.cloudflare-key        # edit (decrypts, opens editor, re-encrypts)
 ```
 
-No commit for chezmoi cat (read-only). After chezmoi edit, **load `/ce-commit-push-pr`**.
+No ship for chezmoi cat (read-only). After chezmoi edit, **run no-mistakes (no-ci)** per the Commit and PR Flow.
 
 ---
 
@@ -231,129 +194,19 @@ Verify: `chezmoi diff` — ignored files no longer appear as pending.
 
 ---
 
-## Run scripts
-
-Chezmoi can run scripts automatically during chezmoi apply. Scripts use special name prefixes:
-
-script-types[2]{prefix,runs,use-case}:
-  run_once_,Once per machine (tracked in .run_once),One-time migrations, cleanup
-  run_onchange_,When file content changes (hash tracked),Installs, updates, rebuilds
-
-Scripts can have .tmpl suffix for templating.
-
-Current run scripts:
-
-run_once_cleanup-stale.sh.tmpl:
-  rm -f ~/.config/opencode/oh-my-openagent.json  # replaced by .jsonc
-  rm -f ~/.local/bin/oc                           # replaced by shell alias
-  rm -rf ~/.config/opencode/profiles              # single-root config since Jul 2026
-
-Adding a new run script:
-
-1. Create in source state:
-```
-vim ~/.local/share/chezmoi/run_once_describe-what-it-does.sh
-```
-
-2. Make executable: `chmod +x`
-
-3. **Load `/ce-commit-push-pr`** to commit and open PR.
-
-Re-run a run_once script:
-```
-rm ~/.local/share/chezmoi/.run_once/describe-what-it-does.sh
-chezmoi-axi apply
-```
-
-Re-run a run_onchange script: just edit the file — chezmoi detects content change.
-
----
-
 ## Commit and PR Flow
 
-> **ALWAYS USE THIS** for any dotfiles change:
-> ```
-> load /ce-commit-push-pr
-> ```
-> It handles: feature branch creation → chezmoi re-add → commit → push → PR creation → branch cleanup → return to master.
-> **Do not hand-roll git commit/push/branch workflows for dotfiles.** The skill handles all of it.
+> **ALWAYS USE THIS** for any dotfiles change that ships (reaches other machines).
 
-Quick commit (direct to master, no PR — **only for trivial local-only fixes**):
-```
-chezmoi-axi commit "chore: quick fix for X"
-```
+steps[6]{step,action}:
+  1,Gate 1 — `chezmoi-axi status` / `verify` / `diff`. ANY drift or unexpected diff: raise it, reconcile first — never proceed to add/re-add on unexplained state.
+  2,Branch — confirm on master (`chezmoi git -- branch`), then `chezmoi git -- checkout -b <topic>` off master.
+  3,Track — `chezmoi-axi add`/`re-add` (`--encrypt` for secrets) so source state matches what you changed.
+  4,Ship — run `no-mistakes axi run --intent "<what the change accomplishes>"`. no-ci is declared in this repo's `.no-mistakes.yaml`. `chezmoi-axi commit` is ONLY for trivial local-only fixes on master.
+  5,Gate 2 — `chezmoi-axi status` / `verify` / `diff` again before the PR lands; fix anything unexpected.
+  6,After merge — `chezmoi git -- checkout master && chezmoi git -- pull`, so the local repo always lands back on master and no future commit targets the wrong branch.
 
-Other machines pick up changes on next chezmoi update (cron every 30 min).
-
----
-
-## Troubleshooting
-
-### age key
-
-Symptom: "chezmoi: <file>: encrypted, but age is not configured"
-
-Fix:
-```
-cat ~/.config/chezmoi/chezmoi.toml
-```
-
-If missing, recreate:
-```
-mkdir -p ~/.config/chezmoi
-cat > ~/.config/chezmoi/chezmoi.toml << 'EOF'
-encryption = "age"
-[age]
-    identity = "~/.config/chezmoi/key.txt"
-    recipient = "<age-recipient>"
-EOF
-```
-
-Still broken? See passphrase incorrect.
-
----
-
-### passphrase incorrect
-
-Symptom: "could not decrypt" / "passphrase is incorrect"
-
-Fix:
-```
-chezmoi age decrypt --passphrase \
-  -o ~/.config/chezmoi/key.txt \
-  ~/.local/share/chezmoi/age-key.txt.age
-```
-
-Find passphrase: search password manager for "Chezmoi Age Key". No leading/trailing whitespace.
-
-Then re-apply: `chezmoi-axi apply`
-
----
-
-### Bitwarden session
-
-Symptom: .tmpl files show template syntax instead of values.
-
-Fix:
-```
-export BW_SESSION=$(bw unlock --raw)
-BW_SESSION="$BW_SESSION" chezmoi-axi apply
-```
-
----
-
-### SSH deploy key
-
-Symptom: "Permission denied (publickey)" on chezmoi init or git push
-
-Fix:
-```
-ssh -T git@github.com -i ~/.ssh/chezmoi-deploy-key
-gh repo deploy-key add ~/.ssh/chezmoi-deploy-key.pub \
-  --repo <owner>/<repo> \
-  --title "chezmoi@$(hostname)" \
-  --allow-write
-```
+The no-mistakes pipeline opens the PR and owns branch cleanup and merge monitoring. Other machines pick up merged changes on next chezmoi update (cron every 30 min).
 
 ---
 
