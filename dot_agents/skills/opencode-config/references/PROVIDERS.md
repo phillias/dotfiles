@@ -2,7 +2,7 @@
 
 Live provider + model reference for the OpenCode config. Chain design lives in `DESIGN.md`; agent/category routing lives in `AGENTS.md` and `~/.config/opencode/opencode-fallback.jsonc`. All prices USD per 1M tokens (input/output) unless noted; all limits verified against the live config or provider docs on the dated line.
 
-## Provider stack (17 configured)
+## Provider stack (18 configured)
 
 | Provider | Role | Cost |
 |---|---|---|

@@ -54,7 +54,3 @@ ce-* deliberately omits the Go stage — 35/51 personas are Go-pinned as primary
 `enabled: true` · `retry_on_errors: [400,401,402,403,429,500,502,503,504,529]` · `max_fallback_attempts: 15` · `cooldown_seconds: 60` · `timeout_seconds: 120` · `notify_on_fallback: true`.
 
 KTD6 constraints enforced at chain authoring: GPT-class models only via `opencode/` prefix; Ternary Bonsai never primary (single-shot only); ≤1-2 NIM models per chain; 400 stays in `retry_on_errors`.
-
-## Stale inline sample warning
-
-SKILL.md's old inline fallback JSONC sample (Zen-free stage 3, CF stage 4) predates the 2026-08-16 Cloudflare move — the live `opencode-fallback.jsonc` is the only truth.

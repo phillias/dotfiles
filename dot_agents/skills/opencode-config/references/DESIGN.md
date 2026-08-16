@@ -541,7 +541,7 @@ no symlinks. OmO-era material is archived in `ARCHIVE-OMO.md`.
 
 ### 7.1 `~/.config/opencode/` tree (live)
 
-- `opencode.json` — root config: providers + MCPs + compaction (17 providers, 18 with pokee dormant)
+- `opencode.json` — root config: providers + MCPs + compaction (18 providers)
 - `opencode-fallback.jsonc` — global default fallback (PAID-FIRST chain; project > global first-match-wins)
 - `dispatch-rules.json` — 30 crew-dispatch rules
 - `plugins/` — fleet-state-writer.ts, self-learning-autocapture.ts, axi-memory-bridge.ts, tps-status.tsx, opencode-runtime-fallback.ts (retired: better-compaction.ts, tmux-subagent-activator.ts, go-pool-guard.ts)
