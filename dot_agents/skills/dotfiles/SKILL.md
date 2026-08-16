@@ -17,8 +17,8 @@ Deep reference (machine setup, run scripts, setup & recovery): read `refs/DESIGN
 ## Skills
 
 skills[2]{name,description}:
-  chezmoi-axi,Agent-friendly chezmoi wrapper with TOON output — status, list, diff, add, re-add, apply, verify, sync, commit
-  no-mistakes,PR pipeline — review, push, and open a PR; this repo declares no_ci so the gate treats an empty checks response as passed
+  chezmoi-axi,"Agent-friendly chezmoi wrapper with TOON output — status, list, diff, add, re-add, apply, verify, sync, commit"
+  no-mistakes,"PR pipeline — review, push, and open a PR; this repo declares no_ci so the gate treats an empty checks response as passed"
 
 > **DEFAULT WORKFLOW**: Any dotfiles change that ships goes through the Commit and PR Flow below
 > (no-mistakes, no-ci). `chezmoi-axi commit` is ONLY for trivial local-only direct-to-master fixes.
