@@ -1,7 +1,10 @@
 {
   // PAID-FIRST fallback policy (captain decision 2026-08-12, DESIGN.md §2.6).
   // Order: exhaust Command Code GOAT ($70 pool) → OpenCode Go ($60 pool) →
-  // OpenCode Zen free tier → free providers → Google (pay last resort).
+  // Cloudflare free → OpenCode Zen free tier → free providers →
+  // Google (pay last resort). Cloudflare moved ahead of Zen free 2026-08-16:
+  // higher quality free tier (kimi-k2.7-code, glm-4.7-flash) + 300 RPM vs
+  // Zen free ~200/day (DESIGN.md §2.6).
   // GOAT leads (decision B) so its exhaustion rate is observable; may be
   // re-ordered after experience. go-pool-guard.ts retired 2026-08-12 —
   // reactive chain stepping here is the single owner of exhaustion handling.
@@ -15,8 +18,9 @@
   // at Zen and FAILS visibly instead of silently downgrading to the free tier.
   //
   // Decision A: utility agents (firstmate/crewmate/secondmate) run
-  // big-pickle → GOAT → Go → Zen → Free. Reasoning/high-effort/visual/looker/
-  // special agents keep their pinned models and fall back GOAT → Go → Zen only.
+  // big-pickle → GOAT → Go → Cloudflare → Zen → Free. Reasoning/high-effort/
+  // visual/looker/special agents keep their pinned models and fall back
+  // GOAT → Go → Zen only.
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
   "max_fallback_attempts": 15,
@@ -35,22 +39,23 @@
     // STAGE 2: OpenCode Go ($60 pool, $12/$30/$60 windows)
     "opencode-go/kimi-k2.6",
     "opencode-go/deepseek-v4-flash",
-    // STAGE 3: OpenCode Zen free tier
-    "opencode-zen/deepseek-v4-flash-free",
-    "opencode-zen/nemotron-3-ultra-free",
-    // STAGE 4: FREE providers
+    // STAGE 3: Cloudflare free (2026-08-16) — higher quality than Zen free
     "cloudflare/@cf/moonshotai/kimi-k2.7-code",
     "cloudflare/@cf/zai-org/glm-4.7-flash",
+    // STAGE 4: OpenCode Zen free tier
+    "opencode-zen/deepseek-v4-flash-free",
+    "opencode-zen/nemotron-3-ultra-free",
+    // STAGE 5: FREE providers
     "nvidia/deepseek-ai/deepseek-v4-flash",
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
     "baseten/openai/gpt-oss-120b",
-    // STAGE 5: PAY last resort
+    // STAGE 6: PAY last resort
     "google/gemini-2.5-flash"
   ],
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Utility crewmates: big-pickle primary → GOAT → Go → Zen (global tail adds free)
+    // Utility crewmates: big-pickle primary → GOAT → Go → CF → Zen (global tail adds free)
     "general": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -58,6 +63,8 @@
         "commandcode/deepseek/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
+        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free"
       ]
@@ -69,6 +76,8 @@
         "commandcode/deepseek/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
+        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free"
       ]
@@ -111,7 +120,7 @@
   // DISPATCH CATEGORIES — firstmate picks at the intent gate via
   // dispatch-rules.json → task(category=...).
   "categories": {
-    // UTILITY (decision A): big-pickle primary → GOAT → Go → Zen → Free.
+    // UTILITY (decision A): big-pickle primary → GOAT → Go → CF → Zen → Free.
     "quick": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -119,6 +128,8 @@
         "commandcode/deepseek/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
+        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free"
       ]
@@ -130,6 +141,8 @@
         "commandcode/deepseek/deepseek-v4-flash",
         "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
+        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free"
       ]

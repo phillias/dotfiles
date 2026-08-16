@@ -174,12 +174,15 @@ Classification is retryable on status code, `ProviderAuthError`, or the
 RETRYABLE_PATTERN regex (`rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust`).
 
 **Global ladder:** **paid-first since 2026-08-12** — big-pickle → Command Code
-GOAT → opencode-go → opencode-zen free → CF free (small-prompts only) →
+GOAT → opencode-go → **Cloudflare free** (kimi-k2.7-code, glm-4.7-flash;
+small-prompts only — 262K/131K context) → opencode-zen free →
 together Ternary-Bonsai (single-shot only) → nvidia NIM (~40 RPM shared, max
 1-2 per chain) → openrouter free → baseten subsidized → google/gemini-2.5-flash
-(paid last resort). KTD6 constraints: GPT-class models only via `opencode/`
-prefix; Ternary Bonsai never primary; 400 stays in `retry_on_errors`. Full
-policy and rationale in §2.6.
+(paid last resort). Cloudflare moved ahead of Zen free **2026-08-16** (captain
+decision): CF's free tier is higher quality (kimi-k2.7-code, glm-4.7-flash) and
+throttles at 300 RPM vs Zen free ~200/day. KTD6 constraints: GPT-class models
+only via `opencode/` prefix; Ternary Bonsai never primary; 400 stays in
+`retry_on_errors`. Full policy and rationale in §2.6.
 
 **Per-entry settings** (`temperature`/`maxOutputTokens`/`options`) are promoted
 **only when that entry is active** — from the agent or category fallback entry —
@@ -209,14 +212,24 @@ unavailable in this API version so the annotation rides system-transform.
   `${OPENCODE_MODEL:-firstmate}@$(hostname -s)` (deliberate, not the opencode.db
   chain).
 
-### 2.6 Paid-first fallback policy (GOAT → Go → Zen → free)
+### 2.6 Paid-first fallback policy (GOAT → Go → Cloudflare → Zen → free)
 
 **2026-08-12 (captain decision):** fallback reverses from free-first to
 **paid-first** — prepaid flat-rate pools are spent before throttled free tiers:
-**Command Code GOAT** ($70 pool) → **OpenCode Go** ($60 pool) → **OpenCode Zen**
-(free tier) → free providers (Cloudflare/NVIDIA/OpenRouter/Together/Baseten) →
-Google (pay last resort). Decision B: GOAT leads so its exhaustion rate is
-observable; ordering may change after experience.
+**Command Code GOAT** ($70 pool) → **OpenCode Go** ($60 pool) → **Cloudflare**
+(free tier) → **OpenCode Zen** (free tier) → free providers
+(NVIDIA/OpenRouter/Together/Baseten) → Google (pay last resort). Decision B:
+GOAT leads so its exhaustion rate is observable; ordering may change after
+experience.
+
+**2026-08-16 (captain decision):** Cloudflare stage inserted between Go and Zen
+free — the chain becomes **GOAT → Go → Cloudflare → Zen**. Rationale:
+Cloudflare's free tier (kimi-k2.7-code 262K, glm-4.7-flash 131K) outclasses
+Zen's free tier (deepseek-v4-flash-free, nemotron-3-ultra-free) in quality and
+throttles at 300 RPM vs Zen free ~200/day, so it is spent first. The
+small-prompts-only constraint carries over (CF context windows are 131-262K;
+prompts must fit before CF is reached, and the 24K llama must still sit at the
+END of chains).
 
 **`go-pool-guard.ts` retired 2026-08-12.** The proactive guard (polled
 `https://opencode.ai/zen/go/v1/usage`) was purged along with its
@@ -231,19 +244,21 @@ fleet, not the retired OmO taxonomy):
 
 - **Firstmate session** — the main session has no agent name, so
   `resolveChain` falls straight to the **global `fallback_models` ladder**,
-  which leads with `opencode-zen/big-pickle`, then GOAT → Go → Zen → free.
+  which leads with `opencode-zen/big-pickle`, then GOAT → Go → Cloudflare →
+  Zen → free.
 - **Crewmates** (`task(subagent_type=...)`) — `agents.<type>` chains. Utility
   types (`general`, `explore`, ...): big-pickle primary, fallback
-  GOAT → Go → Zen → free. Specialized types (oracle, metis, momus, looker,
-  science): models stay pinned, fallback GOAT → Go → Zen **only** — no free
-  downgrade; chain end surfaces as a visible failure for the captain to fix.
+  GOAT → Go → Cloudflare → Zen → free. Specialized types (oracle, metis, momus,
+  looker, science): models stay pinned, fallback GOAT → Go → Cloudflare → Zen
+  **only** — no free downgrade; chain end surfaces as a visible failure for the
+  captain to fix.
 - **Categories** (`task(category=...)`) — `categories.<name>` chains. Utility
-  categories (`quick`, `unspecified-low`): big-pickle + GOAT → Go → Zen → free.
-  High-intensity/specialized categories (`ultrabrain`, `deep`,
+  categories (`quick`, `unspecified-low`): big-pickle + GOAT → Go → Cloudflare →
+  Zen → free. High-intensity/specialized categories (`ultrabrain`, `deep`,
   `unspecified-high`, `visual-engineering`, `artistry`, `writing`): models stay
-  pinned, fallback GOAT → Go → Zen only.
+  pinned, fallback GOAT → Go → Cloudflare → Zen only.
 - **Secondmates** — same chezmoi-synced config; their main sessions resolve the
-  global ladder (big-pickle → GOAT → Go → Zen → free).
+  global ladder (big-pickle → GOAT → Go → Cloudflare → Zen → free).
 
 The LLM determines a subagent's model by choosing the task shape at the intent
 gate (dispatch-rules.json → `task(category=...)` / `task(subagent_type=...)`);
@@ -515,3 +530,40 @@ invent structure.
 - Chain edits flow through the drift PR gate, never direct master writes.
 - When the flywheel procedure changes, regenerate or prune the drill-down maps
   — a stale map is worse than none.
+
+---
+
+## 7. Architecture Overview — Single-Root Config System
+
+The OpenCode config is a single-root layer with no profiles (`OPENCODE_CONFIG_DIR`
+unset) and no environment switching. Machine diffs are handled via chezmoi `.tmpl`;
+no symlinks. OmO-era material is archived in `ARCHIVE-OMO.md`.
+
+### 7.1 `~/.config/opencode/` tree (live)
+
+- `opencode.json` — root config: providers + MCPs + compaction (17 providers, 18 with pokee dormant)
+- `opencode-fallback.jsonc` — global default fallback (PAID-FIRST chain; project > global first-match-wins)
+- `dispatch-rules.json` — 30 crew-dispatch rules
+- `plugins/` — fleet-state-writer.ts, self-learning-autocapture.ts, axi-memory-bridge.ts, tps-status.tsx, opencode-runtime-fallback.ts (retired: better-compaction.ts, tmux-subagent-activator.ts, go-pool-guard.ts)
+- `lib/` — opencode-runtime-fallback-core.ts
+- `scripts/` — fleet-digest.sh, fleet-note.sh, catalog-drift.mjs, fm-drift-pr.sh
+- `AGENTS.md`, `docs/plans/`, `skills/`, `.*-key` files
+
+Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.txt, decisions.tsv, fallback.json).
+
+### 7.2 Critical rules
+
+1. One config, no profiles, `OPENCODE_CONFIG_DIR` unset.
+2. `opencode.json` defines the live providers + MCPs.
+3. Routing is owned by `opencode-fallback.jsonc` (agents/categories/global); the legacy `oh-my-openagent.jsonc` orphan is never read.
+4. `opencode-fallback.jsonc` is the global default fallback — project > global first-match-wins.
+5. Plugins auto-load from `plugins/`; retired plugins are enforced-removed.
+6. No symlinks, no env switching; machine diffs via chezmoi `.tmpl` with `%h` / `$HOME` portability.
+
+### 7.3 Config defaults (live)
+
+`small_model: opencode-zen/nemotron-3-ultra-free` · `compaction {auto:false, prune:true, reserved:50000, tail_turns:40}` · MCP baseline: context7, grep_app, websearch, mcp_everything. TUI theme: tokyonight (tui.json), solarized-dark alternative. Provider concurrency: Team Profile default 8 (PROVIDERS.md §concurrency).
+
+### 7.4 Mermaid hygiene
+
+Node labels containing `<br/>` MUST be quoted (`["text<br/>text"]`). Unquoted `<br/>` inside `[...]` breaks the chart — the root cause of the rendering error at "Layer D → Architecture".
