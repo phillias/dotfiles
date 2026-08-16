@@ -939,7 +939,7 @@ Chains seeded 2026-08-08 from the recovered OmO config (`~/.omo/omo.jsonc`, chez
 
 ### Promotion gate (PR to dotfiles master = captain approval)
 
-Any auto-write the gate applies to chezmoi-managed files (25%-value swaps, removals, strict-domination insertions, snapshot/docs refresh) ends with the **final step**: `~/.config/opencode/scripts/fm-drift-pr.sh`, which re-adds the changed files into the chezmoi source tree, branches from dotfiles `master`, pushes, and opens a PR (`chore(opencode): <drift summary>`). Merging that PR is the **captain's approval gate for promotion to the opencode fleet** — dotfiles auto-sync (cron) propagates `master` to machines only after merge. The drift system never writes dotfiles `master` directly. This is the scripted equivalent of the `/dotfiles` + `/ce-commit-push-pr` workflow, run automatically as the gate's last step (per captain decision 2026-08-08).
+Any auto-write the gate applies to chezmoi-managed files (25%-value swaps, removals, strict-domination insertions, snapshot/docs refresh) ends with the **final step**: `~/.config/opencode/scripts/fm-drift-pr.sh`, which re-adds the changed files into the chezmoi source tree, branches from dotfiles `master`, pushes, and opens a PR (`chore(opencode): <drift summary>`). Merging that PR is the **captain's approval gate for promotion to the opencode fleet** — dotfiles auto-sync (cron) propagates `master` to machines only after merge. The drift system never writes dotfiles `master` directly. This is the scripted equivalent of the `/dotfiles` + no-mistakes (no-ci) workflow, run automatically as the gate's last step (per captain decision 2026-08-08).
 
 ### Layer D — deferred (decision 2026-08-08)
 
