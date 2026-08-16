@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/se
 What the script does:
 
 steps[12]{n,action}:
-  1,Install chezmoi (latest, updates if outdated)
+  1,"Install chezmoi (latest, updates if outdated)"
   2,Install GitHub CLI (gh)
   3,Install Bitwarden CLI (bw)
   4,Install cloudflared
@@ -36,7 +36,7 @@ prompts[5]{item}:
   GitHub token (if gh not authenticated)
   Profile branch choice
   Bitwarden master password + 2FA
-  Bitwarden API key (optional, for cron)
+  "Bitwarden API key (optional, for cron)"
   Age key passphrase (auto-fetched from Bitwarden if available)
 
 Prerequisites: curl, python3, ssh-keygen, Node.js or Bun, sudo (optional)
@@ -52,8 +52,8 @@ install-hermes-honcho.sh, install-et-sslh-for-moshi.sh) — they are NOT chezmoi
 Chezmoi can run scripts automatically during `chezmoi apply`. Scripts use special name prefixes:
 
 script-types[2]{prefix,runs,use-case}:
-  run_once_,Once per machine (tracked in .run_once),One-time migrations, cleanup
-  run_onchange_,When file content changes (hash tracked),Installs, updates, rebuilds
+  run_once_,Once per machine (tracked in .run_once),"One-time migrations, cleanup"
+  run_onchange_,When file content changes (hash tracked),"Installs, updates, rebuilds"
 
 Scripts can have a .tmpl suffix for templating. Template expressions re-evaluate on every apply,
 so a template that embeds live state (e.g. a `find | sha256sum` fingerprint) re-triggers the
@@ -104,10 +104,10 @@ Initial-setup concerns and the fixes when a machine's secrets or access break. P
 symptom → fix.
 
 setup-recovery[4]{symptom,fix}:
-  "encrypted, but age is not configured",Recreate ~/.config/chezmoi/chezmoi.toml with encryption = "age" + identity + recipient
-  "could not decrypt" / "passphrase is incorrect",Re-decrypt the age key from age-key.txt.age using the passphrase
+  "encrypted, but age is not configured","Recreate ~/.config/chezmoi/chezmoi.toml with encryption = \"age\" + identity + recipient"
+  "\"could not decrypt\" / \"passphrase is incorrect\"",Re-decrypt the age key from age-key.txt.age using the passphrase
   .tmpl files show template syntax instead of values,Export BW_SESSION then re-apply
-  "Permission denied (publickey)" on init/push,Verify the SSH deploy key against GitHub
+  "\"Permission denied (publickey)\" on init/push",Verify the SSH deploy key against GitHub
 
 ### age not configured
 

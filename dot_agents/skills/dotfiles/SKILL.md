@@ -200,12 +200,12 @@ Verify: `chezmoi diff` — ignored files no longer appear as pending.
 > **ALWAYS USE THIS** for any dotfiles change that ships (reaches other machines).
 
 steps[6]{step,action}:
-  1,Gate 1 — `chezmoi-axi status` / `verify` / `diff`. ANY drift or unexpected diff: raise it, reconcile first — never proceed to add/re-add on unexplained state.
-  2,Branch — confirm on master (`chezmoi git -- branch`), then `chezmoi git -- checkout -b <topic>` off master.
+  1,"Gate 1 — `chezmoi-axi status` / `verify` / `diff`. ANY drift or unexpected diff: raise it, reconcile first — never proceed to add/re-add on unexplained state."
+  2,"Branch — confirm on master (`chezmoi git -- branch`), then `chezmoi git -- checkout -b <topic>` off master."
   3,Track — `chezmoi-axi add`/`re-add` (`--encrypt` for secrets) so source state matches what you changed.
-  4,Ship — run `no-mistakes axi run --intent "<what the change accomplishes>"`. no-ci is declared in this repo's `.no-mistakes.yaml`. `chezmoi-axi commit` is ONLY for trivial local-only fixes on master.
+  4,"Ship — run `no-mistakes axi run --intent \"<what the change accomplishes>\"`. no-ci is declared in this repo's `.no-mistakes.yaml`. `chezmoi-axi commit` is ONLY for trivial local-only fixes on master."
   5,Gate 2 — `chezmoi-axi status` / `verify` / `diff` again before the PR lands; fix anything unexpected.
-  6,After merge — `chezmoi git -- checkout master && chezmoi git -- pull`, so the local repo always lands back on master and no future commit targets the wrong branch.
+  6,"After merge — `chezmoi git -- checkout master && chezmoi git -- pull`, so the local repo always lands back on master and no future commit targets the wrong branch."
 
 The no-mistakes pipeline opens the PR and owns branch cleanup and merge monitoring. Other machines pick up merged changes on next chezmoi update (cron every 30 min).
 
