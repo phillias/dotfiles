@@ -41,7 +41,7 @@ chezmoi-axi diff                # show pending differences
 
 ## What are you trying to do?
 
-situations[10]{situation,go-to}:
+situations[11]{situation,go-to}:
   New config file to start tracking,Add a new file
   Edited tracked file on disk,Re-add a changed file
   File has secrets — need to encrypt,Encrypt a file
@@ -51,7 +51,8 @@ situations[10]{situation,go-to}:
   Exclude files from chezmoi,Manage .chezmoiignore
   Run cleanup/setup scripts during apply,refs/DESIGN.md — Run scripts
   Encrypted files skipped during apply,refs/DESIGN.md — Setup & Recovery
-  New machine or broken SSH deploy key,refs/DESIGN.md — Setup
+  New machine,refs/DESIGN.md — Setup
+  Broken SSH deploy key,refs/DESIGN.md — Setup & Recovery
 
 ---
 
