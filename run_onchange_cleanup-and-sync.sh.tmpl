@@ -196,6 +196,24 @@ is_tool_skill() {
     return 1
 }
 
+# Systemd user units owned by an external tool's own installer (e.g. hermes
+# manages hermes-gateway.service after dotfiles#195 divested it). Intentionally
+# NOT tracked by chezmoi — never suggest adding them, or the unmanaged scan
+# would hand ownership back to dotfiles and fight the external manager's
+# updates. Add the basename of any further divested unit here.
+EXTERNAL_SYSTEMD_UNITS=(
+    hermes-gateway.service
+)
+
+is_external_systemd_unit() {
+    local name unit
+    name=$(basename "$1")
+    for unit in "${EXTERNAL_SYSTEMD_UNITS[@]}"; do
+        [[ "$name" == "$unit" ]] && return 0
+    done
+    return 1
+}
+
 # ------------------------------------------------------------ repo health -----
 # Surfacing the chezmoi source-repo branch/drift on every apply prevents
 # changes being committed and PR'd from the wrong branch on a drifted machine.
@@ -242,6 +260,9 @@ collect_unmanaged() {
         esac
         # Skip installed tool skills — tracked upstream, not in dotfiles
         is_tool_skill "$file" && continue
+        # Skip systemd units owned by an external tool's own installer (hermes
+        # gateway) — divested from dotfiles, must stay unmanaged by chezmoi
+        is_external_systemd_unit "$file" && continue
         unmanaged+=("$file")
     done < <(chezmoi unmanaged --include files --path-style absolute --nul-path-separator "$target_dir" 2>/dev/null || true)
 }
