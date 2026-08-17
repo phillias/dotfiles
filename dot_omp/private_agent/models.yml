@@ -9,7 +9,7 @@ providers:
   #         MiniMax, Qwen (Anthropic-compatible)
   opencode-go:
     baseUrl: https://opencode.ai/zen/go/v1
-    apiKey: OPENCODE_API_KEY
+    apiKey: OPENCODE_ZEN_API_KEY
     api: openai-completions
     models:
       # OpenAI-compatible (chat/completions)
@@ -68,12 +68,16 @@ providers:
   # Premium models: GPT-5.x, Claude, Gemini, plus all Go models
   opencode-zen:
     baseUrl: https://opencode.ai/zen/v1
-    apiKey: OPENCODE_API_KEY
+    apiKey: OPENCODE_ZEN_API_KEY
 
     # Per-model api overrides handle the multi-protocol gateway
 
     # ── OpenAI Responses API models (gpt-5.x) ──
     models:
+      - id: big-pickle
+        name: Big Pickle
+        contextWindow: 200000
+        api: openai-completions
       - id: gpt-5.5
         name: GPT 5.5
         api: openai-responses
