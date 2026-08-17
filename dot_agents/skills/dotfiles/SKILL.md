@@ -16,12 +16,14 @@ Deep reference (machine setup, run scripts, setup & recovery): read `refs/DESIGN
 
 ## Skills
 
-skills[2]{name,description}:
+skills[3]{name,description}:
   chezmoi-axi,"Agent-friendly chezmoi wrapper with TOON output — status, list, diff, add, re-add, apply, verify, sync, commit"
   no-mistakes,"PR pipeline — review, push, and open a PR; this repo declares no_ci so the gate treats an empty checks response as passed"
+  ce-commit-push-pr,"Full PR workflow — branching, committing, PR creation, post-PR cleanup (fallback when no-mistakes is unavailable)"
 
-> **DEFAULT WORKFLOW**: Any dotfiles change that ships goes through the Commit and PR Flow below
-> (no-mistakes, no-ci). `chezmoi-axi commit` is ONLY for trivial local-only direct-to-master fixes.
+> **DEFAULT WORKFLOW**: Any dotfiles change that ships goes through the Commit and PR Flow below.
+> Ship order: no-mistakes first; if unavailable, `/ce-commit-push-pr`; if unavailable, roll your own.
+> `chezmoi-axi commit` is ONLY for trivial local-only direct-to-master fixes.
 
 ## Health Check
 
@@ -69,7 +71,7 @@ chezmoi-axi add --encrypt ~/.config/some-app/token     # encrypted
 
 Verify: `chezmoi-axi diff` — no differences.
 
-Ship: **run no-mistakes (no-ci)** per the Commit and PR Flow.
+Ship: **no-mistakes (no-ci)** → if unavailable, `/ce-commit-push-pr` → if unavailable, roll your own.
 
 ---
 
@@ -82,7 +84,7 @@ chezmoi-axi re-add --all          # all changed files
 
 Verify: `chezmoi-axi diff` — should be clean.
 
-Ship: **run no-mistakes (no-ci)** per the Commit and PR Flow.
+Ship: **no-mistakes (no-ci)** → if unavailable, `/ce-commit-push-pr` → if unavailable, roll your own.
 
 ---
 
@@ -100,7 +102,7 @@ chezmoi reencrypt ~/.local/share/chezmoi/dot_config/opencode/encrypted_dot_cloud
 
 Verify: `chezmoi cat ~/.config/opencode/.cloudflare-key` — shows decrypted content. `chezmoi diff` — clean.
 
-Ship: **run no-mistakes (no-ci)** per the Commit and PR Flow.
+Ship: **no-mistakes (no-ci)** → if unavailable, `/ce-commit-push-pr` → if unavailable, roll your own.
 
 Note: .groq-key removed 2026-07-18 (Groq free-tier TPM limits). Examples use .cloudflare-key.
 
@@ -113,7 +115,7 @@ chezmoi cat ~/.config/opencode/.cloudflare-key         # view (stdout)
 chezmoi edit ~/.config/opencode/.cloudflare-key        # edit (decrypts, opens editor, re-encrypts)
 ```
 
-No ship for chezmoi cat (read-only). After chezmoi edit, **run no-mistakes (no-ci)** per the Commit and PR Flow.
+No ship for chezmoi cat (read-only). After chezmoi edit, **no-mistakes (no-ci)** → if unavailable, `/ce-commit-push-pr` → if unavailable, roll your own.
 
 ---
 
@@ -203,11 +205,11 @@ steps[6]{step,action}:
   1,"Gate 1 — `chezmoi-axi status` / `verify` / `diff`. ANY drift or unexpected diff: raise it, reconcile first — never proceed to add/re-add on unexplained state."
   2,"Branch — confirm on master (`chezmoi git -- branch`), then `chezmoi git -- checkout -b <topic>` off master."
   3,Track — `chezmoi-axi add`/`re-add` (`--encrypt` for secrets) so source state matches what you changed.
-  4,"Ship — run `no-mistakes axi run --intent \"<what the change accomplishes>\"`. no-ci is declared in this repo's `.no-mistakes.yaml`. `chezmoi-axi commit` is ONLY for trivial local-only fixes on master."
+  4,"Ship — first try `no-mistakes axi run --intent \"<what the change accomplishes>\"` (no-ci is declared in `.no-mistakes.yaml`). If no-mistakes is unavailable, fall back to `/ce-commit-push-pr`. If that is unavailable, roll your own (branch, commit, push, open PR)."
   5,Gate 2 — `chezmoi-axi status` / `verify` / `diff` again before the PR lands; fix anything unexpected.
   6,"After merge — `chezmoi git -- checkout master && chezmoi git -- pull`, so the local repo always lands back on master and no future commit targets the wrong branch."
 
-The no-mistakes pipeline opens the PR and owns branch cleanup and merge monitoring. Other machines pick up merged changes on next chezmoi update (cron every 30 min).
+The preferred path (no-mistakes) opens the PR and owns branch cleanup and merge monitoring. Other machines pick up merged changes on next chezmoi update (cron every 30 min).
 
 ---
 
