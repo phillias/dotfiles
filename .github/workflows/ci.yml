@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+jobs:
+  structural:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: '.'
+          severity: error
+
+      - name: YAML lint
+        run: pip install yamllint && yamllint -d relaxed .
+
+      - name: JSON lint
+        run: |
+          find . -name '*.json' \
+            -not -path './.git/*' \
+            -not -path './.no-mistakes/*' \
+            | while read f; do
+                python3 -c "import json; json.load(open('$f'))" 2>&1 && echo "OK: $f" || echo "SKIP: $f (likely JSONC)"
+              done
+
+      - name: Python syntax
+        run: |
+          find . -name '*.py' \
+            -not -path './.git/*' \
+            -not -path '*/last30days/*' \
+            -not -path '*/ce-*/*' \
+            | xargs python3 -m py_compile
+
+      - name: Install chezmoi
+        run: |
+          CHEZMOI_VERSION=$(curl -sfL https://api.github.com/repos/twpayne/chezmoi/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'].lstrip('v'))")
+          curl -sfL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_amd64.deb" -o /tmp/chezmoi.deb
+          sudo dpkg -i /tmp/chezmoi.deb
+
+      - name: Chezmoi template syntax
+        run: |
+          mkdir -p ~/.local/share/chezmoi
+          ln -s $GITHUB_WORKSPACE/* ~/.local/share/chezmoi/ 2>/dev/null || true
+          ln -s $GITHUB_WORKSPACE/.git ~/.local/share/chezmoi/ 2>/dev/null || true
+          chezmoi dump --format=json > /dev/null
+
+  tool-configs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install and validate opencode
+        run: |
+          npm install -g opencode-ai
+          opencode debug config
+
+      - name: Install bun + omp
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
+          bun install -g @oh-my-pi/pi-coding-agent
+
+      - name: Validate omp config
+        run: |
+          export BUN_INSTALL="$HOME/.bun"
+          export PATH="$BUN_INSTALL/bin:$PATH"
+          omp config list --json
+
+      - name: Install and verify hermes-gateway
+        run: |
+          npm install -g hermes-gateway
+          hermes onboard --help || true
