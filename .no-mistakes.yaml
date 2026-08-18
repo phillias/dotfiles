@@ -1,4 +1,4 @@
 # dotfiles has no CI workflow on this repo.
 # Declare no_ci so the gate treats an empty forge checks response as all-passed
 # instead of waiting for checks that never register.
-no_ci: true
+no_ci: false
