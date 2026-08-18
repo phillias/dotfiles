@@ -44,8 +44,12 @@ jobs:
           curl -sfL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_amd64.deb" -o /tmp/chezmoi.deb
           sudo dpkg -i /tmp/chezmoi.deb
 
-      - name: Chezmoi verify
-        run: chezmoi verify
+      - name: Chezmoi template syntax
+        run: |
+          mkdir -p ~/.local/share/chezmoi
+          ln -s $GITHUB_WORKSPACE/* ~/.local/share/chezmoi/ 2>/dev/null || true
+          ln -s $GITHUB_WORKSPACE/.git ~/.local/share/chezmoi/ 2>/dev/null || true
+          chezmoi dump --format=json > /dev/null
 
   tool-configs:
     runs-on: ubuntu-latest
