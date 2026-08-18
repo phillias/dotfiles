@@ -1,3 +1,4 @@
 .chezmoi-sync.log
 .chezmoi-sync.log.old
 .opencode/
+.no-mistakes/
