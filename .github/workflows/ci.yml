@@ -38,10 +38,12 @@ jobs:
             -not -path '*/ce-*/*' \
             | xargs python3 -m py_compile
 
-      - name: Chezmoi verify
+      - name: Install chezmoi
         run: |
-          curl -sfL https://github.com/twpayne/chezmoi/releases/latest/download/chezmoi_$(uname -s)_$(uname -m).tar.gz | tar xz -C /usr/local/bin
-          chezmoi verify
+          curl -sfL https://raw.githubusercontent.com/twpayne/chezmoi/master/scripts/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Chezmoi verify
+        run: chezmoi verify
 
   tool-configs:
     runs-on: ubuntu-latest
