@@ -16,7 +16,7 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           scandir: '.'
-          severity: warning
+          severity: error
 
       - name: YAML lint
         run: pip install yamllint && yamllint -d relaxed .
