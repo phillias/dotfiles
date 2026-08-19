@@ -127,23 +127,15 @@ DEPRECATED_SKILLS=(
 
 # Tool skills installed via `npx skills add` / plugin bundles. They are
 # intentionally NOT tracked in the dotfiles repo — never suggest adding them.
+# (The 10 Cloudflare skills formerly listed here are now chezmoi-managed under
+# dot_agents/skills/ and were removed so the unmanaged scan covers them.)
 TOOL_SKILLS=(
-    agents-sdk
     chrome-devtools-mcp
-    cloudflare
-    cloudflare-email-service
-    cloudflare-one
-    cloudflare-one-migrations
     codegraph-mcp
-    durable-objects
     google-workspace-mcp
     netdata-mcp
-    sandbox-sdk
     skywork-skills
-    turnstile-spin
     web-perf
-    workers-best-practices
-    wrangler
 )
 
 prune_deprecated() {
