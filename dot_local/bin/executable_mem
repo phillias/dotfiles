@@ -283,14 +283,15 @@ cmd_init() {
 cmd_search() {
   ensure_repo
   [[ $# -eq 0 ]] && die "search requires a query" 2 "valid: \`mem search <query>\` [--type <t>] [--limit <n>]"
-  local query="" type="" limit=50 min_prio=""
+  local query="" type="" limit=50 min_prio="" inject=0
   while (($#)); do
     case "$1" in
       --type)  type="$2"; shift 2 ;;
       --limit|--top) limit="$2"; shift 2 ;;
       --min-priority) min_prio="$2"; shift 2 ;;
+      --inject) inject=1; shift ;;
       --help|-h) cmd_search_help; return 0 ;;
-      --*) die "unknown flag $1 for search" 2 "valid: --type, --limit|--top, --min-priority" ;;
+      --*) die "unknown flag $1 for search" 2 "valid: --type, --limit|--top, --min-priority, --inject" ;;
       *) query="$query $1"; shift ;;
     esac
   done
@@ -364,6 +365,34 @@ cmd_search() {
   fi
 
   local shown=$(( total < limit ? total : limit ))
+
+  # --inject mode: compact one-line-per-result format for plugin auto-recall.
+  # Each line: <id> <type> <title> — <abstract> (abstract truncated to 120 chars)
+  # No TOON header, no help blocks — designed for direct injection into context.
+  if (( inject == 1 )); then
+    local i=0 line f
+    while IFS= read -r line; do
+      (( i++ >= limit )) && break
+      f="${line#*|*|*|}"
+      local id type_t title abstract
+      id=$(get_frontmatter "$f" id)
+      type_t=$(get_frontmatter "$f" type)
+      title=$(get_frontmatter "$f" title)
+      abstract=$(get_frontmatter "$f" abstract)
+      # Fallback: if no abstract, use first 120 chars of body
+      # Character-safe: awk prints full body, bash ${abstract:0:120} truncates
+      # by character (not byte), avoiding UTF-8 splitting.
+      if [[ -z "$abstract" ]]; then
+        abstract=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$f" | head -1)
+        abstract="${abstract//$'\n'/ }"
+      fi
+      # Truncate abstract to 120 characters (bash 4.2+ substring is char-safe)
+      abstract="${abstract:0:120}"
+      printf '%s %s %s — %s\n' "$id" "$type_t" "$title" "$abstract"
+    done < <(printf '%s\n' "${ranked[@]}" | sort -t'|' -k1,1rn -k2,2rn -k3,3rn)
+    return 0
+  fi
+
   printf 'mem[%d]{id,type,title,confidence}:\n' "$shown"
   local i=0 line f
   while IFS= read -r line; do
@@ -444,6 +473,9 @@ cmd_show() {
   printf '  version: %s\n' "$version"
   printf '  created: %s\n' "$created"
   [[ -n "$tags" ]] && printf '  tags: %s\n' "$tags"
+  local abstract
+  abstract=$(get_frontmatter "$f" abstract)
+  [[ -n "$abstract" ]] && printf '  abstract: %s\n' "$abstract"
   printf '  body: %s\n' "${body_out//$'\n'/\\n}"
   if (( truncated == 1 )); then
     printf '  truncated: %d bytes shown of %d total\n' "$TRUNCATE_BYTES" "${#body}"
@@ -453,12 +485,13 @@ cmd_show() {
 
 cmd_add() {
   ensure_repo
-  local type="" title="" body="" scope="" tags="" confidence="0.5" priority="50" verified="" force=0
+  local type="" title="" body="" scope="" tags="" confidence="0.5" priority="50" verified="" force=0 abstract=""
   while (($#)); do
     case "$1" in
       --type)        type="$2"; shift 2 ;;
       --title)       title="$2"; shift 2 ;;
       --body)        body="$2"; shift 2 ;;
+      --abstract)    abstract="$2"; shift 2 ;;
       --scope)       scope="$2"; shift 2 ;;
       --tags)        tags="$2"; shift 2 ;;
       --confidence)  confidence="$2"; shift 2 ;;
@@ -466,8 +499,8 @@ cmd_add() {
       --verified)    verified="$2"; shift 2 ;;
       --force)       force=1; shift ;;
       --help|-h)     cmd_add_help; return 0 ;;
-      --*)           die "unknown flag $1 for add" 2 "valid: --type, --title, --body, --scope, --tags, --confidence, --priority, --verified, --force" ;;
-      *)             die "add takes only flags, got positional: $1" 2 "valid: --type, --title, --body, --scope, --tags, --confidence, --priority, --verified, --force" ;;
+      --*)           die "unknown flag $1 for add" 2 "valid: --type, --title, --body, --abstract, --scope, --tags, --confidence, --priority, --verified, --force" ;;
+      *)             die "add takes only flags, got positional: $1" 2 "valid: --type, --title, --body, --abstract, --scope, --tags, --confidence, --priority, --verified, --force" ;;
     esac
   done
 
@@ -522,6 +555,7 @@ cmd_add() {
     printf 'created: %s\n' "$datestamp"
     [[ -n "$verified" ]] && printf 'verified: %s\n' "$verified"
     printf 'tags: %s\n' "$(yaml_tags "$tags")"
+    [[ -n "$abstract" ]] && printf 'abstract: "%s"\n' "$(printf '%s' "$abstract" | sed 's/"/\\"/g')"
     printf -- '---\n\n'
     printf '%s\n' "$body"
   } > "$fpath"
@@ -867,12 +901,13 @@ cmd_stats() {
 cmd_update() {
   ensure_repo
   [[ $# -lt 1 ]] && die "update requires an <id>" 2 "valid: \`mem update <id>\` [--title] [--body] [--priority] [--tags] [--scope] [--confidence] [--status]"
-  local id="" title="" body="" priority="" tags="" scope="" confidence="" status="" verified=""
-  local set_body=0 set_tags=0
+  local id="" title="" body="" priority="" tags="" scope="" confidence="" status="" verified="" abstract=""
+  local set_body=0 set_tags=0 set_abstract=0
   while (($#)); do
     case "$1" in
       --title)      title="$2"; shift 2 ;;
       --body)       body="$2"; set_body=1; shift 2 ;;
+      --abstract)   abstract="$2"; set_abstract=1; shift 2 ;;
       --priority)   priority="$2"; shift 2 ;;
       --tags)       tags="$2"; set_tags=1; shift 2 ;;
       --scope)      scope="$2"; shift 2 ;;
@@ -880,7 +915,7 @@ cmd_update() {
       --status)     status="$2"; shift 2 ;;
       --verified)   verified="$2"; shift 2 ;;
       --help|-h)    cmd_update_help; return 0 ;;
-      --*)          die "unknown flag $1 for update" 2 "valid: --title, --body, --priority, --tags, --scope, --confidence, --status, --verified" ;;
+      --*)          die "unknown flag $1 for update" 2 "valid: --title, --body, --abstract, --priority, --tags, --scope, --confidence, --status, --verified" ;;
       *)            id="$1"; shift ;;
     esac
   done
@@ -889,7 +924,7 @@ cmd_update() {
   local f
   f=$(resolve_id "$id") || die "no memory with id \`$id\`" 1
 
-  local cur_id cur_title cur_type cur_scope cur_priority cur_conf cur_status cur_created cur_tags cur_version cur_body
+  local cur_id cur_title cur_type cur_scope cur_priority cur_conf cur_status cur_created cur_tags cur_version cur_body cur_abstract
   cur_id=$(get_frontmatter "$f" id)
   cur_title=$(get_frontmatter "$f" title)
   cur_type=$(get_frontmatter "$f" type)
@@ -899,6 +934,7 @@ cmd_update() {
   cur_status=$(get_frontmatter "$f" status); cur_status="${cur_status:-active}"
   cur_created=$(get_frontmatter "$f" created)
   cur_verified=$(get_frontmatter "$f" verified)
+  cur_abstract=$(get_frontmatter "$f" abstract)
   cur_tags=$(get_frontmatter_list "$f" tags)
   cur_version=$(get_frontmatter "$f" version); cur_version="${cur_version:-1}"
   cur_body=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$f")
@@ -911,6 +947,7 @@ cmd_update() {
   local new_scope="${scope:-$cur_scope}"
   local new_tags="$cur_tags"; [[ $set_tags -eq 1 ]] && new_tags="$tags"
   local new_body="$cur_body"; [[ $set_body -eq 1 ]] && new_body="$body"
+  local new_abstract="$cur_abstract"; [[ $set_abstract -eq 1 ]] && new_abstract="$abstract"
   local new_verified="$cur_verified"; [[ -n "$verified" ]] && new_verified="$verified"
 
   if ! [[ "$new_priority" =~ ^[0-9]+$ ]] || (( new_priority < 0 || new_priority > 100 )); then
@@ -926,6 +963,7 @@ cmd_update() {
   [[ "$new_scope" != "$cur_scope" ]] && changed=1
   [[ $set_tags -eq 1 && "$new_tags" != "$cur_tags" ]] && changed=1
   [[ $set_body -eq 1 && "$new_body" != "$cur_body" ]] && changed=1
+  [[ $set_abstract -eq 1 && "$new_abstract" != "$cur_abstract" ]] && changed=1
   [[ -n "$verified" && "$new_verified" != "$cur_verified" ]] && changed=1
   if (( changed == 0 )); then
     printf 'memory:\n  id: %s\n  status: no-change (no-op)\n' "$cur_id"
@@ -949,6 +987,7 @@ cmd_update() {
     printf 'updated: %s\n' "$datestamp"
     [[ -n "$new_verified" ]] && printf 'verified: %s\n' "$new_verified"
     printf 'tags: %s\n' "$(yaml_tags "$new_tags")"
+    [[ -n "$new_abstract" ]] && printf 'abstract: "%s"\n' "$(printf '%s' "$new_abstract" | sed 's/"/\\"/g')"
     printf -- '---\n\n'
     printf '%s\n' "$new_body"
   } > "$f"
@@ -974,8 +1013,8 @@ cmd_merge_impl() {
   fa=$(resolve_id "$absorb") || die "no memory with id \`$absorb\`" 1
   [[ "$fk" == "$fa" ]] && die "cannot merge a memory into itself" 2
 
-  local k_id k_type k_title k_scope k_body k_prio k_conf k_status k_created k_tags k_version
-  local a_id a_title a_body a_prio a_conf a_tags a_version
+  local k_id k_type k_title k_scope k_body k_prio k_conf k_status k_created k_tags k_version k_abstract
+  local a_id a_title a_body a_prio a_conf a_tags a_version a_abstract
   k_id=$(get_frontmatter "$fk" id); k_type=$(get_frontmatter "$fk" type)
   k_title=$(get_frontmatter "$fk" title); k_scope=$(get_frontmatter "$fk" scope)
   k_body=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$fk")
@@ -985,15 +1024,19 @@ cmd_merge_impl() {
   k_created=$(get_frontmatter "$fk" created)
   k_tags=$(get_frontmatter_list "$fk" tags)
   k_version=$(get_frontmatter "$fk" version); k_version="${k_version:-1}"
+  k_abstract=$(get_frontmatter "$fk" abstract)
   a_id=$(get_frontmatter "$fa" id); a_title=$(get_frontmatter "$fa" title)
   a_body=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$fa")
   a_prio=$(get_frontmatter "$fa" priority); a_prio="${a_prio:-50}"
   a_conf=$(get_frontmatter "$fa" confidence); a_conf="${a_conf:-0.5}"
   a_tags=$(get_frontmatter_list "$fa" tags)
   a_version=$(get_frontmatter "$fa" version); a_version="${a_version:-1}"
+  a_abstract=$(get_frontmatter "$fa" abstract)
 
   local m_body="$k_body"
   [[ -n "$a_body" ]] && m_body="$k_body"$'\n\n'"--- merged from $a_id ---"$'\n'"$a_body"
+  local m_abstract="$k_abstract"
+  [[ -z "$m_abstract" && -n "$a_abstract" ]] && m_abstract="$a_abstract"
   local m_prio=$(( k_prio > a_prio ? k_prio : a_prio ))
   local m_conf
   m_conf=$(awk -v a="$k_conf" -v b="$a_conf" 'BEGIN{ print (a+0 > b+0) ? a : b }')
@@ -1027,6 +1070,7 @@ cmd_merge_impl() {
     printf 'created: %s\n' "$k_created"
     printf 'updated: %s\n' "$datestamp"
     printf 'tags: %s\n' "$(yaml_tags "$m_tags")"
+    [[ -n "$m_abstract" ]] && printf 'abstract: "%s"\n' "$(printf '%s' "$m_abstract" | sed 's/"/\\"/g')"
     printf -- '---\n\n'
     printf '%s\n' "$m_body"
   } > "$fk"
@@ -1247,6 +1291,7 @@ Flags:
   --top <n>         alias of --limit (injection budget cap)
   --min-priority <p> relevance floor: memories with priority < p are excluded
                     (budget cap pattern — top-N above a cutoff, not just truncated)
+  --inject          compact output: id + abstract only (~40% token savings)
   --help            this message
 
 Output: TOON list with id, type, title, confidence fields, plus total count.
@@ -1292,6 +1337,7 @@ Required:
 
 Optional:
   --body "<text>""     long-form markdown body
+  --abstract "<text>"  one-line summary for compact recall
   --scope "<scope>"    free-text scope tag (project name, etc.)
   --tags "<csv>"       comma or space separated: "auth, jwt, bug"
   --confidence <f>     0.0-1.0 (default: 0.5)
@@ -1327,6 +1373,7 @@ Usage: mem update <id> [--title "<t>"] [--body "..."] [--priority <n>] [--tags "
 Flags:
   --title "<t>"       replace the title (id stays stable — slugs never change)
   --body "..."        replace the body
+  --abstract "..."    replace the one-line summary
   --priority <n>      0-100 importance rank
   --tags "<csv>"      replace the tags
   --scope "<s>"       replace the scope
@@ -1360,6 +1407,7 @@ Flags:
 Merge semantics (Tencent-style update/merge):
   - Keeper keeps its id/type/title/status.
   - Body: absorbed body appended under a "--- merged from <id> ---" header.
+  - Abstract: keeper's abstract preserved; if keeper has none, absorb's abstract is used.
   - Tags: union (deduped). Priority: max. Confidence: max.
   - Version: max(keep, absorb) + 1. `updated: <date>` written.
   - Absorbed file is removed (git rm) — recoverable from git history

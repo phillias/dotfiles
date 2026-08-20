@@ -38,10 +38,11 @@ The binary is at `~/.local/bin/mem`. If missing, run `mem init` (idempotent) fir
 |---|---|---|
 | `mem` | content-first home view (recent + counts) | ~50 tokens @ 5 memories |
 | `mem search "<query>"` | ripgrep keyword search, **priority-ranked** (desc) then recency | ~30 tokens/match |
+| `mem search "<query>" --inject` | compact one-line results with abstracts (for plugin auto-recall) | ~15 tokens/match |
 | `mem show <id>` | detail (body truncated to 500B by default) | ~100-200 tokens |
 | `mem show <id> --full` | full body | variable |
-| `mem add --type <t> --title "<Title>" [--priority N]` | create memory (priority 0-100, default 50) | ~20 tokens ack |
-| `mem update <id> --body ... --priority N` | edit existing memory (bumps version, git commit) | ~20 tokens ack |
+| `mem add --type <t> --title "<Title>" [--priority N] [--abstract "..."]` | create memory (priority 0-100, default 50) | ~20 tokens ack |
+| `mem update <id> --body ... --priority N --abstract "..."` | edit existing memory (bumps version, git commit) | ~20 tokens ack |
 | `mem merge <keep> <absorb> [--dry-run]` | merge two memories (body+tags, max priority/version) | ~20 tokens ack |
 | `mem dedup [--dry-run\|--apply]` | OS-side near-dup detection (Jaccard, **no LLM**) | ~30 tokens/match |
 | `mem list [--type t] [--tag t] [--limit n]` | filtered list, priority-ranked | ~30 tokens/match |
@@ -77,6 +78,34 @@ Five first-class types. Id prefix encodes the type so ids stay unique.
   (bucket-by-first-token, zero LLM cost). Dry-run by default; `--apply` merges
   pairs keeping the higher priority. Run after seeding batches and after
   harvesting winning paths — re-learned lessons merge instead of duplicating.
+- **`abstract` (≤120 chars, optional)** is an L0 summary stored in frontmatter.
+  Used by the plugin's auto-recall to inject compact context without loading
+  full bodies. When absent, `mem search --inject` falls back to the first 120
+  chars of the body. Always include when calling `mem add` — it's the single
+  sentence an agent reads before deciding to drill deeper.
+
+## L0 abstracts and auto-recall
+
+The `axi-memory-bridge` plugin implements two recall strategies:
+
+1. **One-shot system context** (once per session): extracts keywords from the
+   first user message, runs `mem search --inject --limit 10`, injects compact
+   "id type title — abstract" lines into the system prompt. Capped at 600 chars.
+
+2. **Topic-shift auto-recall** (per user message): detects when the conversation
+   shifts to a new topic using Jaccard similarity of extracted keywords against
+   a sliding window of the last 5 messages. When Jaccard drops below 0.3 (topic
+   shift) or 5+ messages have passed since last recall, runs
+   `mem search --inject --limit 3` and appends results as a `[axi-memory recall]`
+   system-note part. Zero cost when on-topic (pure string comparison, no I/O).
+
+**Token budget:** on-topic messages cost 0 extra tokens. Topic shifts add
+~360 chars (3 abstracts × 120). Average across a session: ~50-100 chars/turn.
+
+When you call `axi-memory-add`, always include an `abstract` parameter with a
+single sentence (≤120 chars) summarizing the memory. The plugin passes it
+through to `mem add --abstract`. Auto-captured memories extract the abstract
+from the captured text automatically.
 
 ## Typical cognitive loop
 
@@ -193,13 +222,14 @@ version: 2
 created: 2026-07-19
 updated: 2026-08-03
 tags: ["memory","axi","toon","bash"]
+abstract: "Switched from codemem to bash+git+TOON CLI for cross-box memory"
 ---
 
 After codemem proved expensive to operate across three boxes, switching to a bash+git+TOON CLI. Decided on 2026-07-19.
 ```
 
-Memories added before priority/version existed simply lack the fields —
-search defaults them to 50/1 and `mem update` fills them in on first edit.
+Memories added before priority/version/abstract existed simply lack the fields —
+search defaults them to 50/1/"" and `mem update` fills them in on first edit.
 
 ## Quick reference
 
@@ -207,8 +237,8 @@ search defaults them to 50/1 and `mem update` fills them in on first edit.
 # Get oriented (no arguments)
 mem
 
-# Capture a decision
-mem add --type decision --title "Use Cloudflare tunnel X for Y" --body "Reason..." --tags "infra,proxy" --priority 70
+# Capture a decision (with abstract for auto-recall)
+mem add --type decision --title "Use Cloudflare tunnel X for Y" --body "Reason..." --abstract "Chose Cloudflare tunnel X for Y because Z" --tags "infra,proxy" --priority 70
 
 # Find memories about auth
 mem search "auth"
