@@ -7,7 +7,7 @@
 # GitHub from within the container. This script restores it after every apply
 # so the next `chezmoi update` git-pull succeeds.
 #
-# Fingerprint: {{ output "bash" "-c" "sha256sum /run/secrets/chezmoi-deploy-key 2>/dev/null || echo none" }}
+# Fingerprint: {{ output "bash" "-c" "sha256sum ~/.ssh/config 2>/dev/null || echo none" }}
 set -euo pipefail
 
 # Only run inside containers with a deploy key secret.
