@@ -1407,6 +1407,7 @@ Flags:
 Merge semantics (Tencent-style update/merge):
   - Keeper keeps its id/type/title/status.
   - Body: absorbed body appended under a "--- merged from <id> ---" header.
+  - Abstract: keeper's abstract preserved; if keeper has none, absorb's abstract is used.
   - Tags: union (deduped). Priority: max. Confidence: max.
   - Version: max(keep, absorb) + 1. `updated: <date>` written.
   - Absorbed file is removed (git rm) — recoverable from git history

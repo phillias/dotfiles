@@ -18,11 +18,10 @@ import { z } from "zod";
  *   Without this, an injected "remember this: ..." message sails through the
  *   user-boost path and poisons durable memory — which then re-injects into
  *   system context every session (persistent prompt injection).
- * - Ranked navigation-index injection: mem CLI now sorts by priority desc, so
- *   the injected block is the top of the priority ranking; the block is capped
- *   (drop-with-pointer, never silent truncation) and points the agent at
- *   axi-memory-show to pull full bodies on demand (Tencent's L2 scene-nav
- *   pattern).
+ * - Compact L0 abstract injection: `mem search --inject` returns one-line
+ *   summaries (id type title — abstract) ranked by priority desc; the block
+ *   is capped (drop-with-pointer, never silent truncation) and points the
+ *   agent at axi-memory-show to pull full bodies on demand.
  *
  * Performance guards:
  * - System context: injected once per session (injectedSessions guard), not every turn
@@ -45,8 +44,8 @@ function isInjection(text: string): boolean {
 // --- Injection budget + ranking helpers (AXI: drop-with-pointer, no silent cut) ---
 
 // Code-point-safe truncation: never split a surrogate pair. Used ONLY as a
-// hard floor for the ambient block — the injected nav index caps by dropping
-// lower-ranked rows instead (see rankAndCap).
+// hard floor for the ambient block — the injected recall output caps by
+// dropping lower-ranked rows instead (see rankAndCap).
 function safeTruncate(s: string, max: number): string {
   if (s.length <= max) return s;
   let cut = s.lastIndexOf("\n", max);
@@ -424,7 +423,7 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       }),
 
       "axi-memory-show": tool({
-        description: "Show full detail of one memory (axi-memory). Use after axi-memory-search to read a specific memory's complete body on demand — the nav index only carries id/type/title. Ids may be passed as full id or date-suffix.",
+        description: "Show full detail of one memory (axi-memory). Use after axi-memory-search to read a specific memory's complete body on demand — the search output carries id/type/title, and the inject output adds an abstract. Ids may be passed as full id or date-suffix.",
         args: {
           id: z.string().describe("Memory id (e.g. d-2026-07-19-auth-401 or 2026-07-19-auth-401)"),
           full: z.boolean().optional().describe("Show complete body (default: 500-byte preview with truncation hint)"),

@@ -542,7 +542,7 @@ never reaches downstream handlers. All three must be isolation-safe.
 
 | # | Plugin | Failure Mode | Purpose |
 |---|---|---|---|
-| 1 | axi-memory-bridge | swallow | One-shot axi-memory search injection (first user message → `mem search --inject` → compact nav index) |
+| 1 | axi-memory-bridge | swallow | One-shot axi-memory search injection (first user message → `mem search --inject` → compact L0 abstracts) |
 | 2 | axi-gh-axi.js | swallow | gh-axi ambient context (issues, PRs, help) |
 | 3 | axi-chrome-devtools-axi.js | swallow | chrome-devtools-axi ambient context |
 | 4 | axi-lavish-axi.js | swallow | lavish-axi ambient context (sessions, visual guidance, playbooks) |
