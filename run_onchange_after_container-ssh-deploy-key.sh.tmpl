@@ -1,0 +1,29 @@
+#!/bin/bash
+# Restore deploy-key SSH config after chezmoi apply in containers.
+#
+# chezmoi apply overwrites ~/.ssh/config with the managed version, which
+# references host keys that don't work inside the container. Only the deploy
+# key (mounted at /run/secrets/chezmoi-deploy-key) can authenticate to
+# GitHub from within the container. This script restores it after every apply
+# so the next `chezmoi update` git-pull succeeds.
+#
+# Fingerprint: {{ output "bash" "-c" "sha256sum /run/secrets/chezmoi-deploy-key 2>/dev/null || echo none" }}
+set -euo pipefail
+
+# Only run inside containers with a deploy key secret.
+[ -f /run/secrets/chezmoi-deploy-key ] || exit 0
+
+# If the current SSH config already has the deploy key, nothing to do.
+if grep -q 'chezmoi-deploy-key' ~/.ssh/config 2>/dev/null; then
+  exit 0
+fi
+
+# Restore the deploy-key-only SSH config for GitHub.
+cat > ~/.ssh/config <<'SSHEOF'
+Host github.com
+  IdentityFile ~/.ssh/chezmoi-deploy-key
+  IdentitiesOnly yes
+  StrictHostKeyChecking accept-new
+SSHEOF
+chmod 600 ~/.ssh/config
+echo "[container-ssh] restored deploy-key SSH config after chezmoi apply"
