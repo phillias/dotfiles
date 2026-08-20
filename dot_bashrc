@@ -163,8 +163,10 @@ export PATH=$HOME/.npm-global/bin:$PATH
 export PATH=/home/phillias/.opencode/bin:$PATH
 # oc: one OpenCode server per host, with an explicit port for tmux attaches.
 oc() {
-  local port="${OPENCODE_PORT:-42069}"
-  command opencode --port "$port" "$@"
+  if command opencode connect http://127.0.0.1:4096 "$@" 2>/dev/null; then
+    return
+  fi
+  command opencode "$@"
 }
 
 # bun
