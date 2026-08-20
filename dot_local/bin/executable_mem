@@ -380,11 +380,13 @@ cmd_search() {
       title=$(get_frontmatter "$f" title)
       abstract=$(get_frontmatter "$f" abstract)
       # Fallback: if no abstract, use first 120 chars of body
+      # Character-safe: awk prints full body, bash ${abstract:0:120} truncates
+      # by character (not byte), avoiding UTF-8 splitting.
       if [[ -z "$abstract" ]]; then
-        abstract=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$f" | head -c 120)
+        abstract=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$f" | head -1)
         abstract="${abstract//$'\n'/ }"
       fi
-      # Truncate abstract to 120 chars
+      # Truncate abstract to 120 characters (bash 4.2+ substring is char-safe)
       abstract="${abstract:0:120}"
       printf '%s %s %s — %s\n' "$id" "$type_t" "$title" "$abstract"
     done < <(printf '%s\n' "${ranked[@]}" | sort -t'|' -k1,1rn -k2,2rn -k3,3rn)
