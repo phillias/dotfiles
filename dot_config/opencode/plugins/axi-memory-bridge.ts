@@ -415,23 +415,11 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
           const tags = args.tags ? sanitizeShellArg(args.tags, 100) : undefined;
           const abstract = args.abstract ? sanitizeShellArg(args.abstract, 150) : undefined;
           // Build command parts — direct interpolation only, never pre-built strings
-          const parts: string[] = [];
-          // Shell template handles quoting via Bun's $ interpolation
-          if (body && tags && abstract)
-            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --tags "${tags}" --abstract "${abstract}"`.quiet().nothrow().text() };
-          if (body && tags)
-            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --tags "${tags}"`.quiet().nothrow().text() };
-          if (body && abstract)
-            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --abstract "${abstract}"`.quiet().nothrow().text() };
-          if (tags && abstract)
-            return { output: await shell`mem add --type ${args.type} --title "${title}" --tags "${tags}" --abstract "${abstract}"`.quiet().nothrow().text() };
-          if (body)
-            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}"`.quiet().nothrow().text() };
-          if (tags)
-            return { output: await shell`mem add --type ${args.type} --title "${title}" --tags "${tags}"`.quiet().nothrow().text() };
-          if (abstract)
-            return { output: await shell`mem add --type ${args.type} --title "${title}" --abstract "${abstract}"`.quiet().nothrow().text() };
-          return { output: await shell`mem add --type ${args.type} --title "${title}"`.quiet().nothrow().text() };
+          const flags: string[] = [];
+          if (body) flags.push("--body", body);
+          if (tags) flags.push("--tags", tags);
+          if (abstract) flags.push("--abstract", abstract);
+          return { output: await shell`mem add --type ${args.type} --title "${title}" ${flags}`.quiet().nothrow().text() };
         },
       }),
 
@@ -497,8 +485,8 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
                   // Dedup: skip if query matches last recall
                   if (keywords !== rs.lastRecallQuery) {
                     const injectResult = await runMemInject(keywords, 3);
-                    const lines = injectResult.trim().split("\n").filter(l => l.trim() && !l.startsWith("count:"));
-                    if (lines.length > 0) {
+                    if (hasResults(injectResult)) {
+                      const lines = injectResult.trim().split("\n").filter(l => l.trim() && !l.startsWith("count:"));
                       const compact = lines.slice(0, 3).join("\n");
                       // Append as a system-note part (non-disruptive to message flow)
                       output.parts.push({
