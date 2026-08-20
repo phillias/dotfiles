@@ -282,17 +282,59 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
   const lastToolSearch = new Map<string, number>(); // sessionID → timestamp
   const toolSearchCache = new Map<string, CacheEntry>(); // key → cached result
 
-  function evictToolCache() {
-    if (toolSearchCache.size <= TOOL_CACHE_MAX) return;
-    // Evict oldest entries
-    const entries = [...toolSearchCache.entries()]
-      .sort((a, b) => a[1].ts - b[1].ts);
-    const toRemove = entries.slice(0, entries.length - TOOL_CACHE_MAX);
-    for (const [k] of toRemove) toolSearchCache.delete(k);
+  // ── Topic-shift auto-recall state ──────────────────────────────────────
+  interface RecallState {
+    keywordHistory: string[][];  // last 5 messages' keyword sets
+    lastRecallQuery: string;     // last search query (dedup guard)
+    lastRecallTs: number;        // timestamp of last recall
+    recallCount: number;         // messages since last recall
+  }
+  const recallState = new Map<string, RecallState>();
+
+  function getRecallState(sessionID: string): RecallState {
+    let state = recallState.get(sessionID);
+    if (!state) {
+      state = { keywordHistory: [], lastRecallQuery: "", lastRecallTs: 0, recallCount: 0 };
+      recallState.set(sessionID, state);
+    }
+    return state;
+  }
+
+  /** Jaccard similarity of two keyword arrays (0.0–1.0). Pure computation, ~0.01ms. */
+  function keywordJaccard(a: string[], b: string[]): number {
+    if (a.length === 0 && b.length === 0) return 1;
+    if (a.length === 0 || b.length === 0) return 0;
+    const setA = new Set(a);
+    const setB = new Set(b);
+    let intersection = 0;
+    for (const w of setA) if (setB.has(w)) intersection++;
+    const union = setA.size + setB.size - intersection;
+    return union === 0 ? 0 : intersection / union;
+  }
+
+  /** Average Jaccard of current keywords against the history window. */
+  function avgJaccardAgainstHistory(current: string[], history: string[][]): number {
+    if (history.length === 0) return 0;
+    let total = 0;
+    for (const prev of history) total += keywordJaccard(current, prev);
+    return total / history.length;
   }
 
   async function runMemSearch(query: string, limit: number): Promise<string> {
     return await shell`mem search "${query}" --limit ${limit}`.quiet().nothrow().text();
+  }
+
+  /** Compact inject search: returns "id type title — abstract" lines (≤120 chars each) */
+  async function runMemInject(query: string, limit: number): Promise<string> {
+    return await shell`mem search "${query}" --limit ${limit} --inject`.quiet().nothrow().text();
+  }
+
+  function evictToolCache() {
+    if (toolSearchCache.size <= TOOL_CACHE_MAX) return;
+    const entries = [...toolSearchCache.entries()]
+      .sort((a, b) => a[1].ts - b[1].ts);
+    const toRemove = entries.slice(0, entries.length - TOOL_CACHE_MAX);
+    for (const [k] of toRemove) toolSearchCache.delete(k);
   }
 
   return {
@@ -315,10 +357,11 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       injectedSessions.add(input.sessionID);
 
       try {
-        // Priority-ranked nav index (CLI sorts by priority desc). Cap by
-        // dropping the tail with a pointer — never silent truncation.
-        const result = await runMemSearch(query, 10);
-        if (hasResults(result)) {
+        // Use --inject mode: compact "id type title — abstract" lines.
+        // Each line ≤120 chars, total capped at INJECT_MAX_CHARS.
+        // Agent uses axi-memory-show for full bodies on demand.
+        const result = await runMemInject(query, 10);
+        if (result.trim().length > 0 && !result.includes("count: 0 of 0")) {
           output.system.push(
             `\n## axi-memory (live)\n${rankAndCap(result, INJECT_MAX_CHARS)}\nRun axi-memory-show <id> to read a full memory body.`,
           );
@@ -356,31 +399,39 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
       }),
 
       "axi-memory-add": tool({
-        description: "Persist a memory (axi-memory). Use when you discover something worth remembering across sessions: a decision with rationale, a failure root cause, a constraint, a procedure, or a user preference.",
+        description: "Persist a memory (axi-memory). Use when you discover something worth remembering across sessions: a decision with rationale, a failure root cause, a constraint, a procedure, or a user preference. Include an abstract (≤120 chars) summarizing the memory for efficient recall.",
         args: {
           type: z.enum(["constraint", "decision", "failure", "howto", "preference"])
             .describe("Memory type"),
           title: z.string().describe("Short title (used to generate slug)"),
           body: z.string().optional().describe("Long-form markdown body"),
+          abstract: z.string().optional().describe("≤120-char summary for L0 recall. If omitted, first 120 chars of body are used."),
           tags: z.string().optional().describe("Comma-separated tags"),
         },
         execute: async (args) => {
           const title = sanitizeTitle(args.title);
           if (!title) return { output: "Title is required." };
-          // Direct interpolation only — never interpolate a pre-built command
-          // string (same bug as axi-memory-search had: shell`${cmd}` tries to
-          // exec a program literally named `mem add "..."` → ENOENT → empty
-          // output → silent no-op. Fixed 2026-08-01.)
           const body = args.body ? sanitizeShellArg(args.body, 500) : undefined;
           const tags = args.tags ? sanitizeShellArg(args.tags, 100) : undefined;
-          const result = body && tags
-            ? await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --tags "${tags}"`.quiet().nothrow().text()
-            : body
-              ? await shell`mem add --type ${args.type} --title "${title}" --body "${body}"`.quiet().nothrow().text()
-              : tags
-                ? await shell`mem add --type ${args.type} --title "${title}" --tags "${tags}"`.quiet().nothrow().text()
-                : await shell`mem add --type ${args.type} --title "${title}"`.quiet().nothrow().text();
-          return { output: result };
+          const abstract = args.abstract ? sanitizeShellArg(args.abstract, 150) : undefined;
+          // Build command parts — direct interpolation only, never pre-built strings
+          const parts: string[] = [];
+          // Shell template handles quoting via Bun's $ interpolation
+          if (body && tags && abstract)
+            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --tags "${tags}" --abstract "${abstract}"`.quiet().nothrow().text() };
+          if (body && tags)
+            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --tags "${tags}"`.quiet().nothrow().text() };
+          if (body && abstract)
+            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}" --abstract "${abstract}"`.quiet().nothrow().text() };
+          if (tags && abstract)
+            return { output: await shell`mem add --type ${args.type} --title "${title}" --tags "${tags}" --abstract "${abstract}"`.quiet().nothrow().text() };
+          if (body)
+            return { output: await shell`mem add --type ${args.type} --title "${title}" --body "${body}"`.quiet().nothrow().text() };
+          if (tags)
+            return { output: await shell`mem add --type ${args.type} --title "${title}" --tags "${tags}"`.quiet().nothrow().text() };
+          if (abstract)
+            return { output: await shell`mem add --type ${args.type} --title "${title}" --abstract "${abstract}"`.quiet().nothrow().text() };
+          return { output: await shell`mem add --type ${args.type} --title "${title}"`.quiet().nothrow().text() };
         },
       }),
 
@@ -422,6 +473,55 @@ export const AxiMemoryBridgePlugin: Plugin = async (input) => {
 
         // Store last user message for system context injection
         lastUserMessages.set(input.sessionID, text);
+
+        // ── Topic-shift auto-recall (user messages only) ───────────────
+        // Detects when the conversation shifts to a new topic and triggers
+        // a lightweight mem search. Zero cost when on-topic (Jaccard ≥ 0.3).
+        // Nested try/catch — recall failure must never disrupt scoring or
+        // other chat.message subscribers.
+        try {
+          const isUser = !input.agent || input.agent === "user";
+          if (isUser) {
+            const keywords = extractKeywords(text, 5);
+            if (keywords) {
+              const rs = getRecallState(input.sessionID);
+              const currentKw = keywords.split(" ").filter(w => w.length > 2);
+
+              // Need ≥ 2 history entries to detect a shift
+              if (rs.keywordHistory.length >= 2) {
+                const jaccard = avgJaccardAgainstHistory(currentKw, rs.keywordHistory);
+                const msgsSinceRecall = rs.recallCount;
+
+                // Topic shift: Jaccard < 0.3 OR > 5 messages since last recall
+                if (jaccard < 0.3 || msgsSinceRecall >= 5) {
+                  // Dedup: skip if query matches last recall
+                  if (keywords !== rs.lastRecallQuery) {
+                    const injectResult = await runMemInject(keywords, 3);
+                    const lines = injectResult.trim().split("\n").filter(l => l.trim() && !l.startsWith("count:"));
+                    if (lines.length > 0) {
+                      const compact = lines.slice(0, 3).join("\n");
+                      // Append as a system-note part (non-disruptive to message flow)
+                      output.parts.push({
+                        type: "text",
+                        text: `\n[axi-memory recall]\n${compact}`,
+                      } as any);
+                    }
+                    rs.lastRecallQuery = keywords;
+                    rs.lastRecallTs = Date.now();
+                    rs.recallCount = 0;
+                  }
+                }
+              }
+
+              // Update history (sliding window of 5)
+              rs.keywordHistory.push(currentKw);
+              if (rs.keywordHistory.length > 5) rs.keywordHistory.shift();
+              rs.recallCount++;
+            }
+          }
+        } catch {
+          // Recall is best-effort — never disrupt the message chain
+        }
 
         // Score ALL messages — auto-save only on explicit remember/keep/save
         // intent (boost) or a dense multi-signal message (>=24/45). The old

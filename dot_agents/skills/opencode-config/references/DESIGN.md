@@ -308,6 +308,12 @@ flowchart TD
 - **Memory:** `mem` CLI (`~/.local/bin/mem`), store `~/memories/` (markdown +
   YAML frontmatter git repo, `objects/<type>/`); types
   `constraint|decision|failure|howto|preference`.
+- **L0 abstracts:** optional `abstract: "<≤120 chars>"` frontmatter field on
+  memory files. Used by `mem search --inject` for compact recall output
+  (`id type title — abstract` per line, ≤120 chars each). When absent, falls
+  back to first 120 chars of body. Agent-authored memories should always
+  include an abstract via the `axi-memory-add` tool's `abstract` parameter;
+  auto-captured memories extract it from the captured text.
 - **`mem sync` anchor rule:** on primary/OCI-anchor the remote MUST be the local
   bare `/home/ubuntu/mem-bare.git` — never the tunnel
   `ssh://primary55522.phillias.cc/~/mem-bare.git` (hairpin timeout). Other
@@ -512,6 +518,79 @@ re-derive from session transcripts — and the price of keeping the session aliv
 | `chat.message` chain disruption (design rationale) | this doc §4 |
 | Flywheel consumer contract | `plugins/axi-memory-bridge.ts`, `plugins/self-learning-autocapture.ts` |
 | Crew-dispatch model resolution | firstmate `config/crew-dispatch.json` + `bin/fm-spawn.sh` |
+
+### 5.6 Plugin Hook Catalog
+
+Complete reference of every plugin and which hooks it subscribes to. Updated
+when plugins are added or removed. Every `chat.message` handler MUST wrap in
+try/catch and never rethrow — a throw disrupts the entire hook chain for all
+subscribers.
+
+#### `chat.message` — called for every user and assistant message
+
+| # | Plugin | Failure Mode | Purpose |
+|---|---|---|---|
+| 1 | opencode-log-sanitizer | swallow | Redacts JWTs, bcrypt hashes, base64 blobs, long quoted strings |
+| 2 | fleet-state-writer | swallow | Mines `[BACKGROUND TASK *]` headers; records task state transitions |
+| 3 | axi-memory-bridge | swallow | Injection veto, stores last user message, scores for auto-capture, topic-shift auto-recall |
+
+**Execution order:** opencode runs handlers in plugin registration order
+(opencode.json `plugin[]` array). Log-sanitizer runs first so redacted content
+never reaches downstream handlers. All three must be isolation-safe.
+
+#### `experimental.chat.system.transform` — inject into system prompt per session
+
+| # | Plugin | Failure Mode | Purpose |
+|---|---|---|---|
+| 1 | axi-memory-bridge | swallow | One-shot axi-memory search injection (first user message → `mem search --inject` → compact nav index) |
+| 2 | axi-gh-axi.js | swallow | gh-axi ambient context (issues, PRs, help) |
+| 3 | axi-chrome-devtools-axi.js | swallow | chrome-devtools-axi ambient context |
+| 4 | axi-lavish-axi.js | swallow | lavish-axi ambient context (sessions, visual guidance, playbooks) |
+| 5 | opencode-runtime-fallback.ts | swallow | Fallback chain state annotation |
+
+#### `tool.execute.after` — after every tool call
+
+| # | Plugin | Failure Mode | Purpose |
+|---|---|---|---|
+| 1 | axi-memory-bridge | swallow | Auto-search axi-memory; appends ambient context (throttled 5s/session, LRU cached 60s) |
+| 2 | opencode-telemetry | swallow | Records tool call completion, output sizes, timing |
+
+#### `tool.execute.before` — before every tool call
+
+| # | Plugin | Failure Mode | Purpose |
+|---|---|---|---|
+| 1 | envsitter-guard | block | Blocks `read`/`edit`/`write` on `.env*` files; redirects to EnvSitter |
+| 2 | opencode-telemetry | swallow | Records tool call start timestamps |
+
+#### `event` — session lifecycle events
+
+| # | Plugin | Failure Mode | Purpose |
+|---|---|---|---|
+| 1 | fleet-state-writer | swallow | Task state → `state.json` + `wake.log` |
+| 2 | opencode-ntfy.sh | swallow | Push notifications via ntfy.sh |
+| 3 | opencode-telemetry | swallow | SQLite telemetry |
+| 4 | opencode-runtime-fallback.ts | swallow | Model fallback chain on retry/error |
+| 5 | tps-status.tsx | swallow | TPS calculation for TUI status bar |
+
+#### `tool` — register custom tools
+
+| Plugin | Tools |
+|---|---|
+| envsitter-guard | `envsitter_*` (keys, match, set, add, delete, copy, format, validate, annotate, help) |
+| axi-memory-bridge | `axi-memory-search`, `axi-memory-add`, `axi-memory-show` |
+| opencode-runtime-fallback.ts | `fallback-status` |
+
+#### Safety contract
+
+1. Every `chat.message` handler wraps in try/catch. Errors logged to
+   `console.error` with plugin prefix, swallowed. A throw disrupts all
+   downstream subscribers.
+2. Every `event` handler is similarly isolated.
+3. `tool.execute.before` handlers that block return immediately after blocking.
+4. `experimental.chat.system.transform` handlers are additive — each appends
+   to `output.system[]`. No handler reads or modifies another's strings.
+5. No plugin reads or writes another plugin's in-memory state. Each owns its
+   own `Map`/`Set` keyed by `sessionID`.
 
 ---
 
