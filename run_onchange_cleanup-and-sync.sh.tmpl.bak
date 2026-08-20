@@ -20,9 +20,6 @@
 #      `chezmoi add` suggestions (cannot run chezmoi add here — state lock)
 #
 # Managed directories:
-#   ~/.config/herdr/                  → dot_config/herdr/
-#   ~/.omp/private_agent/             → dot_omp/private_agent/
-#   ~/.pi/private_agent/              → private_dot_pi/private_agent/
 #   ~/.agents/                  → dot_agents/
 #   ~/.config/opencode/         → dot_config/opencode/
 #   ~/.config/systemd/user/     → dot_config/systemd/user/
