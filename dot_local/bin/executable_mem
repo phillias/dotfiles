@@ -1013,8 +1013,8 @@ cmd_merge_impl() {
   fa=$(resolve_id "$absorb") || die "no memory with id \`$absorb\`" 1
   [[ "$fk" == "$fa" ]] && die "cannot merge a memory into itself" 2
 
-  local k_id k_type k_title k_scope k_body k_prio k_conf k_status k_created k_tags k_version
-  local a_id a_title a_body a_prio a_conf a_tags a_version
+  local k_id k_type k_title k_scope k_body k_prio k_conf k_status k_created k_tags k_version k_abstract
+  local a_id a_title a_body a_prio a_conf a_tags a_version a_abstract
   k_id=$(get_frontmatter "$fk" id); k_type=$(get_frontmatter "$fk" type)
   k_title=$(get_frontmatter "$fk" title); k_scope=$(get_frontmatter "$fk" scope)
   k_body=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$fk")
@@ -1024,15 +1024,19 @@ cmd_merge_impl() {
   k_created=$(get_frontmatter "$fk" created)
   k_tags=$(get_frontmatter_list "$fk" tags)
   k_version=$(get_frontmatter "$fk" version); k_version="${k_version:-1}"
+  k_abstract=$(get_frontmatter "$fk" abstract)
   a_id=$(get_frontmatter "$fa" id); a_title=$(get_frontmatter "$fa" title)
   a_body=$(awk 'BEGIN{s=0} /^---$/{s++;next} s>=2{print}' "$fa")
   a_prio=$(get_frontmatter "$fa" priority); a_prio="${a_prio:-50}"
   a_conf=$(get_frontmatter "$fa" confidence); a_conf="${a_conf:-0.5}"
   a_tags=$(get_frontmatter_list "$fa" tags)
   a_version=$(get_frontmatter "$fa" version); a_version="${a_version:-1}"
+  a_abstract=$(get_frontmatter "$fa" abstract)
 
   local m_body="$k_body"
   [[ -n "$a_body" ]] && m_body="$k_body"$'\n\n'"--- merged from $a_id ---"$'\n'"$a_body"
+  local m_abstract="$k_abstract"
+  [[ -z "$m_abstract" && -n "$a_abstract" ]] && m_abstract="$a_abstract"
   local m_prio=$(( k_prio > a_prio ? k_prio : a_prio ))
   local m_conf
   m_conf=$(awk -v a="$k_conf" -v b="$a_conf" 'BEGIN{ print (a+0 > b+0) ? a : b }')
@@ -1066,6 +1070,7 @@ cmd_merge_impl() {
     printf 'created: %s\n' "$k_created"
     printf 'updated: %s\n' "$datestamp"
     printf 'tags: %s\n' "$(yaml_tags "$m_tags")"
+    [[ -n "$m_abstract" ]] && printf 'abstract: "%s"\n' "$(printf '%s' "$m_abstract" | sed 's/"/\\"/g')"
     printf -- '---\n\n'
     printf '%s\n' "$m_body"
   } > "$fk"
@@ -1286,6 +1291,7 @@ Flags:
   --top <n>         alias of --limit (injection budget cap)
   --min-priority <p> relevance floor: memories with priority < p are excluded
                     (budget cap pattern — top-N above a cutoff, not just truncated)
+  --inject          compact output: id + abstract only (~40% token savings)
   --help            this message
 
 Output: TOON list with id, type, title, confidence fields, plus total count.
@@ -1331,6 +1337,7 @@ Required:
 
 Optional:
   --body "<text>""     long-form markdown body
+  --abstract "<text>"  one-line summary for compact recall
   --scope "<scope>"    free-text scope tag (project name, etc.)
   --tags "<csv>"       comma or space separated: "auth, jwt, bug"
   --confidence <f>     0.0-1.0 (default: 0.5)
@@ -1366,6 +1373,7 @@ Usage: mem update <id> [--title "<t>"] [--body "..."] [--priority <n>] [--tags "
 Flags:
   --title "<t>"       replace the title (id stays stable — slugs never change)
   --body "..."        replace the body
+  --abstract "..."    replace the one-line summary
   --priority <n>      0-100 importance rank
   --tags "<csv>"      replace the tags
   --scope "<s>"       replace the scope
