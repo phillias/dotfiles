@@ -1,4 +1,7 @@
 {
   "defaultProvider": "opencode-zen",
-  "defaultModel": "big-pickle"
+  "defaultModel": "big-pickle",
+  "packages": [
+    "npm:pi-fallback-provider"
+  ]
 }
