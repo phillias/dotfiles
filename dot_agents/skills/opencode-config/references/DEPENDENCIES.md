@@ -8,7 +8,7 @@ The OpenCode config and the firstmate distro rely on a set of host tools. All pa
 |---|---|---|
 | opencode | the runtime itself; `oc` alias launches `opencode --port 42069` (bare TUI only serves `/`; attach fails without port) | system |
 | chezmoi | dotfiles source-of-truth (`~/.local/share/chezmoi`); configs are chezmoi-tracked, machine diffs via `.tmpl` | system |
-| gh | GitHub (issues/PRs/checks/releases); `gh-axi` skill wraps it | /usr/bin/gh |
+| gh | GitHub (issues/PRs/checks/releases); `gh-axi` skill wraps it | ~/bin/gh |
 | bw | Bitwarden CLI (vault/secrets); `bws-axi` skill wraps BWS | ~/bin/bw |
 | wrangler | Cloudflare Workers CLI (deploy/dev) | ~/.npm-global/bin/wrangler |
 | sqlite3 | local DB reads + opencode.db session queries (commit identity resolution) | /usr/bin/sqlite3 |
