@@ -12,6 +12,12 @@ Host github.com
   IdentityFile ~/.ssh/id_ed25519_inspironkali
   IdentityFile ~/.ssh/chezmoi-deploy-key
 
+Host github-mybiz
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/mybiz-deploy-key
+  IdentitiesOnly yes
+
 Host gcp
   IdentityFile ~/.ssh/id_ed25519_inspironkali
   HostName gcp.phillias.us
