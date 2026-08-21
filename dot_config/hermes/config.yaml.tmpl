@@ -18,7 +18,7 @@ cron:
 mcp:
   servers:
     - name: mybrain-brain
-      command: python3
+      command: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/.venv/bin/python3"
       args:
         - "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}/scripts/hermes/mybrain-mcp-server.py"
       env:
