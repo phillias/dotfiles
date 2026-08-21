@@ -46,7 +46,9 @@ Big Pickle is the primary session model: `opencode-zen/big-pickle` 200K ctx / 32
 
 Key models: kimi-k2.6 (200K/32K), deepseek-v4-pro (131K/8K, temp 1.0), gpt-5.5 (128K/32K), claude-opus-4-8 (200K/32K), gemini-3.5-flash (1M/64K), nemotron-3-ultra-free (262K/8K), deepseek-v4-flash-free (131K/8K).
 
-**Free tier (6):** nemotron-3-ultra-free, north-mini-code-free, deepseek-v4-flash-free, qwen3.6-plus-free, minimax-m3-free, mimo-v2.5-free.
+**Free tier:** nemotron-3-ultra-free, north-mini-code-free, deepseek-v4-flash-free, minimax-m3-free, mimo-v2.5-free, **x-preview-f-free (Ox Alpha Free, added 2026-08-21)** — matches live config wiring.
+
+**Ox Alpha Free** (`x-preview-f-free`, verified 2026-08-21): stealth model, 1,048,576 ctx / 131,072 out, reasoning + tool calling, text/image/video input, `$0/$0` during preview with provider-stated zero data retention. Anonymous "Stealth" provider behind it (`stealth/ox-alpha` on OpenRouter); tokenizer + video-encoder fingerprinting points to a GLM-5.3 variant (~90% confidence, officially unconfirmed). Served via Zen `chat/completions`; NOT listed by `/v1/models` for BYOK keys as of 2026-08-21 but callable by ID.
 
 Live catalog check: `cat ~/.config/opencode/.zen-key; curl https://opencode.ai/zen/v1/models | jq`. BYOK keys get worse rate limits than the shared pool — do not BYOK unless needed.
 
@@ -140,6 +142,7 @@ Single Qwen/Qwen3.6-35B-A3B-FP8 (262K, free experimental). **NO SLA/DPA/rate-lim
 
 ## Recently added models
 
+- **Ox Alpha Free** — stealth model on Zen (`x-preview-f-free`), 1M ctx / 131K out, multimodal (text/image/video) + tool calling, free preview window with zero data retention; anonymous provider, GLM-5.3-variant per fingerprinting (unconfirmed). Wired in live config 2026-08-21.
 - **Laguna S 2.1** — 118B MoE 8B active, 262K, free (`poolside/laguna-s-2.1:free`) / 1M paid; Terminal-Bench 2.1 70.2%, SWE 78.5%.
 - **Intern-S2-Preview-397B** — 397B MoE ~120B active, 256K, free official API (chat.intern-ai.org.cn), Apache 2.0, multimodal.
 - **Ternary Bonsai 27B** — 1.58-bit, Qwen3.6-27B base, 262K, Together FREE, ⚠️ single-shot only (reverted 2026-07-31 from Librarian). 8B/4B/1.7B self-host only.

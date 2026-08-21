@@ -916,6 +916,14 @@
             "output": 8192
           },
           "temperature": true
+        },
+        "x-preview-f-free": {
+          "name": "Ox Alpha Free",
+          "limit": {
+            "context": 1048576,
+            "output": 131072
+          },
+          "temperature": true
         }
       }
     },
