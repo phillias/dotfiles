@@ -479,7 +479,7 @@ cmd_sync() {
   local sync_log="${CHEZMOI_SRC}/.chezmoi-sync.log"
   local max_bytes="${CHEZMOI_SYNC_LOG_MAX:-524288}"
   if [[ -f "$sync_log" && "$(wc -c <"$sync_log")" -ge "$max_bytes" ]]; then
-    mv -f "$sync_log" "$sync_log.old"
+    cp "$sync_log" "$sync_log.old" && : > "$sync_log"
   fi
 
   echo "[$(date '+%Y-%m-%dT%H:%M:%S%z')] chezmoi-axi sync start"
