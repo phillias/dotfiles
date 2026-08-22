@@ -474,6 +474,22 @@ cmd_verify() {
 }
 
 cmd_sync() {
+  # Keep the periodic sync log bounded: rotate once past the cap.
+  # Applies to the canonical cron log only; other redirections stay untouched.
+  local sync_log="${CHEZMOI_SRC}/.chezmoi-sync.log"
+  local max_bytes="${CHEZMOI_SYNC_LOG_MAX:-524288}"
+  if [[ -f "$sync_log" && "$(wc -c <"$sync_log")" -ge "$max_bytes" ]]; then
+    mv -f "$sync_log" "$sync_log.old"
+  fi
+
+  echo "[$(date '+%Y-%m-%dT%H:%M:%S%z')] chezmoi-axi sync start"
+  local rc=0
+  _sync_run "$@" || rc=$?
+  echo "[$(date '+%Y-%m-%dT%H:%M:%S%z')] chezmoi-axi sync end rc=$rc"
+  return "$rc"
+}
+
+_sync_run() {
   local preview=false force=false
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -483,7 +499,10 @@ cmd_sync() {
         echo "Usage: chezmoi-axi sync [--preview] [--force]"
         echo "  --preview  Fetch remote and show diff without applying"
         echo "  --force    Apply without prompting (resolves local drift, for cron)"
-        exit 0 ;;
+        echo "Stamps start/end (with exit code) around every sync; rotates"
+        echo "  ~/.local/share/chezmoi/.chezmoi-sync.log to .old at 512 KiB"
+        echo "  (CHEZMOI_SYNC_LOG_MAX bytes, for the crontab redirect)"
+        return 0 ;;
       *) die "unknown flag: $1" "chezmoi-axi sync [--preview] [--force]" ;;
     esac
   done
