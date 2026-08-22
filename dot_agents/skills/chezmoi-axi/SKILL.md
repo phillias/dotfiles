@@ -99,9 +99,15 @@ chezmoi-axi verify
 
 Pull remote changes and apply. Combines `git pull` + `chezmoi apply`.
 
+Every sync stamps ISO-8601 `start` and `end` lines (the `end` line carries the exit code)
+so the periodic crontab log is auditable. Before running, it rotates the canonical cron log
+`~/.local/share/chezmoi/.chezmoi-sync.log` to `.old` once it exceeds 512 KiB
+(override with `CHEZMOI_SYNC_LOG_MAX` bytes); other redirections are untouched.
+
 ```
 chezmoi-axi sync
 chezmoi-axi sync --preview    # fetch + diff, no apply
+chezmoi-axi sync --force       # apply without prompting (resolves local drift, for cron)
 ```
 
 ### `chezmoi-axi commit [message]`
