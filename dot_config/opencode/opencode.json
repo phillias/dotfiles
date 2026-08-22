@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-zen/big-pickle",
   "small_model": "opencode-zen/nemotron-3-ultra-free",
   "provider": {
     "opencode-go": {
