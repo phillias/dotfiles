@@ -924,7 +924,8 @@
             "context": 1048576,
             "output": 131072
           },
-          "temperature": true
+          "temperature": true,
+          "reasoning": true
         }
       }
     },

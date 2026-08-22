@@ -48,7 +48,7 @@ Key models: kimi-k2.6 (200K/32K), deepseek-v4-pro (131K/8K, temp 1.0), gpt-5.5 (
 
 **Free tier:** nemotron-3-ultra-free, north-mini-code-free, deepseek-v4-flash-free, minimax-m3-free, mimo-v2.5-free, **x-preview-f-free (Ox Alpha Free, added 2026-08-21)** — matches live config wiring.
 
-**Ox Alpha Free** (`x-preview-f-free`, verified 2026-08-21): stealth model, 1,048,576 ctx / 131,072 out, reasoning + tool calling, text/image/video input, `$0/$0` during preview with provider-stated zero data retention. Anonymous "Stealth" provider behind it (`stealth/ox-alpha` on OpenRouter); tokenizer + video-encoder fingerprinting points to a GLM-5.3 variant (~90% confidence, officially unconfirmed). Served via Zen `chat/completions`; NOT listed by `/v1/models` for BYOK keys as of 2026-08-21 but callable by ID.
+**Ox Alpha Free** (`x-preview-f-free`, verified 2026-08-22): stealth model, 1,048,576 ctx / 131,072 out, reasoning + tool calling, text/image/video input, `$0/$0` during preview with provider-stated zero data retention. Anonymous "Stealth" provider behind it (`stealth/ox-alpha` on OpenRouter); tokenizer + video-encoder fingerprinting points to a GLM-5.3 variant (~90% confidence, officially unconfirmed). Served via Zen `chat/completions`; listed by `/v1/models` for BYOK keys since 2026-08-22 (absent from that listing on launch day 2026-08-21, callable by ID even then).
 
 Live catalog check: `cat ~/.config/opencode/.zen-key; curl https://opencode.ai/zen/v1/models | jq`. BYOK keys get worse rate limits than the shared pool — do not BYOK unless needed.
 
