@@ -128,7 +128,8 @@ chezmoi-axi sync --preview    # see what's coming first
 
 Verify: `chezmoi-axi verify` — should be clean.
 
-Note: chezmoi update also runs automatically via cron every 30 min.
+Note: `chezmoi-axi sync --force` also runs automatically via cron every 30 min (stamps
+start/end with exit code and rotates `.chezmoi-sync.log` at 512 KiB).
 
 ---
 
@@ -209,7 +210,7 @@ steps[6]{step,action}:
   5,Gate 2 — `chezmoi-axi status` / `verify` / `diff` again before the PR lands; fix anything unexpected.
   6,"After merge — `chezmoi git -- checkout master && chezmoi git -- pull`, so the local repo always lands back on master and no future commit targets the wrong branch."
 
-The preferred path (no-mistakes) opens the PR and owns branch cleanup and merge monitoring. Other machines pick up merged changes on next chezmoi update (cron every 30 min).
+The preferred path (no-mistakes) opens the PR and owns branch cleanup and merge monitoring. Other machines pick up merged changes on the next cron `chezmoi-axi sync --force` (every 30 min).
 
 ---
 
