@@ -698,7 +698,7 @@ GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" \
 if $IS_MAC; then
     echo "==> macOS: use launchd for auto-sync"
 else
-    L="*/30 * * * * export PATH=\$HOME/bin:\$HOME/.local/bin:\$PATH; chezmoi-axi sync --force >> \$HOME/.local/share/chezmoi/.chezmoi-sync.log 2>&1"
+    L="*/30 * * * * export PATH=\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH; chezmoi-axi sync --force >> \$HOME/.local/share/chezmoi/.chezmoi-sync.log 2>&1"
     {
         crontab -l 2>/dev/null | grep -v -E 'chezmoi update|chezmoi-axi sync' || true
         echo "$L"

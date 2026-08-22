@@ -511,7 +511,7 @@ _sync_run() {
   chezmoi git -- fetch origin 2>/dev/null || true
 
   local remote_commits
-  remote_commits=$(chezmoi git -- log --oneline HEAD..origin/master 2>/dev/null | wc -l || echo 0)
+  remote_commits=$({ chezmoi git -- log --oneline HEAD..origin/master 2>/dev/null || true; } | wc -l)
 
   if [[ "$remote_commits" -eq 0 && "$force" != "true" ]]; then
     echo "sync: already up to date"
