@@ -1,0 +1,58 @@
+{
+  "providers": {
+    "commandcode": {
+      "baseUrl": "https://api.commandcode.ai/provider/v1",
+      "api": "openai-completions",
+      "apiKey": "$COMMAND_CODE_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "glm-5.1",
+          "name": "GLM 5.1 (GOAT)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "cloudflare": {
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai/v1",
+      "api": "openai-completions",
+      "apiKey": "$CLOUDFLARE_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "@cf/zai-org/glm-5.2",
+          "name": "GLM 5.2 (Cloudflare)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "opencode-go": {
+      "baseUrl": "https://opencode.ai/zen/go/v1",
+      "api": "openai-completions",
+      "apiKey": "$OPENCODE_ZEN_API_KEY",
+      "models": [
+        {
+          "id": "glm-5.1",
+          "name": "GLM 5.1 (OpenCode Go)",
+          "reasoning": true,
+          "contextWindow": 202752,
+          "maxTokens": 32768,
+          "cost": { "input": 1.4, "output": 4.4, "cacheRead": 0.26, "cacheWrite": 0 },
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -51,3 +51,7 @@ age-key.txt.age
 # own VCS, not dotfiles material (2026-08-13)
 .agents/skills/skywork-skills/.git
 .agents/skills/skywork-skills/.git/**
+
+# pi-provider fallback: machine-local key snapshot for the no-mistakes gate
+# daemon (sourced from the .config/opencode/*-key files; secrets, never committed)
+.config/opencode/.pi-env
