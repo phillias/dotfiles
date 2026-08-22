@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Timestamped, size-capped runner for the periodic chezmoi-axi sync (crontab).
+# Appends date-stamped start/end lines around `chezmoi-axi sync --force` to
+# ~/.local/share/chezmoi/.chezmoi-sync.log and rotates the log to
+# .chezmoi-sync.log.old once it reaches CHEZMOI_SYNC_LOG_MAX bytes (512 KiB
+# default). Exit code mirrors the sync command.
+set -u
+
+LOG="${HOME}/.local/share/chezmoi/.chezmoi-sync.log"
+MAX_BYTES="${CHEZMOI_SYNC_LOG_MAX:-524288}"
+
+stamp() { date '+%Y-%m-%dT%H:%M:%S%z'; }
+
+mkdir -p "${LOG%/*}"
+if [ -f "$LOG" ] && [ "$(wc -c <"$LOG")" -ge "$MAX_BYTES" ]; then
+  mv -f "$LOG" "$LOG.old"
+fi
+
+echo "[$(stamp)] chezmoi-axi sync --force start" >>"$LOG"
+chezmoi-axi sync --force >>"$LOG" 2>&1
+rc=$?
+echo "[$(stamp)] chezmoi-axi sync --force end rc=$rc" >>"$LOG"
+
+exit "$rc"
