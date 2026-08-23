@@ -6,6 +6,11 @@
 
 [settings]
 not_found_system_fallback = true  # shims fall back to system PATH binaries when unresolvable
+# aube (mise's embedded npm installer) runs a trust check that aborts
+# non-interactively for packages whose short name isn't in mise's tool registry
+# (codemem, composio) — "user aborted `mise add <name>`". Shell out to the real
+# npm CLI instead, which skips that check. See mise docs/dev-tools/backends/npm.md.
+npm.shell_out = true
 
 [tools]
 "npm:chrome-devtools-axi" = "0.1.29"
