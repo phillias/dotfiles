@@ -1,0 +1,20 @@
+# mise global tool manifest — declarative pins for npm-global CLI fleet.
+# System-owned runtimes (node, python, ruby, java) deliberately NOT declared:
+# the OS owns them; mise only manages the packages below via its npm backend.
+# Reconcile with: chezmoi apply (triggers run_onchange_mise-sync) or `mise install`.
+# Drift check: mise install --dry-run-code (exit 1 = declared-but-missing).
+
+[settings]
+not_found_system_fallback = true  # shims fall back to system PATH binaries when unresolvable
+
+[tools]
+"npm:chrome-devtools-axi" = "0.1.29"
+"npm:codemem" = "0.39.0"
+"npm:composio" = "1.0.0"
+"npm:gh-axi" = "0.1.30"
+"npm:lavish-axi" = "0.1.50"
+"npm:pnpm" = "11.20.0"
+"npm:quota-axi" = "0.1.24"
+"npm:tasks-axi" = "0.2.5"
+"npm:wrangler" = "4.125.0"
+"npm:@oh-my-pi/pi-coding-agent" = "17.3.1"

@@ -1,0 +1,4 @@
+# Skill-local node floor from package.json engines.node >=20.
+# Applies only inside this directory; system node elsewhere.
+[tools]
+node = "20"
