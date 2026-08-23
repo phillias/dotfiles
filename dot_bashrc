@@ -163,8 +163,14 @@ export PATH=$HOME/.npm-global/bin:$PATH
 export PATH=/home/phillias/.opencode/bin:$PATH
 # oc: one OpenCode server per host, with an explicit port for tmux attaches.
 oc() {
-  if command opencode connect http://127.0.0.1:4096 "$@" 2>/dev/null; then
-    return
+  local env_file="$HOME/docker/opencode-mgmt/.env"
+  local user pass
+  if [ -f "$env_file" ]; then
+    user="$(grep '^OPENCODE_SERVER_USERNAME=' "$env_file" 2>/dev/null | cut -d= -f2-)"
+    pass="$(grep '^OPENCODE_SERVER_PASSWORD=' "$env_file" 2>/dev/null | cut -d= -f2-)"
+  fi
+  if [ -n "$user" ] && [ -n "$pass" ]; then
+    command opencode attach http://127.0.0.1:4096 -u "$user" -p "$pass" "$@" 2>/dev/null && return
   fi
   command opencode "$@"
 }
