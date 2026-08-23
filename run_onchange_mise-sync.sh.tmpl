@@ -16,7 +16,7 @@
 # Project-level manifests (.mise.toml in mybiz, dotfiles root, skills) are
 # provisioned lazily by mise's auto_install on first entry into those dirs.
 #
-# Fingerprint (mise): {{- $s := .chezmoi.sourceDir -}}{{ output "bash" "-c" (printf "cat %s/dot_config/mise/config.toml %s/.mise.toml %s/dot_agents/skills/docker-axi/mise.toml 2>/dev/null | sha256sum | cut -d' ' -f1" $s $s $s) }}
+# Fingerprint (mise): {{ output "bash" "-c" (printf "cat '%s'/dot_config/mise/config.toml '%s'/.mise.toml '%s'/dot_agents/skills/docker-axi/mise.toml 2>/dev/null | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir .chezmoi.sourceDir .chezmoi.sourceDir) }}
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -26,11 +26,18 @@ if ! command -v mise >/dev/null 2>&1; then
 fi
 
 DRIFT_LOG="$(mktemp)"
-trap 'rm -f "$DRIFT_LOG"' EXIT
+INSTALL_LOG="$(mktemp)"
+trap 'rm -f "$DRIFT_LOG" "$INSTALL_LOG"' EXIT
 
 if ! mise install --dry-run-code >"$DRIFT_LOG" 2>&1; then
   echo "[mise-drift] declared-vs-installed drift detected:"
   sed 's/^/  /' "$DRIFT_LOG" || true
 fi
 
-mise install 2>&1 || echo "[mise-sync] some tools could not be installed; see drift report above"
+# Reconcile: install declared tools. A per-tool install failure (e.g. an
+# upstream backend limitation) must not fail the whole sync; report and continue
+# so the periodic sync stays green and the installable tools still reconcile.
+if ! mise install >"$INSTALL_LOG" 2>&1; then
+  echo "[mise-sync] one or more tools failed to install:"
+  sed 's/^/  /' "$INSTALL_LOG" || true
+fi
