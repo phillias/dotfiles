@@ -75,8 +75,13 @@ content changes (and on every machine):
 run_onchange_mise-sync.sh.tmpl — declarative tool manifest reconciliation, triggered when any
 mise manifest changes (fingerprint covers `dot_config/mise/config.toml`, `.mise.toml`, and
 `dot_agents/skills/docker-axi/mise.toml`):
-  responsibilities: drift-check (`mise install --dry-run-code`) then reconcile (`mise install`)
-  constraint: additive only — does NOT prune; skips gracefully if mise is not installed
+  responsibilities: drift-check (`mise install --dry-run-code`) then reconcile (`mise install`);
+    a per-tool install failure is reported but does not fail the sync, so the periodic
+    chezmoi-axi sync stays green while installable tools still reconcile
+  constraint: additive only — does NOT prune; skips gracefully if mise is not installed;
+    `npm.shell_out = true` in `dot_config/mise/config.toml` routes npm-backed tools
+    through the real npm CLI to bypass aube's non-interactive trust-check abort for
+    packages not in mise's tool registry (codemem, composio)
 
 Legacy note: an older SKILL.md listed `run_once_cleanup-stale.sh.tmpl`; that script no longer
 exists — its cleanup job moved into the consolidated run_onchange above.
