@@ -10,6 +10,9 @@ age-key.txt.age
 # Machine-specific git identity — different per box
 .gitconfig
 
+# Repo-local mise manifest — not applied to home; home uses dot_config/mise/config.toml
+.mise.toml
+
 # SSH known_hosts — mutable per-machine, changes on every new connection
 .ssh/known_hosts
 

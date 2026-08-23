@@ -72,6 +72,12 @@ content changes (and on every machine):
   constraint: can never call `chezmoi add` itself (runs while chezmoi holds the state lock) —
     it prints the add commands instead
 
+run_onchange_mise-sync.sh.tmpl — declarative tool manifest reconciliation, triggered when any
+mise manifest changes (fingerprint covers `dot_config/mise/config.toml`, `.mise.toml`, and
+`dot_agents/skills/docker-axi/mise.toml`):
+  responsibilities: drift-check (`mise install --dry-run-code`) then reconcile (`mise install`)
+  constraint: additive only — does NOT prune; skips gracefully if mise is not installed
+
 Legacy note: an older SKILL.md listed `run_once_cleanup-stale.sh.tmpl`; that script no longer
 exists — its cleanup job moved into the consolidated run_onchange above.
 
