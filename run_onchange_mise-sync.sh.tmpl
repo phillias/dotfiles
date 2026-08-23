@@ -9,6 +9,9 @@
 #   2. Reconcile: plain `mise install` provisions exactly what is declared.
 #      Additive only - never removes anything (that is `mise prune`, which
 #      is deliberately NOT wired here yet).
+#   Availability-first: if some tools cannot install (e.g. interactive npm
+#   backend prompts), the drift report already surfaced them and the hook
+#   exits 0 so chezmoi apply always succeeds.
 #
 # Project-level manifests (.mise.toml in mybiz, dotfiles root, skills) are
 # provisioned lazily by mise's auto_install on first entry into those dirs.
