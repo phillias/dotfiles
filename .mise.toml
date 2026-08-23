@@ -1,0 +1,5 @@
+# Repo-local dev environment (NOT applied to home - literal dotfile is chezmoi-ignored).
+# node 22 matches .github/workflows/ci.yml. System node remains the machine default;
+# this override applies only inside this working tree.
+[tools]
+node = "22"

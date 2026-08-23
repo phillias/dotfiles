@@ -1,0 +1,33 @@
+#!/bin/bash
+# mise sync: drift pre-flight + reconcile for the declared tool manifest.
+#
+# Fingerprint covers every mise manifest this hook reconciles; editing any of
+# them re-renders this script and re-runs it on the next `chezmoi apply`.
+#   1. Pre-flight: `mise install --dry-run-code` exits non-zero when a
+#      declared tool is missing or version-mismatched -> print the drift
+#      lines as an informative report (the "what's missing" message).
+#   2. Reconcile: plain `mise install` provisions exactly what is declared.
+#      Additive only - never removes anything (that is `mise prune`, which
+#      is deliberately NOT wired here yet).
+#
+# Project-level manifests (.mise.toml in mybiz, dotfiles root, skills) are
+# provisioned lazily by mise's auto_install on first entry into those dirs.
+#
+# Fingerprint (mise): {{ output "bash" "-c" "cat {{ .chezmoi.sourceDir | quote }}/dot_config/mise/config.toml {{ .chezmoi.sourceDir | quote }}/.mise.toml {{ .chezmoi.sourceDir | quote }}/dot_agents/skills/docker-axi/mise.toml 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+
+if ! command -v mise >/dev/null 2>&1; then
+  echo "[mise-sync] mise not installed on this machine; skipping (install: curl -fsSL https://mise.run | sh)"
+  exit 0
+fi
+
+DRIFT_LOG="$(mktemp)"
+trap 'rm -f "$DRIFT_LOG"' EXIT
+
+if ! mise install --dry-run-code >"$DRIFT_LOG" 2>&1; then
+  echo "[mise-drift] declared-vs-installed drift detected:"
+  sed 's/^/  /' "$DRIFT_LOG" || true
+fi
+
+mise install

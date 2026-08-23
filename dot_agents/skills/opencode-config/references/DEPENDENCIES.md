@@ -10,12 +10,12 @@ The OpenCode config and the firstmate distro rely on a set of host tools. All pa
 | chezmoi | dotfiles source-of-truth (`~/.local/share/chezmoi`); configs are chezmoi-tracked, machine diffs via `.tmpl` | system |
 | gh | GitHub (issues/PRs/checks/releases); `gh-axi` skill wraps it | ~/bin/gh |
 | bw | Bitwarden CLI (vault/secrets); `bws-axi` skill wraps BWS | ~/bin/bw |
-| wrangler | Cloudflare Workers CLI (deploy/dev) | ~/.npm-global/bin/wrangler |
+| wrangler | Cloudflare Workers CLI (deploy/dev) | mise-managed (shim via `mise activate`) |
 | sqlite3 | local DB reads + opencode.db session queries (commit identity resolution) | /usr/bin/sqlite3 |
 | no-mistakes | delivery-pipeline gate (PR/review/CI; dotfiles runs `no_ci: true` — empty forge checks pass) | ~/.local/bin/no-mistakes |
 | node | JSONC validation, drift scripts (catalog-drift.mjs) | system |
 | jq | JSON parsing (Zen model catalog checks) | system |
-| **mise** | runtime/env manager (NEW — dependency to be added; manages toolchains like node/gh versions) | not yet on PATH |
+| **mise** | declarative npm-global CLI fleet + per-project node pins; activated in zshrc | ~/.local/bin/mise |
 
 ## API keys (`~/.config/opencode/.*-key` files, chezmoi age-encrypted)
 

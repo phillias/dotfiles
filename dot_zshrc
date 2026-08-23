@@ -370,3 +370,7 @@ export LD_LIBRARY_PATH="$HOME/.local/lib:$LD_LIBRARY_PATH"
 
 # User-local binaries (chezmoi, omp, lldb-dap, dlv, etc.)
 export PATH="$HOME/.local/bin:$HOME/go/bin:$PATH"
+
+# mise (last: shims must precede every export above to win version resolution)
+# mise - pinned tool manifest (~/.config/mise/config.toml); shims precede legacy npm-global
+command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
