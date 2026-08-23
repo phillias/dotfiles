@@ -22,9 +22,12 @@ if ! command -v mise >/dev/null 2>&1; then
   exit 0
 fi
 
-if ! mise install --dry-run-code >/tmp/mise-drift.log 2>&1; then
+DRIFT_LOG="$(mktemp)"
+trap 'rm -f "$DRIFT_LOG"' EXIT
+
+if ! mise install --dry-run-code >"$DRIFT_LOG" 2>&1; then
   echo "[mise-drift] declared-vs-installed drift detected:"
-  sed 's/^/  /' /tmp/mise-drift.log || true
+  sed 's/^/  /' "$DRIFT_LOG" || true
 fi
 
 mise install
