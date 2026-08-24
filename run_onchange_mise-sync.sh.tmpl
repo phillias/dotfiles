@@ -16,7 +16,7 @@
 # Project-level manifests (.mise.toml in mybiz, dotfiles root, skills) are
 # provisioned lazily by mise's auto_install on first entry into those dirs.
 #
-# Fingerprint (mise): {{- $s := .chezmoi.sourceDir -}}{{ output "bash" "-c" (printf "cat '%s'/dot_config/mise/config.toml '%s'/.mise.toml '%s'/dot_agents/skills/docker-axi/mise.toml 2>/dev/null | sha256sum | cut -d' ' -f1" $s $s $s) }}
+# Fingerprint (mise): {{ output "bash" "-c" (printf "cat '%s'/dot_config/mise/config.toml '%s'/.mise.toml '%s'/dot_agents/skills/docker-axi/mise.toml 2>/dev/null | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir .chezmoi.sourceDir .chezmoi.sourceDir) }}
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 

@@ -160,7 +160,7 @@ alias carb='docker run -it --rm --network host fathyb/carbonyl'
 
 # opencode
 export PATH=$HOME/.npm-global/bin:$PATH
-export PATH=/home/phillias/.opencode/bin:$PATH
+export PATH=$HOME/.opencode/bin:$PATH
 # oc: one OpenCode server per host, with an explicit port for tmux attaches.
 oc() {
   local env_file="$HOME/docker/opencode-mgmt/.env"
@@ -232,3 +232,7 @@ if [ -f "$HOME/.config/opencode/.openrouter-key" ]; then
     export OPENROUTER_API_KEY="$(cat $HOME/.config/opencode/.openrouter-key)"
 fi
 export PATH="$HOME/.npm-global/bin:$PATH"
+
+# mise (last: shims must precede every export above to win version resolution)
+# mise - pinned tool manifest (~/.config/mise/config.toml); shims precede legacy npm-global
+command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"
