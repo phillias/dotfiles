@@ -358,7 +358,7 @@ fi
 export PLAYWRIGHT_BROWSERS_PATH=$HOME/.cache/ms-playwright
 
 # pnpm
-export PNPM_HOME="/home/phillias/.local/share/pnpm"
+export PNPM_HOME="$HOME/.local/share/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME/bin:"*) ;;
   *) export PATH="$PNPM_HOME/bin:$PATH" ;;
