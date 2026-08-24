@@ -22,6 +22,7 @@ npm.shell_out = true
 "npm:quota-axi" = "0.1.24"
 "npm:tasks-axi" = "0.2.5"
 "npm:wrangler" = "4.125.0"
+"npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin)
 # @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
 # The working `pi` is @earendil-works/pi-coding-agent@0.84.2 (legacy global, kept).
 # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
