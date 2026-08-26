@@ -507,6 +507,10 @@ _sync_run() {
     esac
   done
 
+  # Force the passphrase-free deploy key for all git SSH operations so
+  # sync never prompts — safe for cron, agents, and headless contexts.
+  export GIT_SSH_COMMAND="ssh -i ~/.ssh/chezmoi-deploy-key -o IdentitiesOnly=yes -o BatchMode=yes"
+
   echo "syncing: fetching remote changes..."
   chezmoi git -- fetch origin 2>/dev/null || true
 
