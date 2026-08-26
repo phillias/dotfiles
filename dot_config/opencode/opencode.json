@@ -929,12 +929,54 @@
         }
       }
     },
+    "zai-coding": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Z.AI Coding Plan",
+      "options": {
+        "baseURL": "https://api.z.ai/api/coding/paas/v4",
+        "apiKey": "{file:~/.config/opencode/.zai-key}"
+      },
+      "models": {
+        "glm-5.3": {
+          "name": "GLM 5.3",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "glm-5.2": {
+          "name": "GLM 5.2",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "glm-5-turbo": {
+          "name": "GLM 5 Turbo",
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "glm-4.7": {
+          "name": "GLM 4.7",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "temperature": true
+        }
+      }
+    },
     "cloudflare": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Cloudflare Workers AI",
       "options": {
-        "baseURL": "https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai/v1",
-        "apiKey": "{file:~/.config/opencode/.cloudflare-key}"
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
       },
       "models": {
         "@cf/meta/llama-3.3-70b-instruct-fp8-fast": {

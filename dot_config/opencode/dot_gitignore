@@ -4,3 +4,5 @@ package-lock.json
 bun.lock
 .gitignore
 .cloudflare-key
+.zai-key
+.cf-ai-gw-token
