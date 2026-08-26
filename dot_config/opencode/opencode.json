@@ -1668,6 +1668,48 @@
           }
         }
       }
+    },
+    "zai-coding": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Z.AI Coding Plan Lite",
+      "options": {
+        "baseURL": "https://api.z.ai/api/coding/paas/v4",
+        "apiKey": "{file:~/.config/opencode/.zai-key}"
+      },
+      "models": {
+        "glm-5.3": {
+          "name": "GLM-5.3",
+          "limit": {
+            "context": 262000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "glm-5.2": {
+          "name": "GLM-5.2",
+          "limit": {
+            "context": 262000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "glm-5-turbo": {
+          "name": "GLM-5-Turbo",
+          "limit": {
+            "context": 262000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "glm-4.7": {
+          "name": "GLM-4.7",
+          "limit": {
+            "context": 131000,
+            "output": 8192
+          },
+          "temperature": true
+        }
+      }
     }
   },
   "compaction": {
