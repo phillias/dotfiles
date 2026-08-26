@@ -7,9 +7,8 @@
   // 7am-11pm operational hours. Cloudflare Workers AI now routes through
   // AI Gateway (BYOK) for analytics/caching; $50/mo spend cap enforced.
   // OpenRouter added for cheapest GLM-5 per-token overflow ($0.60/$1.92).
-  // GOAT leads (decision B) so its exhaustion rate is observable; may be
-  // re-ordered after experience. go-pool-guard.ts retired 2026-08-12 —
-  // reactive chain stepping here is the single owner of exhaustion handling.
+  // go-pool-guard.ts retired 2026-08-12 — reactive chain stepping here is
+  // the single owner of exhaustion handling.
   //
   // Fleet taxonomy (the retired OmO agent keys are gone): the global ladder is
   // firstmate's + every secondmate's session chain (no agent name → resolves
@@ -177,9 +176,9 @@
     "deep": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
+        "zai-coding/glm-5.2",
         "commandcode/moonshotai/Kimi-K2.6",
         "opencode-go/kimi-k2.6",
-        "zai-coding/glm-5.2",
         "opencode-zen/kimi-k2.6"
       ],
       "no_global_tail": true
@@ -187,9 +186,9 @@
     "unspecified-high": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
+        "zai-coding/glm-5.2",
         "commandcode/moonshotai/Kimi-K2.6",
         "opencode-go/kimi-k2.6",
-        "zai-coding/glm-5.2",
         "opencode-zen/kimi-k2.6"
       ],
       "no_global_tail": true
