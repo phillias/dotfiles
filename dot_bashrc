@@ -231,6 +231,9 @@ fi
 if [ -f "$HOME/.config/opencode/.openrouter-key" ]; then
     export OPENROUTER_API_KEY="$(cat $HOME/.config/opencode/.openrouter-key)"
 fi
+if [ -f "$HOME/.config/opencode/.zai-key" ]; then
+    export ZHIPU_API_KEY="$(cat $HOME/.config/opencode/.zai-key)"
+fi
 export PATH="$HOME/.npm-global/bin:$PATH"
 
 # mise (last: shims must precede every export above to win version resolution)
