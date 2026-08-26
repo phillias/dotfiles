@@ -173,16 +173,19 @@ stateDiagram-v2
 Classification is retryable on status code, `ProviderAuthError`, or the
 RETRYABLE_PATTERN regex (`rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust`).
 
-**Global ladder:** **paid-first since 2026-08-12** — big-pickle → Command Code
-GOAT → opencode-go → **Cloudflare free** (kimi-k2.7-code, glm-4.7-flash;
-small-prompts only — 262K/131K context) → opencode-zen free →
-together Ternary-Bonsai (single-shot only) → nvidia NIM (~40 RPM shared, max
-1-2 per chain) → openrouter free → baseten subsidized → google/gemini-2.5-flash
-(paid last resort). Cloudflare moved ahead of Zen free **2026-08-16** (captain
-decision): CF's free tier is higher quality (kimi-k2.7-code, glm-4.7-flash) and
-throttles at 300 RPM vs Zen free ~200/day. KTD6 constraints: GPT-class models
-only via `opencode/` prefix; Ternary Bonsai never primary; 400 stays in
-`retry_on_errors`. Full policy and rationale in §2.6.
+**Global ladder:** **paid-first since 2026-08-12** — big-pickle → OpenCode Go
+→ Command Code GOAT → **Z.AI Coding Plan Lite** (GLM-5.3/5.2/5-Turbo,
+credits-based, 0.5× off-peak) → **Cloudflare AI Gateway** (BYOK, analytics,
+$50/mo spend cap; kimi-k2.7-code, glm-4.7-flash; small-prompts only —
+262K/131K context) → **OpenRouter** (cheapest GLM-5 per-token) → OpenCode Zen
+free → together Ternary-Bonsai (single-shot only) → nvidia NIM (~40 RPM shared,
+max 1-2 per chain) → openrouter free → baseten subsidized →
+google/gemini-2.5-flash (paid last resort). Z.AI added 2026-08-25 (captain
+decision): Lite plan provides exclusive GLM-5.3 and credits-based metering with
+off-peak advantage during ET hours. OpenRouter added 2026-08-25 for cheapest
+GLM-5 overflow. KTD6 constraints: GPT-class models only via `opencode/` prefix;
+Ternary Bonsai never primary; 400 stays in `retry_on_errors`. Full policy and
+rationale in §2.6.
 
 **Per-entry settings** (`temperature`/`maxOutputTokens`/`options`) are promoted
 **only when that entry is active** — from the agent or category fallback entry —
@@ -212,7 +215,7 @@ unavailable in this API version so the annotation rides system-transform.
   `${OPENCODE_MODEL:-firstmate}@$(hostname -s)` (deliberate, not the opencode.db
   chain).
 
-### 2.6 Paid-first fallback policy (GOAT → Go → Cloudflare → Zen → free)
+### 2.6 Paid-first fallback policy (GO → GOAT → Z.AI → Cloudflare → OpenRouter → Zen)
 
 **2026-08-12 (captain decision):** fallback reverses from free-first to
 **paid-first** — prepaid flat-rate pools are spent before throttled free tiers:
@@ -231,6 +234,25 @@ small-prompts-only constraint carries over (CF context windows are 131-262K;
 prompts must fit before CF is reached, and the 24K llama must still sit at the
 END of chains).
 
+**2026-08-25 (captain decision):** Two structural changes:
+1. **Z.AI Coding Plan Lite ($18/mo)** inserted between GOAT and Cloudflare.
+   Chain: **Go → GOAT → Z.AI → Cloudflare → OpenRouter → Zen**. Z.AI Lite
+   provides exclusive GLM-5.3 access, plus GLM-5.2 and GLM-5-Turbo at
+   credits-based metering with 0.5× off-peak during ET 7am-11pm operational
+   hours. Base URL: `https://api.z.ai/api/coding/paas/v4`. The Coding Plan
+   endpoint is restricted to supported coding tools (OpenCode is supported).
+2. **Cloudflare Workers AI rerouted through AI Gateway (BYOK)** for analytics,
+   edge caching, and a $50/mo universal spend cap. The gateway endpoint
+   (`https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/compat`) replaces
+   the direct REST API endpoint. BYOK means provider keys are stored in the
+   gateway dashboard; OpenCode authenticates with a CF AI Gateway token.
+   Workers AI remains a native provider — no custom setup needed; the `@cf/`
+   prefix routes automatically. Third-party providers (Z.AI, OpenCode, CommandCode)
+   added as custom providers in the AI Gateway dashboard with base URLs.
+3. **OpenRouter added** for cheapest GLM-5 per-token overflow ($0.60/$1.92 via
+   DeepInfra/GMICloud, vs $1.40/$4.40 direct). Sits after Cloudflare in the
+   chain.
+
 **`go-pool-guard.ts` retired 2026-08-12.** The proactive guard (polled
 `https://opencode.ai/zen/go/v1/usage`) was purged along with its
 `go-pool-*.sh` helpers: the usage endpoint now returns 401 (no auth sent → the
@@ -244,21 +266,22 @@ fleet, not the retired OmO taxonomy):
 
 - **Firstmate session** — the main session has no agent name, so
   `resolveChain` falls straight to the **global `fallback_models` ladder**,
-  which leads with `opencode-zen/big-pickle`, then GOAT → Go → Cloudflare →
-  Zen → free.
+  which leads with `opencode-zen/big-pickle`, then GO → GOAT → Z.AI →
+  Cloudflare → OpenRouter → Zen → free.
 - **Crewmates** (`task(subagent_type=...)`) — `agents.<type>` chains. Utility
   types (`general`, `explore`, ...): big-pickle primary, fallback
-  GOAT → Go → Cloudflare → Zen → free. Specialized types (oracle, metis, momus,
-  looker, science): models stay pinned, fallback GOAT → Go → Zen
-  **only** — no free downgrade; chain end surfaces as a visible failure for the
-  captain to fix.
+  GO → GOAT → Z.AI → Cloudflare → OpenRouter → Zen → free. Specialized types
+  (oracle, metis, momus, looker, science): models stay pinned, fallback
+  Z.AI → GOAT → Go → Zen **only** — no free downgrade; chain end surfaces as
+  a visible failure for the captain to fix.
 - **Categories** (`task(category=...)`) — `categories.<name>` chains. Utility
-  categories (`quick`, `unspecified-low`): big-pickle + GOAT → Go → Cloudflare →
-  Zen → free. High-intensity/specialized categories (`ultrabrain`, `deep`,
-  `unspecified-high`, `visual-engineering`, `artistry`, `writing`): models stay
-  pinned, fallback GOAT → Go → Zen only.
+  categories (`quick`, `unspecified-low`): big-pickle + GO → GOAT → Z.AI →
+  Cloudflare → OpenRouter → Zen → free. High-intensity/specialized categories
+  (`ultrabrain`, `deep`, `unspecified-high`, `visual-engineering`, `artistry`,
+  `writing`): models stay pinned, fallback Z.AI → GOAT → Go → Zen only.
 - **Secondmates** — same chezmoi-synced config; their main sessions resolve the
-  global ladder (big-pickle → GOAT → Go → Cloudflare → Zen → free).
+  global ladder (big-pickle → GO → GOAT → Z.AI → Cloudflare → OpenRouter →
+  Zen → free).
 
 The LLM determines a subagent's model by choosing the task shape at the intent
 gate (dispatch-rules.json → `task(category=...)` / `task(subagent_type=...)`);
@@ -620,7 +643,7 @@ no symlinks. OmO-era material is archived in `ARCHIVE-OMO.md`.
 
 ### 7.1 `~/.config/opencode/` tree (live)
 
-- `opencode.json` — root config: providers + MCPs + compaction (18 providers)
+- `opencode.json` — root config: providers + MCPs + compaction (19 providers)
 - `opencode-fallback.jsonc` — global default fallback (PAID-FIRST chain; project > global first-match-wins)
 - `dispatch-rules.json` — 30 crew-dispatch rules
 - `plugins/` — fleet-state-writer.ts, self-learning-autocapture.ts, axi-memory-bridge.ts, tps-status.tsx, opencode-runtime-fallback.ts (retired: better-compaction.ts, tmux-subagent-activator.ts, go-pool-guard.ts)

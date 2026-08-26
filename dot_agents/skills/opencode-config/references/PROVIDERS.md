@@ -2,16 +2,17 @@
 
 Live provider + model reference for the OpenCode config. Chain design lives in `DESIGN.md`; agent/category routing lives in `AGENTS.md` and `~/.config/opencode/opencode-fallback.jsonc`. All prices USD per 1M tokens (input/output) unless noted; all limits verified against the live config or provider docs on the dated line.
 
-## Provider stack (18 configured)
+## Provider stack (19 configured)
 
 | Provider | Role | Cost |
 |---|---|---|
 | opencode-zen | primary quality (big-pickle) + free tier | free ~200/day / paid |
-| commandcode (GOAT) | paid-first ladder lead | $10/mo → $70 usage (7×) |
-| opencode-go | subsidized pool | $5 first mo → $10/mo → $60 usage |
-| cloudflare | free ladder (300 RPM) | $0 |
+| commandcode (GOAT) | paid-first ladder stage 2 | $10/mo → $70 usage (7×) |
+| opencode-go | subsidized pool, ladder lead | $5 first mo → $10/mo → $60 usage |
+| zai-coding | Z.AI Coding Plan Lite, credits-based | $18/mo |
+| cloudflare | AI Gateway BYOK, analytics, $50/mo cap | $0 (Workers AI free tier) |
 | nvidia | free ladder (40 RPM shared) | $0 |
-| openrouter | free ladder (50/day) | $0 |
+| openrouter | free ladder (50/day) + cheapest GLM-5 overflow | $0 / pay |
 | together | free single-shot (Bonsai) | $0 |
 | baseten | pay-per-token ($30 credits) | pay |
 | google | pay last resort | pay |
@@ -91,7 +92,7 @@ Deprecated on Go: GLM-5, Kimi K2.5, Qwen3.5 Plus, MiMo V2 Pro, MiMo V2 Omni.
 
 ## Command Code GOAT (Langbase, $10/mo → $70 usage, 34 models)
 
-Rolling limits $14/5h, $35/wk, $70/mo; on-demand credits never window-throttled. GOAT leads the paid-first ladder (decision B, DESIGN.md §2.6) so exhaustion is observable. Key: `~/.config/opencode/.command-code.key` → `COMMANDCODE_API_KEY`, chezmoi age-encrypted 2026-08-12 (`{file:...}`).
+Rolling limits $14/5h, $35/wk, $70/mo; on-demand credits never window-throttled. GOAT is stage 2 of the paid-first ladder (DESIGN.md §2.6); Go leads since 2026-08-25. Key: `~/.config/opencode/.command-code.key` → `COMMANDCODE_API_KEY`, chezmoi age-encrypted 2026-08-12 (`{file:...}`).
 
 Per-model allowances: GLM-5.2 $70, GPT-5.6 Luna $70 (~51.8K req), Hy3 $70, DS V4 Flash $60, K2.7 Code $60, MiniMax M3 $47, Qwen Max/Plus $33, MiMo V2.5 $30; new/negotiating models 2× = $20. Free on GOAT: Laguna S 2.1, Ling 3.0 Flash.
 
@@ -100,6 +101,14 @@ Per-model allowances: GLM-5.2 $70, GPT-5.6 Luna $70 (~51.8K req), Hy3 $70, DS V4
 **Premium NOT on GOAT:** claude-* (7), gpt-5.6-sol/terra, gpt-5.5, gpt-5.4, gpt-5.3-codex, gpt-5.4-mini, google/gemini-* (4), sakana/fugu-ultra, meta/muse-spark-1.1.
 
 GOAT edge: bigger pool + closed-model access (Luna, Grok). Deals: DS V4 Pro 4× permanent; MiMo V2.5/Pro up to 99% off.
+
+## Z.AI Coding Plan Lite ($18/mo, credits-based, 4 models)
+
+Added 2026-08-25 (captain decision). Base URL: `https://api.z.ai/api/coding/paas/v4`. Key: `.zai-key` → `{file:~/.config/opencode/.zai-key}`, chezmoi age-encrypted.
+
+**Models:** GLM-5.3 (262K/8K, exclusive to Coding Plan), GLM-5.2 (262K/8K), GLM-5-Turbo (262K/8K), GLM-4.7 (131K/8K).
+
+**Metering:** credits-based with 0.5× off-peak during ET 7am–11pm operational hours. The Coding Plan endpoint is restricted to supported coding tools; OpenCode is supported. Sits between GOAT and Cloudflare in the paid-first ladder (DESIGN.md §2.6).
 
 ## Other providers (spot/experimental)
 
@@ -142,6 +151,7 @@ Single Qwen/Qwen3.6-35B-A3B-FP8 (262K, free experimental). **NO SLA/DPA/rate-lim
 
 ## Recently added models
 
+- **Z.AI Coding Plan Lite** — GLM-5.3 (exclusive), GLM-5.2, GLM-5-Turbo, GLM-4.7; credits-based metering with 0.5× off-peak ET 7am–11pm; $18/mo. Wired in live config 2026-08-25.
 - **Ox Alpha Free** — stealth model on Zen (`x-preview-f-free`), 1M ctx / 131K out, multimodal (text/image/video) + tool calling, free preview window with zero data retention; anonymous provider, GLM-5.3-variant per fingerprinting (unconfirmed). Wired in live config 2026-08-21.
 - **Laguna S 2.1** — 118B MoE 8B active, 262K, free (`poolside/laguna-s-2.1:free`) / 1M paid; Terminal-Bench 2.1 70.2%, SWE 78.5%.
 - **Intern-S2-Preview-397B** — 397B MoE ~120B active, 256K, free official API (chat.intern-ai.org.cn), Apache 2.0, multimodal.
@@ -167,7 +177,7 @@ Models NOT on HF: QwQ-32B (400). Broken Models replaced: gemma-4-12b → cf gemm
 **Team Profile:** defaultConcurrency 8; providerConcurrency {opencode 15, opencode-zen 15, opencode-go 8, openrouter 6}; modelConcurrency {big-pickle 2, kimi-k2.6 3, ds-v4-pro 2, gpt-5.5 2, gpt-5.4 2, gpt-5.3-codex 2, glm-5.1 2, ds-v4-flash 15, zen/kimi-k2.6 2}.
 **Free Profile:** default 5; provider {opencode 10, openrouter 5}; modelConcurrency {}.
 
-## Provider rate limits & quotas (15 providers)
+## Provider rate limits & quotas (16 providers)
 
 | Provider | Limit | omo # |
 |---|---|---|
@@ -176,6 +186,7 @@ Models NOT on HF: QwQ-32B (400). Broken Models replaced: gemma-4-12b → cf gemm
 | Zen free | ~200/day | 10 |
 | Go | $12/$30/$60 | 6 |
 | GOAT | $14/$35/$70 | planned |
+| Z.AI Coding Plan | credits-based, 0.5× off-peak ET 7am–11pm | — |
 | NVIDIA | ~40 RPM shared | 4 |
 | Baseten | 15/120 RPM | 3 |
 | Mistral | 1 req/s | — |

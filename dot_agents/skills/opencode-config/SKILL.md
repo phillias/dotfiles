@@ -9,7 +9,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 | Purpose | File |
 |---|---|
 | Design — 4 runtime systems + architecture overview | `references/DESIGN.md` |
-| Provider & model catalog (all 18 providers) | `references/PROVIDERS.md` |
+| Provider & model catalog (all 19 providers) | `references/PROVIDERS.md` |
 | Agent & category routing (fallback chains) | `references/AGENTS.md` |
 | Plugins — runtime fallback, fleet-state-writer, stack | `references/PLUGINS.md` |
 | Skills — CE stagger dispatch, related skills | `references/SKILLS.md` |
@@ -27,9 +27,9 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 5. Plugins auto-load; retired plugins enforced-removed.
 6. No symlinks, no env switching; machine diffs via chezmoi `.tmpl`, paths always `$HOME`/`%h` (never `/home/<user>`).
 
-## Chain at a glance (paid-first, 2026-08-16)
+## Chain at a glance (paid-first, 2026-08-25)
 
-`opencode-zen/big-pickle` → GOAT (Kimi-K2.6, DS-V4-Flash) → OpenCode Go (kimi-k2.6, ds-v4-flash) → **Cloudflare free** (kimi-k2.7-code, glm-4.7-flash) → Zen free (deepseek-v4-flash-free, nemotron-3-ultra-free) → free providers (nvidia, openrouter, baseten) → `google/gemini-2.5-flash`. Full taxonomy + agent/category tables: `references/AGENTS.md`. Design rationale: `references/DESIGN.md` §2.6.
+`opencode-zen/big-pickle` → OpenCode Go (kimi-k2.6, ds-v4-flash) → Command Code GOAT (Kimi-K2.6, DS-V4-Flash) → **Z.AI Coding Plan Lite** (GLM-5.2, credits-based, 0.5× off-peak ET) → **Cloudflare AI Gateway** (kimi-k2.7-code, glm-4.7-flash; BYOK, $50/mo cap) → **OpenRouter** (cheapest GLM-5 per-token) → Zen free (deepseek-v4-flash-free, nemotron-3-ultra-free) → free providers (nvidia, openrouter, baseten) → `google/gemini-2.5-flash`. Full taxonomy + agent/category tables: `references/AGENTS.md`. Design rationale: `references/DESIGN.md` §2.6.
 
 ## Config defaults (live)
 
