@@ -68,10 +68,10 @@ The runtime always knows where a running container came from; the filesystem doe
 
 ## Compound Engineering Integration
 
-When the compound-engineering skills are installed (`~/.agents/skills/ce-*`):
-- Skill catalog and chaining guide: https://github.com/EveryInc/compound-engineering-plugin/blob/main/skills/guides/README.md (fetched locally with the plugin; the cache path is version-dependent, so reference the URL)
+When the compound-engineering plugin is installed (via `opencode.json`):
+- Skill catalog and chaining guide: `~/.cache/opencode/packages/compound-engineering/skills/guides/README.md` (upstream: https://github.com/EveryInc/compound-engineering-plugin/blob/main/skills/guides/README.md)
 - `/lfg` is the default hands-off shipping gateway (plan → implement → review/fix → commit → push → PR → CI-to-green). Use `/ce-plan` when a plan gate is wanted first.
-- Plan-first → `/ce-plan`; ambiguous scope → `/ce-brainstorm`; bugs → `/ce-debug`. Skill descriptions in `~/.agents/skills/` are the authoritative routing triggers.
+- Plan-first → `/ce-plan`; ambiguous scope → `/ce-brainstorm`; bugs → `/ce-debug`. Skill descriptions in the plugin's skill list are the authoritative routing triggers.
 - Sub-agents are pinned to budget-optimized models — do not override their assignments.
 
 ## Safety Guardrails
@@ -87,7 +87,7 @@ The agent **must not** perform the following without explicit user confirmation:
 
 ## Compound Engineering Skills
 
-Short references; full trigger conditions and behavior live in each skill's `SKILL.md` (`~/.agents/skills/ce-*`):
+Short references; full trigger conditions and behavior live in each skill's `SKILL.md` (in the plugin's skills directory):
 
 - **`/lfg`** — full autonomous shipping pipeline to a green PR (plan → implement → review/fix → commit → push → PR → CI). Default gateway for clear ship requests.
 - **`/ce-plan`** — structured planning with confidence gating; durable plans in `docs/plans/`.
