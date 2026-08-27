@@ -78,7 +78,23 @@ export function isRetryableStatusCode(code: number | undefined, cfg: FallbackCon
   return (cfg.retry_on_errors ?? [429, 500, 502, 503, 504, 529]).includes(code);
 }
 
-const RETRYABLE_PATTERN = /rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust/i;
+const RETRYABLE_PATTERN = /rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust|usage.?limit|limit.?reach/i;
+
+const SUSTAINED_PATTERN = /\d+\s*-?\s*hour|hourly|usage.?limit|limit.?reach|reset at/i;
+
+export function sustainedCooldownSeconds(reason: string): number {
+  if (!reason || !SUSTAINED_PATTERN.test(reason)) return 0;
+  const resetMatch = reason.match(/reset at\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/i);
+  if (resetMatch) {
+    const isoString = resetMatch[1].replace(" ", "T") + "Z";
+    const resetTime = new Date(isoString).getTime();
+    if (!isNaN(resetTime)) {
+      const secondsLeft = Math.round((resetTime - Date.now()) / 1000);
+      return Math.max(60, secondsLeft);
+    }
+  }
+  return 5 * 3600;
+}
 
 export function classifyError(err: unknown, cfg: FallbackConfig): string {
   const d = (err as any)?.data ?? (err as any)?.error ?? err;

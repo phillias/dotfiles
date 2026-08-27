@@ -12,6 +12,7 @@ import {
   entrySettings,
   parseModel,
   classifyError,
+  sustainedCooldownSeconds,
   resolveChain,
   lookupChain,
   nextCandidate,
@@ -114,7 +115,7 @@ async function applyFallback(sessionID: string, reason: string): Promise<boolean
   if (!s || !s.activeModel) return false;
   if (s.attempts >= (cfg.max_fallback_attempts ?? 15)) return true;
 
-  cool(s.activeModel, cfg.cooldown_seconds ?? 60);
+  cool(s.activeModel, sustainedCooldownSeconds(reason) || cfg.cooldown_seconds ?? 60);
   const next = nextCandidate(s.chain, s.activeModel, inCooldown);
   const attempted = next === undefined;
   const from = s.activeModel;
