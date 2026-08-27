@@ -164,6 +164,20 @@ prune_auto_generated() {
     done
 }
 
+# Vendored CE skills now provided by the opencode plugin (opencode.json plugin
+# entry). These were installed by the skills CLI and tracked in chezmoi; they
+# were removed from chezmoi source in the plugin migration PR. Chezmoi does not
+# auto-delete formerly-managed files, so prune them here on every apply.
+prune_vendored_ce() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    local skill
+    for skill in "$dir"/ce-*/; do
+        [[ -d "$skill" ]] || continue
+        remove_verbose "$skill" "prune vendored CE skill (now via plugin)"
+    done
+}
+
 # Skills migrated to ~/.agents/skills still lingering in the opencode config
 # dir are migration leftovers (the #144 move was incomplete for ce-plan).
 # Canonical copy is in ~/.agents — prune the config-side duplicate.
@@ -233,6 +247,7 @@ repo_health() {
 cleanup_stale
 prune_auto_generated "$HOME/.config/opencode/skills"
 prune_auto_generated "$HOME/.agents/skills"
+prune_vendored_ce "$HOME/.agents/skills"
 prune_config_side_duplicates
 prune_deprecated "$HOME/.config/opencode/skills"
 prune_deprecated "$HOME/.agents/skills"
@@ -255,6 +270,10 @@ collect_unmanaged() {
         esac
         # Skip installed tool skills — tracked upstream, not in dotfiles
         is_tool_skill "$file" && continue
+        # Skip CE skills — now provided by the opencode plugin, not chezmoi
+        case "$file" in
+            */.agents/skills/ce-*) continue ;;
+        esac
         # Skip systemd units owned by an external tool's own installer (hermes
         # gateway) — divested from dotfiles, must stay unmanaged by chezmoi
         is_external_systemd_unit "$file" && continue
