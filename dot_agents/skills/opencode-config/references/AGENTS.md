@@ -19,7 +19,7 @@ Live agent/category chain design. **Authoritative source: `~/.config/opencode/op
 | 0 | `opencode-zen/big-pickle` |
 | 1 | `opencode-go/kimi-k2.6`, `opencode-go/deepseek-v4-flash` (Go) |
 | 2 | `commandcode/moonshotai/Kimi-K2.6`, `commandcode/deepseek/deepseek-v4-flash` (GOAT) |
-| 3 | `zai-coding-plan/glm-5.2` (Z.AI Coding Plan Lite — credits-based, 0.5× off-peak ET) |
+| 3 | `zai-coding/glm-5.2` (Z.AI Coding Plan Lite — credits-based, 0.5× off-peak ET) |
 | 4 | `cloudflare/@cf/moonshotai/kimi-k2.7-code`, `cloudflare/@cf/zai-org/glm-4.7-flash` (Cloudflare AI Gateway — BYOK, $50/mo cap) |
 | 5 | `openrouter/z-ai/glm-5` (OpenRouter — cheapest GLM-5 per-token overflow) |
 | 6 | `opencode-zen/deepseek-v4-flash-free`, `opencode-zen/nemotron-3-ultra-free` (Zen free) |

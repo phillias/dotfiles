@@ -40,8 +40,24 @@ jobs:
 
       - name: Install chezmoi
         run: |
-          CHEZMOI_VERSION=$(curl -sfL https://api.github.com/repos/twpayne/chezmoi/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'].lstrip('v'))")
-          curl -sfL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_amd64.deb" -o /tmp/chezmoi.deb
+          # curl -sfL has no retry, so a single transient SSL connect
+          # error (curl exit 35) fails the job under `bash -e`. Wrap the
+          # network fetches in a retry loop to make this step deterministic.
+          retry() {
+            local attempt=0 max=5 delay=5
+            until "$@"; do
+              attempt=$((attempt + 1))
+              if [ "$attempt" -ge "$max" ]; then
+                echo "command failed after $max attempts: $*" >&2
+                return 1
+              fi
+              echo "attempt $attempt failed, retrying in ${delay}s..." >&2
+              sleep "$delay"
+              delay=$((delay * 2))
+            done
+          }
+          CHEZMOI_VERSION=$(retry curl -sfL https://api.github.com/repos/twpayne/chezmoi/releases/latest | python3 -c "import json,sys; print(json.load(sys.stdin)['tag_name'].lstrip('v'))")
+          retry curl -sfL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_amd64.deb" -o /tmp/chezmoi.deb
           sudo dpkg -i /tmp/chezmoi.deb
 
       - name: Chezmoi template syntax
