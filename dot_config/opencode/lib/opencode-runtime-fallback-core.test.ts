@@ -4,6 +4,7 @@ import {
   lookupChain,
   resolveChain,
   entryModel,
+  sustainedCooldownSeconds,
 } from "./opencode-runtime-fallback-core";
 
 const GLOBAL = ["global/a", "global/b"];
@@ -100,5 +101,32 @@ describe("resolveChain", () => {
       "commandcode/deepseek/deepseek-v4-pro",
       "opencode-zen/deepseek-v4-pro",
     ]);
+  });
+});
+
+describe("sustainedCooldownSeconds", () => {
+  test("returns 0 for non-sustained errors", () => {
+    expect(sustainedCooldownSeconds("server_error: upstream unavailable")).toBe(0);
+    expect(sustainedCooldownSeconds("")).toBe(0);
+    expect(sustainedCooldownSeconds("timeout")).toBe(0);
+  });
+
+  test("parses Z.AI 5-hour limit with reset timestamp", () => {
+    const future = new Date(Date.now() + 3 * 3600 * 1000);
+    const ts = future.toISOString().replace("T", " ").slice(0, 19);
+    const reason = `Usage limit reached for 5 hour. Your limit will reset at ${ts}`;
+    const seconds = sustainedCooldownSeconds(reason);
+    expect(seconds).toBeGreaterThanOrEqual(2 * 3600);
+    expect(seconds).toBeLessThanOrEqual(3 * 3600 + 10);
+  });
+
+  test("returns 5-hour default when sustained but no parseable timestamp", () => {
+    expect(sustainedCooldownSeconds("Usage limit reached for 5 hour")).toBe(5 * 3600);
+    expect(sustainedCooldownSeconds("hourly limit exceeded")).toBe(5 * 3600);
+  });
+
+  test("floors at 60 seconds even if reset is imminent", () => {
+    const reason = "Usage limit reached for 5 hour. Your limit will reset at 2020-01-01 00:00:00";
+    expect(sustainedCooldownSeconds(reason)).toBe(60);
   });
 });
