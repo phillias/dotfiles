@@ -1,0 +1,7 @@
+# Fleet defaults — available to every chezmoi template as .fleet.* variables.
+# Note: .chezmoidata content is top-level (no [data] wrapper).
+# Per-machine override: add [data.fleet] to the local ~/.config/chezmoi/chezmoi.toml
+# (config data takes precedence over .chezmoidata files).
+[fleet]
+    # This server's Cloudflare DNS zone; referenced by firstmate/data/captain.md.tmpl
+    dnsDomain = "phillias.org"

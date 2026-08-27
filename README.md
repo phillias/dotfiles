@@ -119,3 +119,7 @@ Each machine gets its own identity via `.chezmoi.toml.tmpl` which generates mach
 ## License
 
 Personal use only.
+
+## Validation
+
+Run `scripts/validate.sh` before shipping dotfiles changes (wired for the no-mistakes test/lint steps): renders every `.tmpl`, parses `opencode.json` and `dispatch-rules.json`, prints `chezmoi doctor` informationally.

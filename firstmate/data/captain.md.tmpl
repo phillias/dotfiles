@@ -1,0 +1,32 @@
+# Captain preferences
+
+<!-- memory tiers: see the stow skill -->
+
+## Editorial rules for this file
+- Domain portability: never hardcode fleet domains; refer to "this server's Cloudflare zone", rendered from the chezmoi `fleet.dnsDomain` variable.
+- Path portability: use `~` or `$HOME`, never absolute home paths (`/home/<user>`).
+
+## Infrastructure
+- Cloudflare tunnels on this server's zone ({{ .fleet.dnsDomain }}) are managed CLOUD-SIDE ONLY: ingress changes go through the Zero Trust dashboard (connectors run token-mode/remotely-managed and hot-reload), never by editing server-side cloudflared configs or restarting those daemons. SSH through those tunnels is the critical path for fleet administrative access; a blip or misconfiguration there can sever it. (set 2026-08-22)
+- Godoxy/reverse-proxy config changes and restarts: captain handles personally; agents never touch godoxy config without explicit per-task approval. (set 2026-08-25)
+- Fallback / model-routing policy: owned by `~/.agents/skills/opencode-config/references/DESIGN.md` (§2.6) — read and update it there; never duplicate its details here. (set 2026-08-27)
+- Hermes model routing: Hermes uses `opencode-proxy` provider → proxy (port 18090) → opencode server (42069) → zen Console tier, to avoid FreeUsageLimitError on the chain-primary model. Config: `~/.hermes/config.yaml` provider=opencode-proxy, systemd drop-in for env vars. Proxy is fragile (session accumulation vs no-subscriber hang); needs event-stream fix. (set 2026-08-18)
+- Gate agent + node stack: no-mistakes gate agent is pi (upstream #633). Working `pi` bin is @earendil-works/pi-coding-agent@0.84.2, pinned in mise config.toml (PR #216/217). Node via mise (`mise use -g node@22`), `~/.local/bin/node` symlinked for the daemon PATH; hermes uses the same node. Merge posture for gated mybrain PRs: captain approves merges; hermes waits for the word. (set 2026-08-24)
+- Gate auth: gate repos use SSH origin via the `~/.ssh/config` `github.com` block first; HTTPS with the `gh auth git-credential` helper only if absolutely necessary. No ssh-agent, no systemd drop-ins, no ephemeral socket paths. pi API keys go in `~/.pi/agent/auth.json` (0600 perms); no plaintext secrets in systemd unit files. (set 2026-08-16)
+
+## Working style
+- Prefers free or near-free tooling and is wary of cloud-vendor lock-in; weigh cost before recommending paid or cloud capabilities. (set 2026-08-26)
+- Prefer axi skills (gh-axi, chrome-devtools-axi, lavish-axi, quota-axi, chezmoi-axi, mem) over exec-ing out to raw CLIs; they are the agent-ergonomic surface for those tools. (set 2026-08-27)
+- Prefer local skill references (e.g. `~/.agents/skills/*/references/`) over web fetching when the material exists locally; check the filesystem first. (set 2026-08-26)
+- Automated config sync must run non-interactively: use the wrapper (chezmoi-axi), never a bootstrap, rugged for no-TTY, no user interaction, failing gracefully. (set 2026-08-26)
+- Dotfiles changes: disable the chezmoi sync crontab before editing source, then edit → chezmoi re-add → PR to phillias/dotfiles (base master), and re-enable the crontab after the PR ships; merge is the captain gate. After each merge: validate → fast-forward local master → branch cleanup. (set 2026-08-27)
+- Do not track machine-generated artifacts in dotfiles (no-mistakes daemon unit, bun.lock). (set 2026-08-25)
+- Git history surgery on upstream-managed installs (reset --hard etc.): state explicitly what lives inside vs outside the repo and what could be lost before executing — captain wants data-safety guarantees up front. (set 2026-08-25)
+
+## Task capture
+- Proactively create a backlog task for any non-trivial work — anything requiring more than one step, any investigation, any design decision, or any deliverable worth tracking — using descriptive headline-style titles readable at a glance in the todo pane; mirror backlog items into that pane at every dispatch, completion, decision, and heartbeat (queued→pending, under way→in_progress, blocked→in_progress with the blocker noted, done→completed) and re-seed at session start — the pane is a presentation mirror of `data/backlog.md`, never an authority. (set 2026-08-27)
+
+## Knowledge Portability Directive
+- Trigger: any update to `data/learnings.md`, `data/captain.md`, or `data/projects.md`.
+- Action: immediately run `axi-memory-add` with the same title and a concise summary of the body.
+- Purpose: knowledge searchable and available from every server in the fleet. (set 2026-08-27)
