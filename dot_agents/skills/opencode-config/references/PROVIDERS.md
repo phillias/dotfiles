@@ -23,7 +23,7 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 | huggingface | DORMANT (no free tier, 402 on exhaust) | — |
 | pokee | DORMANT (10M-context specialty, no key yet) | pay |
 
-**No `enabled:false` flag in opencode** — presence = available, chain-absence = never auto-used. Schema audit confirmed zero native fallback/retry keywords in opencode core; all fallback is plugin-level.
+**No `enabled:false` flag in opencode** — for configured providers, presence = available, chain-absence = never auto-used. Broken *built-in* providers are suppressed via the top-level `disabled_providers` array (live: `zai`, `zhipuai`, `zai-coding-plan`, `zhipuai-coding-plan` — built-in Z.AI/Zhipu endpoints that misbehave; the custom `zai-coding` provider above is unaffected). Schema audit confirmed zero native fallback/retry keywords in opencode core; all fallback is plugin-level.
 
 ## Free → subsidized → pay value analysis (priority ranking)
 
