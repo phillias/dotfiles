@@ -66,39 +66,13 @@ docker inspect <container> | grep -iE 'WorkingDir|com.docker.compose.*Working.*D
 
 The runtime always knows where a running container came from; the filesystem does not.
 
-## Compound-Engineering Integration
+## Compound Engineering Integration
 
-When the compound-engineering plugin is installed (skills present at `~/.agents/skills/ce-*`), route planning and execution through CE skills:
-
-### Pre-Planning Domain Alignment
-
-Before routing to ce-plan or ce-brainstorm, check whether the project has existing domain
-documentation (`CONTEXT.md`, `docs/adr/`, `BRAND.md`, or `CONTEXT-MAP.md` at repo root).
-
-When domain docs exist **AND** the request is non-trivial (Feature, Ambiguous, or Large), offer a
-`/grill-with-docs` session to align the request's terminology with the project's established language.
-This runs interactively (one question at a time) and updates `CONTEXT.md` inline.
-
-- `CONTEXT.md` exists + non-trivial scope → Offer grill-with-docs before planning
-- No CONTEXT.md + fuzzy terminology → Offer grill-with-docs optionally
-- Greenfield + large feature → Offer to establish initial CONTEXT.md via grill-with-docs
-- Trivial scope → Skip domain alignment
-
-Deployment: tracked in dotfiles via `chezmoi apply`. To install manually: `npx skills add https://github.com/mattpocock/skills --skill grill-with-docs --yes`
-
-### Routing Matrix
-
-`/lfg` is the default gateway: the full autonomous shipping pipeline (plan → implement → review/fix → commit → push → PR → CI-to-green) in one command. Other skills handle plan-first, ambiguous, and bug paths.
-
-| Request Type | Route To | Domain Variant |
-|---|---|---|
-| **Trivial** (1-2 files, no behavioral change, typo, config) | Execute directly — no plan needed | — |
-| **Clear feature/fix** (multi-step, ship intent) | `/lfg` — full pipeline to a green PR | With CONTEXT.md: `/grill-with-docs` → `/lfg` |
-| **Plan-first** (ship intent unclear; a reviewable plan is wanted before building) | `/ce-plan` → plan → `/ce-work` | With CONTEXT.md: `/grill-with-docs` → plan → execute |
-| **Ambiguous/complex** (WHAT is unclear, product decisions needed) | `/ce-brainstorm` → requirements doc → `/ce-plan` → `/ce-work` | With CONTEXT.md: `/grill-with-docs` → brainstorm → plan → execute |
-| **Bug report / error** | `/ce-debug` → fix → `/ce-compound` (optional) | — |
-
-`/lfg` is for hands-off ship-to-PR only; use `/ce-plan` when the captain wants a plan gate first. CE plans are written to `docs/plans/`; review chain: ce-doc-review (after plan) → ce-code-review (after implement) → ce-resolve-pr-feedback (post-PR).
+When the compound-engineering skills are installed (`~/.agents/skills/ce-*`):
+- Skill catalog and chaining guide: https://github.com/EveryInc/compound-engineering-plugin/blob/main/skills/guides/README.md (fetched locally with the plugin; the cache path is version-dependent, so reference the URL)
+- `/lfg` is the default hands-off shipping gateway (plan → implement → review/fix → commit → push → PR → CI-to-green). Use `/ce-plan` when a plan gate is wanted first.
+- Plan-first → `/ce-plan`; ambiguous scope → `/ce-brainstorm`; bugs → `/ce-debug`. Skill descriptions in `~/.agents/skills/` are the authoritative routing triggers.
+- Sub-agents are pinned to budget-optimized models — do not override their assignments.
 
 ## Safety Guardrails
 
@@ -129,7 +103,7 @@ Short references; full trigger conditions and behavior live in each skill's `SKI
 
 ## Model Budget Awareness
 
-All CE sub-agents are pinned to budget-optimized models. Do not override their model assignments. The session model (Sisyphus's current model) is used for skill entry points only; sub-agents use their own pinned models.
+All CE sub-agents are pinned to budget-optimized models. Do not override their model assignments. The session's current model is used for skill entry points only; sub-agents use their own pinned models.
 
 ## Token Budget Discipline
 
@@ -137,9 +111,9 @@ Token budget is a first-class design constraint. The authoritative source is the
 
 **Directive:** Treat token count as a measurable cost when building or reviewing agent-facing tools, CLIs, or structured output. Prefer TOON over JSON; default to 3-4 fields, not 10; truncate large output with size hints; include aggregates; fail with structure, not noise. **Load the full AXI skill** for CLI design, output formatting, or AXI review — not for general coding, debugging, or code review.
 
-## Dispatch Rules (Crew-Dispatch Upgrade)
+## Dispatch Rules
 
-Sisyphus reads `~/.config/opencode/dispatch-rules.json` at the Phase-0 intent gate to translate task shape into `task(...)` calls. Schema and examples live in the file itself. **Evaluation order:** (1) explicit user instruction this turn wins; (2) first matching rule in `rules[]`; (3) `default` block. Rules are advisory — Sisyphus applies judgment; ambiguous tasks may consult an oracle before dispatching. Skip the file for trivially obvious single-step tasks, mid-clarification conversations, or work already in flight. Edit the file directly; re-read it when its mtime is newer than the cached read.
+Read `~/.config/opencode/dispatch-rules.json` at task intake to translate task shape into `task(...)` calls. Schema and examples live in the file itself. **Evaluation order:** (1) explicit user instruction this turn wins; (2) first matching rule in `rules[]`; (3) the `default` block. Rules are advisory — apply judgment. Skip the file for trivially obvious single-step tasks, mid-clarification conversations, or work already in flight. Edit the file directly; re-read it when its mtime is newer than the cached read.
 
 ## Fleet State Communications (Zero-Token Background-Task Status)
 
