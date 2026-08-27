@@ -164,10 +164,13 @@ prune_auto_generated() {
     done
 }
 
-# Vendored CE skills now provided by the opencode plugin (opencode.json plugin
-# entry). These were installed by the skills CLI and tracked in chezmoi; they
-# were removed from chezmoi source in the plugin migration PR. Chezmoi does not
-# auto-delete formerly-managed files, so prune them here on every apply.
+# Vendored CE skills + agents now provided by the opencode plugin (opencode.json
+# plugin entry). Skills were installed by the skills CLI; agents were a custom
+# opencode adaptation wrapping upstream persona prompts with model-pinned
+# frontmatter. Both were removed from chezmoi source in the plugin migration
+# PR. Chezmoi does not auto-delete formerly-managed files, so prune them here.
+# The unmanaged scan is intentionally NOT skipped for ce-* so persistence is
+# visible after a failed cleanup.
 prune_vendored_ce() {
     local dir="$1"
     [[ -d "$dir" ]] || return 0
@@ -175,6 +178,16 @@ prune_vendored_ce() {
     for skill in "$dir"/ce-*/; do
         [[ -d "$skill" ]] || continue
         remove_verbose "$skill" "prune vendored CE skill (now via plugin)"
+    done
+}
+
+prune_vendored_ce_agents() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    local agent
+    for agent in "$dir"/ce-*.md; do
+        [[ -f "$agent" ]] || continue
+        remove_verbose "$agent" "prune vendored CE agent (now via plugin)"
     done
 }
 
@@ -248,6 +261,7 @@ cleanup_stale
 prune_auto_generated "$HOME/.config/opencode/skills"
 prune_auto_generated "$HOME/.agents/skills"
 prune_vendored_ce "$HOME/.agents/skills"
+prune_vendored_ce_agents "$HOME/.config/opencode/agents"
 prune_config_side_duplicates
 prune_deprecated "$HOME/.config/opencode/skills"
 prune_deprecated "$HOME/.agents/skills"
@@ -270,10 +284,6 @@ collect_unmanaged() {
         esac
         # Skip installed tool skills — tracked upstream, not in dotfiles
         is_tool_skill "$file" && continue
-        # Skip CE skills — now provided by the opencode plugin, not chezmoi
-        case "$file" in
-            */.agents/skills/ce-*) continue ;;
-        esac
         # Skip systemd units owned by an external tool's own installer (hermes
         # gateway) — divested from dotfiles, must stay unmanaged by chezmoi
         is_external_systemd_unit "$file" && continue
