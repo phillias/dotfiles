@@ -164,6 +164,33 @@ prune_auto_generated() {
     done
 }
 
+# Vendored CE skills + agents now provided by the opencode plugin (opencode.json
+# plugin entry). Skills were installed by the skills CLI; agents were a custom
+# opencode adaptation wrapping upstream persona prompts with model-pinned
+# frontmatter. Both were removed from chezmoi source in the plugin migration
+# PR. Chezmoi does not auto-delete formerly-managed files, so prune them here.
+# The unmanaged scan is intentionally NOT skipped for ce-* so persistence is
+# visible after a failed cleanup.
+prune_vendored_ce() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    local skill
+    for skill in "$dir"/ce-*/; do
+        [[ -d "$skill" ]] || continue
+        remove_verbose "$skill" "prune vendored CE skill (now via plugin)"
+    done
+}
+
+prune_vendored_ce_agents() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    local agent
+    for agent in "$dir"/ce-*.md; do
+        [[ -f "$agent" ]] || continue
+        remove_verbose "$agent" "prune vendored CE agent (now via plugin)"
+    done
+}
+
 # Skills migrated to ~/.agents/skills still lingering in the opencode config
 # dir are migration leftovers (the #144 move was incomplete for ce-plan).
 # Canonical copy is in ~/.agents — prune the config-side duplicate.
@@ -233,6 +260,8 @@ repo_health() {
 cleanup_stale
 prune_auto_generated "$HOME/.config/opencode/skills"
 prune_auto_generated "$HOME/.agents/skills"
+prune_vendored_ce "$HOME/.agents/skills"
+prune_vendored_ce_agents "$HOME/.config/opencode/agents"
 prune_config_side_duplicates
 prune_deprecated "$HOME/.config/opencode/skills"
 prune_deprecated "$HOME/.agents/skills"
