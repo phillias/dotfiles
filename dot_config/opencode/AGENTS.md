@@ -69,7 +69,7 @@ The runtime always knows where a running container came from; the filesystem doe
 ## Compound Engineering Integration
 
 When the compound-engineering plugin is installed (via `opencode.json`):
-- Skill catalog and chaining guide: `~/.cache/opencode/packages/compound-engineering/skills/guides/README.md` (upstream: https://github.com/EveryInc/compound-engineering-plugin/blob/main/skills/guides/README.md)
+- Skill catalog and chaining guide: https://github.com/EveryInc/compound-engineering-plugin/blob/main/skills/guides/README.md (the guides catalog ships on `main` only — not in the pinned release tag the plugin is running, so reference the URL, not a local path)
 - `/lfg` is the default hands-off shipping gateway (plan → implement → review/fix → commit → push → PR → CI-to-green). Use `/ce-plan` when a plan gate is wanted first.
 - Plan-first → `/ce-plan`; ambiguous scope → `/ce-brainstorm`; bugs → `/ce-debug`. Skill descriptions in the plugin's skill list are the authoritative routing triggers.
 - Sub-agents are pinned to budget-optimized models — do not override their assignments.
