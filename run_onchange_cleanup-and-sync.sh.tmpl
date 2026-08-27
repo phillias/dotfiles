@@ -80,6 +80,7 @@ STALE_TARGETS=(
     "$HOME/.config/systemd/user/codemem-anchor-watchdog.service"  # purged 2026-08-06
     "$HOME/.config/systemd/user/codemem-anchor-watchdog.timer"    # purged 2026-08-06
     "$HOME/.config/systemd/user/codemem-coordinator.service"      # purged 2026-08-06
+    "$HOME/.agents/.skill-lock.json"                          # skills CLI residue — CE now via opencode plugin (2026-08-27)
 )
 
 cleanup_stale() {
@@ -230,6 +231,9 @@ EXTERNAL_SYSTEMD_UNITS=(
 is_external_systemd_unit() {
     local name unit
     name=$(basename "$1")
+    # Machine-generated no-mistakes daemon units (hashed suffix) — live
+    # services owned by the gate, never tracked per working style.
+    [[ "$name" == no-mistakes-daemon-*.service ]] && return 0
     for unit in "${EXTERNAL_SYSTEMD_UNITS[@]}"; do
         [[ "$name" == "$unit" ]] && return 0
     done
