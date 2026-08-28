@@ -4,6 +4,17 @@
 # ─────────────────────────────────────────────────
 
 providers:
+  # ── Cloudflare Workers AI (direct REST, captain API key) ──
+  cloudflare:
+    baseUrl: https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai/v1
+    apiKey: CLOUDFLARE_API_KEY
+    api: openai-completions
+    models:
+      - id: "@cf/zai-org/glm-5.2"
+        name: GLM 5.2 (Cloudflare)
+        contextWindow: 262144
+        maxTokens: 32768
+
   # ── OpenCode Go — $10/mo subscription ──
   # Models: GLM, Kimi, DeepSeek, MiMo (OpenAI-compatible)
   #         MiniMax, Qwen (Anthropic-compatible)
@@ -135,5 +146,5 @@ providers:
 # The agent will use this model by default
 models:
   default:
-    provider: opencode-go
-    model: kimi-k2.6
+    provider: cloudflare
+    model: "@cf/zai-org/glm-5.2"
