@@ -246,9 +246,15 @@ END of chains).
    (`https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/compat`) replaces
    the direct REST API endpoint. BYOK means provider keys are stored in the
    gateway dashboard; OpenCode authenticates with a CF AI Gateway token.
-   Workers AI remains a native provider — no custom setup needed; the `@cf/`
-   prefix routes automatically. Third-party providers (Z.AI, OpenCode, CommandCode)
-   added as custom providers in the AI Gateway dashboard with base URLs.
+   **The `/compat` BYOK endpoint requires the `workers-ai/` namespace prefix
+   on `@cf/` model ids** — a bare `@cf/...` id returns HTTP 400 "Invalid
+   provider" (code 2008, verified live 2026-08-27; `workers-ai/@cf/moonshotai/kimi-k2.7-code`
+   returns a real completion). So the Cloudflare provider's model-registry
+   keys are `workers-ai/@cf/...`, and every fallback/doc reference is
+   `cloudflare/workers-ai/@cf/...`. (The earlier "Workers AI routes
+   automatically via `@cf/`" assumption applied to the direct Workers AI REST
+   endpoint, not the `/compat` BYOK path.) Third-party providers (Z.AI, OpenCode,
+   CommandCode) added as custom providers in the AI Gateway dashboard with base URLs.
 3. **OpenRouter added** for cheapest GLM-5 per-token overflow ($0.60/$1.92 via
    DeepInfra/GMICloud, vs $1.40/$4.40 direct). Sits after Cloudflare in the
    chain.

@@ -55,7 +55,7 @@ Live catalog check: `cat ~/.config/opencode/.zen-key; curl https://opencode.ai/z
 
 ## Cloudflare Workers AI (34 LLM of 77 catalog, free, 300 RPM)
 
-Free-tier ladder leader since 2026-08-16 (DESIGN.md §2.6). Prefix `cloudflare/@cf/...`.
+Free-tier ladder leader since 2026-08-16 (DESIGN.md §2.6). Prefix `cloudflare/workers-ai/@cf/...` (the AI Gateway `/compat` BYOK endpoint requires the `workers-ai/` namespace prefix on `@cf/` ids — bare `@cf/` returns HTTP 400, DESIGN.md §2.6).
 
 Key models: llama-3.3-70b-instruct-fp8-fast (24K, free-leader but MUST sit at END of chains), llama-4-scout (131K), kimi-k2.6 (262K), **kimi-k2.7-code (262K, coding)**, **glm-4.7-flash (131K)**, glm-5.2 (262K), gemma-4-26b-a4b-it (256K, thinking), qwq-32b (131K, reasoning), gpt-oss-120b/20b (128K), qwen2.5-coder-32b (32K).
 
