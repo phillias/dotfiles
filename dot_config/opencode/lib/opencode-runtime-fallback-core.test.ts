@@ -80,7 +80,7 @@ describe("resolveChain", () => {
   test("categories apply only when no agent entry matches", () => {
     const c = cfg({
       agents: { "quick": { model: "opencode-zen/big-pickle" } },
-      categories: { "quick": { model: "cloudflare/@cf/openai/gpt-oss-20b" } },
+      categories: { "quick": { model: "cloudflare/workers-ai/@cf/openai/gpt-oss-20b" } },
     });
     expect(resolveChain(c, "quick").map(entryModel)[0]).toBe("opencode-zen/big-pickle");
   });
