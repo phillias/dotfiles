@@ -76,10 +76,40 @@
       },
       "models": [
         {
+          "id": "z-ai/glm-5.2:free",
+          "name": "GLM 5.2 (OpenRouter free)",
+          "contextWindow": 256000,
+          "maxTokens": 32768
+        },
+        {
+          "id": "poolside/laguna-s-2.1:free",
+          "name": "Laguna S 2.1 (OpenRouter free)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
           "id": "nvidia/nemotron-3-super-120b-a12b:free",
           "name": "Nemotron 3 Super 120B (OpenRouter free)",
-          "contextWindow": 131072,
-          "maxTokens": 8192
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "name": "Nemotron 3 Ultra 550B (OpenRouter free)",
+          "contextWindow": 1000000,
+          "maxTokens": 32768
+        },
+        {
+          "id": "minimax/minimax-m3:free",
+          "name": "MiniMax M3 (OpenRouter free)",
+          "contextWindow": 1048576,
+          "maxTokens": 32768
+        },
+        {
+          "id": "openrouter/free",
+          "name": "Free Model Router (OpenRouter)",
+          "contextWindow": 200000,
+          "maxTokens": 32768
         }
       ]
     }
