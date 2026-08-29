@@ -242,22 +242,55 @@ END of chains).
    hours. Base URL: `https://api.z.ai/api/coding/paas/v4`. The Coding Plan
    endpoint is restricted to supported coding tools (OpenCode is supported).
 2. **Cloudflare Workers AI rerouted through AI Gateway (BYOK)** for analytics,
-   edge caching, and a $50/mo universal spend cap. The gateway endpoint
-   (`https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/compat`) replaces
-   the direct REST API endpoint. BYOK means provider keys are stored in the
-   gateway dashboard; OpenCode authenticates with a CF AI Gateway token.
-   **The `/compat` BYOK endpoint requires the `workers-ai/` namespace prefix
-   on `@cf/` model ids** — a bare `@cf/...` id returns HTTP 400 "Invalid
-   provider" (code 2008, verified live 2026-08-27; `workers-ai/@cf/moonshotai/kimi-k2.7-code`
-   returns a real completion). So the Cloudflare provider's model-registry
-   keys are `workers-ai/@cf/...`, and every fallback/doc reference is
-   `cloudflare/workers-ai/@cf/...`. (The earlier "Workers AI routes
-   automatically via `@cf/`" assumption applied to the direct Workers AI REST
-   endpoint, not the `/compat` BYOK path.) Third-party providers (Z.AI, OpenCode,
-   CommandCode) added as custom providers in the AI Gateway dashboard with base URLs.
+   edge caching, and a $50/mo universal spend cap. The provider points at the
+   **AI Gateway REST API**
+   (`https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1`) and
+   carries the `cf-aig-gateway-id: opencode` header, which selects the named
+   gateway — required for Workers AI traffic, and the only thing binding
+   requests to the gateway's analytics/caching/spend-cap controls. OpenCode
+   authenticates with a CF API token (Workers AI Read; the existing
+   `.cf-ai-gw-token` verified working live 2026-08-28).
+   **Migrated 2026-08-29 off the deprecated `/compat` endpoint** (deprecated
+   for single-model calls 2026-08-07; still required for dynamic routes).
+   The two schemes differ in model-id shape: `/compat` required the
+   `workers-ai/` namespace prefix on `@cf/` ids (bare `@cf/` returned HTTP
+   400 "Invalid provider", code 2008 — the 2026-08-27 finding), while the
+   REST API wants **bare `@cf/...` ids**. So the Cloudflare provider's
+   model-registry keys are `@cf/...`, and every fallback/doc reference is
+   `cloudflare/@cf/...` — one id scheme shared by opencode, pi, and omp
+   (contract-tested in `lib/opencode-rest-api-provider.test.ts`). Third-party
+   providers (Z.AI, OpenCode, CommandCode) added as custom providers in the
+   AI Gateway dashboard with base URLs.
 3. **OpenRouter added** for cheapest GLM-5 per-token overflow ($0.60/$1.92 via
    DeepInfra/GMICloud, vs $1.40/$4.40 direct). Sits after Cloudflare in the
    chain.
+
+**2026-08-29 (captain decision):** Three changes:
+1. **Five providers routed through gateway `opencode` via BYOK**: `opencode-zen`,
+   `opencode-go`, `commandcode`, `zai-coding`, `openrouter` all route through
+   `https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/` with the gateway
+   token (`.cf-ai-gw-token`) in `Authorization`. No per-provider key files in
+   config — BYOK stored keys (alias `default` on gateway `opencode`, all five
+   present) inject upstream. The `Authorization` header is consumed as gateway
+   auth and not forwarded. URL version-segment rule: the gateway strips a
+   trailing version-like segment from the custom provider's `base_url` before
+   appending the request path, so the version must ride in the URL — custom
+   slugs end `/v1` (zen/go/commandcode), zai-coding ends `/v4`; openrouter uses
+   the native passthrough slug `…/opencode/openrouter/v1` (not
+   `custom-openrouter`). The `cloudflare` @cf lane stays on REST `/ai/v1`
+   (unchanged from PR #230) — it does not route through the custom-provider
+   surface.
+2. **Spend-limit rule deleted**: the $50/30d spend-limit rule (provider filter
+   `["universal"]`) returned 403 code 2040 ("Model or provider could not be
+   resolved for spend-limit enforcement") for every custom-provider and
+   openrouter request, including priced models, because it could not price
+   custom-provider traffic. A metadata-scoped replacement (`cf-aig-metadata`
+   application key split-by-value, smoke-tested against one custom-slug request
+   first because custom-provider pricing may be unknown to Cloudflare) is the
+   recommended future shape.
+3. **Registry pruned**: 10 dead OpenRouter models and 4 unsupported Zen models
+   removed (all live-verified as dead/retired; none referenced by fallback
+   chains).
 
 **`go-pool-guard.ts` retired 2026-08-12.** The proactive guard (polled
 `https://opencode.ai/zen/go/v1/usage`) was purged along with its

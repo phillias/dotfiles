@@ -6,13 +6,13 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 
 | Provider | Role | Cost |
 |---|---|---|
-| opencode-zen | primary quality (big-pickle) + free tier | free ~200/day / paid |
-| commandcode (GOAT) | paid-first ladder stage 2 | $10/mo → $70 usage (7×) |
-| opencode-go | subsidized pool, ladder lead | $5 first mo → $10/mo → $60 usage |
-| zai-coding | Z.AI Coding Plan Lite, credits-based | $18/mo |
-| cloudflare | AI Gateway BYOK, analytics, $50/mo cap | $0 (Workers AI free tier) |
+| opencode-zen | primary quality (big-pickle) + free tier, gateway-routed | free ~200/day / paid |
+| commandcode (GOAT) | paid-first ladder stage 2, gateway-routed | $10/mo → $70 usage (7×) |
+| opencode-go | subsidized pool, ladder lead, gateway-routed | $5 first mo → $10/mo → $60 usage |
+| zai-coding | Z.AI Coding Plan Lite, credits-based, gateway-routed | $18/mo |
+| cloudflare | AI Gateway REST `/ai/v1` (@cf lane), analytics, $50/mo cap | $0 (Workers AI free tier) |
 | nvidia | free ladder (40 RPM shared) | $0 |
-| openrouter | free ladder (50/day) + cheapest GLM-5 overflow | $0 / pay |
+| openrouter | free ladder (50/day) + cheapest GLM-5 overflow, gateway-routed | $0 / pay |
 | together | free single-shot (Bonsai) | $0 |
 | baseten | pay-per-token ($30 credits) | pay |
 | google | pay last resort | pay |
@@ -24,6 +24,25 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 | pokee | DORMANT (10M-context specialty, no key yet) | pay |
 
 **No `enabled:false` flag in opencode** — for configured providers, presence = available, chain-absence = never auto-used. Broken *built-in* providers are suppressed via the top-level `disabled_providers` array (live: `zai`, `zhipuai`, `zai-coding-plan`, `zhipuai-coding-plan` — built-in Z.AI/Zhipu endpoints that misbehave; the custom `zai-coding` provider above is unaffected). Schema audit confirmed zero native fallback/retry keywords in opencode core; all fallback is plugin-level.
+
+## Gateway routing — AI Gateway BYOK (2026-08-29)
+
+Five providers route through Cloudflare AI Gateway `opencode` via BYOK (bring-your-own-key): `opencode-zen`, `opencode-go`, `commandcode`, `zai-coding`, `openrouter`. The `cloudflare` @cf lane stays on the REST `/ai/v1` endpoint (unchanged from PR #230).
+
+**BYOK mechanics:** provider keys are stored in the gateway dashboard (alias `default` on gateway `opencode`, all five present). OpenCode authenticates with the gateway token (`.cf-ai-gw-token`) in the `Authorization` header, which the gateway consumes as gateway auth and does **not** forward; the stored BYOK keys inject upstream. No per-provider key files appear in `opencode.json` — only the gateway token file indirection (`{file:~/.config/opencode/.cf-ai-gw-token}`). No `cf-aig-authorization` header is needed on these providers (unlike the §5a ship-now shape that used gateway `phillias-cloudflare-os-ai` with explicit keys).
+
+**URL version-segment rule:** the gateway strips a trailing version-like segment from the custom provider's `base_url` before appending the request path. Carrying the version in the request URL restores correctness:
+- `opencode-zen` → `…/opencode/custom-opencode-zen/v1`
+- `opencode-go` → `…/opencode/custom-opencode-go/v1`
+- `commandcode` → `…/opencode/custom-commandcode/v1`
+- `zai-coding` → `…/opencode/custom-zai-coding/v4` (note: `/v4`, not `/v1`)
+- `openrouter` → `…/opencode/openrouter/v1` (native passthrough slug, NOT `custom-openrouter`)
+
+The openai-compatible SDK appends `/chat/completions` to each baseURL, producing the exact validated URLs. `{file:}` substitution works in any string value (not just `apiKey`).
+
+**Spend-limit rule:** the $50/30d spend-limit rule on gateway `opencode` (provider filter `["universal"]`) was **deleted 2026-08-29** — it returned 403 code 2040 ("Model or provider could not be resolved for spend-limit enforcement") for every custom-provider and openrouter request, including priced models, because it could not price custom-provider traffic. A metadata-scoped replacement is the recommended future shape: `cf-aig-metadata` application key split-by-value, smoke-tested against one custom-slug request first because custom-provider pricing may be unknown to Cloudflare.
+
+**Token scopes (corrected 2026-08-29):** `.cloudflare-key` now has AI Gateway Edit/Run + Read (Read added 2026-08-29); `.cf-ai-gw-token` covers both planes (Workers AI `/ai/*` + AI Gateway `/ai-gateway/*`).
 
 ## Free → subsidized → pay value analysis (priority ranking)
 
@@ -41,21 +60,21 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 
 Key insight: **NVIDIA after Cloudflare, before OpenRouter** (DS-V4 free only on NIM + Zen). 2026-08-12 captain superseded this free-first ranking with paid-first (DESIGN.md §2.6).
 
-## OpenCode Zen (primary, 47 models)
+## OpenCode Zen (primary, 44 models)
+
+Gateway-routed through gateway `opencode` via BYOK (custom-slug `custom-opencode-zen/v1`). Model keys are bare upstream ids (e.g. `big-pickle`, `kimi-k2.6`).
 
 Big Pickle is the primary session model: `opencode-zen/big-pickle` 200K ctx / 32K out / temp 0.7.
 
 Key models: kimi-k2.6 (200K/32K), deepseek-v4-pro (131K/8K, temp 1.0), gpt-5.5 (128K/32K), claude-opus-4-8 (200K/32K), gemini-3.5-flash (1M/64K), nemotron-3-ultra-free (262K/8K), deepseek-v4-flash-free (131K/8K).
 
-**Free tier:** nemotron-3-ultra-free, north-mini-code-free, deepseek-v4-flash-free, minimax-m3-free, mimo-v2.5-free, **x-preview-f-free (Ox Alpha Free, added 2026-08-21)** — matches live config wiring.
-
-**Ox Alpha Free** (`x-preview-f-free`, verified 2026-08-22): stealth model, 1,048,576 ctx / 131,072 out, reasoning + tool calling, text/image/video input, `$0/$0` during preview with provider-stated zero data retention. Anonymous "Stealth" provider behind it (`stealth/ox-alpha` on OpenRouter); tokenizer + video-encoder fingerprinting points to a GLM-5.3 variant (~90% confidence, officially unconfirmed). Served via Zen `chat/completions`; listed by `/v1/models` for BYOK keys since 2026-08-22 (absent from that listing on launch day 2026-08-21, callable by ID even then).
+**Free tier:** nemotron-3-ultra-free, deepseek-v4-flash-free, mimo-v2.5-free — (pruned 2026-08-29: `north-mini-code-free`, `minimax-m3-free`, `x-preview-f-free` — "Model not supported" on BYOK key lane; `claude-opus-4-1` — not on BYOK key lane).
 
 Live catalog check: `cat ~/.config/opencode/.zen-key; curl https://opencode.ai/zen/v1/models | jq`. BYOK keys get worse rate limits than the shared pool — do not BYOK unless needed.
 
 ## Cloudflare Workers AI (34 LLM of 77 catalog, free, 300 RPM)
 
-Free-tier ladder leader since 2026-08-16 (DESIGN.md §2.6). Prefix `cloudflare/workers-ai/@cf/...` (the AI Gateway `/compat` BYOK endpoint requires the `workers-ai/` namespace prefix on `@cf/` ids — bare `@cf/` returns HTTP 400, DESIGN.md §2.6).
+Free-tier ladder leader since 2026-08-16 (DESIGN.md §2.6). Prefix `cloudflare/@cf/...` (routed through the AI Gateway **REST API** `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1` with the `cf-aig-gateway-id: opencode` header, migrated 2026-08-29 off the deprecated `/compat` endpoint — Workers AI ids are bare `@cf/` there; DESIGN.md §2.6). Key: `.cf-ai-gw-token` (covers both `/ai/*` and `/ai-gateway/*` planes; `.cloudflare-key` has AI Gateway Edit/Run + Read — Read added 2026-08-29).
 
 Key models: llama-3.3-70b-instruct-fp8-fast (24K, free-leader but MUST sit at END of chains), llama-4-scout (131K), kimi-k2.6 (262K), **kimi-k2.7-code (262K, coding)**, **glm-4.7-flash (131K)**, glm-5.2 (262K), gemma-4-26b-a4b-it (256K, thinking), qwq-32b (131K, reasoning), gpt-oss-120b/20b (128K), qwen2.5-coder-32b (32K).
 
@@ -65,13 +84,13 @@ Key models: llama-3.3-70b-instruct-fp8-fast (24K, free-leader but MUST sit at EN
 
 agnes-1.5 / agnes-2.0-flash (131K), video-v2.0 + image (32K).
 
-## OpenRouter (7 listed)
+## OpenRouter (15 models, gateway-routed)
 
-qwen3-coder:free, llama-3.3-70b:free, nvidia/nemotron-3-super-120b-a12b:free, **poolside/laguna-s-2.1:free (262K, NEW)**, gpt-4o, gemini-2.5-flash, deepseek-chat. Free tier 50/day.
+Gateway-routed through gateway `opencode` via native passthrough (`openrouter/v1`, NOT `custom-openrouter`). Model keys are vendor-prefixed upstream ids (e.g. `z-ai/glm-5`, `anthropic/claude-sonnet-4`). Pruned 2026-08-29: 10 dead/retired models removed (see gateway routing section). Free tier 50/day (fleet-shared, 1000/day at high-balance tier).
 
-## OpenCode Go (19 documented, $5/$10 → $60 usage)
+## OpenCode Go (12 models, gateway-routed, $5/$10 → $60 usage)
 
-Go pool: no npm/options — models only (built-in). **GPT-class models need `opencode/` prefix, NOT `opencode-go/`** (see DESIGN.md GPT routing).
+Gateway-routed through gateway `opencode` via BYOK (custom-slug `custom-opencode-go/v1`). Now has `npm: @ai-sdk/openai-compatible` and `options` (previously built-in with no options). **GPT-class models need `opencode/` prefix, NOT `opencode-go/`** (see DESIGN.md GPT routing).
 
 | Model | Ctx | $ in | $ out | Allowance |
 |---|---|---|---|---|
@@ -90,7 +109,9 @@ Go pool: no npm/options — models only (built-in). **GPT-class models need `ope
 
 Deprecated on Go: GLM-5, Kimi K2.5, Qwen3.5 Plus, MiMo V2 Pro, MiMo V2 Omni.
 
-## Command Code GOAT (Langbase, $10/mo → $70 usage, 34 models)
+## Command Code GOAT (Langbase, $10/mo → $70 usage, 34 models, gateway-routed)
+
+Gateway-routed through gateway `opencode` via BYOK (custom-slug `custom-commandcode/v1`). Key: `.cf-ai-gw-token` (gateway token; provider key stored as BYOK in dashboard, not in config).
 
 Rolling limits $14/5h, $35/wk, $70/mo; on-demand credits never window-throttled. GOAT is stage 2 of the paid-first ladder (DESIGN.md §2.6); Go leads since 2026-08-25. Key: `~/.config/opencode/.command-code.key` → `COMMANDCODE_API_KEY`, chezmoi age-encrypted 2026-08-12 (`{file:...}`).
 
@@ -102,9 +123,9 @@ Per-model allowances: GLM-5.2 $70, GPT-5.6 Luna $70 (~51.8K req), Hy3 $70, DS V4
 
 GOAT edge: bigger pool + closed-model access (Luna, Grok). Deals: DS V4 Pro 4× permanent; MiMo V2.5/Pro up to 99% off.
 
-## Z.AI Coding Plan Lite ($18/mo, credits-based, 4 models)
+## Z.AI Coding Plan Lite ($18/mo, credits-based, 4 models, gateway-routed)
 
-Added 2026-08-25 (captain decision). Base URL: `https://api.z.ai/api/coding/paas/v4`. Key: `.zai-key` → `{file:~/.config/opencode/.zai-key}`, chezmoi age-encrypted.
+Gateway-routed through gateway `opencode` via BYOK (custom-slug `custom-zai-coding/v4` — note the `/v4` version segment). Key: `.cf-ai-gw-token` (gateway token; provider key stored as BYOK in dashboard).
 
 **Models:** GLM-5.3 (262K/8K, exclusive to Coding Plan), GLM-5.2 (262K/8K), GLM-5-Turbo (262K/8K), GLM-4.7 (131K/8K).
 
@@ -151,8 +172,8 @@ Single Qwen/Qwen3.6-35B-A3B-FP8 (262K, free experimental). **NO SLA/DPA/rate-lim
 
 ## Recently added models
 
-- **Z.AI Coding Plan Lite** — GLM-5.3 (exclusive), GLM-5.2, GLM-5-Turbo, GLM-4.7; credits-based metering with 0.5× off-peak ET 7am–11pm; $18/mo. Wired in live config 2026-08-25.
-- **Ox Alpha Free** — stealth model on Zen (`x-preview-f-free`), 1M ctx / 131K out, multimodal (text/image/video) + tool calling, free preview window with zero data retention; anonymous provider, GLM-5.3-variant per fingerprinting (unconfirmed). Wired in live config 2026-08-21.
+- **Z.AI Coding Plan Lite** — GLM-5.3 (exclusive), GLM-5.2, GLM-5-Turbo, GLM-4.7; credits-based metering with 0.5× off-peak ET 7am–11pm; $18/mo. Wired in live config 2026-08-25. Gateway-routed 2026-08-29.
+- **~~Ox Alpha Free~~** — stealth model on Zen (`x-preview-f-free`), pruned 2026-08-29 ("Model not supported" on BYOK key lane).
 - **Laguna S 2.1** — 118B MoE 8B active, 262K, free (`poolside/laguna-s-2.1:free`) / 1M paid; Terminal-Bench 2.1 70.2%, SWE 78.5%.
 - **Intern-S2-Preview-397B** — 397B MoE ~120B active, 256K, free official API (chat.intern-ai.org.cn), Apache 2.0, multimodal.
 - **Ternary Bonsai 27B** — 1.58-bit, Qwen3.6-27B base, 262K, Together FREE, ⚠️ single-shot only (reverted 2026-07-31 from Librarian). 8B/4B/1.7B self-host only.
