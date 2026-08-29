@@ -20,16 +20,25 @@
     "cloudflare": {
       "baseUrl": "https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai/v1",
       "api": "openai-completions",
-      "apiKey": "$CLOUDFLARE_API_KEY",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
       "compat": {
         "supportsDeveloperRole": false,
         "supportsReasoningEffort": false
       },
       "models": [
         {
-          "id": "@cf/zai-org/glm-5.2",
-          "name": "GLM 5.2 (Cloudflare)",
+          "id": "@cf/moonshotai/kimi-k2.7-code",
+          "name": "Kimi K2.7 Code (Cloudflare)",
           "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "@cf/zai-org/glm-4.7-flash",
+          "name": "GLM 4.7 Flash (Cloudflare)",
+          "contextWindow": 131072,
           "maxTokens": 32768
         }
       ]
@@ -51,6 +60,26 @@
             "supportsDeveloperRole": false,
             "maxTokensField": "max_tokens"
           }
+        }
+      ]
+    },
+    "openrouter": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "nvidia/nemotron-3-super-120b-a12b:free",
+          "name": "Nemotron 3 Super 120B (OpenRouter free)",
+          "contextWindow": 131072,
+          "maxTokens": 8192
         }
       ]
     }

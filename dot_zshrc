@@ -302,6 +302,9 @@ if [ -f "$HOME/.config/opencode/.cloudflare-key" ]; then
     export CLOUDFLARE_API_KEY="$(cat $HOME/.config/opencode/.cloudflare-key)"
 fi
 export CLOUDFLARE_ACCOUNT_ID="a7fa198dd5b359a187c671064fe6b36e"
+if [ -f "$HOME/.config/opencode/.cf-ai-gw-token" ]; then
+    export CF_AI_GATEWAY_TOKEN="$(cat $HOME/.config/opencode/.cf-ai-gw-token)"
+fi
 if [ -f "$HOME/.config/opencode/.command-code-key" ]; then
     export COMMAND_CODE_API_KEY="$(cat $HOME/.config/opencode/.command-code-key)"
 fi
