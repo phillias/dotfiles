@@ -2,7 +2,7 @@
 
 Live provider + model reference for the OpenCode config. Chain design lives in `DESIGN.md`; agent/category routing lives in `AGENTS.md` and `~/.config/opencode/opencode-fallback.jsonc`. All prices USD per 1M tokens (input/output) unless noted; all limits verified against the live config or provider docs on the dated line.
 
-## Provider stack (19 configured)
+## Provider stack (20 configured)
 
 | Provider | Role | Cost |
 |---|---|---|
@@ -10,6 +10,7 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 | commandcode (GOAT) | paid-first ladder stage 2, gateway-routed | $10/mo → $70 usage (7×) |
 | opencode-go | subsidized pool, ladder lead, gateway-routed | $5 first mo → $10/mo → $60 usage |
 | zai-coding | Z.AI Coding Plan Lite, credits-based, gateway-routed | $18/mo |
+| phoenixgrove | Open-source model aggregator (US-hosted), Coding Plan API; GLM-5.3, K3, Qwen-3.8-2.4T exclusive | $4–$195/mo (first mo free) / $5+ per-token |
 | cloudflare | AI Gateway REST `/ai/v1` (@cf lane), analytics, $50/mo cap | $0 (Workers AI free tier) |
 | nvidia | free ladder (40 RPM shared) | $0 |
 | openrouter | free ladder (50/day) + cheapest GLM-5 overflow, gateway-routed | $0 / pay |
@@ -131,6 +132,58 @@ Gateway-routed through gateway `opencode` via BYOK (custom-slug `custom-zai-codi
 
 **Metering:** credits-based with 0.5× off-peak during ET 7am–11pm operational hours. The Coding Plan endpoint is restricted to supported coding tools; OpenCode is supported. Sits between GOAT and Cloudflare in the paid-first ladder (DESIGN.md §2.6).
 
+## Phoenix Grove Systems (39 API models, 19 featured, $4–$195/mo, first month free)
+
+Open-source model aggregator hosting frontier open-weight models on US infrastructure with zero data retention at inference level. OpenAI-compatible API at `https://api.pgsgrove.com/v1`. Key: `{env:PHOENIXGROVE_API_KEY}` (env var; captain referred to it as `GARDENGROVE_API_KEY` but the actual env var is `PHOENIXGROVE_API_KEY`). Not gateway-routed — direct API.
+
+**The Coding Plan** (API access) is included with every paid subscription tier; per-token access starts at $5. The website says "near-endless messaging for your agents and coding tools" with "unused time banks for your heavy weeks."
+
+⚠️ **CREDIT BLOCKER (2026-08-29):** All chat completion requests return `insufficient_quota` ("You have insufficient credits") on every model. The free trial month may not include Coding Plan API access — the website says API is "included with every PAID plan," and the Taster plan is "$4/mo, first month free." The captain likely needs to activate a paid plan (even Taster) to unlock API access. Catalog fetch (`/v1/models`) works fine with the key.
+
+### Subscription tiers
+
+| Plan | Price | Models | Daily msgs (Frontier band) | API |
+|---|---|---|---|---|
+| Taster | $4/mo (1st free) | 4 Everyday | — | — |
+| Basic | $12.95/mo | 9 ( Everyday+Advanced) | ~120 Advanced | 2–5× via API |
+| Pro | $25/mo | All 19 | ~66 Frontier | 2–5× via API |
+| Elite | $50/mo | All 19 | ~120 Frontier | 2–5× via API |
+| Ultra | $99/mo | All 19 | ~240 Frontier | 2–5× via API |
+| Canopy | $195/mo | All 19 | ~480 Frontier | 2–5× via API |
+
+### Usage bands (allowance draw)
+
+| Band | Models | Draw |
+|---|---|---|
+| Everyday (light) | GLM 5.3 Flash, GLM 4.7 Flash, DS V4 Flash (both checkpoints), Gemma 4 31B, MiniMax M2.7 | 1× |
+| Advanced (medium) | GLM 5, Qwen 3.8 27B, MiMo V2.5, MiMo V2.5 Pro, MiniMax M3, DS V4 Pro (both checkpoints) | ~2× |
+| Frontier (heavy) | GLM 5.1, GLM 5.2, Kimi K2.6, Kimi K2.7, Kimi K3 (2–3× faster draw), Qwen 3.8 2.4T, Nemotron 3 Ultra | ~3× |
+
+### Model catalog (39 API IDs)
+
+API returns bare model IDs (no vendor prefix). Turbo variants exist for most models (faster inference tier). Non-chat: `kokoro-82m` (TTS, Hexgrad), `embeddinggemma-300m` (embeddings, Google) — exclude from opencode config.
+
+**Exclusive / high-value (not on other configured providers):**
+
+| Model | Params | Ctx | Band | Notes |
+|---|---|---|---|---|
+| glm-5.3 | — | — | Frontier | Currently ONLY on Z.AI Coding Plan ($18/mo); free here during trial |
+| glm-5.3-flash | 321B/18B active | 1M | Everyday | NEW — not on any other provider; "5-series frontier distilled into a daily driver" |
+| qwen-3.8-2.4t | 2.4T/95B active | — | Frontier | NEW — not on any other provider; "open-weight twin of Qwen3.8 Max" |
+| qwen-3.8-27b | 27B | — | Advanced | NEW — not on any other provider; compact sibling of 2.4T |
+| kimi-k3 | 2.8T | — | Frontier | On GOAT ($70 pool) only; free here during trial; multimodal; 2–3× draw |
+| kimi-k2.7 | ~1T | — | Frontier | Non-code variant; only K2.7-Code on CF/GOAT/Baseten |
+| deepseek-v4-pro-0813 | 1.6T | — | Advanced | New checkpoint; original on Zen/Go/GOAT/NVIDIA/Baseten |
+| deepseek-v4-flash-0731 | — | — | Everyday | New checkpoint; original on Zen/Go/GOAT/NVIDIA |
+
+**Also available (overlap with existing providers):** glm-5.2, glm-5.2-turbo, glm-5, glm-4.7-flash, deepseek-v4-flash, deepseek-v4-flash-turbo, deepseek-v4-pro, deepseek-v4-pro-turbo, kimi-k2.6, kimi-k2.6-turbo, kimi-k2.7-turbo, minimax-m2.7, minimax-m2.7-turbo, minimax-m3, mimo-v2.5, mimo-v2.5-turbo, mimo-v2.5-pro, mimo-v2.5-pro-turbo, nemotron-3-super, nemotron-3-super-turbo, nemotron-3-ultra, nemotron-3-ultra-turbo, gemma-4-31b, gemma-4-31b-turbo.
+
+### Privacy / hosting
+US-based infrastructure, zero data retention at inference level, no training, no telemetry, no third-party sharing. Models run on PGS servers separate from original developers — prompts never route to original labs. Privacy-first at every tier.
+
+### Chain placement (proposed, pending credit activation)
+If credits are activated, Phoenix Grove would slot between Z.AI Coding Plan and Cloudflare in the paid-first ladder, providing free access to GLM-5.3 (currently $18/mo on Z.AI), plus exclusive GLM-5.3-Flash, Qwen-3.8-2.4T, and Kimi-K3. The Everyday-band models (GLM-5.3-Flash, DS-V4-Flash) would be the lightest draw on the daily allowance. Rate limits unknown — the Coding Plan claims "near-endless messaging" but no RPM/TPM figures published. Needs smoke-testing once credits are active.
+
 ## Other providers (spot/experimental)
 
 | Provider | Model | Ctx | Notes |
@@ -172,6 +225,7 @@ Single Qwen/Qwen3.6-35B-A3B-FP8 (262K, free experimental). **NO SLA/DPA/rate-lim
 
 ## Recently added models
 
+- **Phoenix Grove Systems** — 39-model OpenAI-compatible API at `api.pgsgrove.com/v1`; US-hosted open-source model aggregator. Exclusive access to GLM-5.3 (free during trial vs $18/mo on Z.AI), GLM-5.3-Flash (321B/18B, 1M ctx, NEW), Qwen-3.8-2.4T (2.4T/95B, NEW), Qwen-3.8-27B (27B, NEW), Kimi-K3 (2.8T, free during trial), Kimi-K2.7 (non-code variant). Subscription $4–$195/mo (first month free), per-token from $5. Coding Plan API included with paid plans. ⚠️ Credit activation required — free trial may not include API access. Documented 2026-08-29.
 - **Z.AI Coding Plan Lite** — GLM-5.3 (exclusive), GLM-5.2, GLM-5-Turbo, GLM-4.7; credits-based metering with 0.5× off-peak ET 7am–11pm; $18/mo. Wired in live config 2026-08-25. Gateway-routed 2026-08-29.
 - **~~Ox Alpha Free~~** — stealth model on Zen (`x-preview-f-free`), pruned 2026-08-29 ("Model not supported" on BYOK key lane).
 - **Laguna S 2.1** — 118B MoE 8B active, 262K, free (`poolside/laguna-s-2.1:free`) / 1M paid; Terminal-Bench 2.1 70.2%, SWE 78.5%.
@@ -198,7 +252,7 @@ Models NOT on HF: QwQ-32B (400). Broken Models replaced: gemma-4-12b → cf gemm
 **Team Profile:** defaultConcurrency 8; providerConcurrency {opencode 15, opencode-zen 15, opencode-go 8, openrouter 6}; modelConcurrency {big-pickle 2, kimi-k2.6 3, ds-v4-pro 2, gpt-5.5 2, gpt-5.4 2, gpt-5.3-codex 2, glm-5.1 2, ds-v4-flash 15, zen/kimi-k2.6 2}.
 **Free Profile:** default 5; provider {opencode 10, openrouter 5}; modelConcurrency {}.
 
-## Provider rate limits & quotas (16 providers)
+## Provider rate limits & quotas (17 providers)
 
 | Provider | Limit | omo # |
 |---|---|---|
@@ -208,6 +262,7 @@ Models NOT on HF: QwQ-32B (400). Broken Models replaced: gemma-4-12b → cf gemm
 | Go | $12/$30/$60 | 6 |
 | GOAT | $14/$35/$70 | planned |
 | Z.AI Coding Plan | credits-based, 0.5× off-peak ET 7am–11pm | — |
+| Phoenix Grove | "near-endless" Coding Plan (RPM/TPM unpublished); daily msg caps by tier | — |
 | NVIDIA | ~40 RPM shared | 4 |
 | Baseten | 15/120 RPM | 3 |
 | Mistral | 1 req/s | — |

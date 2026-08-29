@@ -1619,6 +1619,32 @@
           "temperature": true
         }
       }
+    },
+    "phoenixgrove": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Phoenix Grove Systems",
+      "options": {
+        "baseURL": "https://api.pgsgrove.com/v1",
+        "apiKey": "{file:~/.config/opencode/.phoenixgrove-key}"
+      },
+      "models": {
+        "glm-5.3": {
+          "name": "GLM-5.3",
+          "limit": {
+            "context": 262000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "deepseek-v4-flash": {
+          "name": "DeepSeek V4 Flash",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "temperature": true
+        }
+      }
     }
   },
   "compaction": {
