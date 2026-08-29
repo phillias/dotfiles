@@ -4,13 +4,23 @@ import { parseModel, stripJsonc, entryModel, resolveChain } from "./opencode-run
 
 // Load the real opencode.json provider registry.
 async function loadProviderRegistry(): Promise<{
-  cloudflare: { baseURL: string; models: Record<string, unknown> };
+  cloudflare: {
+    baseURL: string;
+    headers: Record<string, string>;
+    models: Record<string, unknown>;
+  };
 }> {
   const raw = await readFile("../opencode.json", "utf-8");
   const cfg = JSON.parse(raw);
   const cf = cfg.provider?.cloudflare;
   if (!cf?.models) throw new Error("cloudflare provider missing models registry");
-  return { cloudflare: { baseURL: cf.options?.baseURL ?? "", models: cf.models } };
+  return {
+    cloudflare: {
+      baseURL: cf.options?.baseURL ?? "",
+      headers: cf.options?.headers ?? {},
+      models: cf.models,
+    },
+  };
 }
 
 // Load the real fallback config (JSONC).
@@ -43,7 +53,7 @@ function collectModelRefs(o: unknown): string[] {
   return out;
 }
 
-describe("cloudflare gateway model-id prefix contract", () => {
+describe("cloudflare AI Gateway REST API provider contract", () => {
   test("every cloudflare fallback reference resolves to a registered model", async () => {
     const reg = await loadProviderRegistry();
     const fb = await loadFallbackConfig();
@@ -60,24 +70,38 @@ describe("cloudflare gateway model-id prefix contract", () => {
     }
   });
 
-  test("no fallback reference uses a bare @cf/ id (would return HTTP 400)", async () => {
+  test("cloudflare ids are bare @cf/ (the /compat workers-ai/ prefix scheme is gone)", async () => {
+    const reg = await loadProviderRegistry();
     const fb = await loadFallbackConfig();
+
+    // On the REST API, Workers AI model ids MUST be bare @cf/... — the
+    // deprecated /compat endpoint required the workers-ai/ namespace prefix,
+    // but REST rejects it. Guard against any reintroduction of either mistake.
+    for (const key of Object.keys(reg.cloudflare.models)) {
+      expect(key, `registry key "${key}" must match ^@cf/`).toMatch(/^@cf\//);
+      expect(key, `registry key "${key}" must not carry workers-ai/`).not.toContain("workers-ai/");
+    }
+
     const refs = collectModelRefs(fb).filter((m) => m.includes("@cf/"));
     for (const ref of refs) {
-      // The on-wire id (after the provider split) must carry the workers-ai/ namespace.
       const { modelID } = parseModel(ref);
-      expect(modelID, `${ref} → modelID "${modelID}" lacks workers-ai/ prefix`).toMatch(
-        /^workers-ai\/@cf\//
+      expect(modelID, `${ref} → modelID "${modelID}" must match ^@cf/`).toMatch(/^@cf\//);
+      expect(modelID, `${ref} → modelID "${modelID}" must not carry workers-ai/`).not.toContain(
+        "workers-ai/"
       );
     }
   });
 
-  test("cloudflare provider points at the /compat AI Gateway endpoint", async () => {
+  test("cloudflare provider points at the AI Gateway REST API with the gateway header", async () => {
     const reg = await loadProviderRegistry();
-    expect(reg.cloudflare.baseURL).toMatch(/\/compat$/);
+    expect(reg.cloudflare.baseURL).toMatch(/\/ai\/v1$/);
+    expect(reg.cloudflare.baseURL).not.toContain("/compat");
+    // Workers AI on the REST API requires the gateway header: without it,
+    // requests bypass the named gateway's analytics, caching, and spend cap.
+    expect(reg.cloudflare.headers["cf-aig-gateway-id"], "options.headers['cf-aig-gateway-id']").toBeTruthy();
   });
 
-  test("resolveChain emits prefixed cloudflare ids that resolve to the registry", async () => {
+  test("resolveChain emits bare @cf/ cloudflare ids that resolve to the registry", async () => {
     const reg = await loadProviderRegistry();
     const fb = await loadFallbackConfig();
     const registered = Object.keys(reg.cloudflare.models);

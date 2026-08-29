@@ -20,7 +20,7 @@ Live agent/category chain design. **Authoritative source: `~/.config/opencode/op
 | 1 | `opencode-go/kimi-k2.6`, `opencode-go/deepseek-v4-flash` (Go) |
 | 2 | `commandcode/moonshotai/Kimi-K2.6`, `commandcode/deepseek/deepseek-v4-flash` (GOAT) |
 | 3 | `zai-coding/glm-5.2` (Z.AI Coding Plan Lite — credits-based, 0.5× off-peak ET) |
-| 4 | `cloudflare/workers-ai/@cf/moonshotai/kimi-k2.7-code`, `cloudflare/workers-ai/@cf/zai-org/glm-4.7-flash` (Cloudflare AI Gateway — BYOK, $50/mo cap) |
+| 4 | `cloudflare/@cf/moonshotai/kimi-k2.7-code`, `cloudflare/@cf/zai-org/glm-4.7-flash` (Cloudflare AI Gateway REST API — BYOK, $50/mo cap) |
 | 5 | `openrouter/z-ai/glm-5` (OpenRouter — cheapest GLM-5 per-token overflow) |
 | 6 | `opencode-zen/deepseek-v4-flash-free`, `opencode-zen/nemotron-3-ultra-free` (Zen free) |
 | 7 | `nvidia/deepseek-ai/deepseek-v4-flash`, `openrouter/nvidia/nemotron-3-super-120b-a12b:free`, `baseten/openai/gpt-oss-120b` |
@@ -48,7 +48,7 @@ ce-* deliberately omits the Go stage — 35/51 personas are Go-pinned as primary
 | deep | big-pickle | — | Z.AI GLM-5.2 → GOAT Kimi-K2.6 → Go Kimi-K2.6 → Zen Kimi-K2.6 | no_global_tail |
 | unspecified-high | (same as deep) | — | same | no_global_tail |
 | visual-engineering | opencode/gpt-5.3-codex | — | GOAT gpt-5.6-luna → Zen gpt-5.3-codex | no_global_tail |
-| artistry | cloudflare/workers-ai/@cf/google/gemma-4-26b-a4b-it | — | GOAT mimo-v2.5 → GOAT inkling → Go mimo-v2.5 → Zen mimo-v2.5-free | no_global_tail |
+| artistry | cloudflare/@cf/google/gemma-4-26b-a4b-it | — | GOAT mimo-v2.5 → GOAT inkling → Go mimo-v2.5 → Zen mimo-v2.5-free | no_global_tail |
 | writing | opencode-zen/deepseek-v4-flash-free | — | GOAT ds-v4-flash → Go ds-v4-flash → Zen big-pickle | no_global_tail |
 
 ## Fallback config keys (live)

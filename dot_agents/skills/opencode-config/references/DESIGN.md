@@ -242,19 +242,25 @@ END of chains).
    hours. Base URL: `https://api.z.ai/api/coding/paas/v4`. The Coding Plan
    endpoint is restricted to supported coding tools (OpenCode is supported).
 2. **Cloudflare Workers AI rerouted through AI Gateway (BYOK)** for analytics,
-   edge caching, and a $50/mo universal spend cap. The gateway endpoint
-   (`https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/compat`) replaces
-   the direct REST API endpoint. BYOK means provider keys are stored in the
-   gateway dashboard; OpenCode authenticates with a CF AI Gateway token.
-   **The `/compat` BYOK endpoint requires the `workers-ai/` namespace prefix
-   on `@cf/` model ids** — a bare `@cf/...` id returns HTTP 400 "Invalid
-   provider" (code 2008, verified live 2026-08-27; `workers-ai/@cf/moonshotai/kimi-k2.7-code`
-   returns a real completion). So the Cloudflare provider's model-registry
-   keys are `workers-ai/@cf/...`, and every fallback/doc reference is
-   `cloudflare/workers-ai/@cf/...`. (The earlier "Workers AI routes
-   automatically via `@cf/`" assumption applied to the direct Workers AI REST
-   endpoint, not the `/compat` BYOK path.) Third-party providers (Z.AI, OpenCode,
-   CommandCode) added as custom providers in the AI Gateway dashboard with base URLs.
+   edge caching, and a $50/mo universal spend cap. The provider points at the
+   **AI Gateway REST API**
+   (`https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1`) and
+   carries the `cf-aig-gateway-id: opencode` header, which selects the named
+   gateway — required for Workers AI traffic, and the only thing binding
+   requests to the gateway's analytics/caching/spend-cap controls. OpenCode
+   authenticates with a CF API token (Workers AI Read; the existing
+   `.cf-ai-gw-token` verified working live 2026-08-28).
+   **Migrated 2026-08-29 off the deprecated `/compat` endpoint** (deprecated
+   for single-model calls 2026-08-07; still required for dynamic routes).
+   The two schemes differ in model-id shape: `/compat` required the
+   `workers-ai/` namespace prefix on `@cf/` ids (bare `@cf/` returned HTTP
+   400 "Invalid provider", code 2008 — the 2026-08-27 finding), while the
+   REST API wants **bare `@cf/...` ids**. So the Cloudflare provider's
+   model-registry keys are `@cf/...`, and every fallback/doc reference is
+   `cloudflare/@cf/...` — one id scheme shared by opencode, pi, and omp
+   (contract-tested in `lib/opencode-rest-api-provider.test.ts`). Third-party
+   providers (Z.AI, OpenCode, CommandCode) added as custom providers in the
+   AI Gateway dashboard with base URLs.
 3. **OpenRouter added** for cheapest GLM-5 per-token overflow ($0.60/$1.92 via
    DeepInfra/GMICloud, vs $1.40/$4.40 direct). Sits after Cloudflare in the
    chain.

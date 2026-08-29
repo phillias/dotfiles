@@ -934,11 +934,15 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Cloudflare Workers AI",
       "options": {
-        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "baseURL": "https://api.cloudflare.com/client/v4/accounts/{env:CLOUDFLARE_ACCOUNT_ID}/ai/v1",
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"application\":\"opencode\"}"
+        }
       },
       "models": {
-        "workers-ai/@cf/meta/llama-3.3-70b-instruct-fp8-fast": {
+        "@cf/meta/llama-3.3-70b-instruct-fp8-fast": {
           "name": "Llama 3.3 70B",
           "limit": {
             "context": 24000,
@@ -946,7 +950,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/meta/llama-4-scout-17b-16e-instruct": {
+        "@cf/meta/llama-4-scout-17b-16e-instruct": {
           "name": "Llama 4 Scout 17B",
           "limit": {
             "context": 131072,
@@ -954,7 +958,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/meta/llama-3.2-3b-instruct": {
+        "@cf/meta/llama-3.2-3b-instruct": {
           "name": "Llama 3.2 3B",
           "limit": {
             "context": 80000,
@@ -962,7 +966,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/deepseek-ai/deepseek-r1-distill-qwen-32b": {
+        "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b": {
           "name": "DeepSeek R1 32B",
           "limit": {
             "context": 80000,
@@ -970,7 +974,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/qwen/qwen2.5-coder-32b-instruct": {
+        "@cf/qwen/qwen2.5-coder-32b-instruct": {
           "name": "Qwen Coder 32B",
           "limit": {
             "context": 32768,
@@ -978,7 +982,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/qwen/qwen3-30b-a3b-fp8": {
+        "@cf/qwen/qwen3-30b-a3b-fp8": {
           "name": "Qwen3 30B",
           "limit": {
             "context": 32768,
@@ -986,7 +990,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/openai/gpt-oss-120b": {
+        "@cf/openai/gpt-oss-120b": {
           "name": "GPT-OSS 120B",
           "limit": {
             "context": 128000,
@@ -994,7 +998,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/openai/gpt-oss-20b": {
+        "@cf/openai/gpt-oss-20b": {
           "name": "GPT-OSS 20B",
           "limit": {
             "context": 128000,
@@ -1002,7 +1006,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/moonshotai/kimi-k2.6": {
+        "@cf/moonshotai/kimi-k2.6": {
           "name": "Kimi K2.6",
           "limit": {
             "context": 262144,
@@ -1010,7 +1014,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/moonshotai/kimi-k2.7-code": {
+        "@cf/moonshotai/kimi-k2.7-code": {
           "name": "Kimi K2.7 Code",
           "limit": {
             "context": 262144,
@@ -1018,7 +1022,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/zai-org/glm-4.7-flash": {
+        "@cf/zai-org/glm-4.7-flash": {
           "name": "GLM 4.7 Flash",
           "limit": {
             "context": 131072,
@@ -1026,7 +1030,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/zai-org/glm-5.2": {
+        "@cf/zai-org/glm-5.2": {
           "name": "GLM 5.2",
           "limit": {
             "context": 262144,
@@ -1034,7 +1038,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/mistralai/mistral-small-3.1-24b-instruct": {
+        "@cf/mistralai/mistral-small-3.1-24b-instruct": {
           "name": "Mistral Small 24B",
           "limit": {
             "context": 128000,
@@ -1042,7 +1046,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/qwen/qwq-32b": {
+        "@cf/qwen/qwq-32b": {
           "name": "QwQ 32B",
           "limit": {
             "context": 24000,
@@ -1050,7 +1054,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/google/gemma-4-26b-a4b-it": {
+        "@cf/google/gemma-4-26b-a4b-it": {
           "name": "Gemma 4 26B MoE",
           "limit": {
             "context": 131072,
@@ -1058,7 +1062,7 @@
           },
           "temperature": true
         },
-        "workers-ai/@cf/nvidia/nemotron-3-120b-a12b": {
+        "@cf/nvidia/nemotron-3-120b-a12b": {
           "name": "Nemotron 3 Super 120B",
           "limit": {
             "context": 256000,

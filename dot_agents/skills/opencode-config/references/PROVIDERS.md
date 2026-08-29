@@ -10,7 +10,7 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 | commandcode (GOAT) | paid-first ladder stage 2 | $10/mo → $70 usage (7×) |
 | opencode-go | subsidized pool, ladder lead | $5 first mo → $10/mo → $60 usage |
 | zai-coding | Z.AI Coding Plan Lite, credits-based | $18/mo |
-| cloudflare | AI Gateway BYOK, analytics, $50/mo cap | $0 (Workers AI free tier) |
+| cloudflare | AI Gateway REST API BYOK, analytics, $50/mo cap | $0 (Workers AI free tier) |
 | nvidia | free ladder (40 RPM shared) | $0 |
 | openrouter | free ladder (50/day) + cheapest GLM-5 overflow | $0 / pay |
 | together | free single-shot (Bonsai) | $0 |
@@ -55,7 +55,7 @@ Live catalog check: `cat ~/.config/opencode/.zen-key; curl https://opencode.ai/z
 
 ## Cloudflare Workers AI (34 LLM of 77 catalog, free, 300 RPM)
 
-Free-tier ladder leader since 2026-08-16 (DESIGN.md §2.6). Prefix `cloudflare/workers-ai/@cf/...` (the AI Gateway `/compat` BYOK endpoint requires the `workers-ai/` namespace prefix on `@cf/` ids — bare `@cf/` returns HTTP 400, DESIGN.md §2.6).
+Free-tier ladder leader since 2026-08-16 (DESIGN.md §2.6). Prefix `cloudflare/@cf/...` (routed through the AI Gateway **REST API** `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1` with the `cf-aig-gateway-id: opencode` header, migrated 2026-08-29 off the deprecated `/compat` endpoint — Workers AI ids are bare `@cf/` there; DESIGN.md §2.6).
 
 Key models: llama-3.3-70b-instruct-fp8-fast (24K, free-leader but MUST sit at END of chains), llama-4-scout (131K), kimi-k2.6 (262K), **kimi-k2.7-code (262K, coding)**, **glm-4.7-flash (131K)**, glm-5.2 (262K), gemma-4-26b-a4b-it (256K, thinking), qwq-32b (131K, reasoning), gpt-oss-120b/20b (128K), qwen2.5-coder-32b (32K).
 

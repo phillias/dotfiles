@@ -2,7 +2,7 @@
 
 Purpose: architecture, decisions, and maintenance of the OpenCode config — provider stack, model catalog, fallback system, drift pipeline, per-provider gotchas, and the firstmate distro built on it.
 
-History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/` vs `@cf/` prefix bug source — resolved 2026-08-27: the AI Gateway `/compat` BYOK endpoint requires the `workers-ai/` namespace prefix, so the Cloudflare model ids and every fallback/doc reference are `cloudflare/workers-ai/@cf/...`). OmO retired 2026-08-09 — the OmO plugin was purged from opencode.json + node_modules; `~/.omo/omo.jsonc` recovered config seeded `opencode-fallback.jsonc` and is **provenance only**. Renamed from opencode-omo-config.
+History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/` vs `@cf/` prefix bug source — resolved 2026-08-29: the cloudflare provider targets the AI Gateway **REST API** (`.../ai/v1` baseURL + required `cf-aig-gateway-id: opencode` header), where Workers AI ids are bare `@cf/...`, so the Cloudflare model ids and every fallback/doc reference are `cloudflare/@cf/...`; the 2026-08-27 `workers-ai/` prefix scheme applied only to the deprecated `/compat` endpoint). OmO retired 2026-08-09 — the OmO plugin was purged from opencode.json + node_modules; `~/.omo/omo.jsonc` recovered config seeded `opencode-fallback.jsonc` and is **provenance only**. Renamed from opencode-omo-config.
 
 ## Reference files (load the section you need)
 
