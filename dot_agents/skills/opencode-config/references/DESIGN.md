@@ -265,6 +265,33 @@ END of chains).
    DeepInfra/GMICloud, vs $1.40/$4.40 direct). Sits after Cloudflare in the
    chain.
 
+**2026-08-29 (captain decision):** Three changes:
+1. **Five providers routed through gateway `opencode` via BYOK**: `opencode-zen`,
+   `opencode-go`, `commandcode`, `zai-coding`, `openrouter` all route through
+   `https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/` with the gateway
+   token (`.cf-ai-gw-token`) in `Authorization`. No per-provider key files in
+   config — BYOK stored keys (alias `default` on gateway `opencode`, all five
+   present) inject upstream. The `Authorization` header is consumed as gateway
+   auth and not forwarded. URL version-segment rule: the gateway strips a
+   trailing version-like segment from the custom provider's `base_url` before
+   appending the request path, so the version must ride in the URL — custom
+   slugs end `/v1` (zen/go/commandcode), zai-coding ends `/v4`; openrouter uses
+   the native passthrough slug `…/opencode/openrouter/v1` (not
+   `custom-openrouter`). The `cloudflare` @cf lane stays on REST `/ai/v1`
+   (unchanged from PR #230) — it does not route through the custom-provider
+   surface.
+2. **Spend-limit rule deleted**: the $50/30d spend-limit rule (provider filter
+   `["universal"]`) returned 403 code 2040 ("Model or provider could not be
+   resolved for spend-limit enforcement") for every custom-provider and
+   openrouter request, including priced models, because it could not price
+   custom-provider traffic. A metadata-scoped replacement (`cf-aig-metadata`
+   application key split-by-value, smoke-tested against one custom-slug request
+   first because custom-provider pricing may be unknown to Cloudflare) is the
+   recommended future shape.
+3. **Registry pruned**: 10 dead OpenRouter models and 4 unsupported Zen models
+   removed (all live-verified as dead/retired; none referenced by fallback
+   chains).
+
 **`go-pool-guard.ts` retired 2026-08-12.** The proactive guard (polled
 `https://opencode.ai/zen/go/v1/usage`) was purged along with its
 `go-pool-*.sh` helpers: the usage endpoint now returns 401 (no auth sent → the

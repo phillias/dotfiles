@@ -27,9 +27,9 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 5. Plugins auto-load; retired plugins enforced-removed.
 6. No symlinks, no env switching; machine diffs via chezmoi `.tmpl`, paths always `$HOME`/`%h` (never `/home/<user>`).
 
-## Chain at a glance (paid-first, 2026-08-25)
+## Chain at a glance (paid-first, 2026-08-29)
 
-`opencode-zen/big-pickle` → OpenCode Go (kimi-k2.6, ds-v4-flash) → Command Code GOAT (Kimi-K2.6, DS-V4-Flash) → **Z.AI Coding Plan Lite** (GLM-5.2, credits-based, 0.5× off-peak ET) → **Cloudflare AI Gateway** (kimi-k2.7-code, glm-4.7-flash; BYOK, $50/mo cap) → **OpenRouter** (cheapest GLM-5 per-token) → Zen free (deepseek-v4-flash-free, nemotron-3-ultra-free) → free providers (nvidia, openrouter, baseten) → `google/gemini-2.5-flash`. Full taxonomy + agent/category tables: `references/AGENTS.md`. Design rationale: `references/DESIGN.md` §2.6.
+`opencode-zen/big-pickle` → OpenCode Go (kimi-k2.6, ds-v4-flash) → Command Code GOAT (Kimi-K2.6, DS-V4-Flash) → **Z.AI Coding Plan Lite** (GLM-5.2, credits-based, 0.5× off-peak ET) → **Cloudflare** (REST `/ai/v1`, @cf lane; kimi-k2.7-code, glm-4.7-flash) → **OpenRouter** (cheapest GLM-5 per-token) → Zen free (deepseek-v4-flash-free, nemotron-3-ultra-free) → free providers (nvidia, openrouter, baseten) → `google/gemini-2.5-flash`. Five providers (zen, go, commandcode, zai, openrouter) route through gateway `opencode` via BYOK — gateway token in `Authorization`, stored keys inject upstream. Full taxonomy + agent/category tables: `references/AGENTS.md`. Design rationale: `references/DESIGN.md` §2.6.
 
 ## Config defaults (live)
 
@@ -37,7 +37,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 
 ## Key files
 
-`opencode.json` (root) · `opencode-fallback.jsonc` (chain) · `dispatch-rules.json` (30 rules) · `plugins/opencode-runtime-fallback.ts` + `lib/opencode-runtime-fallback-core.ts` · `~/.local/state/opencode-fleet/fallback.json` (live state) · `scripts/catalog-drift.mjs` + `fm-drift-pr.sh` · systemd `catalog-drift.{service,timer}` · `models.snapshot.json` · `~/.agents/skills/` · `.*-key` files.
+`opencode.json` (root) · `opencode-fallback.jsonc` (chain) · `dispatch-rules.json` (30 rules) · `plugins/opencode-runtime-fallback.ts` + `lib/opencode-runtime-fallback-core.ts` · `lib/opencode-rest-api-provider.test.ts` (contract: @cf lane + gateway-routed provider assertions) · `~/.local/state/opencode-fleet/fallback.json` (live state) · `scripts/catalog-drift.mjs` + `fm-drift-pr.sh` · systemd `catalog-drift.{service,timer}` · `models.snapshot.json` · `~/.agents/skills/` · `.cf-ai-gw-token` (gateway token — covers both `/ai/*` and `/ai-gateway/*` planes; `.cloudflare-key` has AI Gateway Edit/Run + Read, Read added 2026-08-29).
 
 ## Maintenance
 

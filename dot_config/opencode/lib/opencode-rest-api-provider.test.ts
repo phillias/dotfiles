@@ -23,6 +23,26 @@ async function loadProviderRegistry(): Promise<{
   };
 }
 
+// Load all gateway-routed providers from opencode.json.
+async function loadGatewayProviders(): Promise<
+  Record<string, { baseURL: string; apiKey: string; models: Record<string, unknown> }>
+> {
+  const raw = await readFile("../opencode.json", "utf-8");
+  const cfg = JSON.parse(raw);
+  const ids = ["opencode-zen", "opencode-go", "commandcode", "zai-coding", "openrouter"];
+  const out: Record<string, { baseURL: string; apiKey: string; models: Record<string, unknown> }> = {};
+  for (const id of ids) {
+    const prov = cfg.provider?.[id];
+    if (!prov?.models) throw new Error(`${id} provider missing models registry`);
+    out[id] = {
+      baseURL: prov.options?.baseURL ?? "",
+      apiKey: prov.options?.apiKey ?? "",
+      models: prov.models,
+    };
+  }
+  return out;
+}
+
 // Load the real fallback config (JSONC).
 async function loadFallbackConfig() {
   const raw = await readFile("../opencode-fallback.jsonc", "utf-8");
@@ -114,6 +134,64 @@ describe("cloudflare AI Gateway REST API provider contract", () => {
       for (const m of chain.filter((id) => id.startsWith("cloudflare/"))) {
         const { modelID } = parseModel(m);
         expect(registered, `resolveChain produced unresolvable ${m}`).toContain(modelID);
+      }
+    }
+  });
+});
+
+describe("gateway-routed provider contract (BYOK through gateway 'opencode')", () => {
+  const gatewayProviderIds = ["opencode-zen", "opencode-go", "commandcode", "zai-coding", "openrouter"];
+  const gatewayTokenFile = "{file:~/.config/opencode/.cf-ai-gw-token}";
+  const perProviderKeyFiles = [
+    ".zen-key",
+    ".opencode-key",
+    ".command-code.key",
+    ".zai-key",
+    ".openrouter-key",
+  ];
+
+  test("every gateway-routed provider has a gateway.ai.cloudflare.com baseURL", async () => {
+    const providers = await loadGatewayProviders();
+    for (const id of gatewayProviderIds) {
+      const url = providers[id].baseURL;
+      expect(url, `${id} baseURL must match gateway pattern`).toMatch(
+        /^https:\/\/gateway\.ai\.cloudflare\.com\/v1\//
+      );
+    }
+  });
+
+  test("custom-slug providers use /opencode/custom- prefix; openrouter uses /opencode/openrouter", async () => {
+    const providers = await loadGatewayProviders();
+    for (const id of gatewayProviderIds) {
+      const url = providers[id].baseURL;
+      if (id === "openrouter") {
+        expect(url, `${id} must use native passthrough slug`).toContain("/opencode/openrouter");
+        expect(url, `${id} must NOT use custom- prefix`).not.toContain("/opencode/custom-openrouter");
+      } else {
+        expect(url, `${id} must use custom- slug`).toContain("/opencode/custom-");
+      }
+    }
+  });
+
+  test("apiKey is the gateway token file indirection with no per-provider key", async () => {
+    const providers = await loadGatewayProviders();
+    for (const id of gatewayProviderIds) {
+      const key = providers[id].apiKey;
+      expect(key, `${id} apiKey must be the gateway token file`).toBe(gatewayTokenFile);
+      for (const kf of perProviderKeyFiles) {
+        expect(key, `${id} apiKey must not contain ${kf}`).not.toContain(kf);
+      }
+    }
+  });
+
+  test("version segment: custom slugs end /v1, zai-coding ends /v4", async () => {
+    const providers = await loadGatewayProviders();
+    for (const id of gatewayProviderIds) {
+      const url = providers[id].baseURL;
+      if (id === "zai-coding") {
+        expect(url, `${id} baseURL must end with /v4`).toMatch(/\/v4$/);
+      } else {
+        expect(url, `${id} baseURL must end with /v1`).toMatch(/\/v1$/);
       }
     }
   });
