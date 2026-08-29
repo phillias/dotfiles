@@ -1,6 +1,7 @@
 # ─────────────────────────────────────────────────
 # oh-my-pi (omp) — Provider Configuration
 # OpenCode Go (subscription) + OpenCode Zen (pay-as-you-go)
+# OpenRouter (free tier via Cloudflare AI Gateway BYOK)
 # ─────────────────────────────────────────────────
 
 providers:
@@ -131,9 +132,21 @@ providers:
       - id: glm-5.1
         api: openai-completions
 
+  # ── OpenRouter — via Cloudflare AI Gateway (BYOK) ──
+  # Gateway slug: openrouter (native passthrough, not custom-)
+  # Per PR #231: routes through gateway "opencode" with BYOK alias "default"
+  openrouter:
+    baseUrl: https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1
+    apiKey: CF_AI_GATEWAY_TOKEN
+    api: openai-completions
+    models:
+      - id: nvidia/nemotron-3-super-120b-a12b:free
+        name: Nemotron 3 Super 120B (free)
+        contextWindow: 131072
+
 # ── Default model selection ──
 # The agent will use this model by default
 models:
   default:
-    provider: opencode-go
-    model: kimi-k2.6
+    provider: openrouter
+    model: nvidia/nemotron-3-super-120b-a12b:free
