@@ -1,9 +1,8 @@
 {
   "gate": [
-    "opencode/big-pickle",
-    "commandcode/glm-5.1",
-    "cloudflare/@cf/zai-org/glm-5.2",
-    "opencode-go/glm-5.1",
-    "opencode/glm-5.1"
+    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+    "cloudflare/@cf/moonshotai/kimi-k2.7-code",
+    "cloudflare/@cf/zai-org/glm-4.7-flash",
+    "opencode-zen/deepseek-v4-flash-free"
   ]
 }

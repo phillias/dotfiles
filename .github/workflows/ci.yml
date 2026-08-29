@@ -81,18 +81,9 @@ jobs:
           npm install -g opencode-ai
           opencode debug config
 
-      - name: Install bun + omp
+      - name: Validate pi config
         run: |
-          curl -fsSL https://bun.sh/install | bash
-          export BUN_INSTALL="$HOME/.bun"
-          export PATH="$BUN_INSTALL/bin:$PATH"
-          bun install -g @oh-my-pi/pi-coding-agent
-
-      - name: Validate omp config
-        run: |
-          export BUN_INSTALL="$HOME/.bun"
-          export PATH="$BUN_INSTALL/bin:$PATH"
-          omp config list --json
+          python3 -c "import json; json.load(open('private_dot_pi/fallback-chains.json')); json.load(open('private_dot_pi/private_agent/models.json')); json.load(open('private_dot_pi/private_agent/settings.json')); print('pi config valid')"
 
       - name: Install and verify hermes-gateway
         run: |
