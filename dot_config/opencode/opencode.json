@@ -1622,22 +1622,38 @@
     },
     "phoenixgrove": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Phoenix Grove Systems",
+      "name": "Phoenix Grove Systems (AI Gateway)",
       "options": {
-        "baseURL": "https://api.pgsgrove.com/v1",
-        "apiKey": "{file:~/.config/opencode/.phoenixgrove-key}"
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-phoenixgrove/v1",
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
       },
       "models": {
-        "glm-5.3": {
-          "name": "GLM-5.3",
+        "glm-5.3-flash": {
+          "name": "GLM-5.3 Flash (PGS Free)",
           "limit": {
-            "context": 262000,
+            "context": 1000000,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "glm-4.7-flash": {
+          "name": "GLM-4.7 Flash (PGS Free)",
+          "limit": {
+            "context": 131072,
             "output": 8192
           },
           "temperature": true
         },
         "deepseek-v4-flash": {
-          "name": "DeepSeek V4 Flash",
+          "name": "DeepSeek V4 Flash (PGS Free)",
+          "limit": {
+            "context": 131072,
+            "output": 8192
+          },
+          "temperature": true
+        },
+        "deepseek-v4-flash-0731": {
+          "name": "DeepSeek V4 Flash 0731 (PGS Free)",
           "limit": {
             "context": 131072,
             "output": 8192

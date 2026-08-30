@@ -51,6 +51,9 @@
     "opencode-zen/deepseek-v4-flash-free",
     "opencode-zen/nemotron-3-ultra-free",
     // STAGE 7: FREE providers
+    // Phoenix Grove Everyday band: free during trial month (glm-5.3-flash 321B/18B, 1M ctx)
+    "phoenixgrove/glm-5.3-flash",
+    "phoenixgrove/deepseek-v4-flash",
     "nvidia/deepseek-ai/deepseek-v4-flash",
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
     "baseten/openai/gpt-oss-120b",
@@ -73,7 +76,9 @@
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free"
+        "opencode-zen/nemotron-3-ultra-free",
+        "phoenixgrove/glm-5.3-flash",
+        "phoenixgrove/deepseek-v4-flash"
       ]
     },
     "explore": {
@@ -88,7 +93,9 @@
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free"
+        "opencode-zen/nemotron-3-ultra-free",
+        "phoenixgrove/glm-5.3-flash",
+        "phoenixgrove/deepseek-v4-flash"
       ]
     },
     // Specialized flywheel agents: models pinned, fallback Z.AI → GOAT → Go → Zen only.
@@ -144,7 +151,9 @@
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free"
+        "opencode-zen/nemotron-3-ultra-free",
+        "phoenixgrove/glm-5.3-flash",
+        "phoenixgrove/deepseek-v4-flash"
       ]
     },
     "unspecified-low": {
@@ -159,7 +168,9 @@
         "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free"
+        "opencode-zen/nemotron-3-ultra-free",
+        "phoenixgrove/glm-5.3-flash",
+        "phoenixgrove/deepseek-v4-flash"
       ]
     },
     // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback
