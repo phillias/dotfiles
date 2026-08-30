@@ -1,0 +1,3 @@
+. "$HOME/.cargo/env"
+
+export CF_AI_GATEWAY_TOKEN="$(cat $HOME/.config/opencode/.cf-ai-gw-token 2>/dev/null)"

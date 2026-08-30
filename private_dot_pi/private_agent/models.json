@@ -1,17 +1,123 @@
 {
   "providers": {
-    "commandcode": {
-      "baseUrl": "https://api.commandcode.ai/provider/v1",
+    "opencode-zen": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-zen/v1",
       "api": "openai-completions",
-      "apiKey": "$COMMAND_CODE_API_KEY",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
       "compat": {
         "supportsDeveloperRole": false,
         "supportsReasoningEffort": false
       },
       "models": [
         {
-          "id": "glm-5.1",
-          "name": "GLM 5.1 (GOAT)",
+          "id": "big-pickle",
+          "name": "Big Pickle (OpenCode Zen)",
+          "contextWindow": 256000,
+          "maxTokens": 32768
+        },
+        {
+          "id": "kimi-k2.6",
+          "name": "Kimi K2.6 (OpenCode Zen)",
+          "reasoning": true,
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "deepseek-v4-flash-free",
+          "name": "DeepSeek V4 Flash Free (OpenCode Zen)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nemotron-3-ultra-free",
+          "name": "Nemotron 3 Ultra Free (OpenCode Zen)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "opencode-go": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "kimi-k2.6",
+          "name": "Kimi K2.6 (OpenCode Go)",
+          "reasoning": true,
+          "contextWindow": 202752,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (OpenCode Go)",
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        }
+      ]
+    },
+    "commandcode": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-commandcode/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "moonshotai/Kimi-K2.6",
+          "name": "Kimi K2.6 (GOAT)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "deepseek/deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (GOAT)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "zai-coding": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-zai-coding/v4",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "glm-5.2",
+          "name": "GLM 5.2 (Z.AI Coding Plan Lite)",
+          "reasoning": true,
           "contextWindow": 131072,
           "maxTokens": 32768
         }
@@ -43,23 +149,29 @@
         }
       ]
     },
-    "opencode-go": {
-      "baseUrl": "https://opencode.ai/zen/go/v1",
+    "openrouter": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
       "api": "openai-completions",
-      "apiKey": "$OPENCODE_ZEN_API_KEY",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
       "models": [
         {
-          "id": "glm-5.1",
-          "name": "GLM 5.1 (OpenCode Go)",
-          "reasoning": true,
-          "contextWindow": 202752,
-          "maxTokens": 32768,
-          "cost": { "input": 1.4, "output": 4.4, "cacheRead": 0.26, "cacheWrite": 0 },
-          "compat": {
-            "supportsStore": false,
-            "supportsDeveloperRole": false,
-            "maxTokensField": "max_tokens"
-          }
+          "id": "z-ai/glm-5",
+          "name": "GLM 5 (OpenRouter paid)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nvidia/nemotron-3-super-120b-a12b:free",
+          "name": "Nemotron 3 Super 120B (OpenRouter free)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
         }
       ]
     },
@@ -86,62 +198,6 @@
           "name": "DeepSeek V4 Flash (Phoenix Grove free)",
           "contextWindow": 131072,
           "maxTokens": 8192
-        }
-      ]
-    },
-    "openrouter": {
-      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
-      "api": "openai-completions",
-      "apiKey": "$CF_AI_GATEWAY_TOKEN",
-      "headers": {
-        "cf-aig-gateway-id": "opencode"
-      },
-      "compat": {
-        "supportsDeveloperRole": false,
-        "supportsReasoningEffort": false
-      },
-      "models": [
-        {
-          "id": "z-ai/glm-5.1",
-          "name": "GLM 5.1 (OpenRouter)",
-          "contextWindow": 131072,
-          "maxTokens": 32768
-        },
-        {
-          "id": "z-ai/glm-5.2:free",
-          "name": "GLM 5.2 (OpenRouter free)",
-          "contextWindow": 256000,
-          "maxTokens": 32768
-        },
-        {
-          "id": "poolside/laguna-s-2.1:free",
-          "name": "Laguna S 2.1 (OpenRouter free)",
-          "contextWindow": 262144,
-          "maxTokens": 32768
-        },
-        {
-          "id": "nvidia/nemotron-3-super-120b-a12b:free",
-          "name": "Nemotron 3 Super 120B (OpenRouter free)",
-          "contextWindow": 262144,
-          "maxTokens": 32768
-        },
-        {
-          "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
-          "name": "Nemotron 3 Ultra 550B (OpenRouter free)",
-          "contextWindow": 1000000,
-          "maxTokens": 32768
-        },
-        {
-          "id": "minimax/minimax-m3:free",
-          "name": "MiniMax M3 (OpenRouter free)",
-          "contextWindow": 1048576,
-          "maxTokens": 32768
-        },
-        {
-          "id": "openrouter/free",
-          "name": "Free Model Router (OpenRouter)",
-          "contextWindow": 200000,
-          "maxTokens": 32768
         }
       ]
     }
