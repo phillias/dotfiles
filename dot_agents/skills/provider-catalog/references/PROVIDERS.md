@@ -12,6 +12,8 @@ Every agent constructs its fallback chain to match this ladder; implementation m
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
+**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (`[--no-context-files, --provider, openrouter, --model, "nvidia/nemotron-3-super-120b-a12b:free"]`). An explicit `--provider`/`--model` bypasses any `fallback/<chain>` design — pi-fallback-provider activates only for `fallback/<name>` model strings.
+
 ## Gateway routing (BYOK)
 
 All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/…` with header `cf-aig-gateway-id: opencode` and the gateway token.
