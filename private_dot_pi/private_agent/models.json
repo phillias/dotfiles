@@ -64,19 +64,28 @@
       ]
     },
     "phoenixgrove": {
-      "baseUrl": "https://api.pgsgrove.com/v1",
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-phoenixgrove/v1",
       "api": "openai-completions",
-      "apiKey": "$PHOENIXGROVE_API_KEY",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
       "compat": {
         "supportsDeveloperRole": false,
         "supportsReasoningEffort": false
       },
       "models": [
         {
-          "id": "glm-5.3",
-          "name": "GLM 5.3 (Phoenix Grove)",
+          "id": "glm-5.3-flash",
+          "name": "GLM 5.3 Flash (Phoenix Grove free)",
+          "contextWindow": 1000000,
+          "maxTokens": 8192
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (Phoenix Grove free)",
           "contextWindow": 131072,
-          "maxTokens": 32768
+          "maxTokens": 8192
         }
       ]
     },
@@ -92,6 +101,12 @@
         "supportsReasoningEffort": false
       },
       "models": [
+        {
+          "id": "z-ai/glm-5.1",
+          "name": "GLM 5.1 (OpenRouter)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
         {
           "id": "z-ai/glm-5.2:free",
           "name": "GLM 5.2 (OpenRouter free)",
