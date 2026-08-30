@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
-import { parseModel, stripJsonc, entryModel, resolveChain } from "./opencode-runtime-fallback-core";
+import {
+  parseModel,
+  stripJsonc,
+  entryModel,
+  resolveChain,
+} from "./opencode-runtime-fallback-core";
 
 // This test exercises the REAL declarative config artifacts (opencode.json,
 // opencode-fallback.jsonc, private_dot_pi/private_agent/models.json,
@@ -34,7 +39,8 @@ const PAID_FRONTIER_MODEL = "glm-5.3";
 async function loadOpencodeProviderRegistry(): Promise<Record<string, any>> {
   const raw = await readFile("../opencode.json", "utf-8");
   const cfg = JSON.parse(raw);
-  if (!cfg.provider?.phoenixgrove) throw new Error("phoenixgrove provider missing from opencode.json");
+  if (!cfg.provider?.phoenixgrove)
+    throw new Error("phoenixgrove provider missing from opencode.json");
   return cfg.provider;
 }
 
@@ -67,7 +73,11 @@ function collectModelRefs(o: unknown): string[] {
       if (Array.isArray(rec.fallback_models)) {
         for (const e of rec.fallback_models) {
           if (typeof e === "string") out.push(e);
-          else if (e && typeof e === "object" && typeof (e as any).model === "string")
+          else if (
+            e &&
+            typeof e === "object" &&
+            typeof (e as any).model === "string"
+          )
             out.push((e as any).model);
         }
       }
@@ -83,32 +93,49 @@ describe("opencode.json phoenixgrove provider routes through the AI Gateway", ()
     const providers = await loadOpencodeProviderRegistry();
     const url = providers.phoenixgrove.options.baseURL;
     expect(url, "must be on the gateway host").toContain(GATEWAY_HOST);
-    expect(url, "must target the custom-phoenixgrove slug").toContain("/opencode/custom-phoenixgrove/");
+    expect(url, "must target the custom-phoenixgrove slug").toContain(
+      "/opencode/custom-phoenixgrove/",
+    );
     expect(url, "must end on the openai-compatible /v1").toMatch(/\/v1$/);
     // Regression guard: the direct PGS API must be gone.
-    expect(url, "direct api.pgsgrove.com must be removed").not.toContain("api.pgsgrove.com");
+    expect(url, "direct api.pgsgrove.com must be removed").not.toContain(
+      "api.pgsgrove.com",
+    );
   });
 
   test("apiKey is the gateway token file indirection, not the PGS provider key", async () => {
     const providers = await loadOpencodeProviderRegistry();
     const key = providers.phoenixgrove.options.apiKey;
-    expect(key, "must use the shared gateway token file").toBe(GATEWAY_TOKEN_FILE);
-    expect(key, "must not reference the legacy .phoenixgrove-key").not.toContain(".phoenixgrove-key");
+    expect(key, "must use the shared gateway token file").toBe(
+      GATEWAY_TOKEN_FILE,
+    );
+    expect(
+      key,
+      "must not reference the legacy .phoenixgrove-key",
+    ).not.toContain(".phoenixgrove-key");
   });
 
   test("registry contains every free Everyday-band flash model and not the paid Frontier glm-5.3", async () => {
     const providers = await loadOpencodeProviderRegistry();
     const registered = Object.keys(providers.phoenixgrove.models);
     for (const id of FREE_EVERYDAY_MODELS) {
-      expect(registered, `free Everyday model ${id} must be registered`).toContain(id);
+      expect(
+        registered,
+        `free Everyday model ${id} must be registered`,
+      ).toContain(id);
     }
-    expect(registered, "paid Frontier glm-5.3 must be removed").not.toContain(PAID_FRONTIER_MODEL);
+    expect(registered, "paid Frontier glm-5.3 must be removed").not.toContain(
+      PAID_FRONTIER_MODEL,
+    );
   });
 
   test("glm-5.3-flash is configured with the advertised 1M context window", async () => {
     const providers = await loadOpencodeProviderRegistry();
     const limit = providers.phoenixgrove.models["glm-5.3-flash"].limit;
-    expect(limit.context, "glm-5.3-flash context must be 1_000_000 (321B/18B active)").toBe(1_000_000);
+    expect(
+      limit.context,
+      "glm-5.3-flash context must be 1_000_000 (321B/18B active)",
+    ).toBe(1_000_000);
     expect(limit.output, "glm-5.3-flash output must be capped").toBe(8192);
   });
 });
@@ -120,28 +147,36 @@ describe("opencode-fallback.jsonc chains resolve to the free PGS flash models", 
     // non-no_global_tail chain, so this also proves the free models reach every
     // utility chain.
     const globalChain = resolveChain(fb, undefined).map(entryModel);
-    expect(globalChain, "global ladder must include glm-5.3-flash").toContain("phoenixgrove/glm-5.3-flash");
-    expect(globalChain, "global ladder must include deepseek-v4-flash").toContain(
-      "phoenixgrove/deepseek-v4-flash"
+    expect(globalChain, "global ladder must include glm-5.3-flash").toContain(
+      "phoenixgrove/glm-5.3-flash",
     );
+    expect(
+      globalChain,
+      "global ladder must include deepseek-v4-flash",
+    ).toContain("phoenixgrove/deepseek-v4-flash");
 
     // Representative utility categories whose explicit fallback_models were
     // extended with the free PGS models.
     for (const cat of ["quick", "unspecified-low"]) {
       const chain = resolveChain(fb, cat).map(entryModel);
-      expect(chain, `${cat} chain must include glm-5.3-flash`).toContain("phoenixgrove/glm-5.3-flash");
+      expect(chain, `${cat} chain must include glm-5.3-flash`).toContain(
+        "phoenixgrove/glm-5.3-flash",
+      );
       expect(chain, `${cat} chain must include deepseek-v4-flash`).toContain(
-        "phoenixgrove/deepseek-v4-flash"
+        "phoenixgrove/deepseek-v4-flash",
       );
     }
     // Representative utility agent (general/explore) whose explicit
     // fallback_models were extended.
     for (const ag of ["general", "explore"]) {
       const chain = resolveChain(fb, ag).map(entryModel);
-      expect(chain, `${ag} agent chain must include glm-5.3-flash`).toContain("phoenixgrove/glm-5.3-flash");
-      expect(chain, `${ag} agent chain must include deepseek-v4-flash`).toContain(
-        "phoenixgrove/deepseek-v4-flash"
+      expect(chain, `${ag} agent chain must include glm-5.3-flash`).toContain(
+        "phoenixgrove/glm-5.3-flash",
       );
+      expect(
+        chain,
+        `${ag} agent chain must include deepseek-v4-flash`,
+      ).toContain("phoenixgrove/deepseek-v4-flash");
     }
   });
 
@@ -149,21 +184,33 @@ describe("opencode-fallback.jsonc chains resolve to the free PGS flash models", 
     const providers = await loadOpencodeProviderRegistry();
     const registered = Object.keys(providers.phoenixgrove.models);
     const fb = await loadFallbackConfig();
-    const refs = collectModelRefs(fb).filter((m) => m.startsWith("phoenixgrove/"));
-    expect(refs.length, "there must be phoenixgrove references in the ladder").toBeGreaterThan(0);
+    const refs = collectModelRefs(fb).filter((m) =>
+      m.startsWith("phoenixgrove/"),
+    );
+    expect(
+      refs.length,
+      "there must be phoenixgrove references in the ladder",
+    ).toBeGreaterThan(0);
     for (const ref of refs) {
       const { providerID, modelID } = parseModel(ref);
       expect(providerID).toBe("phoenixgrove");
-      expect(registered, `${ref} → ${modelID} must be a registered free model`).toContain(modelID);
+      expect(
+        registered,
+        `${ref} → ${modelID} must be a registered free model`,
+      ).toContain(modelID);
     }
   });
 
   test("no fallback reference selects the paid Frontier glm-5.3", async () => {
     const fb = await loadFallbackConfig();
-    const refs = collectModelRefs(fb).filter((m) => m.startsWith("phoenixgrove/"));
+    const refs = collectModelRefs(fb).filter((m) =>
+      m.startsWith("phoenixgrove/"),
+    );
     for (const ref of refs) {
       const { modelID } = parseModel(ref);
-      expect(modelID, `${ref} must not be the paid Frontier glm-5.3`).not.toBe(PAID_FRONTIER_MODEL);
+      expect(modelID, `${ref} must not be the paid Frontier glm-5.3`).not.toBe(
+        PAID_FRONTIER_MODEL,
+      );
     }
   });
 });
@@ -172,40 +219,72 @@ describe("pi gate boundary mirrors the gateway + free flash fix", () => {
   test("pi models.json phoenixgrove provider points at the gateway with the gateway token", async () => {
     const models = await loadPiModels();
     const pg = models.providers.phoenixgrove;
-    expect(pg.baseUrl, "pi phoenixgrove baseUrl must be the gateway").toContain(GATEWAY_HOST);
-    expect(pg.baseUrl, "pi phoenixgrove baseUrl must use the custom-phoenixgrove slug").toContain(
-      "/opencode/custom-phoenixgrove/"
+    expect(pg.baseUrl, "pi phoenixgrove baseUrl must be the gateway").toContain(
+      GATEWAY_HOST,
     );
-    expect(pg.baseUrl, "direct api.pgsgrove.com must be removed").not.toContain("api.pgsgrove.com");
-    expect(pg.apiKey, "pi phoenixgrove apiKey must be the gateway token env var").toBe(GATEWAY_TOKEN_ENV);
-    expect(pg.apiKey, "must not reference legacy PHOENIXGROVE_API_KEY").not.toContain("PHOENIXGROVE_API_KEY");
-    expect(pg.headers?.["cf-aig-gateway-id"], "must carry the gateway id header").toBe("opencode");
+    expect(
+      pg.baseUrl,
+      "pi phoenixgrove baseUrl must use the custom-phoenixgrove slug",
+    ).toContain("/opencode/custom-phoenixgrove/");
+    expect(pg.baseUrl, "direct api.pgsgrove.com must be removed").not.toContain(
+      "api.pgsgrove.com",
+    );
+    expect(
+      pg.apiKey,
+      "pi phoenixgrove apiKey must be the gateway token env var",
+    ).toBe(GATEWAY_TOKEN_ENV);
+    expect(
+      pg.apiKey,
+      "must not reference legacy PHOENIXGROVE_API_KEY",
+    ).not.toContain("PHOENIXGROVE_API_KEY");
+    expect(
+      pg.headers?.["cf-aig-gateway-id"],
+      "must carry the gateway id header",
+    ).toBe("opencode");
   });
 
   test("pi phoenixgrove registry has the free flash models, not the paid Frontier glm-5.3", async () => {
     const models = await loadPiModels();
     const ids = models.providers.phoenixgrove.models.map((m: any) => m.id);
     expect(ids, "must register glm-5.3-flash").toContain("glm-5.3-flash");
-    expect(ids, "must register deepseek-v4-flash").toContain("deepseek-v4-flash");
-    expect(ids, "paid Frontier glm-5.3 must be removed").not.toContain(PAID_FRONTIER_MODEL);
-    const flash = models.providers.phoenixgrove.models.find((m: any) => m.id === "glm-5.3-flash");
-    expect(flash.contextWindow, "pi glm-5.3-flash context must be 1_000_000").toBe(1_000_000);
+    expect(ids, "must register deepseek-v4-flash").toContain(
+      "deepseek-v4-flash",
+    );
+    expect(ids, "paid Frontier glm-5.3 must be removed").not.toContain(
+      PAID_FRONTIER_MODEL,
+    );
+    const flash = models.providers.phoenixgrove.models.find(
+      (m: any) => m.id === "glm-5.3-flash",
+    );
+    expect(
+      flash.contextWindow,
+      "pi glm-5.3-flash context must be 1_000_000",
+    ).toBe(1_000_000);
   });
 
   test("openrouter z-ai/glm-5.1 paid fallback is registered for pi", async () => {
     const models = await loadPiModels();
     const ids = models.providers.openrouter.models.map((m: any) => m.id);
-    expect(ids, "openrouter must register z-ai/glm-5.1 as the paid fallback").toContain("z-ai/glm-5.1");
+    expect(
+      ids,
+      "openrouter must register z-ai/glm-5.1 as the paid fallback",
+    ).toContain("z-ai/glm-5.1");
   });
 
   test("pi gate chain is re-headed with phoenixgrove/glm-5.3-flash and includes glm-5.1", async () => {
     const chains = await loadPiChains();
     const gate = chains.gate as string[];
     expect(gate.length, "gate chain must be non-empty").toBeGreaterThan(0);
-    expect(gate[0], "gate head must be the free flash model").toBe("phoenixgrove/glm-5.3-flash");
-    expect(gate, "gate must include the openrouter glm-5.1 paid fallback").toContain("openrouter/z-ai/glm-5.1");
-    expect(gate, "paid Frontier glm-5.3 must not head or appear in the gate chain").not.toContain(
-      "phoenixgrove/glm-5.3"
+    expect(gate[0], "gate head must be the free flash model").toBe(
+      "phoenixgrove/glm-5.3-flash",
     );
+    expect(
+      gate,
+      "gate must include the openrouter glm-5.1 paid fallback",
+    ).toContain("openrouter/z-ai/glm-5.1");
+    expect(
+      gate,
+      "paid Frontier glm-5.3 must not head or appear in the gate chain",
+    ).not.toContain("phoenixgrove/glm-5.3");
   });
 });
