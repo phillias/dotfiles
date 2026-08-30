@@ -10,7 +10,7 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 | commandcode (GOAT) | paid-first ladder stage 2, gateway-routed | $10/mo → $70 usage (7×) |
 | opencode-go | subsidized pool, ladder lead, gateway-routed | $5 first mo → $10/mo → $60 usage |
 | zai-coding | Z.AI Coding Plan Lite, credits-based, gateway-routed | $18/mo |
-| phoenixgrove | Open-source model aggregator (US-hosted), Coding Plan API; GLM-5.3, K3, Qwen-3.8-2.4T exclusive | $4–$195/mo (first mo free) / $5+ per-token |
+| phoenixgrove | Open-source model aggregator (US-hosted), Coding Plan API; GLM-5.3, K3, Qwen-3.8-2.4T exclusive; gateway-routed | $4–$195/mo (first mo free) / $5+ per-token |
 | cloudflare | AI Gateway REST `/ai/v1` (@cf lane), analytics, $50/mo cap | $0 (Workers AI free tier) |
 | nvidia | free ladder (40 RPM shared) | $0 |
 | openrouter | free ladder (50/day) + cheapest GLM-5 overflow, gateway-routed | $0 / pay |
@@ -28,9 +28,9 @@ Live provider + model reference for the OpenCode config. Chain design lives in `
 
 ## Gateway routing — AI Gateway BYOK (2026-08-29)
 
-Five providers route through Cloudflare AI Gateway `opencode` via BYOK (bring-your-own-key): `opencode-zen`, `opencode-go`, `commandcode`, `zai-coding`, `openrouter`. The `cloudflare` @cf lane stays on the REST `/ai/v1` endpoint (unchanged from PR #230).
+Six providers route through Cloudflare AI Gateway `opencode` via BYOK (bring-your-own-key): `opencode-zen`, `opencode-go`, `commandcode`, `zai-coding`, `openrouter`, `phoenixgrove`. The `cloudflare` @cf lane stays on the REST `/ai/v1` endpoint (unchanged from PR #230).
 
-**BYOK mechanics:** provider keys are stored in the gateway dashboard (alias `default` on gateway `opencode`, all five present). OpenCode authenticates with the gateway token (`.cf-ai-gw-token`) in the `Authorization` header, which the gateway consumes as gateway auth and does **not** forward; the stored BYOK keys inject upstream. No per-provider key files appear in `opencode.json` — only the gateway token file indirection (`{file:~/.config/opencode/.cf-ai-gw-token}`). No `cf-aig-authorization` header is needed on these providers (unlike the §5a ship-now shape that used gateway `phillias-cloudflare-os-ai` with explicit keys).
+**BYOK mechanics:** provider keys are stored in the gateway dashboard (alias `default` on gateway `opencode`, all six present). OpenCode authenticates with the gateway token (`.cf-ai-gw-token`) in the `Authorization` header, which the gateway consumes as gateway auth and does **not** forward; the stored BYOK keys inject upstream. No per-provider key files appear in `opencode.json` — only the gateway token file indirection (`{file:~/.config/opencode/.cf-ai-gw-token}`). No `cf-aig-authorization` header is needed on these providers (unlike the §5a ship-now shape that used gateway `phillias-cloudflare-os-ai` with explicit keys).
 
 **URL version-segment rule:** the gateway strips a trailing version-like segment from the custom provider's `base_url` before appending the request path. Carrying the version in the request URL restores correctness:
 - `opencode-zen` → `…/opencode/custom-opencode-zen/v1`
@@ -38,6 +38,7 @@ Five providers route through Cloudflare AI Gateway `opencode` via BYOK (bring-yo
 - `commandcode` → `…/opencode/custom-commandcode/v1`
 - `zai-coding` → `…/opencode/custom-zai-coding/v4` (note: `/v4`, not `/v1`)
 - `openrouter` → `…/opencode/openrouter/v1` (native passthrough slug, NOT `custom-openrouter`)
+- `phoenixgrove` → `…/opencode/custom-phoenixgrove/v1`
 
 The openai-compatible SDK appends `/chat/completions` to each baseURL, producing the exact validated URLs. `{file:}` substitution works in any string value (not just `apiKey`).
 
@@ -134,11 +135,11 @@ Gateway-routed through gateway `opencode` via BYOK (custom-slug `custom-zai-codi
 
 ## Phoenix Grove Systems (39 API models, 19 featured, $4–$195/mo, first month free)
 
-Open-source model aggregator hosting frontier open-weight models on US infrastructure with zero data retention at inference level. OpenAI-compatible API at `https://api.pgsgrove.com/v1`. Key: `{env:PHOENIXGROVE_API_KEY}` (env var; captain referred to it as `GARDENGROVE_API_KEY` but the actual env var is `PHOENIXGROVE_API_KEY`). Not gateway-routed — direct API.
+Open-source model aggregator hosting frontier open-weight models on US infrastructure with zero data retention at inference level. Gateway-routed through gateway `opencode` via BYOK (custom-slug `custom-phoenixgrove/v1`); the upstream OpenAI-compatible API is `https://api.pgsgrove.com/v1`. Key: `.cf-ai-gw-token` (gateway token; PGS provider key stored as BYOK in the dashboard, not in config).
 
 **The Coding Plan** (API access) is included with every paid subscription tier; per-token access starts at $5. The website says "near-endless messaging for your agents and coding tools" with "unused time banks for your heavy weeks."
 
-✅ **Credit blocker resolved (2026-08-29):** chat completions previously returned `insufficient_quota` ("You have insufficient credits") on every model — the free trial month did not include Coding Plan API access (API is "included with every PAID plan"; Taster is "$4/mo, first month free"). Credits are active now: `glm-5.3` serves live as the head of the pi no-mistakes gate chain (`private_dot_pi/fallback-chains.json`). Catalog fetch (`/v1/models`) works with the key.
+✅ **Credit blocker resolved (2026-08-29):** chat completions on the configured `glm-5.3` returned `insufficient_quota` because the free-month promotion covers **only Everyday-band models** (`glm-5.3-flash`, `glm-4.7-flash`, `deepseek-v4-flash`, `deepseek-v4-flash-0731`); the Frontier-band `glm-5.3` is billed at $0.0001/token (captain-confirmed on the PGS usage dashboard), exhausting trial credits. Fix: switch to Everyday-band `glm-5.3-flash` (321B/18B, 1M ctx, $0.00), which now heads the pi no-mistakes gate chain (`private_dot_pi/fallback-chains.json`) and the opencode free tier (`opencode-fallback.jsonc` STAGE 7). Catalog fetch (`/v1/models`) works with the key.
 
 ### Subscription tiers
 
@@ -167,11 +168,11 @@ API returns bare model IDs (no vendor prefix). Turbo variants exist for most mod
 
 | Model | Params | Ctx | Band | Notes |
 |---|---|---|---|---|
-| glm-5.3 | — | — | Frontier | Currently ONLY on Z.AI Coding Plan ($18/mo); free here during trial |
+| glm-5.3 | — | — | Frontier | Currently ONLY on Z.AI Coding Plan ($18/mo); $0.0001/token (not free during trial — only Everyday band is free) |
 | glm-5.3-flash | 321B/18B active | 1M | Everyday | NEW — not on any other provider; "5-series frontier distilled into a daily driver" |
 | qwen-3.8-2.4t | 2.4T/95B active | — | Frontier | NEW — not on any other provider; "open-weight twin of Qwen3.8 Max" |
 | qwen-3.8-27b | 27B | — | Advanced | NEW — not on any other provider; compact sibling of 2.4T |
-| kimi-k3 | 2.8T | — | Frontier | On GOAT ($70 pool) only; free here during trial; multimodal; 2–3× draw |
+| kimi-k3 | 2.8T | — | Frontier | On GOAT ($70 pool) only; Frontier band (paid during trial — only Everyday band is free); multimodal; 2–3× draw |
 | kimi-k2.7 | ~1T | — | Frontier | Non-code variant; only K2.7-Code on CF/GOAT/Baseten |
 | deepseek-v4-pro-0813 | 1.6T | — | Advanced | New checkpoint; original on Zen/Go/GOAT/NVIDIA/Baseten |
 | deepseek-v4-flash-0731 | — | — | Everyday | New checkpoint; original on Zen/Go/GOAT/NVIDIA |
@@ -181,8 +182,8 @@ API returns bare model IDs (no vendor prefix). Turbo variants exist for most mod
 ### Privacy / hosting
 US-based infrastructure, zero data retention at inference level, no training, no telemetry, no third-party sharing. Models run on PGS servers separate from original developers — prompts never route to original labs. Privacy-first at every tier.
 
-### Chain placement (proposed)
-Credits are active (2026-08-29 — see blocker resolution above), but Phoenix Grove is not yet in the opencode ladder. If inserted, it would slot between Z.AI Coding Plan and Cloudflare in the paid-first ladder, providing free access to GLM-5.3 (currently $18/mo on Z.AI), plus exclusive GLM-5.3-Flash, Qwen-3.8-2.4T, and Kimi-K3. The Everyday-band models (GLM-5.3-Flash, DS-V4-Flash) would be the lightest draw on the daily allowance. Rate limits unknown — the Coding Plan claims "near-endless messaging" but no RPM/TPM figures published. Only `glm-5.3` is verified live (pi gate chain head); the Everyday-band models still need smoke-testing.
+### Chain placement (live 2026-08-29)
+Phoenix Grove Everyday-band flash models are wired into the opencode free tier (`opencode-fallback.jsonc` STAGE 7: `glm-5.3-flash`, `deepseek-v4-flash`) — the lightest draw on the daily allowance and free during the trial month. `glm-5.3-flash` also heads the pi no-mistakes gate chain (`private_dot_pi/fallback-chains.json`), with `openrouter/z-ai/glm-5.1` as the paid fallback. The Frontier-band `glm-5.3` ($0.0001/token) is NOT chained — it would draw ~3× and is billed during trial. Rate limits unknown — the Coding Plan claims "near-endless messaging" but no RPM/TPM figures published.
 
 ## Other providers (spot/experimental)
 
@@ -225,7 +226,7 @@ Single Qwen/Qwen3.6-35B-A3B-FP8 (262K, free experimental). **NO SLA/DPA/rate-lim
 
 ## Recently added models
 
-- **Phoenix Grove Systems** — 39-model OpenAI-compatible API at `api.pgsgrove.com/v1`; US-hosted open-source model aggregator. Exclusive access to GLM-5.3 (free during trial vs $18/mo on Z.AI), GLM-5.3-Flash (321B/18B, 1M ctx, NEW), Qwen-3.8-2.4T (2.4T/95B, NEW), Qwen-3.8-27B (27B, NEW), Kimi-K3 (2.8T, free during trial), Kimi-K2.7 (non-code variant). Subscription $4–$195/mo (first month free), per-token from $5. Coding Plan API included with paid plans. Credits active 2026-08-29 — `glm-5.3` heads the pi no-mistakes gate chain (see Phoenix Grove Systems section). Documented 2026-08-29.
+- **Phoenix Grove Systems** — 39-model OpenAI-compatible API at `api.pgsgrove.com/v1`, gateway-routed via `custom-phoenixgrove/v1`; US-hosted open-source model aggregator. Exclusive access to GLM-5.3 (Frontier, $0.0001/token — not free during trial; only Everyday band is free), GLM-5.3-Flash (321B/18B, 1M ctx, NEW), Qwen-3.8-2.4T (2.4T/95B, NEW), Qwen-3.8-27B (27B, NEW), Kimi-K3 (2.8T, Frontier, paid during trial), Kimi-K2.7 (non-code variant). Subscription $4–$195/mo (first month free), per-token from $5. Coding Plan API included with paid plans. Everyday-band flash models wired 2026-08-29 — `glm-5.3-flash` heads the pi no-mistakes gate chain (see Phoenix Grove Systems section). Documented 2026-08-29.
 - **Z.AI Coding Plan Lite** — GLM-5.3 (exclusive), GLM-5.2, GLM-5-Turbo, GLM-4.7; credits-based metering with 0.5× off-peak ET 7am–11pm; $18/mo. Wired in live config 2026-08-25. Gateway-routed 2026-08-29.
 - **~~Ox Alpha Free~~** — stealth model on Zen (`x-preview-f-free`), pruned 2026-08-29 ("Model not supported" on BYOK key lane).
 - **Laguna S 2.1** — 118B MoE 8B active, 262K, free (`poolside/laguna-s-2.1:free`) / 1M paid; Terminal-Bench 2.1 70.2%, SWE 78.5%.

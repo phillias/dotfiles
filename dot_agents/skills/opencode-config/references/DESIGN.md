@@ -178,7 +178,7 @@ RETRYABLE_PATTERN regex (`rate\s?limit|quota|insufficient_quota|server_error|ove
 credits-based, 0.5× off-peak) → **Cloudflare AI Gateway** (BYOK, analytics,
 $50/mo spend cap; kimi-k2.7-code, glm-4.7-flash; small-prompts only —
 262K/131K context) → **OpenRouter** (cheapest GLM-5 per-token) → OpenCode Zen
-free → together Ternary-Bonsai (single-shot only) → nvidia NIM (~40 RPM shared,
+free → Phoenix Grove Everyday-band free (glm-5.3-flash, DS-V4-Flash) → nvidia NIM (~40 RPM shared,
 max 1-2 per chain) → openrouter free → baseten subsidized →
 google/gemini-2.5-flash (paid last resort). Z.AI added 2026-08-25 (captain
 decision): Lite plan provides exclusive GLM-5.3 and credits-based metering with
@@ -266,16 +266,16 @@ END of chains).
    chain.
 
 **2026-08-29 (captain decision):** Three changes:
-1. **Five providers routed through gateway `opencode` via BYOK**: `opencode-zen`,
-   `opencode-go`, `commandcode`, `zai-coding`, `openrouter` all route through
+1. **Six providers routed through gateway `opencode` via BYOK**: `opencode-zen`,
+   `opencode-go`, `commandcode`, `zai-coding`, `openrouter`, `phoenixgrove` all route through
    `https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/` with the gateway
    token (`.cf-ai-gw-token`) in `Authorization`. No per-provider key files in
-   config — BYOK stored keys (alias `default` on gateway `opencode`, all five
+   config — BYOK stored keys (alias `default` on gateway `opencode`, all six
    present) inject upstream. The `Authorization` header is consumed as gateway
    auth and not forwarded. URL version-segment rule: the gateway strips a
    trailing version-like segment from the custom provider's `base_url` before
    appending the request path, so the version must ride in the URL — custom
-   slugs end `/v1` (zen/go/commandcode), zai-coding ends `/v4`; openrouter uses
+   slugs end `/v1` (zen/go/commandcode/phoenixgrove), zai-coding ends `/v4`; openrouter uses
    the native passthrough slug `…/opencode/openrouter/v1` (not
    `custom-openrouter`). The `cloudflare` @cf lane stays on REST `/ai/v1`
    (unchanged from PR #230) — it does not route through the custom-provider
