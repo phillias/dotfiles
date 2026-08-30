@@ -172,6 +172,12 @@
           "name": "Nemotron 3 Super 120B (OpenRouter free \u00b7 CF GW)",
           "contextWindow": 262144,
           "maxTokens": 32768
+        },
+        {
+          "id": "openrouter/free",
+          "name": "Free Models Router (OpenRouter \u00b7 CF GW)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
         }
       ]
     },

@@ -2,6 +2,16 @@
 
 Shared reference for every agent that routes through Cloudflare AI Gateway `opencode` (BYOK). Per-agent chain design lives in that agent's config, not here. Live quota: use `quota-axi`.
 
+## Global chain preference (captain's standing directive)
+
+Every agent constructs its fallback chain to match this ladder; implementation mechanics (chain files, retry semantics) stay agent-specific.
+
+1. **Lead:** `phoenixgrove/glm-5.3-flash` (PGS free band, gateway-proxied) — preferred working model.
+2. **Then paid-first:** `opencode-zen/big-pickle` → `opencode-go` models → commandcode (GOAT) → zai-coding → cloudflare @cf → openrouter GLM-5.
+3. **Tail:** free pools (zen free, phoenixgrove) as last resort.
+
+Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
+
 ## Gateway routing (BYOK)
 
 All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/…` with header `cf-aig-gateway-id: opencode` and the gateway token.
