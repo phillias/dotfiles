@@ -260,6 +260,19 @@
           "maxTokens": 8192
         }
       ]
+    },
+    "gemini": {
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "api": "google-generative-ai",
+      "apiKey": "$GOOGLE_API_KEY",
+      "models": [
+        {
+          "id": "gemini-2.5-flash",
+          "name": "Gemini 2.5 Flash (AI Studio direct; gateway pending BYOK setup)",
+          "contextWindow": 1048576,
+          "maxTokens": 65536
+        }
+      ]
     }
   }
 }

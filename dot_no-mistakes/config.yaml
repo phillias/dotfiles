@@ -21,7 +21,7 @@ agent: pi
 # Phoenix Grove glm-5.3-flash (via Cloudflare AI Gateway) remains available in
 # pi models.json as a manual fallback.
 agent_args_override:
-  pi: [--no-context-files, --provider, gemini, --model, "gemini-2.5-flash"]
+  pi: [--no-context-files, --model, "fallback/gate"]
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
