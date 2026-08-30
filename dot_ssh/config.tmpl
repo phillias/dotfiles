@@ -9,8 +9,11 @@
 
 Host github.com
   AddKeysToAgent yes
-  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  # Registered deploy keys first: id_ed25519_inspironkali is passphrase-protected
+  # and unregistered with GitHub on most fleet hosts, so listing it first hangs
+  # any non-interactive fetch (cron, agent panes, treehouse) on a passphrase prompt.
   IdentityFile ~/.ssh/chezmoi-deploy-key
+  IdentityFile ~/.ssh/id_ed25519_inspironkali
   IdentitiesOnly yes 
 
 Host github-mybiz
