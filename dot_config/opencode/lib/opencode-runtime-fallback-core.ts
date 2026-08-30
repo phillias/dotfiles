@@ -38,22 +38,42 @@ export function stripJsonc(src: string): string {
     const c = src[i];
     const n = src[i + 1];
     if (inLineComment) {
-      if (c === "\n") { inLineComment = false; out += c; }
+      if (c === "\n") {
+        inLineComment = false;
+        out += c;
+      }
       continue;
     }
     if (inBlockComment) {
-      if (c === "*" && n === "/") { inBlockComment = false; i++; }
+      if (c === "*" && n === "/") {
+        inBlockComment = false;
+        i++;
+      }
       continue;
     }
     if (inString) {
       out += c;
-      if (c === "\\" && n) { out += n; i++; }
-      else if (c === '"') inString = false;
+      if (c === "\\" && n) {
+        out += n;
+        i++;
+      } else if (c === '"') inString = false;
       continue;
     }
-    if (c === '"') { inString = true; out += c; continue; }
-    if (c === "/" && n === "/") { inLineComment = true; i++; continue; }
-    if (c === "/" && n === "*") { inBlockComment = true; i++; continue; }
+    if (c === '"') {
+      inString = true;
+      out += c;
+      continue;
+    }
+    if (c === "/" && n === "/") {
+      inLineComment = true;
+      i++;
+      continue;
+    }
+    if (c === "/" && n === "*") {
+      inBlockComment = true;
+      i++;
+      continue;
+    }
     out += c;
   }
   return out.replace(/,(\s*[}\]])/g, "$1");
@@ -69,22 +89,30 @@ export function entrySettings(e: ChainEntry): ChainEntrySettings | undefined {
 
 export function parseModel(m: string): { providerID: string; modelID: string } {
   const slash = m.indexOf("/");
-  if (slash <= 0 || slash === m.length - 1) return { providerID: "unknown", modelID: m };
+  if (slash <= 0 || slash === m.length - 1)
+    return { providerID: "unknown", modelID: m };
   return { providerID: m.slice(0, slash), modelID: m.slice(slash + 1) };
 }
 
-export function isRetryableStatusCode(code: number | undefined, cfg: FallbackConfig): boolean {
+export function isRetryableStatusCode(
+  code: number | undefined,
+  cfg: FallbackConfig,
+): boolean {
   if (code === undefined) return false;
   return (cfg.retry_on_errors ?? [429, 500, 502, 503, 504, 529]).includes(code);
 }
 
-const RETRYABLE_PATTERN = /rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust|usage.?limit|limit.?reach/i;
+const RETRYABLE_PATTERN =
+  /rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust|usage.?limit|limit.?reach/i;
 
-const SUSTAINED_PATTERN = /\d+\s*-?\s*hour|hourly|usage.?limit|limit.?reach|reset at/i;
+const SUSTAINED_PATTERN =
+  /\d+\s*-?\s*hour|hourly|usage.?limit|limit.?reach|reset at/i;
 
 export function sustainedCooldownSeconds(reason: string): number {
   if (!reason || !SUSTAINED_PATTERN.test(reason)) return 0;
-  const resetMatch = reason.match(/reset at\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/i);
+  const resetMatch = reason.match(
+    /reset at\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})/i,
+  );
   if (resetMatch) {
     const isoString = resetMatch[1].replace(" ", "T") + "Z";
     const resetTime = new Date(isoString).getTime();
@@ -102,7 +130,12 @@ export function classifyError(err: unknown, cfg: FallbackConfig): string {
   let code: number | undefined;
   let message = "";
   if (typeof d === "object" && d !== null) {
-    code = typeof d.statusCode === "number" ? d.statusCode : typeof d.status === "number" ? d.status : undefined;
+    code =
+      typeof d.statusCode === "number"
+        ? d.statusCode
+        : typeof d.status === "number"
+          ? d.status
+          : undefined;
     message = String(d.message ?? "");
   } else if (typeof d === "string") {
     message = d;
@@ -115,7 +148,10 @@ export function classifyError(err: unknown, cfg: FallbackConfig): string {
 
 /** Resolve a chain config for an agent name: exact key wins, then the longest
  *  trailing-`*` wildcard prefix (e.g. `ce-*` covers every ce-* persona). */
-export function lookupChain(map: Record<string, ChainCfg> | undefined, name: string | undefined): ChainCfg | undefined {
+export function lookupChain(
+  map: Record<string, ChainCfg> | undefined,
+  name: string | undefined,
+): ChainCfg | undefined {
   if (!map || !name) return undefined;
   if (map[name]) return map[name];
   let best: ChainCfg | undefined;
@@ -131,7 +167,10 @@ export function lookupChain(map: Record<string, ChainCfg> | undefined, name: str
   return best;
 }
 
-export function resolveChain(cfg: FallbackConfig, agentName: string | undefined): ChainEntry[] {
+export function resolveChain(
+  cfg: FallbackConfig,
+  agentName: string | undefined,
+): ChainEntry[] {
   const merged: ChainEntry[] = [];
   const push = (list: ChainEntry[] | undefined) => {
     for (const e of list ?? []) {
@@ -154,7 +193,11 @@ export function resolveChain(cfg: FallbackConfig, agentName: string | undefined)
   return merged;
 }
 
-export function nextCandidate(chain: string[], failedModel: string, isCooling: (m: string) => number): string | undefined {
+export function nextCandidate(
+  chain: string[],
+  failedModel: string,
+  isCooling: (m: string) => number,
+): string | undefined {
   const pos = chain.indexOf(failedModel);
   const start = pos >= 0 ? pos + 1 : 0;
   for (let i = start; i < chain.length; i++) {
@@ -168,13 +211,21 @@ export function remaining(chain: string[], index: number): number {
   return Math.max(0, chain.length - 1 - index);
 }
 
-export function primaryAvailable(chain: string[], activeModel: string | undefined, isCooling: (m: string) => number): boolean {
+export function primaryAvailable(
+  chain: string[],
+  activeModel: string | undefined,
+  isCooling: (m: string) => number,
+): boolean {
   if (chain.length === 0) return false;
   const primary = chain[0];
   return primary !== activeModel && isCooling(primary) === 0;
 }
 
-export function annotationFor(activeModel: string | undefined, index: number, chain: string[]): string | undefined {
+export function annotationFor(
+  activeModel: string | undefined,
+  index: number,
+  chain: string[],
+): string | undefined {
   if (!activeModel || index <= 0) return undefined;
   return `[model: active on ${activeModel}; ${remaining(chain, index)} left in fallback chain]`;
 }

@@ -48,7 +48,9 @@ describe("resolveChain", () => {
   });
 
   test("no_global_tail on agent skips the global ladder", () => {
-    const c = cfg({ agents: { "oracle": { model: "opencode/gpt-5.5", no_global_tail: true } } });
+    const c = cfg({
+      agents: { oracle: { model: "opencode/gpt-5.5", no_global_tail: true } },
+    });
     const chain = resolveChain(c, "oracle").map(entryModel);
     expect(chain).toEqual(["opencode/gpt-5.5"]);
   });
@@ -57,19 +59,28 @@ describe("resolveChain", () => {
     const c = cfg({
       agents: {
         "ce-*": {
-          fallback_models: ["commandcode/moonshotai/Kimi-K2.6", "opencode-zen/kimi-k2.6"],
+          fallback_models: [
+            "commandcode/moonshotai/Kimi-K2.6",
+            "opencode-zen/kimi-k2.6",
+          ],
           no_global_tail: true,
         },
       },
     });
     const chain = resolveChain(c, "ce-correctness-reviewer").map(entryModel);
-    expect(chain).toEqual(["commandcode/moonshotai/Kimi-K2.6", "opencode-zen/kimi-k2.6"]);
+    expect(chain).toEqual([
+      "commandcode/moonshotai/Kimi-K2.6",
+      "opencode-zen/kimi-k2.6",
+    ]);
   });
 
   test("exact agent key beats a matching wildcard", () => {
     const c = cfg({
       agents: {
-        "ce-correctness-reviewer": { model: "opencode-go/glm-5.1", no_global_tail: true },
+        "ce-correctness-reviewer": {
+          model: "opencode-go/glm-5.1",
+          no_global_tail: true,
+        },
         "ce-*": { fallback_models: ["commandcode/deepseek/deepseek-v4-flash"] },
       },
     });
@@ -79,18 +90,23 @@ describe("resolveChain", () => {
 
   test("categories apply only when no agent entry matches", () => {
     const c = cfg({
-      agents: { "quick": { model: "opencode-zen/big-pickle" } },
-      categories: { "quick": { model: "cloudflare/@cf/openai/gpt-oss-20b" } },
+      agents: { quick: { model: "opencode-zen/big-pickle" } },
+      categories: { quick: { model: "cloudflare/@cf/openai/gpt-oss-20b" } },
     });
-    expect(resolveChain(c, "quick").map(entryModel)[0]).toBe("opencode-zen/big-pickle");
+    expect(resolveChain(c, "quick").map(entryModel)[0]).toBe(
+      "opencode-zen/big-pickle",
+    );
   });
 
   test("pinned model + fallback order GOAT -> Zen with no_global_tail", () => {
     const c = cfg({
       categories: {
-        "ultrabrain": {
+        ultrabrain: {
           model: "opencode-go/deepseek-v4-pro",
-          fallback_models: ["commandcode/deepseek/deepseek-v4-pro", "opencode-zen/deepseek-v4-pro"],
+          fallback_models: [
+            "commandcode/deepseek/deepseek-v4-pro",
+            "opencode-zen/deepseek-v4-pro",
+          ],
           no_global_tail: true,
         },
       },
@@ -106,7 +122,9 @@ describe("resolveChain", () => {
 
 describe("sustainedCooldownSeconds", () => {
   test("returns 0 for non-sustained errors", () => {
-    expect(sustainedCooldownSeconds("server_error: upstream unavailable")).toBe(0);
+    expect(sustainedCooldownSeconds("server_error: upstream unavailable")).toBe(
+      0,
+    );
     expect(sustainedCooldownSeconds("")).toBe(0);
     expect(sustainedCooldownSeconds("timeout")).toBe(0);
   });
@@ -121,12 +139,15 @@ describe("sustainedCooldownSeconds", () => {
   });
 
   test("returns 5-hour default when sustained but no parseable timestamp", () => {
-    expect(sustainedCooldownSeconds("Usage limit reached for 5 hour")).toBe(5 * 3600);
+    expect(sustainedCooldownSeconds("Usage limit reached for 5 hour")).toBe(
+      5 * 3600,
+    );
     expect(sustainedCooldownSeconds("hourly limit exceeded")).toBe(5 * 3600);
   });
 
   test("floors at 60 seconds even if reset is imminent", () => {
-    const reason = "Usage limit reached for 5 hour. Your limit will reset at 2020-01-01 00:00:00";
+    const reason =
+      "Usage limit reached for 5 hour. Your limit will reset at 2020-01-01 00:00:00";
     expect(sustainedCooldownSeconds(reason)).toBe(60);
   });
 });
