@@ -12,7 +12,7 @@ Every agent constructs its fallback chain to match this ladder; implementation m
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (`[--no-context-files, --provider, openrouter, --model, "nvidia/nemotron-3-super-120b-a12b:free"]`). An explicit `--provider`/`--model` bypasses any `fallback/<chain>` design — pi-fallback-provider activates only for `fallback/<name>` model strings.
+**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`): `[--no-context-files, --provider, phoenixgrove, --model, "glm-5.3-flash"]` (1M context, gateway-proxied; replaces the openrouter free-model-router leg that 429s on a separate daily free-models limit). An explicit `--provider`/`--model` bypasses any `fallback/<chain>` design — pi-fallback-provider activates only for `fallback/<name>` model strings.
 
 ## Gateway routing (BYOK)
 
