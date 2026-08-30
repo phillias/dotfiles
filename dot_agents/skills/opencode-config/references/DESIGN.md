@@ -703,7 +703,7 @@ Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.tx
 
 ### 7.3 Config defaults (live)
 
-`small_model: opencode-zen/nemotron-3-ultra-free` · `compaction {auto:false, prune:true, reserved:50000, tail_turns:40}` · MCP baseline: context7, grep_app, websearch, mcp_everything. TUI theme: tokyonight (tui.json), solarized-dark alternative. Provider concurrency: Team Profile default 8 (PROVIDERS.md §concurrency).
+`small_model: opencode-zen/nemotron-3-ultra-free` · `compaction {auto:false, prune:true, reserved:50000, tail_turns:40}` · MCP baseline: context7, grep_app, websearch, mcp_everything. TUI theme: tokyonight (tui.json), solarized-dark alternative. Provider concurrency: Team Profile default 8.
 
 ### 7.4 Mermaid hygiene
 
