@@ -124,7 +124,7 @@
       ]
     },
     "cloudflare": {
-      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai/v1",
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/ai/v1",
       "api": "openai-completions",
       "apiKey": "$CF_AI_GATEWAY_TOKEN",
       "headers": {
