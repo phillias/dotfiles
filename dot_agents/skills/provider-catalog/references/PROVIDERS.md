@@ -12,7 +12,7 @@ Every agent constructs its fallback chain to match this ladder; implementation m
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (`[--no-context-files, --provider, openrouter, --model, "nvidia/nemotron-3-super-120b-a12b:free"]`). An explicit `--provider`/`--model` bypasses any `fallback/<chain>` design — pi-fallback-provider activates only for `fallback/<name>` model strings.
+**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (currently `[--no-context-files, --provider, gemini, --model, "gemini-2.5-flash"]` — Gemini 2.5 Flash on the AI Studio free tier). An explicit `--provider`/`--model` bypasses any `fallback/<chain>` design — pi-fallback-provider activates only for `fallback/<name>` model strings. To get a *fallback ladder* for the gate instead of a hard pin, pass `--model fallback/<chainname>` and build the chain in `~/.pi/fallback-chains.json` (see "Gemini as gate primary" below).
 
 ## Gateway routing (BYOK)
 
@@ -47,6 +47,21 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 ## Model ids
 
 Model ids are the upstream API model names sent through the gateway verbatim — never rename them. Display names may carry a `· CF GW` marker (pi), but pi's picker shows `id [provider]` regardless.
+
+## Gemini as gate primary — limits surfaced live (2026-08-30)
+
+**Model:** `gemini/gemini-2.5-flash` — Google Generative AI (AI Studio), native `google-generative-ai` API type in pi. Input 1,048,576 tok (real 1M), output 65,536, ~0.6 s latency. Key: `~/.config/opencode/.google-key` (AQ.* OAuth-derived token; captain handles rotation on expiry).
+
+**pi wiring rule (verified):** the provider MUST declare `"api": "google-generative-ai"` with `baseUrl https://generativelanguage.googleapis.com/v1beta`. pi's `openai-completions` path 400s against Gemini's OpenAI-compat endpoint: pi (OpenAI SDK) sends OpenAI-only fields — `store: false`, `max_completion_tokens`, `stream_options` — that Gemini's compat layer rejects, and pi 0.84.2 has no compat flag to strip them. The native API type avoids the whole class.
+
+**Surfaced limit (hard wall):** free tier is `GenerateRequestsPerDayPerProjectPerModel-FreeTier = 20 requests/day/model/project`. A no-mistakes run costs ~10–30 model calls across review/test/document/lint/PR agents → **one busy run exhausts the daily budget**. Gemini free tier cannot be a pipeline primary; use as light fallback, or move the Google key to AI Studio paid tier (removes the 20/day wall).
+
+**Reliability quirk:** gemini-2.5-flash intermittently wraps its structured JSON in markdown code fences (```json …```), which pi's output parser rejects → step-level parse failures, nondeterministic (retries usually pass). Treat as a tax when it drives structured-output steps.
+
+**Long-term free 1M-context candidates (ranked):**
+1. **`opencode/gemini-3-flash`** via the opencode (zen Console) provider — 1M context, standing free tier (not a promo window), and Console free-tier limits are per-model, so it has its own window separate from big-pickle.
+2. **Google AI Studio free** (native key, above) — 20/day wall.
+3. **OpenRouter `:free` models with 1M ctx** (e.g. gemini-2.5-flash:free) — 1000/day shared free-tier bucket only while the account holds a $10+ credits balance ("high-balance" tier; our key is exhausted, so currently 50/day).
 
 ## Known quirks
 
