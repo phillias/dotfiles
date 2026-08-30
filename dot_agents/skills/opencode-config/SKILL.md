@@ -9,7 +9,6 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 | Purpose | File |
 |---|---|
 | Design — 4 runtime systems + architecture overview | `references/DESIGN.md` |
-| Provider & model catalog (all 20 providers) | `references/PROVIDERS.md` |
 | Agent & category routing (fallback chains) | `references/AGENTS.md` |
 | Plugins — runtime fallback, fleet-state-writer, stack | `references/PLUGINS.md` |
 | Skills — CE stagger dispatch, related skills | `references/SKILLS.md` |
@@ -48,7 +47,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 
 ## GPT model routing
 
-`opencode/gpt-5.x` works · `opencode-go/gpt-5.x` fails "Model not supported" · `opencode-zen/gpt-5.x` HTTP 400 (chat/completions, not /v1/responses). Details: `references/PROVIDERS.md` §GPT routing.
+`opencode/gpt-5.x` works · `opencode-go/gpt-5.x` fails "Model not supported" · `opencode-zen/gpt-5.x` HTTP 400 (chat/completions, not /v1/responses). Details: `provider-catalog` skill §Known quirks.
 
 ## Related skills
 
