@@ -14,26 +14,26 @@
       "models": [
         {
           "id": "big-pickle",
-          "name": "Big Pickle (OpenCode Zen)",
+          "name": "Big Pickle (OpenCode Zen \u00b7 CF GW)",
           "contextWindow": 256000,
           "maxTokens": 32768
         },
         {
           "id": "kimi-k2.6",
-          "name": "Kimi K2.6 (OpenCode Zen)",
+          "name": "Kimi K2.6 (OpenCode Zen \u00b7 CF GW)",
           "reasoning": true,
           "contextWindow": 262144,
           "maxTokens": 32768
         },
         {
           "id": "deepseek-v4-flash-free",
-          "name": "DeepSeek V4 Flash Free (OpenCode Zen)",
+          "name": "DeepSeek V4 Flash Free (OpenCode Zen \u00b7 CF GW)",
           "contextWindow": 131072,
           "maxTokens": 32768
         },
         {
           "id": "nemotron-3-ultra-free",
-          "name": "Nemotron 3 Ultra Free (OpenCode Zen)",
+          "name": "Nemotron 3 Ultra Free (OpenCode Zen \u00b7 CF GW)",
           "contextWindow": 262144,
           "maxTokens": 32768
         }
@@ -53,7 +53,7 @@
       "models": [
         {
           "id": "kimi-k2.6",
-          "name": "Kimi K2.6 (OpenCode Go)",
+          "name": "Kimi K2.6 (OpenCode Go \u00b7 CF GW)",
           "reasoning": true,
           "contextWindow": 202752,
           "maxTokens": 32768,
@@ -65,7 +65,7 @@
         },
         {
           "id": "deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash (OpenCode Go)",
+          "name": "DeepSeek V4 Flash (OpenCode Go \u00b7 CF GW)",
           "contextWindow": 131072,
           "maxTokens": 32768,
           "compat": {
@@ -90,13 +90,13 @@
       "models": [
         {
           "id": "moonshotai/Kimi-K2.6",
-          "name": "Kimi K2.6 (GOAT)",
+          "name": "Kimi K2.6 (GOAT \u00b7 CF GW)",
           "contextWindow": 262144,
           "maxTokens": 32768
         },
         {
           "id": "deepseek/deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash (GOAT)",
+          "name": "DeepSeek V4 Flash (GOAT \u00b7 CF GW)",
           "contextWindow": 131072,
           "maxTokens": 32768
         }
@@ -116,7 +116,7 @@
       "models": [
         {
           "id": "glm-5.2",
-          "name": "GLM 5.2 (Z.AI Coding Plan Lite)",
+          "name": "GLM 5.2 (Z.AI Coding Plan Lite \u00b7 CF GW)",
           "reasoning": true,
           "contextWindow": 131072,
           "maxTokens": 32768
@@ -137,13 +137,13 @@
       "models": [
         {
           "id": "@cf/moonshotai/kimi-k2.7-code",
-          "name": "Kimi K2.7 Code (Cloudflare)",
+          "name": "Kimi K2.7 Code (Cloudflare \u00b7 CF GW)",
           "contextWindow": 262144,
           "maxTokens": 32768
         },
         {
           "id": "@cf/zai-org/glm-4.7-flash",
-          "name": "GLM 4.7 Flash (Cloudflare)",
+          "name": "GLM 4.7 Flash (Cloudflare \u00b7 CF GW)",
           "contextWindow": 131072,
           "maxTokens": 32768
         }
@@ -163,13 +163,13 @@
       "models": [
         {
           "id": "z-ai/glm-5",
-          "name": "GLM 5 (OpenRouter paid)",
+          "name": "GLM 5 (OpenRouter paid \u00b7 CF GW)",
           "contextWindow": 131072,
           "maxTokens": 32768
         },
         {
           "id": "nvidia/nemotron-3-super-120b-a12b:free",
-          "name": "Nemotron 3 Super 120B (OpenRouter free)",
+          "name": "Nemotron 3 Super 120B (OpenRouter free \u00b7 CF GW)",
           "contextWindow": 262144,
           "maxTokens": 32768
         }
@@ -189,13 +189,13 @@
       "models": [
         {
           "id": "glm-5.3-flash",
-          "name": "GLM 5.3 Flash (Phoenix Grove free)",
+          "name": "GLM 5.3 Flash (Phoenix Grove free \u00b7 CF GW)",
           "contextWindow": 1000000,
           "maxTokens": 8192
         },
         {
           "id": "deepseek-v4-flash",
-          "name": "DeepSeek V4 Flash (Phoenix Grove free)",
+          "name": "DeepSeek V4 Flash (Phoenix Grove free \u00b7 CF GW)",
           "contextWindow": 131072,
           "maxTokens": 8192
         }
