@@ -76,3 +76,16 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 ## Live statuses (dated; verify with quota-axi)
 
 - 2026-08-30: big-pickle → FreeUsageLimitError (falls through); zai-coding → 429, weekly reset 2026-09-02.
+
+
+## Gate chain v2 — 1M-only, cost-ordered (2026-08-30, captain-ordered)
+
+`fallback/gate` chain (pi-fallback-provider): gemini-2.5-flash (AI Studio free) →
+openrouter :free nemotron-3.5-lightning / minimax-m3 / inkling (1M, $0; 1000/day
+bucket needs $10+ credits balance, else 50/day) → GOAT pool gpt-5.6-luna
+($0.10/$0.60, cheapest paid 1M), GLM-5.2, nemotron-3-ultra, Kimi-K3,
+deepseek-v4-flash → openrouter gpt-5.6-luna → zen gemini-3.5-flash (rate
+unverified) → phoenixgrove glm-5.3-flash tail. CF @cf and opencode-go excluded:
+no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free
+tier is sub-1M only). Model-registry entries added to pi models.json for every
+chain id; openrouter :free ids verified live (429 with remaining:0 at vet time).
