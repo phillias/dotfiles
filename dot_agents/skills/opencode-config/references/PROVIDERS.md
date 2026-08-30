@@ -138,7 +138,7 @@ Open-source model aggregator hosting frontier open-weight models on US infrastru
 
 **The Coding Plan** (API access) is included with every paid subscription tier; per-token access starts at $5. The website says "near-endless messaging for your agents and coding tools" with "unused time banks for your heavy weeks."
 
-⚠️ **CREDIT BLOCKER (2026-08-29):** All chat completion requests return `insufficient_quota` ("You have insufficient credits") on every model. The free trial month may not include Coding Plan API access — the website says API is "included with every PAID plan," and the Taster plan is "$4/mo, first month free." The captain likely needs to activate a paid plan (even Taster) to unlock API access. Catalog fetch (`/v1/models`) works fine with the key.
+✅ **Credit blocker resolved (2026-08-29):** chat completions previously returned `insufficient_quota` ("You have insufficient credits") on every model — the free trial month did not include Coding Plan API access (API is "included with every PAID plan"; Taster is "$4/mo, first month free"). Credits are active now: `glm-5.3` serves live as the head of the pi no-mistakes gate chain (`private_dot_pi/fallback-chains.json`). Catalog fetch (`/v1/models`) works with the key.
 
 ### Subscription tiers
 
@@ -181,8 +181,8 @@ API returns bare model IDs (no vendor prefix). Turbo variants exist for most mod
 ### Privacy / hosting
 US-based infrastructure, zero data retention at inference level, no training, no telemetry, no third-party sharing. Models run on PGS servers separate from original developers — prompts never route to original labs. Privacy-first at every tier.
 
-### Chain placement (proposed, pending credit activation)
-If credits are activated, Phoenix Grove would slot between Z.AI Coding Plan and Cloudflare in the paid-first ladder, providing free access to GLM-5.3 (currently $18/mo on Z.AI), plus exclusive GLM-5.3-Flash, Qwen-3.8-2.4T, and Kimi-K3. The Everyday-band models (GLM-5.3-Flash, DS-V4-Flash) would be the lightest draw on the daily allowance. Rate limits unknown — the Coding Plan claims "near-endless messaging" but no RPM/TPM figures published. Needs smoke-testing once credits are active.
+### Chain placement (proposed)
+Credits are active (2026-08-29 — see blocker resolution above), but Phoenix Grove is not yet in the opencode ladder. If inserted, it would slot between Z.AI Coding Plan and Cloudflare in the paid-first ladder, providing free access to GLM-5.3 (currently $18/mo on Z.AI), plus exclusive GLM-5.3-Flash, Qwen-3.8-2.4T, and Kimi-K3. The Everyday-band models (GLM-5.3-Flash, DS-V4-Flash) would be the lightest draw on the daily allowance. Rate limits unknown — the Coding Plan claims "near-endless messaging" but no RPM/TPM figures published. Only `glm-5.3` is verified live (pi gate chain head); the Everyday-band models still need smoke-testing.
 
 ## Other providers (spot/experimental)
 
@@ -225,7 +225,7 @@ Single Qwen/Qwen3.6-35B-A3B-FP8 (262K, free experimental). **NO SLA/DPA/rate-lim
 
 ## Recently added models
 
-- **Phoenix Grove Systems** — 39-model OpenAI-compatible API at `api.pgsgrove.com/v1`; US-hosted open-source model aggregator. Exclusive access to GLM-5.3 (free during trial vs $18/mo on Z.AI), GLM-5.3-Flash (321B/18B, 1M ctx, NEW), Qwen-3.8-2.4T (2.4T/95B, NEW), Qwen-3.8-27B (27B, NEW), Kimi-K3 (2.8T, free during trial), Kimi-K2.7 (non-code variant). Subscription $4–$195/mo (first month free), per-token from $5. Coding Plan API included with paid plans. ⚠️ Credit activation required — free trial may not include API access. Documented 2026-08-29.
+- **Phoenix Grove Systems** — 39-model OpenAI-compatible API at `api.pgsgrove.com/v1`; US-hosted open-source model aggregator. Exclusive access to GLM-5.3 (free during trial vs $18/mo on Z.AI), GLM-5.3-Flash (321B/18B, 1M ctx, NEW), Qwen-3.8-2.4T (2.4T/95B, NEW), Qwen-3.8-27B (27B, NEW), Kimi-K3 (2.8T, free during trial), Kimi-K2.7 (non-code variant). Subscription $4–$195/mo (first month free), per-token from $5. Coding Plan API included with paid plans. Credits active 2026-08-29 — `glm-5.3` heads the pi no-mistakes gate chain (see Phoenix Grove Systems section). Documented 2026-08-29.
 - **Z.AI Coding Plan Lite** — GLM-5.3 (exclusive), GLM-5.2, GLM-5-Turbo, GLM-4.7; credits-based metering with 0.5× off-peak ET 7am–11pm; $18/mo. Wired in live config 2026-08-25. Gateway-routed 2026-08-29.
 - **~~Ox Alpha Free~~** — stealth model on Zen (`x-preview-f-free`), pruned 2026-08-29 ("Model not supported" on BYOK key lane).
 - **Laguna S 2.1** — 118B MoE 8B active, 262K, free (`poolside/laguna-s-2.1:free`) / 1M paid; Terminal-Bench 2.1 70.2%, SWE 78.5%.
