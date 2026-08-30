@@ -63,6 +63,23 @@
         }
       ]
     },
+    "phoenixgrove": {
+      "baseUrl": "https://api.pgsgrove.com/v1",
+      "api": "openai-completions",
+      "apiKey": "$PHOENIXGROVE_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "glm-5.3",
+          "name": "GLM 5.3 (Phoenix Grove)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
     "openrouter": {
       "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
       "api": "openai-completions",
