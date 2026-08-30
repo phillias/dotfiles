@@ -14,11 +14,14 @@ agent: pi
 # tool_choice", upstream issue kunchenguid/no-mistakes#633). pi is a separate
 # harness that avoids that adapter path entirely.
 #
-# The gate reserves the model's full output budget for its structured review
-# output, so a 1M-context model is required for large diffs (mybrain). kimi-k2p6
-# defaulted to 262k context and overflowed.
+# Gate reserves the model's full output budget for structured review output, so
+# a 1M-context model is required for large diffs. gemini-2.5-flash (AI Studio
+# free tier, GOOGLE_API_KEY from .zshrc/.bashrc) is the pin: 1M context, ~0.6s
+# latency, separate per-provider limits (no shared free-model-router bucket).
+# Phoenix Grove glm-5.3-flash (via Cloudflare AI Gateway) remains available in
+# pi models.json as a manual fallback.
 agent_args_override:
-  pi: [--no-context-files, --provider, phoenixgrove, --model, "glm-5.3-flash"]
+  pi: [--no-context-files, --provider, gemini, --model, "gemini-2.5-flash"]
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
