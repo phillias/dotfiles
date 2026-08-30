@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
-import { parseModel, stripJsonc, entryModel, resolveChain } from "./opencode-runtime-fallback-core";
+import {
+  parseModel,
+  stripJsonc,
+  entryModel,
+  resolveChain,
+} from "./opencode-runtime-fallback-core";
 
 // Load the real opencode.json provider registry.
 async function loadProviderRegistry(): Promise<{
@@ -9,8 +14,11 @@ async function loadProviderRegistry(): Promise<{
   const raw = await readFile("../opencode.json", "utf-8");
   const cfg = JSON.parse(raw);
   const cf = cfg.provider?.cloudflare;
-  if (!cf?.models) throw new Error("cloudflare provider missing models registry");
-  return { cloudflare: { baseURL: cf.options?.baseURL ?? "", models: cf.models } };
+  if (!cf?.models)
+    throw new Error("cloudflare provider missing models registry");
+  return {
+    cloudflare: { baseURL: cf.options?.baseURL ?? "", models: cf.models },
+  };
 }
 
 // Load the real fallback config (JSONC).
@@ -33,7 +41,8 @@ function collectModelRefs(o: unknown): string[] {
       if (Array.isArray(rec.fallback_models)) {
         for (const e of rec.fallback_models) {
           if (typeof e === "string") out.push(e);
-          else if (e && typeof e === "object" && typeof e.model === "string") out.push(e.model);
+          else if (e && typeof e === "object" && typeof e.model === "string")
+            out.push(e.model);
         }
       }
       Object.values(rec).forEach(visit);
@@ -47,7 +56,9 @@ describe("cloudflare gateway model-id prefix contract", () => {
   test("every cloudflare fallback reference resolves to a registered model", async () => {
     const reg = await loadProviderRegistry();
     const fb = await loadFallbackConfig();
-    const refs = collectModelRefs(fb).filter((m) => m.startsWith("cloudflare/"));
+    const refs = collectModelRefs(fb).filter((m) =>
+      m.startsWith("cloudflare/"),
+    );
     expect(refs.length).toBeGreaterThan(0);
 
     for (const ref of refs) {
@@ -56,7 +67,10 @@ describe("cloudflare gateway model-id prefix contract", () => {
       const { providerID, modelID } = parseModel(ref);
       expect(providerID).toBe("cloudflare");
       const registered = Object.keys(reg.cloudflare.models);
-      expect(registered, `cloudflare model registry must contain ${modelID}`).toContain(modelID);
+      expect(
+        registered,
+        `cloudflare model registry must contain ${modelID}`,
+      ).toContain(modelID);
     }
   });
 
@@ -66,7 +80,10 @@ describe("cloudflare gateway model-id prefix contract", () => {
     for (const ref of refs) {
       // The on-wire id (after the provider split) must be the bare Workers AI id.
       const { modelID } = parseModel(ref);
-      expect(modelID, `${ref} → modelID "${modelID}" must be a bare @cf/ id`).toMatch(/^@cf\//);
+      expect(
+        modelID,
+        `${ref} → modelID "${modelID}" must be a bare @cf/ id`,
+      ).toMatch(/^@cf\//);
       expect(modelID).not.toMatch(/^workers-ai\//);
     }
   });
@@ -82,13 +99,18 @@ describe("cloudflare gateway model-id prefix contract", () => {
     const registered = Object.keys(reg.cloudflare.models);
 
     // Exercise resolveChain for a representative set of configured agent keys.
-    const agentKeys = Object.keys({ ...(fb.agents ?? {}), ...(fb.categories ?? {}) });
+    const agentKeys = Object.keys({
+      ...(fb.agents ?? {}),
+      ...(fb.categories ?? {}),
+    });
     expect(agentKeys.length).toBeGreaterThan(0);
     for (const key of agentKeys) {
       const chain = resolveChain(fb, key).map(entryModel);
       for (const m of chain.filter((id) => id.startsWith("cloudflare/"))) {
         const { modelID } = parseModel(m);
-        expect(registered, `resolveChain produced unresolvable ${m}`).toContain(modelID);
+        expect(registered, `resolveChain produced unresolvable ${m}`).toContain(
+          modelID,
+        );
       }
     }
   });
