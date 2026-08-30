@@ -262,13 +262,13 @@
       ]
     },
     "gemini": {
-      "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+      "baseUrl": "http://127.0.0.1:18903/v1beta",
       "api": "google-generative-ai",
-      "apiKey": "$GOOGLE_API_KEY",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
       "models": [
         {
           "id": "gemini-2.5-flash",
-          "name": "Gemini 2.5 Flash (AI Studio direct; gateway pending BYOK setup)",
+          "name": "Gemini 2.5 Flash (AI Studio via CF GW BYOK)",
           "contextWindow": 1048576,
           "maxTokens": 65536
         }
