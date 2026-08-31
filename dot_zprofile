@@ -1,0 +1,19 @@
+# shellcheck shell=sh
+# ~/.zprofile: user-specific .zprofile file for zsh(1).
+#
+# This file is sourced only for login shells (i.e. shells
+# invoked with "-" as the first character of argv[0], and
+# shells invoked with the -l flag.)
+#
+# Global Order: zshenv, zprofile, zshrc, zlogin
+
+if [ -f "$HOME/.profile" ]; then
+    emulate sh -c '. "$HOME/.profile"'
+fi
+
+# Re-assert mise shims after login PATH setup: /etc/profile (via /etc/zprofile)
+# overwrites PATH wholesale, wiping the .zshenv entry. Idempotent guard.
+case ":$PATH:" in
+    *":$HOME/.local/share/mise/shims:"*) ;;
+    *) export PATH="$HOME/.local/share/mise/shims:$PATH" ;;
+esac

@@ -1,4 +1,9 @@
 # shellcheck shell=sh
 . "$HOME/.cargo/env"
 
+# mise shims must be on PATH in non-interactive shells too: .zshrc only runs
+# `mise activate` for interactive zsh, so headless callers (scripts, daemons,
+# cron, zsh -lc) never see tools like pi/node without this.
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+
 export CF_AI_GATEWAY_TOKEN="$(cat "$HOME/.config/opencode/.cf-ai-gw-token" 2>/dev/null)"
