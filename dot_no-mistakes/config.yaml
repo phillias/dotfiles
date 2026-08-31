@@ -15,12 +15,12 @@ agent: pi
 # harness that avoids that adapter path entirely.
 #
 # Gate reserves the model's full output budget for structured review output, so
-# a 1M-context model is required for large diffs. The pin is the 1M-only
-# cost-ordered `fallback/gate` chain (~/.pi/fallback-chains.json): it leads
-# with gemini-2.5-flash (AI Studio free, GOOGLE_API_KEY from .zshrc/.bashrc;
-# ~0.6s latency, separate per-provider limits, 20 req/day/model wall) and
-# retries down the chain on 429/5xx/timeout. Phoenix Grove glm-5.3-flash
-# remains the chain tail as a manual fallback.
+# a 1M-context model is required for large diffs. The pin is the cost-ordered
+# `fallback/gate` chain (~/.pi/fallback-chains.json): it leads with the GOAT
+# paid pool's 1M-context models and retries down the chain on 429/5xx/timeout.
+# Gemini 2.5 Flash is demoted to a low-tier fallback after documented live
+# performance issues; Phoenix Grove glm-5.3-flash remains the chain tail as a
+# manual fallback.
 agent_args_override:
   pi: [--no-context-files, --model, "fallback/gate"]
 
