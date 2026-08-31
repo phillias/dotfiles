@@ -3,9 +3,11 @@
 # Please adapt and uncomment the following lines:
 	name = glm-5.2@InspironOne
 	email = phillias@InspironOne.local
+
+[credential "https://github.com/masculinecache"]
+	helper = !GH_CONFIG_DIR="$HOME"/.config/gh-masculinecache /usr/bin/gh auth git-credential
 [credential "https://github.com"]
 	helper = 
-	helper = !$HOME/bin/gh auth git-credential
-[credential "https://gist.github.com"]
-	helper = 
-	helper = !$HOME/bin/gh auth git-credential
+	helper = !"$HOME"/.local/bin/gh-credential-dispatch
+[credential]
+	useHttpPath = true
