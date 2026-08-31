@@ -1,3 +1,4 @@
+# shellcheck shell=sh
 # ~/.zprofile: user-specific .zprofile file for zsh(1).
 #
 # This file is sourced only for login shells (i.e. shells
