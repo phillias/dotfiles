@@ -12,7 +12,7 @@ Every agent constructs its fallback chain to match this ladder; implementation m
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`): `[--no-context-files, --model, "fallback/gate"]` — the 1M-only cost-ordered ladder in `~/.pi/fallback-chains.json` (chain v2 below). pi-fallback-provider activates on the `fallback/gate` model string: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
+**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`): `[--no-context-files, --model, "fallback/gate"]` — the 1M-only cost-ordered ladder in `~/.pi/fallback-chains.json` (current order documented in the config's prose; see `dot_no-mistakes/config.yaml`). pi-fallback-provider activates on the `fallback/gate` model string: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
 
 ## Gateway routing (BYOK)
 
@@ -48,7 +48,7 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 
 Model ids are the upstream API model names sent through the gateway verbatim — never rename them. Display names may carry a `· CF GW` marker (pi), but pi's picker shows `id [provider]` regardless.
 
-## Gemini as gate primary — limits surfaced live (2026-08-30)
+## Gemini 2.5 Flash — limits surfaced live (2026-08-30)
 
 **Model:** `gemini/gemini-2.5-flash` — Google Generative AI (AI Studio), native `google-generative-ai` API type in pi. Input 1,048,576 tok (real 1M), output 65,536, ~0.6 s latency. Key: `~/.config/opencode/.google-key` (AQ.* OAuth-derived token; captain handles rotation on expiry).
 
@@ -78,14 +78,6 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 - 2026-08-30: big-pickle → FreeUsageLimitError (falls through); zai-coding → 429, weekly reset 2026-09-02.
 
 
-## Gate chain v2 — 1M-only, cost-ordered (2026-08-30, captain-ordered)
+## Gate chain (pi-fallback-provider)
 
-`fallback/gate` chain (pi-fallback-provider): gemini-2.5-flash (AI Studio free) →
-openrouter :free nemotron-3.5-lightning / minimax-m3 / inkling (1M, $0; 1000/day
-bucket needs $10+ credits balance, else 50/day) → GOAT pool gpt-5.6-luna
-($0.10/$0.60, cheapest paid 1M), GLM-5.2, nemotron-3-ultra, Kimi-K3,
-deepseek-v4-flash → openrouter gpt-5.6-luna → zen gemini-3.5-flash (rate
-unverified) → phoenixgrove glm-5.3-flash tail. CF @cf and opencode-go excluded:
-no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free
-tier is sub-1M only). Model-registry entries added to pi models.json for every
-chain id; openrouter :free ids verified live (429 with remaining:0 at vet time).
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml` (gate-chain v3: GOAT paid-pool 1M lead, gemini-2.5-flash demoted after live performance issues, `phoenixgrove/glm-5.3-flash` kept as manual tail). CF @cf and opencode-go excluded: no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only).

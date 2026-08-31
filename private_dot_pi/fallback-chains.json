@@ -1,14 +1,14 @@
 {
   "gate": [
-    "gemini/gemini-2.5-flash",
-    "openrouter/nvidia/nemotron-3.5-lightning:free",
-    "openrouter/minimax/minimax-m3:free",
-    "openrouter/thinkingmachines/inkling:free",
     "commandcode/gpt-5.6-luna",
     "commandcode/zai-org/GLM-5.2",
     "commandcode/nvidia/nemotron-3-ultra-550b-a55b",
     "commandcode/moonshotai/Kimi-K3",
     "commandcode/deepseek/deepseek-v4-flash",
+    "gemini/gemini-2.5-flash",
+    "openrouter/nvidia/nemotron-3.5-lightning:free",
+    "openrouter/minimax/minimax-m3:free",
+    "openrouter/thinkingmachines/inkling:free",
     "openrouter/openai/gpt-5.6-luna",
     "opencode-zen/gemini-3.5-flash",
     "phoenixgrove/glm-5.3-flash"

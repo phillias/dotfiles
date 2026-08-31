@@ -18,10 +18,13 @@ import {
 // Gateway (custom-phoenixgrove) with the gateway token, and by switching from
 // the paid Frontier-band glm-5.3 to the free Everyday-band flash models
 // (glm-5.3-flash 321B/18B 1M ctx, glm-4.7-flash, deepseek-v4-flash,
-// deepseek-v4-flash-0731). The pi gate chain is re-headed with
-// phoenixgrove/glm-5.3-flash and openrouter z-ai/glm-5.1 is added as a paid
-// fallback. These assertions fail on the pre-fix config (direct api.pgsgrove.com
-// URL, .phoenixgrove-key, paid glm-5.3) and pass after the fix.
+// deepseek-v4-flash-0731). The pi gate chain is re-ordered so the GOAT
+// paid-pool 1M models lead (gate head is commandcode/gpt-5.6-luna),
+// gemini-2.5-flash is demoted to a low-tier fallback after live
+// performance issues, and phoenixgrove/glm-5.3-flash remains the chain
+// tail as a manual fallback. These assertions fail on the pre-fix config
+// (direct api.pgsgrove.com URL, .phoenixgrove-key, paid glm-5.3) and pass
+// after the fix.
 
 const PI_DIR = "../../../private_dot_pi";
 
@@ -262,29 +265,52 @@ describe("pi gate boundary mirrors the gateway + free flash fix", () => {
     ).toBe(1_000_000);
   });
 
-  test("openrouter z-ai/glm-5.1 paid fallback is registered for pi", async () => {
+  test("openrouter z-ai paid fallback is registered for pi", async () => {
     const models = await loadPiModels();
     const ids = models.providers.openrouter.models.map((m: any) => m.id);
     expect(
       ids,
-      "openrouter must register z-ai/glm-5.1 as the paid fallback",
-    ).toContain("z-ai/glm-5.1");
+      "openrouter must register a z-ai paid fallback for pi",
+    ).toContain("z-ai/glm-5");
   });
 
-  test("pi gate chain is re-headed with phoenixgrove/glm-5.3-flash and includes glm-5.1", async () => {
+  test("pi gate chain is re-ordered with GOAT paid-pool 1M lead and phoenixgrove tail", async () => {
     const chains = await loadPiChains();
     const gate = chains.gate as string[];
     expect(gate.length, "gate chain must be non-empty").toBeGreaterThan(0);
-    expect(gate[0], "gate head must be the free flash model").toBe(
+    expect(gate[0], "gate head must be the GOAT paid-pool 1M model").toBe(
+      "commandcode/gpt-5.6-luna",
+    );
+    expect(
+      gate,
+      "gate must include all five GOAT paid-pool entries as the lead tier",
+    ).toEqual(
+      expect.arrayContaining([
+        "commandcode/gpt-5.6-luna",
+        "commandcode/zai-org/GLM-5.2",
+        "commandcode/nvidia/nemotron-3-ultra-550b-a55b",
+        "commandcode/moonshotai/Kimi-K3",
+        "commandcode/deepseek/deepseek-v4-flash",
+      ]),
+    );
+    expect(
+      gate,
+      "gate tail must still be phoenixgrove/glm-5.3-flash as manual fallback",
+    ).toContain("phoenixgrove/glm-5.3-flash");
+    expect(gate[gate.length - 1], "gate tail must be the PGS flash model").toBe(
       "phoenixgrove/glm-5.3-flash",
     );
     expect(
       gate,
-      "gate must include the openrouter glm-5.1 paid fallback",
-    ).toContain("openrouter/z-ai/glm-5.1");
+      "gemini-2.5-flash must be demoted to a low-tier fallback (not lead)",
+    ).toContain("gemini/gemini-2.5-flash");
+    expect(
+      gate.indexOf("gemini/gemini-2.5-flash"),
+      "gemini-2.5-flash must NOT head the gate chain",
+    ).toBeGreaterThan(0);
     expect(
       gate,
-      "paid Frontier glm-5.3 must not head or appear in the gate chain",
+      "paid Frontier glm-5.3 must not appear in the gate chain",
     ).not.toContain("phoenixgrove/glm-5.3");
   });
 });
