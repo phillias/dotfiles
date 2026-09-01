@@ -1,30 +1,28 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import {
-  parseModel,
   stripJsonc,
   entryModel,
   resolveChain,
 } from "./opencode-runtime-fallback-core";
 
 // This test exercises the REAL declarative config artifacts (opencode.json,
-// opencode-fallback.jsonc, private_dot_pi/private_agent/models.json,
-// private_dot_pi/fallback-chains.json) through the real consumer's parser
-// functions (stripJsonc / resolveChain / parseModel) — the same pipeline the
-// opencode-runtime-fallback.ts plugin and the pi gate agent use at runtime.
+// opencode-fallback.jsonc, private_dot_pi/private_agent/models.json) through
+// the real consumer's parser functions (stripJsonc / resolveChain) — the same
+// pipeline the opencode-runtime-fallback.ts plugin and the pi gate agent use
+// at runtime.
 //
-// Intent under test (branch fix/phoenixgrove-free-models): Phoenix Grove credit
-// consumption is fixed by routing the provider through the Cloudflare AI
-// Gateway (custom-phoenixgrove) with the gateway token, and by switching from
-// the paid Frontier-band glm-5.3 to the free Everyday-band flash models
-// (glm-5.3-flash 321B/18B 1M ctx, glm-4.7-flash, deepseek-v4-flash,
-// deepseek-v4-flash-0731). The pi gate chain is re-ordered to gate-chain v4:
-// openrouter :free trio leads (nemotron-3.5-lightning, minimax-m3, inkling),
-// followed by opencode-zen gemini-3.5-flash, the GOAT paid-pool 1M models,
-// paid lanes (openrouter/openai/gpt-5.6-luna), then phoenixgrove/glm-5.3-flash
-// and gemini/gemini-2.5-flash at the tail as manual fallbacks. These assertions
-// fail on the pre-fix config (direct api.pgsgrove.com URL, .phoenixgrove-key,
-// paid glm-5.3, v3 gate ordering) and pass after the fix.
+// Intent under test (branch fm/glm51-interactive-ladder): the opencode
+// interactive chains are unified on the GLM-5.1 ladder
+// (big-pickle → opencode-go/glm-5.1 → commandcode/zai-org/GLM-5.2 →
+// openrouter/z-ai/glm-5 → opencode-zen/glm-5.1). PGS, Cloudflare Workers, and
+// the openrouter :free trio are retired from the opencode interactive ladders
+// (PGS burns Coding Plan credits; CF @cf excluded by captain; the :free trio
+// is GATE-chain-only via private_dot_pi/fallback-chains.json and is NOT asserted
+// here). The pi gate chain is unchanged by this branch. Phoenix Grove is still
+// registered as a provider in opencode.json (the phoenixgrove provider config
+// tests below are kept as the gateway indirection contract for the no-mistakes
+// gate), but no opencode chain selects it.
 
 const PI_DIR = "../../../private_dot_pi";
 
@@ -54,11 +52,6 @@ async function loadFallbackConfig(): Promise<any> {
 
 async function loadPiModels(): Promise<any> {
   const raw = await readFile(`${PI_DIR}/private_agent/models.json`, "utf-8");
-  return JSON.parse(raw);
-}
-
-async function loadPiChains(): Promise<any> {
-  const raw = await readFile(`${PI_DIR}/fallback-chains.json`, "utf-8");
   return JSON.parse(raw);
 }
 
@@ -143,82 +136,67 @@ describe("opencode.json phoenixgrove provider routes through the AI Gateway", ()
   });
 });
 
-describe("opencode-fallback.jsonc chains resolve to the free PGS flash models", () => {
-  test("global ladder and utility agent/category chains include the free flash models", async () => {
-    const fb = await loadFallbackConfig();
-    // Global ladder (agent=undefined resolves here) — the deduped tail of every
-    // non-no_global_tail chain, so this also proves the free models reach every
-    // utility chain.
-    const globalChain = resolveChain(fb, undefined).map(entryModel);
-    expect(globalChain, "global ladder must include glm-5.3-flash").toContain(
-      "phoenixgrove/glm-5.3-flash",
-    );
-    expect(
-      globalChain,
-      "global ladder must include deepseek-v4-flash",
-    ).toContain("phoenixgrove/deepseek-v4-flash");
+describe("opencode-fallback.jsonc chains run the GLM-5.1 ladder, no PGS", () => {
+  const GLM_5_1_LADDER = [
+    "opencode-zen/big-pickle",
+    "opencode-go/glm-5.1",
+    "commandcode/zai-org/GLM-5.2",
+    "openrouter/z-ai/glm-5",
+    "opencode-zen/glm-5.1",
+  ] as const;
 
-    // Representative utility categories whose explicit fallback_models were
-    // extended with the free PGS models.
-    for (const cat of ["quick", "unspecified-low"]) {
-      const chain = resolveChain(fb, cat).map(entryModel);
-      expect(chain, `${cat} chain must include glm-5.3-flash`).toContain(
-        "phoenixgrove/glm-5.3-flash",
-      );
-      expect(chain, `${cat} chain must include deepseek-v4-flash`).toContain(
-        "phoenixgrove/deepseek-v4-flash",
-      );
-    }
-    // Representative utility agent (general/explore) whose explicit
-    // fallback_models were extended.
+  test("global ladder is exactly the GLM-5.1 ladder", async () => {
+    const fb = await loadFallbackConfig();
+    const globalChain = resolveChain(fb, undefined).map(entryModel);
+    expect(globalChain, "global ladder must be the GLM-5.1 ladder").toEqual([
+      ...GLM_5_1_LADDER,
+    ]);
+  });
+
+  test("utility agent and category chains contain the GLM-5.1 ladder", async () => {
+    const fb = await loadFallbackConfig();
     for (const ag of ["general", "explore"]) {
       const chain = resolveChain(fb, ag).map(entryModel);
-      expect(chain, `${ag} agent chain must include glm-5.3-flash`).toContain(
-        "phoenixgrove/glm-5.3-flash",
-      );
-      expect(
-        chain,
-        `${ag} agent chain must include deepseek-v4-flash`,
-      ).toContain("phoenixgrove/deepseek-v4-flash");
+      for (const step of GLM_5_1_LADDER) {
+        expect(
+          chain,
+          `${ag} agent chain must contain ${step}`,
+        ).toContain(step);
+      }
+    }
+    for (const cat of ["quick", "unspecified-low"]) {
+      const chain = resolveChain(fb, cat).map(entryModel);
+      for (const step of GLM_5_1_LADDER) {
+        expect(
+          chain,
+          `${cat} category chain must contain ${step}`,
+        ).toContain(step);
+      }
     }
   });
 
-  test("every phoenixgrove fallback reference resolves to a registered free model", async () => {
-    const providers = await loadOpencodeProviderRegistry();
-    const registered = Object.keys(providers.phoenixgrove.models);
+  test("no opencode chain references phoenixgrove (PGS is GATE-chain-only)", async () => {
     const fb = await loadFallbackConfig();
-    const refs = collectModelRefs(fb).filter((m) =>
-      m.startsWith("phoenixgrove/"),
-    );
+    const refs = collectModelRefs(fb);
+    const pgs = refs.filter((m) => m.startsWith("phoenixgrove/"));
     expect(
-      refs.length,
-      "there must be phoenixgrove references in the ladder",
-    ).toBeGreaterThan(0);
-    for (const ref of refs) {
-      const { providerID, modelID } = parseModel(ref);
-      expect(providerID).toBe("phoenixgrove");
-      expect(
-        registered,
-        `${ref} → ${modelID} must be a registered free model`,
-      ).toContain(modelID);
-    }
+      pgs,
+      "no opencode chain may select a phoenixgrove model",
+    ).toEqual([]);
   });
 
-  test("no fallback reference selects the paid Frontier glm-5.3", async () => {
+  test("no opencode chain references the Cloudflare Workers @cf namespace", async () => {
     const fb = await loadFallbackConfig();
-    const refs = collectModelRefs(fb).filter((m) =>
-      m.startsWith("phoenixgrove/"),
-    );
-    for (const ref of refs) {
-      const { modelID } = parseModel(ref);
-      expect(modelID, `${ref} must not be the paid Frontier glm-5.3`).not.toBe(
-        PAID_FRONTIER_MODEL,
-      );
-    }
+    const refs = collectModelRefs(fb);
+    const cf = refs.filter((m) => m.startsWith("cloudflare/@cf/"));
+    expect(
+      cf,
+      "no opencode chain may select a Cloudflare Workers @cf model",
+    ).toEqual([]);
   });
 });
 
-describe("pi gate boundary mirrors the gateway + free flash fix", () => {
+describe("pi provider registry mirrors the gateway + free flash contract", () => {
   test("pi models.json phoenixgrove provider points at the gateway with the gateway token", async () => {
     const models = await loadPiModels();
     const pg = models.providers.phoenixgrove;
@@ -272,57 +250,5 @@ describe("pi gate boundary mirrors the gateway + free flash fix", () => {
       ids,
       "openrouter must register a z-ai paid fallback for pi",
     ).toContain("z-ai/glm-5");
-  });
-
-  test("pi gate chain is re-ordered to v4: openrouter :free trio leads, gemini-2.5-flash tail", async () => {
-    const chains = await loadPiChains();
-    const gate = chains.gate as string[];
-    expect(gate.length, "gate chain must be non-empty").toBeGreaterThan(0);
-    expect(
-      gate[0],
-      "gate head must be the first openrouter :free model",
-    ).toBe("openrouter/nvidia/nemotron-3.5-lightning:free");
-    expect(
-      gate,
-      "gate must lead with the openrouter :free trio for limit-testing",
-    ).toEqual(
-      expect.arrayContaining([
-        "openrouter/nvidia/nemotron-3.5-lightning:free",
-        "openrouter/minimax/minimax-m3:free",
-        "openrouter/thinkingmachines/inkling:free",
-      ]),
-    );
-    expect(
-      gate,
-      "gate must include all five GOAT paid-pool entries after the :free trio",
-    ).toEqual(
-      expect.arrayContaining([
-        "commandcode/gpt-5.6-luna",
-        "commandcode/zai-org/GLM-5.2",
-        "commandcode/nvidia/nemotron-3-ultra-550b-a55b",
-        "commandcode/moonshotai/Kimi-K3",
-        "commandcode/deepseek/deepseek-v4-flash",
-      ]),
-    );
-    expect(
-      gate,
-      "phoenixgrove/glm-5.3-flash must still be present as manual fallback",
-    ).toContain("phoenixgrove/glm-5.3-flash");
-    expect(
-      gate[gate.length - 1],
-      "gate tail must be gemini/gemini-2.5-flash in v4",
-    ).toBe("gemini/gemini-2.5-flash");
-    expect(
-      gate,
-      "gemini-2.5-flash must be demoted to a low-tier fallback (not lead)",
-    ).toContain("gemini/gemini-2.5-flash");
-    expect(
-      gate.indexOf("gemini/gemini-2.5-flash"),
-      "gemini-2.5-flash must NOT head the gate chain",
-    ).toBeGreaterThan(0);
-    expect(
-      gate,
-      "paid Frontier glm-5.3 must not appear in the gate chain",
-    ).not.toContain("phoenixgrove/glm-5.3");
   });
 });

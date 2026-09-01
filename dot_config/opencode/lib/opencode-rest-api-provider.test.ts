@@ -94,25 +94,15 @@ function collectModelRefs(o: unknown): string[] {
 }
 
 describe("cloudflare AI Gateway REST API provider contract", () => {
-  test("every cloudflare fallback reference resolves to a registered model", async () => {
-    const reg = await loadProviderRegistry();
+  test("no fallback chain references the cloudflare provider (CF @cf excluded by captain)", async () => {
     const fb = await loadFallbackConfig();
     const refs = collectModelRefs(fb).filter((m) =>
       m.startsWith("cloudflare/"),
     );
-    expect(refs.length).toBeGreaterThan(0);
-
-    for (const ref of refs) {
-      // parseModel splits on the FIRST slash — exactly what the fallback plugin
-      // does before handing modelID to the provider as the on-wire id.
-      const { providerID, modelID } = parseModel(ref);
-      expect(providerID).toBe("cloudflare");
-      const registered = Object.keys(reg.cloudflare.models);
-      expect(
-        registered,
-        `cloudflare model registry must contain ${modelID}`,
-      ).toContain(modelID);
-    }
+    expect(
+      refs,
+      "no chain may select a cloudflare/ model after the CF drop",
+    ).toEqual([]);
   });
 
   test("cloudflare ids are bare @cf/ (the /compat workers-ai/ prefix scheme is gone)", async () => {

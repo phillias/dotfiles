@@ -1,14 +1,13 @@
 {
   // PAID-FIRST fallback policy (captain decision 2026-08-12, DESIGN.md §2.6).
-  // 2026-08-25 (captain decision): Z.AI Coding Plan (Lite $18/mo) inserted
-  // between GOAT and Cloudflare. Chain: Go → GOAT → Z.AI → Cloudflare →
-  // OpenRouter → Zen. Z.AI Lite provides GLM-5.3 (exclusive), GLM-5.2,
-  // GLM-5-Turbo at credits-based metering with 0.5x off-peak during ET
-  // 7am-11pm operational hours. Cloudflare Workers AI now routes through
-  // AI Gateway (BYOK) for analytics/caching; $50/mo spend cap enforced.
-  // OpenRouter added for cheapest GLM-5 per-token overflow ($0.60/$1.92).
-  // go-pool-guard.ts retired 2026-08-12 — reactive chain stepping here is
-  // the single owner of exhaustion handling.
+  // 2026-09-01 (captain decision, decision A v5): All opencode chains re-pointed
+  // to the GLM-5.1 ladder — big-pickle → OpenCode Go glm-5.1 → GOAT GLM-5.2 →
+  // OpenRouter glm-5 → OpenCode Zen glm-5.1. PGS, Cloudflare Workers, the
+  // Z.AI Coding Plan, and the openrouter :free trio are retired from the
+  // interactive ladders (PGS burns Coding Plan credits; CF @cf excluded by
+  // captain; Z.AI / free trio are GATE-chain-only via private_dot_pi
+  // fallback-chains.json). go-pool-guard.ts retired 2026-08-12 — reactive chain
+  // stepping here is the single owner of exhaustion handling.
   //
   // Fleet taxonomy (the retired OmO agent keys are gone): the global ladder is
   // firstmate's + every secondmate's session chain (no agent name → resolves
@@ -17,14 +16,6 @@
   // session model → agent (exact, then longest `*` wildcard) → category →
   // global ladder. Specialized entries set `no_global_tail` so the chain ends
   // at Zen and FAILS visibly instead of silently downgrading to the free tier.
-  //
-  // Decision A (v5, 2026-09-01): ALL chains run the GLM-5.1 ladder:
-  // big-pickle → Go glm-5.1 → GOAT GLM-5.2 → OpenRouter glm-5 → Zen glm-5.1.
-  // PGS, Cloudflare Workers, Z.AI Coding Plan, gemini and the free-tier extras
-  // are retired from the interactive ladders (PGS burns Coding Plan credits;
-  // CF @cf excluded by captain; gemini dropped after live performance issues).
-  // Reasoning/high-effort/visual/looker/special agents keep their pinned
-  // models and fall back GOAT → Z.AI → Go → Zen only.
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
   "max_fallback_attempts": 15,
@@ -48,7 +39,7 @@
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Utility crewmates: big-pickle primary → GO → GOAT → Z.AI → CF → OR → Zen (global tail adds free)
+    // Utility crewmates: big-pickle primary → Go → GOAT → OR → Zen (GLM-5.1 ladder).
     "general": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -77,7 +68,7 @@
         "opencode-zen/glm-5.1"
       ]
     },
-    // Specialized flywheel agents: models pinned, fallback Z.AI → GOAT → Go → Zen only.
+    // Specialized flywheel agents: models pinned, fallback runs the GLM-5.1 ladder.
     "self-improve": {
       "model": "opencode-zen/glm-5.1",
       "fallback_models": [
@@ -109,10 +100,8 @@
       "no_global_tail": true
     },
     // ce-* review/research personas: models stay pinned in their agent .md
-    // files. On error fall back Z.AI → GOAT → Zen only (no free downgrade; chain end
-    // surfaces as a visible failure). Go stage omitted deliberately — 35 of 51
-    // personas are already Go-pinned as their primary, so listing Go models
-    // here would let a pinned Go primary's failure skip the GOAT stage.
+    // files. On error fall back through the GLM-5.1 ladder; chain end surfaces
+    // as a visible failure (no free downgrade via global tail).
     "ce-*": {
       "fallback_models": [
         "opencode-zen/big-pickle",
@@ -161,8 +150,8 @@
         "opencode-zen/glm-5.1"
       ]
     },
-    // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback
-    // GOAT→Go→Zen only — no free downgrade; exhaustion fails loudly.
+    // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback runs
+    // the GLM-5.1 ladder; no free downgrade via global tail — exhaustion fails loudly.
     "ultrabrain": {
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
@@ -225,7 +214,7 @@
       "no_global_tail": true
     },
     "artistry": {
-      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
+      "model": "opencode-zen/gemini-3.5-flash",
       "fallback_models": [
         "opencode-zen/big-pickle",
         // OpenCode Go ($60 pool) - GLM-5.1
