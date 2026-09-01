@@ -1,5 +1,6 @@
 {
   "gate": [
+    "cerebras/gpt-oss-120b",
     "openrouter/nvidia/nemotron-3.5-lightning:free",
     "openrouter/minimax/minimax-m3:free",
     "openrouter/thinkingmachines/inkling:free",
