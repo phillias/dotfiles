@@ -706,8 +706,23 @@ Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.tx
 
 ### 7.3 Config defaults (live)
 
-`small_model: opencode-zen/nemotron-3-ultra-free` · `compaction {auto:false, prune:true, reserved:50000, tail_turns:40}` · MCP baseline: context7, grep_app, websearch, mcp_everything. TUI theme: tokyonight (tui.json), solarized-dark alternative. Provider concurrency: Team Profile default 8.
+`small_model: opencode-zen/nemotron-3-ultra-free` · `compaction {auto:false, prune:true, reserved:50000, tail_turns:40}` · MCP baseline: context7, grep_app, websearch, mcp_everything. TUI theme: tokyonight (tui.json), solarized-dark alternative.
 
 ### 7.4 Mermaid hygiene
 
 Node labels containing `<br/>` MUST be quoted (`["text<br/>text"]`). Unquoted `<br/>` inside `[...]` breaks the chart — the root cause of the rendering error at "Layer D → Architecture".
+
+
+## 8. Provider mechanics (opencode.jsonc-specific)
+
+Shared provider/model facts (stack, gateway routing, BYOK, pricing, quirks,
+rate limits) are owned by the `provider-catalog` skill
+(`~/.agents/skills/provider-catalog/references/PROVIDERS.md`); see
+`references/PROVIDERS.md` (stub). This section covers opencode-config
+specifics that describe THIS config's own files and behavior, not provider
+facts.
+
+### Provider concurrency (live config)
+
+**Team Profile:** defaultConcurrency 8; providerConcurrency {opencode 15, opencode-zen 15, opencode-go 8, openrouter 6}; modelConcurrency {big-pickle 2, kimi-k2.6 3, ds-v4-pro 2, gpt-5.5 2, gpt-5.4 2, gpt-5.3-codex 2, glm-5.1 2, ds-v4-flash 15, zen/kimi-k2.6 2}.
+**Free Profile:** default 5; provider {opencode 10, openrouter 5}; modelConcurrency {}.
