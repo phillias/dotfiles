@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory={{ .chezmoi.homeDir }}
-ExecStart={{ .chezmoi.homeDir }}/.npm-global/bin/codeburn share --always --port 7777
+ExecStart={{ .chezmoi.homeDir }}/.local/share/mise/shims/codeburn share --always --port 7777
 Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
