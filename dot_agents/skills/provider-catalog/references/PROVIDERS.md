@@ -14,6 +14,20 @@ Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes 
 
 **no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`): `[--no-context-files, --model, "fallback/gate"]` — the 1M-only cost-ordered ladder in `~/.pi/fallback-chains.json` (current order documented in the config's prose; see `dot_no-mistakes/config.yaml`). pi-fallback-provider activates on the `fallback/gate` model string: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
 
+## Cheapest-qualified-lane dispatch rule (spawn selection)
+
+- **Rule:** when a dispatch resolves to multiple *qualified* lanes — lanes that
+  meet the task's reasoning-class, capability, and runway gates — prefer the
+  cheapest qualified lane, ranked by blended tokens-per-dollar from the current
+  catalog snapshot (`models.snapshot.json` in this skill; per-provider rates in
+  `PROVIDERS.md` — never duplicated elsewhere).
+- **Scope:** applies to dispatch-time selection among eligible lanes
+  (unbound sessions and utility classes). Pinned classes keep their pins;
+  cheapest-qualified never downgrades a reasoning-class requirement.
+- **Relationship to the fallback ladder:** this rule picks the lane *before*
+  work starts; the fallback ladder is reactive, stepping only after the active
+  lane fails or exhausts. A cheapest-lane choice does not reorder the ladder.
+
 ## Gateway routing (BYOK)
 
 All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/…` with header `cf-aig-gateway-id: opencode` and the gateway token.

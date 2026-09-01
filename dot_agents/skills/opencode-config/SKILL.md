@@ -15,7 +15,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 | OmO-era archive (Model Selection Priorities, Config File Hierarchy) | `references/ARCHIVE-OMO.md` |
 | Firstmate agent distro brief | `references/FIRSTMATE.md` |
 | OS dependencies (gh, bw, wrangler, sqlite, mise, ...) | `references/DEPENDENCIES.md` |
-| Model snapshot (drift baseline) | `models.snapshot.json` |
+| Model snapshot (drift baseline) | `~/.agents/skills/provider-catalog/models.snapshot.json` |
 
 ## Critical rules
 
@@ -36,7 +36,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 
 ## Key files
 
-`opencode.json` (root) · `opencode-fallback.jsonc` (chain) · `dispatch-rules.json` (30 rules) · `plugins/opencode-runtime-fallback.ts` + `lib/opencode-runtime-fallback-core.ts` · `lib/opencode-rest-api-provider.test.ts` (contract: @cf lane + gateway-routed provider assertions) · `~/.local/state/opencode-fleet/fallback.json` (live state) · `scripts/catalog-drift.mjs` + `fm-drift-pr.sh` · systemd `catalog-drift.{service,timer}` · `models.snapshot.json` · `~/.agents/skills/` · `.cf-ai-gw-token` (gateway token — covers both `/ai/*` and `/ai-gateway/*` planes; `.cloudflare-key` has AI Gateway Edit/Run + Read, Read added 2026-08-29).
+`opencode.json` (root) · `opencode-fallback.jsonc` (chain) · `dispatch-rules.json` (30 rules) · `plugins/opencode-runtime-fallback.ts` + `lib/opencode-runtime-fallback-core.ts` · `lib/opencode-rest-api-provider.test.ts` (contract: @cf lane + gateway-routed provider assertions) · `~/.local/state/opencode-fleet/fallback.json` (live state) · `scripts/catalog-drift.mjs` + `fm-drift-pr.sh` · systemd `catalog-drift.{service,timer}` · `~/.agents/skills/provider-catalog/models.snapshot.json` · `~/.agents/skills/` · `.cf-ai-gw-token` (gateway token — covers both `/ai/*` and `/ai-gateway/*` planes; `.cloudflare-key` has AI Gateway Edit/Run + Read, Read added 2026-08-29).
 
 ## Maintenance
 

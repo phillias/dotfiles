@@ -14,8 +14,9 @@ operating headlessly:
    chain is disrupted.
 
 This document lives in `opencode-config/references/` (house pattern from PR #176)
-so it sits next to the config reference (`SKILL.md`) and the model snapshot
-(`models.snapshot.json`) that the drift system already maintains. It is the
+so it sits next to the config reference (`SKILL.md`); the model snapshot
+(`models.snapshot.json`) moved to `~/.agents/skills/provider-catalog/`
+(2026-09-01). It is the
 design companion to `~/.config/opencode/self-improvement-loop.md` (the flywheel's
 operations doc) — this file is *why*, that file is *how to run it*.
 
@@ -202,7 +203,7 @@ unavailable in this API version so the annotation rides system-transform.
 
 - **`catalog-drift.mjs`** fetches models.dev + opencode-zen catalogs, builds a
   snapshot (config-referenced OR free models only) against
-  `models.snapshot.json`, diffs on added/removed/price (≥25% blended
+  `~/.agents/skills/provider-catalog/models.snapshot.json`, diffs on added/removed/price (≥25% blended
   tokens-per-dollar, two-sided) / context-window change, and writes
   `catalog-drift.{json,txt}`. Exit 1 on drift, 2 on failure; `--seed` (re)writes
   the snapshot. Runs via `catalog-drift.service/timer`
@@ -326,21 +327,9 @@ The LLM determines a subagent's model by choosing the task shape at the intent
 gate (dispatch-rules.json → `task(category=...)` / `task(subagent_type=...)`);
 `chat.params.agent` → `resolveChain` → agent > category > global ladder. This is
 the "know, not operate" contract — the LLM picks the class of work, never the
-specific model (Layer D stays deferred).
-
-#### Cheapest-qualified-lane dispatch rule (spawn selection)
-
-- **Rule:** when a dispatch resolves to multiple *qualified* lanes — lanes that
-  meet the task's reasoning-class, capability, and runway gates — prefer the
-  cheapest qualified lane, ranked by blended tokens-per-dollar from the current
-  catalog snapshot (`models.snapshot.json`; per-provider rates live in
-  `PROVIDERS.md` — never duplicated here).
-- **Scope:** applies to dispatch-time selection among eligible lanes
-  (unbound sessions and utility classes). Pinned classes above keep their
-  pins; cheapest-qualified never downgrades a reasoning-class requirement.
-- **Relationship to the fallback ladder:** this rule picks the lane *before*
-  work starts; the ladder above is reactive, stepping only after the active
-  lane fails or exhausts. A cheapest-lane choice does not reorder the ladder.
+specific model (Layer D stays deferred). Spawn-time cheapest-qualified-lane
+selection moved to the provider-catalog skill (2026-09-01): see
+`~/.agents/skills/provider-catalog/references/PROVIDERS.md`.
 
 ### 2.7 Drill-down map
 
