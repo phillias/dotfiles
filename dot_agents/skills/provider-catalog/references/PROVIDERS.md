@@ -77,6 +77,22 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 
 - 2026-08-30: big-pickle → FreeUsageLimitError (falls through); zai-coding → 429, weekly reset 2026-09-02.
 
+## PGS coding tester plan (2026-09-01)
+
+Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-5.3-flash`. Key: `~/.agents/keys/.phoenixgrove-coding-plan-key` (pgsk_…; fold into `~/.agents/keys/phillias/` during keys-profile-migration). Verified plan behavior:
+
+- baseURL unchanged (`https://api.pgsgrove.com/v1`) — zero client config changes; the key swap is a dashboard BYOK update on the gateway's custom-phoenixgrove upstream.
+- `/v1/usage` (HTTP 200) returns percent-based windows: `weekly_used_percent`, `daily_used_percent`, `api_share_of_weekly_percent`, `weekly_resets_at` (2026-09-08T01:56Z). No bank/credits endpoint.
+- Plan models complete while usage stays 0% → plan-subsidized, NOT per-token. The old PGS key bills per-token (insufficient-credits errors on 2026-08-31 were billing, not path/gateway).
+
+## Free-model probe results (2026-08-31, via gateway)
+
+- `opencode-zen/nemotron-3-ultra-free`: works, tool-calling verified (function call, finish=tool_calls) — best free agentic model.
+- `opencode-zen/deepseek-v4-flash-free`: FreeUsageLimitError (busy, retryable).
+- `opencode-zen/gemini-3-flash`: 500 via `custom-opencode-zen/v1` (opencode-zen passthrough slug = 400 Invalid provider).
+- `custom-cloudflare` @cf lane: 502 code 2006 for both `@cf/zai-org/glm-4.7-flash` and `@cf/deepseek-ai/deepseek-v4-flash` (broken that day; recheck).
+- phoenixgrove custom lane serves ~38 models (glm-4.7-flash, qwen-3.8-27b, gemma-4-31b respond); PGS bills per-token on the old key — treat PGS as paid except on the coding plan above.
+
 
 ## Gate chain (pi-fallback-provider)
 
