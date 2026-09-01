@@ -328,6 +328,20 @@ gate (dispatch-rules.json → `task(category=...)` / `task(subagent_type=...)`);
 the "know, not operate" contract — the LLM picks the class of work, never the
 specific model (Layer D stays deferred).
 
+#### Cheapest-qualified-lane dispatch rule (spawn selection)
+
+- **Rule:** when a dispatch resolves to multiple *qualified* lanes — lanes that
+  meet the task's reasoning-class, capability, and runway gates — prefer the
+  cheapest qualified lane, ranked by blended tokens-per-dollar from the current
+  catalog snapshot (`models.snapshot.json`; per-provider rates live in
+  `PROVIDERS.md` — never duplicated here).
+- **Scope:** applies to dispatch-time selection among eligible lanes
+  (unbound sessions and utility classes). Pinned classes above keep their
+  pins; cheapest-qualified never downgrades a reasoning-class requirement.
+- **Relationship to the fallback ladder:** this rule picks the lane *before*
+  work starts; the ladder above is reactive, stepping only after the active
+  lane fails or exhausts. A cheapest-lane choice does not reorder the ladder.
+
 ### 2.7 Drill-down map
 
 | Topic | Where |

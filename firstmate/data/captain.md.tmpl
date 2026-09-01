@@ -23,6 +23,8 @@
 - Do not track machine-generated artifacts in dotfiles (no-mistakes daemon unit, bun.lock). (set 2026-08-25)
 - Git history surgery on upstream-managed installs (reset --hard etc.): state explicitly what lives inside vs outside the repo and what could be lost before executing — captain wants data-safety guarantees up front. (set 2026-08-25)
 
+- Cheapest-lane dispatch: Firstmate spawn selection runs cost-aware — when multiple lanes qualify for a task, prefer the cheapest qualified lane; policy lives in `~/.agents/skills/opencode-config/references/DESIGN.md` (§2.6, "Cheapest-qualified-lane dispatch rule"), snapshot rates in that skill's `PROVIDERS.md` — never duplicate rate numbers here. (set 2026-09-01)
+
 ## Task capture
 - Proactively create a backlog task for any non-trivial work — anything requiring more than one step, any investigation, any design decision, or any deliverable worth tracking — using descriptive headline-style titles readable at a glance in the todo pane; mirror backlog items into that pane at every dispatch, completion, decision, and heartbeat (queued→pending, under way→in_progress, blocked→in_progress with the blocker noted, done→completed) and re-seed at session start — the pane is a presentation mirror of `data/backlog.md`, never an authority. (set 2026-08-27)
 
