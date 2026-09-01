@@ -30,7 +30,7 @@
 # Fingerprint (agents):   {{ output "bash" "-c" "find ~/.agents -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (opencode): {{ output "bash" "-c" "find ~/.config/opencode -maxdepth 1 -type f -o -path '*/skills/*' -type f -o -path '*/agents/*' -type f -o -path '*/plugins/*' -type f -o -path '*/themes/*' -type f -o -path '*/scripts/*' -type f -o -path '*/docs/*' -type f -o -path '*/compound-engineering/*' -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 # Fingerprint (systemd):  {{ output "bash" "-c" "find ~/.config/systemd/user -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -d' ' -f1" }}
-# Fingerprint (cleanup):  {{ output "bash" "-c" "for t in ~/.config/opencode/oh-my-openagent.json ~/.config/opencode/oh-my-openagent.jsonc ~/.config/opencode/oh-my-openagent.json.orig ~/.config/opencode/DESIGN.md ~/.local/bin/oc ~/.config/opencode/profiles ~/.config/opencode/plugins/tmux-patch-keeper.ts ~/.config/opencode/plugins/better-compaction.ts ~/.config/opencode/plugins/tmux-subagent-activator.ts ~/.config/opencode/.tmux-OmOTeam.conf ~/.config/systemd/user/locket-infra.service ~/.config/systemd/user/codemem-serve.service ~/.config/systemd/user/default.target.wants/locket-infra.service ~/.config/systemd/user/default.target.wants/codemem-serve.service ~/.config/opencode/plugins/docker-backup-status.js ~/.config/opencode/plugins/go-pool-fallback.ts ~/.config/opencode/plugins/go-pool-guard.ts ~/.config/opencode/scripts/go-pool-check.sh ~/.config/opencode/scripts/go-pool-switch.sh ~/.config/opencode/AGENTS.md.bak ~/.config/opencode/AGENTS.toon ~/.config/systemd/user/codemem-anchor-watchdog.service ~/.config/systemd/user/codemem-anchor-watchdog.timer ~/.config/systemd/user/codemem-coordinator.service; do [ -e $t ] && echo $t; done | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (cleanup):  {{ output "bash" "-c" "for t in ~/.config/opencode/oh-my-openagent.json ~/.config/opencode/oh-my-openagent.jsonc ~/.config/opencode/oh-my-openagent.json.orig ~/.config/opencode/DESIGN.md ~/.local/bin/oc ~/.config/opencode/profiles ~/.config/opencode/plugins/tmux-patch-keeper.ts ~/.config/opencode/plugins/better-compaction.ts ~/.config/opencode/plugins/tmux-subagent-activator.ts ~/.config/opencode/.tmux-OmOTeam.conf ~/.config/systemd/user/locket-infra.service ~/.config/systemd/user/codemem-serve.service ~/.config/systemd/user/default.target.wants/locket-infra.service ~/.config/systemd/user/default.target.wants/codemem-serve.service ~/.config/opencode/plugins/docker-backup-status.js ~/.config/opencode/plugins/go-pool-fallback.ts ~/.config/opencode/plugins/go-pool-guard.ts ~/.config/opencode/scripts/go-pool-check.sh ~/.config/opencode/scripts/go-pool-switch.sh ~/.config/opencode/AGENTS.md.bak ~/.config/opencode/AGENTS.toon ~/.config/systemd/user/codemem-anchor-watchdog.service ~/.config/systemd/user/codemem-anchor-watchdog.timer ~/.config/systemd/user/codemem-coordinator.service ~/.agents/skills/opencode-omo-config; do [ -e $t ] && echo $t; done | sha256sum | cut -d' ' -f1" }}
 set -euo pipefail
 
 # Dry-run: `bash run_onchange_cleanup-and-sync.sh --dry-run` (or -n) prints
@@ -127,6 +127,9 @@ DEPRECATED_SKILLS=(
     mcp-policy-enforce
     mcp-runtime-guard
     mcp-security-audit
+    # Retired skill — merged into opencode-config / provider-catalog (PR #248, 2026-09-01);
+    # removal via chezmoi apply + this prune on every machine.
+    opencode-omo-config
 )
 
 # Tool skills installed via `npx skills add` / plugin bundles. They are
