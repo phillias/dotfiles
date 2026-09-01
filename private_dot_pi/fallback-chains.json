@@ -13,5 +13,12 @@
     "openrouter/openai/gpt-5.6-luna",
     "phoenixgrove/glm-5.3-flash",
     "gemini/gemini-2.5-flash"
+  ],
+  "default": [
+    "opencode-zen/big-pickle",
+    "opencode-go/glm-5.1",
+    "commandcode/zai-org/GLM-5.2",
+    "openrouter/z-ai/glm-5",
+    "opencode-zen/glm-5.1"
   ]
 }

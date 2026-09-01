@@ -1,6 +1,6 @@
 {
   "defaultProvider": "opencode-zen",
-  "defaultModel": "big-pickle",
+  "defaultModel": "fallback/default",
   "packages": [
     "npm:pi-fallback-provider"
   ]
