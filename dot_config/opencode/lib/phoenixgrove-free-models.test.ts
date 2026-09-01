@@ -18,13 +18,13 @@ import {
 // Gateway (custom-phoenixgrove) with the gateway token, and by switching from
 // the paid Frontier-band glm-5.3 to the free Everyday-band flash models
 // (glm-5.3-flash 321B/18B 1M ctx, glm-4.7-flash, deepseek-v4-flash,
-// deepseek-v4-flash-0731). The pi gate chain is re-ordered so the GOAT
-// paid-pool 1M models lead (gate head is commandcode/gpt-5.6-luna),
-// gemini-2.5-flash is demoted to a low-tier fallback after live
-// performance issues, and phoenixgrove/glm-5.3-flash remains the chain
-// tail as a manual fallback. These assertions fail on the pre-fix config
-// (direct api.pgsgrove.com URL, .phoenixgrove-key, paid glm-5.3) and pass
-// after the fix.
+// deepseek-v4-flash-0731). The pi gate chain is re-ordered to gate-chain v4:
+// openrouter :free trio leads (nemotron-3.5-lightning, minimax-m3, inkling),
+// followed by opencode-zen gemini-3.5-flash, the GOAT paid-pool 1M models,
+// paid lanes (openrouter/openai/gpt-5.6-luna), then phoenixgrove/glm-5.3-flash
+// and gemini/gemini-2.5-flash at the tail as manual fallbacks. These assertions
+// fail on the pre-fix config (direct api.pgsgrove.com URL, .phoenixgrove-key,
+// paid glm-5.3, v3 gate ordering) and pass after the fix.
 
 const PI_DIR = "../../../private_dot_pi";
 
@@ -274,16 +274,27 @@ describe("pi gate boundary mirrors the gateway + free flash fix", () => {
     ).toContain("z-ai/glm-5");
   });
 
-  test("pi gate chain is re-ordered with GOAT paid-pool 1M lead and phoenixgrove tail", async () => {
+  test("pi gate chain is re-ordered to v4: openrouter :free trio leads, gemini-2.5-flash tail", async () => {
     const chains = await loadPiChains();
     const gate = chains.gate as string[];
     expect(gate.length, "gate chain must be non-empty").toBeGreaterThan(0);
-    expect(gate[0], "gate head must be the GOAT paid-pool 1M model").toBe(
-      "commandcode/gpt-5.6-luna",
+    expect(
+      gate[0],
+      "gate head must be the first openrouter :free model",
+    ).toBe("openrouter/nvidia/nemotron-3.5-lightning:free");
+    expect(
+      gate,
+      "gate must lead with the openrouter :free trio for limit-testing",
+    ).toEqual(
+      expect.arrayContaining([
+        "openrouter/nvidia/nemotron-3.5-lightning:free",
+        "openrouter/minimax/minimax-m3:free",
+        "openrouter/thinkingmachines/inkling:free",
+      ]),
     );
     expect(
       gate,
-      "gate must include all five GOAT paid-pool entries as the lead tier",
+      "gate must include all five GOAT paid-pool entries after the :free trio",
     ).toEqual(
       expect.arrayContaining([
         "commandcode/gpt-5.6-luna",
@@ -295,11 +306,12 @@ describe("pi gate boundary mirrors the gateway + free flash fix", () => {
     );
     expect(
       gate,
-      "gate tail must still be phoenixgrove/glm-5.3-flash as manual fallback",
+      "phoenixgrove/glm-5.3-flash must still be present as manual fallback",
     ).toContain("phoenixgrove/glm-5.3-flash");
-    expect(gate[gate.length - 1], "gate tail must be the PGS flash model").toBe(
-      "phoenixgrove/glm-5.3-flash",
-    );
+    expect(
+      gate[gate.length - 1],
+      "gate tail must be gemini/gemini-2.5-flash in v4",
+    ).toBe("gemini/gemini-2.5-flash");
     expect(
       gate,
       "gemini-2.5-flash must be demoted to a low-tier fallback (not lead)",

@@ -80,4 +80,4 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml` (gate-chain v3: GOAT paid-pool 1M lead, gemini-2.5-flash demoted after live performance issues, `phoenixgrove/glm-5.3-flash` kept as manual tail). CF @cf and opencode-go excluded: no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only).
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml` (gate-chain v4: openrouter :free trio first, gemini-2.5-flash demoted after live performance issues, `phoenixgrove/glm-5.3-flash` kept as manual tail). CF @cf and opencode-go excluded: no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only).
