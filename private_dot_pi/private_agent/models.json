@@ -294,6 +294,27 @@
           "maxTokens": 32768
         }
       ]
+    },
+    "nvidia": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-nvidia-nim/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "nvidia/nemotron-3-super-120b-a12b",
+          "name": "Nemotron 3 Super 120B A12B (NIM \u00b7 CF GW)",
+          "reasoning": true,
+          "contextWindow": 1000000,
+          "maxTokens": 32768
+        }
+      ]
     }
   }
 }
