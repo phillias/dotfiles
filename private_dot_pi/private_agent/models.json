@@ -295,7 +295,7 @@
         }
       ]
     },
-    "nvidia": {
+    "nvidia-nim": {
       "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-nvidia-nim/v1",
       "api": "openai-completions",
       "apiKey": "$CF_AI_GATEWAY_TOKEN",
