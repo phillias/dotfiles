@@ -54,8 +54,10 @@
     // Phoenix Grove Everyday band: free during trial month (glm-5.3-flash 321B/18B, 1M ctx)
     "phoenixgrove/glm-5.3-flash",
     "phoenixgrove/deepseek-v4-flash",
-    "nvidia/deepseek-ai/deepseek-v4-flash",
+    "nvidia/nemotron-3-super-120b-a12b",
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
+    "cerebras/gpt-oss-120b",
+    "google/gemini-3.6-flash",
     "baseten/openai/gpt-oss-120b",
     // STAGE 8: PAY last resort
     "google/gemini-2.5-flash"

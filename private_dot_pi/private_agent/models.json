@@ -273,6 +273,27 @@
           "maxTokens": 65536
         }
       ]
+    },
+    "cerebras": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/cerebras/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "gpt-oss-120b",
+          "name": "GPT-OSS 120B (Cerebras \u00b7 CF GW)",
+          "reasoning": true,
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
     }
   }
 }

@@ -108,6 +108,15 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 - phoenixgrove custom lane serves ~38 models (glm-4.7-flash, qwen-3.8-27b, gemma-4-31b respond); PGS bills per-token on the old key — treat PGS as paid except on the coding plan above.
 
 
+## Free-lane probe results (2026-09-01, via gateway)
+
+- `custom-nvidia-nim` (`https://integrate.api.nvidia.com/v1` upstream): `nvidia/nemotron-3-super-120b-a12b` 200 OK, 1M ctx. Whole nemotron-3 family on one free `nvapi-` key, BUT ~40 RPM is **account-wide** across all NIM models (shared pool, no SLA, increases never granted) — gate/aux lane, not workhorse. Catalog churns: `nemotron-3-nano-30b-a3b` hit end-of-life 2026-09-01; verify slugs at call time.
+- `google-ai-studio` (native gateway provider, BYOK): works via the **native path only** — `/google-ai-studio/v1beta/models/gemini-3.6-flash:generateContent` → 200. The OpenAI-compat `/v1/chat/completions` on that route 404s. Free tier is `$0` tokens with no billing, but the hard wall is **20 requests/day/model/project** (see the Gemini limits section above) — light fallback only, never a pipeline primary.
+- `cerebras` (native gateway provider, BYOK): works after paygo migration (+$5 credit, card linked). `gpt-oss-120b` → 200. Live envelope: **5 RPM / 150 per hour / 2,400 RPD, 30K TPM / 1M TPD** — low request rate, big token budget: large single completions, not tool loops. `zai-glm-4.7` is now `model_archived` — Cerebras free catalog is effectively gpt-oss-120b only and churns repeatedly; never hardcode a lone Cerebras model id.
+- `custom-phoenixgrove` route verified 2026-09-01 (200) — phoenixgrove now transits the gateway (`custom-phoenixgrove/v1`) instead of direct `api.pgsgrove.com`.
+- Workers AI GLM is **metered**, not free: `@cf/zai-org/glm-5.3` $1.40/$4.40 per M in/out, `glm-5.3-flash` $0.15/$0.50 (REST models/search pricing, verified 2026-09-01). The 10K Neurons/day free allowance evaporates instantly on 120B-class agent traffic — avoid GLM on Workers AI for free lanes.
+- **GitHub Models: fully retired 2026-07-30** (changelog; live brownout 410 `github_models_retirement_brownout` confirmed 2026-09-01). Do not wire it anywhere.
+
 ## Gate chain (pi-fallback-provider)
 
 Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml` (gate-chain v4: openrouter :free trio first, gemini-2.5-flash demoted after live performance issues, `phoenixgrove/glm-5.3-flash` kept as manual tail). CF @cf and opencode-go excluded: no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only).

@@ -1121,7 +1121,28 @@
       "in": 0,
       "out": 0,
       "free": true
+    },
+    "cerebras/gpt-oss-120b": {
+      "context": 131072,
+      "in": 0,
+      "out": 0,
+      "free": true,
+      "note": "2026-09-01: paygo account; envelope 5 RPM/150 hr/2400 day, 30K TPM/1M TPD. zai-glm-4.7 archived."
+    },
+    "nvidia/nemotron-3-super-120b-a12b": {
+      "context": 1000000,
+      "in": 0,
+      "out": 0,
+      "free": true,
+      "note": "2026-09-01: NIM free hosted catalog via custom-nvidia-nim; ~40 RPM account-wide shared pool; catalog churns (nemotron-3-nano-30b-a3b EOL 2026-09-01)."
+    },
+    "google/gemini-3.6-flash": {
+      "context": 1048576,
+      "in": 0,
+      "out": 0,
+      "free": true,
+      "note": "2026-09-01: free tier (no billing); 20 req/day/model/project hard wall on free \u2014 light fallback only; native generateContent only via gateway google-ai-studio route."
     }
   },
-  "updated_at": "2026-08-09T03:32:50.810Z"
+  "updated_at": "2026-09-01"
 }
