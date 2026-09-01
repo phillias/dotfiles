@@ -30,7 +30,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 
 `opencode-zen/big-pickle` → OpenCode Go (kimi-k2.6, ds-v4-flash) → Command Code GOAT (Kimi-K2.6, DS-V4-Flash) → **Z.AI Coding Plan Lite** (GLM-5.2, credits-based, 0.5× off-peak ET) → **Cloudflare** (REST `/ai/v1`, @cf lane; kimi-k2.7-code, glm-4.7-flash) → **OpenRouter** (cheapest GLM-5 per-token) → Zen free (deepseek-v4-flash-free, nemotron-3-ultra-free) → free providers (Phoenix Grove Everyday-band free: glm-5.3-flash, ds-v4-flash; nvidia, openrouter, baseten) → `google/gemini-2.5-flash`. Six providers (zen, go, commandcode, zai, openrouter, phoenixgrove) route through gateway `opencode` via BYOK — gateway token in `Authorization`, stored keys inject upstream. Full taxonomy + agent/category tables: `references/AGENTS.md`. Design rationale: `references/DESIGN.md` §2.6.
 
-Provider/model facts (stack, gateway routing, BYOK, pricing, quotas, quirks) are owned by the `provider-catalog` skill (`references/PROVIDERS.md` is a stub pointer to it) — load `provider-catalog` when needed; opencode-specific provider mechanics live in `references/DESIGN.md` §"Provider mechanics".
+Provider/model facts (stack, gateway routing, BYOK, pricing, quotas, quirks) are owned by the `provider-catalog` skill (`references/PROVIDERS.md` is a stub pointer to it) — load `provider-catalog` when needed; opencode-specific provider mechanics live in `references/DESIGN.md` §8.
 
 ## Config defaults (live)
 

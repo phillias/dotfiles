@@ -703,53 +703,23 @@ Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.tx
 
 ### 7.3 Config defaults (live)
 
-`small_model: opencode-zen/nemotron-3-ultra-free` · `compaction {auto:false, prune:true, reserved:50000, tail_turns:40}` · MCP baseline: context7, grep_app, websearch, mcp_everything. TUI theme: tokyonight (tui.json), solarized-dark alternative. Provider concurrency: Team Profile default 8.
+`small_model: opencode-zen/nemotron-3-ultra-free` · `compaction {auto:false, prune:true, reserved:50000, tail_turns:40}` · MCP baseline: context7, grep_app, websearch, mcp_everything. TUI theme: tokyonight (tui.json), solarized-dark alternative.
 
 ### 7.4 Mermaid hygiene
 
 Node labels containing `<br/>` MUST be quoted (`["text<br/>text"]`). Unquoted `<br/>` inside `[...]` breaks the chart — the root cause of the rendering error at "Layer D → Architecture".
 
 
-## Provider mechanics (opencode.jsonc-specific; absorbed from former PROVIDERS.md)
+## 8. Provider mechanics (opencode.jsonc-specific)
 
 Shared provider/model facts (stack, gateway routing, BYOK, pricing, quirks,
 rate limits) are owned by the `provider-catalog` skill
 (`~/.agents/skills/provider-catalog/references/PROVIDERS.md`); see
-`references/PROVIDERS.md` (stub). The sections below are opencode-config
-specifics: they describe THIS config's own files and behavior, not provider
+`references/PROVIDERS.md` (stub). This section covers opencode-config
+specifics that describe THIS config's own files and behavior, not provider
 facts.
 
-## Provider concurrency (live config)
+### Provider concurrency (live config)
 
 **Team Profile:** defaultConcurrency 8; providerConcurrency {opencode 15, opencode-zen 15, opencode-go 8, openrouter 6}; modelConcurrency {big-pickle 2, kimi-k2.6 3, ds-v4-pro 2, gpt-5.5 2, gpt-5.4 2, gpt-5.3-codex 2, glm-5.1 2, ds-v4-flash 15, zen/kimi-k2.6 2}.
 **Free Profile:** default 5; provider {opencode 10, openrouter 5}; modelConcurrency {}.
-
-## Provider rate limits & quotas (17 providers)
-
-| Provider | Limit | omo # |
-|---|---|---|
-| Cloudflare | 300 req/min | 8 |
-| OpenRouter free | 50/day | 4 |
-| Zen free | ~200/day | 10 |
-| Go | $12/$30/$60 | 6 |
-| GOAT | $14/$35/$70 | planned |
-| Z.AI Coding Plan | credits-based, 0.5× off-peak ET 7am–11pm | — |
-| Phoenix Grove | "near-endless" Coding Plan (RPM/TPM unpublished); daily msg caps by tier | — |
-| NVIDIA | ~40 RPM shared | 4 |
-| Baseten | 15/120 RPM | 3 |
-| Mistral | 1 req/s | — |
-| Google | 1500/day | — |
-| Together | 60 RPM / 60K TPM | 4 |
-| SambaNova | — | — |
-| Agnes | — | 3 |
-| InternLM | — | 3 |
-| CheapestInference | unlimited in-window, 1 concurrent/key | — |
-| Cheaper Inference | per-key configurable (only one) | — |
-
-## GPT model routing (three prefixes)
-
-`opencode/gpt-5.x` ✅ (Go binary built-in subscription) · `opencode-go/gpt-5.x` ❌ "Model not supported" · `opencode-zen/gpt-5.x` ❌ HTTP 400 (Zen uses chat/completions, not /v1/responses). BYOK OpenAI key not needed — shared pool preferred.
-
-## Intermittent OpenAI server errors
-
-Transient `server_error` from opencode provider; handled by `retry_on_errors` (400 stays in list).
