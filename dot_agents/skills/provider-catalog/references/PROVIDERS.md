@@ -79,7 +79,7 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 
 ## PGS coding tester plan (2026-09-01)
 
-Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-5.3-flash`. Key: `~/.agents/keys/.phoenixgrove-coding-plan-key` (pgsk_…; fold into `~/.agents/keys/phillias/` during keys-profile-migration). Verified plan behavior:
+Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-5.3-flash`. Key: `~/.agents/keys/phillias/.phoenixgrove-coding-plan-key` (pgsk_…; deployed to the `phillias` keys profile). Verified plan behavior:
 
 - baseURL unchanged (`https://api.pgsgrove.com/v1`) — zero client config changes; the key swap is a dashboard BYOK update on the gateway's custom-phoenixgrove upstream.
 - `/v1/usage` (HTTP 200) returns percent-based windows: `weekly_used_percent`, `daily_used_percent`, `api_share_of_weekly_percent`, `weekly_resets_at` (2026-09-08T01:56Z). No bank/credits endpoint.
