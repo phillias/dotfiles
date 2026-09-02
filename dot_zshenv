@@ -6,4 +6,13 @@
 # cron, zsh -lc) never see tools like pi/node without this.
 export PATH="$HOME/.local/share/mise/shims:$PATH"
 
-export CF_AI_GATEWAY_TOKEN="$(cat "$HOME/.config/opencode/.cf-ai-gw-token" 2>/dev/null)"
+# Load keys for the DEFAULT key profile only (~/.agents/keys/default symlink).
+# Non-default profiles are selected by consumers via explicit path, never auto-loaded.
+# Filename -> env var mapping: .cf-ai-gw -> CF_AI_GATEWAY_TOKEN.
+_default_profile="$(readlink "$HOME/.agents/keys/default" 2>/dev/null)" || _default_profile=""
+if [ -n "$_default_profile" ] && [ -d "$HOME/.agents/keys/$_default_profile" ]; then
+	for _key_file in "$HOME/.agents/keys/$_default_profile"/.cf-ai-gw; do
+		[ -r "$_key_file" ] && export CF_AI_GATEWAY_TOKEN="$(cat "$_key_file")"
+	done
+fi
+unset _default_profile _key_file

@@ -14,7 +14,7 @@
       "name": "OpenCode Go (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}"
       },
       "models": {
         "kimi-k2.6": {
@@ -120,7 +120,7 @@
       "name": "OpenRouter (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}"
       },
       "models": {
         "nvidia/nemotron-3-super-120b-a12b:free": {
@@ -250,7 +250,7 @@
       "name": "Cerebras",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/cerebras/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode"
         }
@@ -313,7 +313,7 @@
       "npm": "@ai-sdk/google",
       "name": "Google",
       "options": {
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/google-ai-studio/v1beta",
         "headers": {
           "cf-aig-gateway-id": "opencode"
@@ -487,7 +487,7 @@
       "name": "OpenCode Zen (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-zen/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}"
       },
       "models": {
         "big-pickle": {
@@ -849,7 +849,7 @@
       "name": "Cloudflare Workers AI",
       "options": {
         "baseURL": "https://api.cloudflare.com/client/v4/accounts/{env:CLOUDFLARE_ACCOUNT_ID}/ai/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"application\":\"opencode\"}"
@@ -1041,7 +1041,7 @@
       "name": "Command Code (GOAT, AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-commandcode/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}"
       },
       "models": {
         "gpt-5.6-luna": {
@@ -1323,7 +1323,7 @@
       "name": "NVIDIA NIM",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-nvidia-nim/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode"
         }
@@ -1596,7 +1596,7 @@
       "name": "Z.AI Coding Plan Lite (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-zai-coding/v4",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}"
       },
       "models": {
         "glm-5.3": {
@@ -1638,7 +1638,7 @@
       "name": "Phoenix Grove Systems (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-phoenixgrove/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode"
         }
