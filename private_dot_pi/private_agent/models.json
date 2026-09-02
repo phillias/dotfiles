@@ -42,6 +42,12 @@
           "name": "Gemini 3.5 Flash (zen paid, 1M)",
           "contextWindow": 1048576,
           "maxTokens": 65536
+        },
+        {
+          "id": "glm-5.1",
+          "name": "GLM-5.1 (zen, 128k)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
         }
       ]
     },
@@ -79,6 +85,12 @@
             "supportsDeveloperRole": false,
             "maxTokensField": "max_tokens"
           }
+        },
+        {
+          "id": "glm-5.1",
+          "name": "GLM-5.1 (OpenCode Go)",
+          "contextWindow": 204800,
+          "maxTokens": 32768
         }
       ]
     },

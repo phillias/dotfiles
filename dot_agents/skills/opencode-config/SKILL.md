@@ -26,9 +26,9 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 5. Plugins auto-load; retired plugins enforced-removed.
 6. No symlinks, no env switching; machine diffs via chezmoi `.tmpl`, paths always `$HOME`/`%h` (never `/home/<user>`).
 
-## Chain at a glance (paid-first, 2026-08-29)
+## Chain at a glance
 
-`opencode-zen/big-pickle` → OpenCode Go (kimi-k2.6, ds-v4-flash) → Command Code GOAT (Kimi-K2.6, DS-V4-Flash) → **Z.AI Coding Plan Lite** (GLM-5.2, credits-based, 0.5× off-peak ET) → **Cloudflare** (REST `/ai/v1`, @cf lane; kimi-k2.7-code, glm-4.7-flash) → **OpenRouter** (cheapest GLM-5 per-token) → Zen free (deepseek-v4-flash-free, nemotron-3-ultra-free) → free providers (Phoenix Grove Everyday-band free: glm-5.3-flash, ds-v4-flash; nvidia, openrouter, baseten) → `google/gemini-2.5-flash`. Six providers (zen, go, commandcode, zai, openrouter, phoenixgrove) route through gateway `opencode` via BYOK — gateway token in `Authorization`, stored keys inject upstream. Full taxonomy + agent/category tables: `references/AGENTS.md`. Design rationale: `references/DESIGN.md` §2.6.
+See `~/.config/opencode/opencode-fallback.jsonc` for the live chain (single owner of every agent/category/global entry). Interactive ladders re-pointed to the GLM-5.1 ladder on 2026-09-01 (decision A v5) — PGS, Cloudflare Workers, Z.AI Coding Plan Lite, and the openrouter :free trio are retired from opencode interactive chains (they survive only in the pi GATE chain). Agent/category tables mirrored in `references/AGENTS.md` (pointer); design rationale + decision history in `references/DESIGN.md` §2.6.
 
 Provider/model facts (stack, gateway routing, BYOK, pricing, quotas, quirks) are owned by the `provider-catalog` skill (`references/PROVIDERS.md` is a stub pointer to it) — load `provider-catalog` when needed; opencode-specific provider mechanics live in `references/DESIGN.md` §8.
 

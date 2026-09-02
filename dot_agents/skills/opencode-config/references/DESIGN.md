@@ -174,19 +174,18 @@ stateDiagram-v2
 Classification is retryable on status code, `ProviderAuthError`, or the
 RETRYABLE_PATTERN regex (`rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust`).
 
-**Global ladder:** **paid-first since 2026-08-12** — big-pickle → OpenCode Go
-→ Command Code GOAT → **Z.AI Coding Plan Lite** (GLM-5.3/5.2/5-Turbo,
-credits-based, 0.5× off-peak) → **Cloudflare AI Gateway** (BYOK, analytics,
-$50/mo spend cap; kimi-k2.7-code, glm-4.7-flash; small-prompts only —
-262K/131K context) → **OpenRouter** (cheapest GLM-5 per-token) → OpenCode Zen
-free → Phoenix Grove Everyday-band free (glm-5.3-flash, DS-V4-Flash) → nvidia NIM (~40 RPM shared,
-max 1-2 per chain) → openrouter free → baseten subsidized →
-google/gemini-2.5-flash (paid last resort). Z.AI added 2026-08-25 (captain
-decision): Lite plan provides exclusive GLM-5.3 and credits-based metering with
-off-peak advantage during ET hours. OpenRouter added 2026-08-25 for cheapest
-GLM-5 overflow. KTD6 constraints: GPT-class models only via `opencode/` prefix;
-Ternary Bonsai never primary; 400 stays in `retry_on_errors`. Full policy and
-rationale in §2.6.
+**Global ladder:** **paid-first since 2026-08-12**; **collapsed to the GLM-5.1
+ladder on 2026-09-01 (decision A v5, captain)** — every opencode interactive
+chain (global, all `agents.*` entries, all `categories.*` entries with
+`no_global_tail` excluded) now runs:
+`big-pickle → opencode-go/glm-5.1 → commandcode/zai-org/GLM-5.2 → openrouter/z-ai/glm-5 → opencode-zen/glm-5.1`.
+PGS, Cloudflare Workers `@cf/*`, Z.AI Coding Plan Lite, and the openrouter
+`:free` trio are retired from opencode interactive chains (they survive in the
+pi GATE chain and the opencode provider registry, but no opencode fallback
+chain selects them). See the header comment in `opencode-fallback.jsonc` for
+the live config and §2.6 for the decision history. KTD6 constraints:
+GPT-class models only via `opencode/` prefix; Ternary Bonsai never primary;
+400 stays in `retry_on_errors`.
 
 **Per-entry settings** (`temperature`/`maxOutputTokens`/`options`) are promoted
 **only when that entry is active** — from the agent or category fallback entry —
@@ -306,22 +305,25 @@ fleet, not the retired OmO taxonomy):
 
 - **Firstmate session** — the main session has no agent name, so
   `resolveChain` falls straight to the **global `fallback_models` ladder**,
-  which leads with `opencode-zen/big-pickle`, then GO → GOAT → Z.AI →
-  Cloudflare → OpenRouter → Zen → free.
+  the GLM-5.1 ladder:
+  `opencode-zen/big-pickle → opencode-go/glm-5.1 → commandcode/zai-org/GLM-5.2 → openrouter/z-ai/glm-5 → opencode-zen/glm-5.1`.
 - **Crewmates** (`task(subagent_type=...)`) — `agents.<type>` chains. Utility
-  types (`general`, `explore`, ...): big-pickle primary, fallback
-  GO → GOAT → Z.AI → Cloudflare → OpenRouter → Zen → free. Specialized types
-  (oracle, metis, momus, looker, science): models stay pinned, fallback
-  Z.AI → GOAT → Go → Zen **only** — no free downgrade; chain end surfaces as
-  a visible failure for the captain to fix.
+  types (`general`, `explore`, ...): big-pickle primary, fallback runs the same
+  GLM-5.1 ladder. Specialized types (`self-improve`, `solutions-research`, the
+  `ce-*` wildcard): the pin stays where the agent's own `.md` set it (e.g.
+  `self-improve` pins `opencode-zen/glm-5.1`; `solutions-research` pins
+  `opencode-zen/nemotron-3-ultra-free`), but the fallback on error also runs
+  the GLM-5.1 ladder. All these chains set `no_global_tail: true` — no free
+  downgrade; chain end surfaces as a visible failure for the captain to fix.
 - **Categories** (`task(category=...)`) — `categories.<name>` chains. Utility
-  categories (`quick`, `unspecified-low`): big-pickle + GO → GOAT → Z.AI →
-  Cloudflare → OpenRouter → Zen → free. High-intensity/specialized categories
-  (`ultrabrain`, `deep`, `unspecified-high`, `visual-engineering`, `artistry`,
-  `writing`): models stay pinned, fallback Z.AI → GOAT → Go → Zen only.
-- **Secondmates** — same chezmoi-synced config; their main sessions resolve the
-  global ladder (big-pickle → GO → GOAT → Z.AI → Cloudflare → OpenRouter →
-  Zen → free).
+  categories (`quick`, `unspecified-low`): big-pickle primary, GLM-5.1 ladder
+  fallback. High-intensity/specialized categories (`ultrabrain`, `deep`,
+  `unspecified-high`, `visual-engineering`, `artistry`, `writing`): models stay
+  pinned (e.g. `artistry` moved off `cloudflare/@cf/google/gemma-4-26b-a4b-it`
+  to `opencode-zen/gemini-3.5-flash` on 2026-09-01 because CF `@cf` was dropped
+  by captain), with the GLM-5.1 ladder as fallback; `no_global_tail: true`.
+- **Secondmates** — same chezmoi-synced config; their main sessions resolve
+  the global GLM-5.1 ladder.
 
 The LLM determines a subagent's model by choosing the task shape at the intent
 gate (dispatch-rules.json → `task(category=...)` / `task(subagent_type=...)`);

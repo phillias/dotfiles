@@ -1,14 +1,13 @@
 {
   // PAID-FIRST fallback policy (captain decision 2026-08-12, DESIGN.md §2.6).
-  // 2026-08-25 (captain decision): Z.AI Coding Plan (Lite $18/mo) inserted
-  // between GOAT and Cloudflare. Chain: Go → GOAT → Z.AI → Cloudflare →
-  // OpenRouter → Zen. Z.AI Lite provides GLM-5.3 (exclusive), GLM-5.2,
-  // GLM-5-Turbo at credits-based metering with 0.5x off-peak during ET
-  // 7am-11pm operational hours. Cloudflare Workers AI now routes through
-  // AI Gateway (BYOK) for analytics/caching; $50/mo spend cap enforced.
-  // OpenRouter added for cheapest GLM-5 per-token overflow ($0.60/$1.92).
-  // go-pool-guard.ts retired 2026-08-12 — reactive chain stepping here is
-  // the single owner of exhaustion handling.
+  // 2026-09-01 (captain decision, decision A v5): All opencode chains re-pointed
+  // to the GLM-5.1 ladder — big-pickle → OpenCode Go glm-5.1 → GOAT GLM-5.2 →
+  // OpenRouter glm-5 → OpenCode Zen glm-5.1. PGS, Cloudflare Workers, the
+  // Z.AI Coding Plan, and the openrouter :free trio are retired from the
+  // interactive ladders (PGS burns Coding Plan credits; CF @cf excluded by
+  // captain; Z.AI / free trio are GATE-chain-only via private_dot_pi
+  // fallback-chains.json). go-pool-guard.ts retired 2026-08-12 — reactive chain
+  // stepping here is the single owner of exhaustion handling.
   //
   // Fleet taxonomy (the retired OmO agent keys are gone): the global ladder is
   // firstmate's + every secondmate's session chain (no agent name → resolves
@@ -17,11 +16,6 @@
   // session model → agent (exact, then longest `*` wildcard) → category →
   // global ladder. Specialized entries set `no_global_tail` so the chain ends
   // at Zen and FAILS visibly instead of silently downgrading to the free tier.
-  //
-  // Decision A: utility agents (firstmate/crewmate/secondmate) run
-  // big-pickle → GO → GOAT → Z.AI → Cloudflare → OpenRouter → Zen → Free.
-  // Reasoning/high-effort/visual/looker/special agents keep their pinned
-  // models and fall back GOAT → Z.AI → Go → Zen only.
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
   "max_fallback_attempts": 15,
@@ -32,106 +26,93 @@
   // GLOBAL LADDER — firstmate & secondmate main sessions (agent=undefined),
   // and the deduped tail of every non-no_global_tail chain.
   "fallback_models": [
-    // STAGE 0: session primary (utility)
-    "opencode-zen/big-pickle",
-    // STAGE 1: OpenCode Go ($60 pool, $12/$30/$60 windows)
-    "opencode-go/kimi-k2.6",
-    "opencode-go/deepseek-v4-flash",
-    // STAGE 2: Command Code GOAT ($70 pool, $14/$35/$70 windows) — exhaust first
-    "commandcode/moonshotai/Kimi-K2.6",
-    "commandcode/deepseek/deepseek-v4-flash",
-    // STAGE 3: Z.AI Coding Plan Lite ($18/mo, credits-based, 0.5x off-peak ET)
-    "zai-coding/glm-5.2",
-    // STAGE 4: Cloudflare AI Gateway (BYOK, analytics, $50/mo spend cap)
-    "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-    "cloudflare/@cf/zai-org/glm-4.7-flash",
-    // STAGE 5: OpenRouter (cheapest per-token, $0.60/$1.92 GLM-5 via DeepInfra)
-    "openrouter/z-ai/glm-5",
-    // STAGE 6: OpenCode Zen free tier
-    "opencode-zen/deepseek-v4-flash-free",
-    "opencode-zen/nemotron-3-ultra-free",
-    // STAGE 7: FREE providers
-    // Phoenix Grove Everyday band: free during trial month (glm-5.3-flash 321B/18B, 1M ctx)
-    "phoenixgrove/glm-5.3-flash",
-    "phoenixgrove/deepseek-v4-flash",
-    "nvidia/nemotron-3-super-120b-a12b",
-    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-    "cerebras/gpt-oss-120b",
-    "google/gemini-3.6-flash",
-    "baseten/openai/gpt-oss-120b",
-    // STAGE 8: PAY last resort
-    "google/gemini-2.5-flash"
-  ],
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
+      ],
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Utility crewmates: big-pickle primary → GO → GOAT → Z.AI → CF → OR → Zen (global tail adds free)
+    // Utility crewmates: big-pickle primary → Go → GOAT → OR → Zen (GLM-5.1 ladder).
     "general": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
         "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ]
     },
     "explore": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
         "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ]
     },
-    // Specialized flywheel agents: models pinned, fallback Z.AI → GOAT → Go → Zen only.
+    // Specialized flywheel agents: models pinned, fallback runs the GLM-5.1 ladder.
     "self-improve": {
       "model": "opencode-zen/glm-5.1",
       "fallback_models": [
-        "zai-coding/glm-5.2",
-        "commandcode/zai-org/GLM-5.1",
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
         "opencode-go/glm-5.1",
-        "opencode-zen/kimi-k2.6"
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     },
     "solutions-research": {
       "model": "opencode-zen/nemotron-3-ultra-free",
       "fallback_models": [
-        "commandcode/moonshotai/Kimi-K2.6",
-        "opencode-go/kimi-k2.6",
-        "opencode-zen/kimi-k2.6"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     },
     // ce-* review/research personas: models stay pinned in their agent .md
-    // files. On error fall back Z.AI → GOAT → Zen only (no free downgrade; chain end
-    // surfaces as a visible failure). Go stage omitted deliberately — 35 of 51
-    // personas are already Go-pinned as their primary, so listing Go models
-    // here would let a pinned Go primary's failure skip the GOAT stage.
+    // files. On error fall back through the GLM-5.1 ladder; chain end surfaces
+    // as a visible failure (no free downgrade via global tail).
     "ce-*": {
       "fallback_models": [
-        "zai-coding/glm-5.2",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/zai-org/GLM-5.1",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "opencode-zen/kimi-k2.6"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     }
@@ -140,96 +121,125 @@
   // DISPATCH CATEGORIES — firstmate picks at the intent gate via
   // dispatch-rules.json → task(category=...).
   "categories": {
-    // UTILITY (decision A): big-pickle primary → GO → GOAT → Z.AI → CF → OR → Zen → Free.
+    // UTILITY (decision A v5): GLM-5.1 ladder below.
     "quick": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
         "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ]
     },
     "unspecified-low": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
         "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ]
     },
-    // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback
-    // GOAT→Go→Zen only — no free downgrade; exhaustion fails loudly.
+    // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback runs
+    // the GLM-5.1 ladder; no free downgrade via global tail — exhaustion fails loudly.
     "ultrabrain": {
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "xhigh",
       "fallback_models": [
-        "commandcode/deepseek/deepseek-v4-pro",
-        "opencode-zen/deepseek-v4-pro"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     },
     "deep": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "zai-coding/glm-5.2",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "opencode-go/kimi-k2.6",
-        "opencode-zen/kimi-k2.6"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     },
     "unspecified-high": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
-        "zai-coding/glm-5.2",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "opencode-go/kimi-k2.6",
-        "opencode-zen/kimi-k2.6"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     },
     "visual-engineering": {
       "model": "opencode/gpt-5.3-codex",
       "fallback_models": [
-        "commandcode/gpt-5.6-luna",
-        "opencode-zen/gpt-5.3-codex"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     },
     "artistry": {
-      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
+      "model": "opencode-zen/gemini-3.5-flash",
       "fallback_models": [
-        "commandcode/xiaomi/mimo-v2.5",
-        "commandcode/thinkingmachines/inkling",
-        "opencode-go/mimo-v2.5",
-        "opencode-zen/mimo-v2.5-free"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     },
     "writing": {
       "model": "opencode-zen/deepseek-v4-flash-free",
       "fallback_models": [
-        "commandcode/deepseek/deepseek-v4-flash",
-        "opencode-go/deepseek-v4-flash",
-        "opencode-zen/big-pickle"
+        "opencode-zen/big-pickle",
+        // OpenCode Go ($60 pool) - GLM-5.1
+        "opencode-go/glm-5.1",
+        // Command Code GOAT ($70 pool) - lowest GLM-5.x mainline on GOAT
+        "commandcode/zai-org/GLM-5.2",
+        // OpenRouter GLM-5 (cheapest per-token mainline, $0.60/$1.92)
+        "openrouter/z-ai/glm-5",
+        // OpenCode Zen GLM-5.1 (128k)
+        "opencode-zen/glm-5.1"
       ],
       "no_global_tail": true
     }
