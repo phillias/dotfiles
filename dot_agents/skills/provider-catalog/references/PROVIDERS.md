@@ -2,13 +2,13 @@
 
 Shared reference for every agent that routes through Cloudflare AI Gateway `opencode` (BYOK). Per-agent chain design lives in that agent's config, not here. Live quota: use `quota-axi`.
 
-## Global chain preference (captain's standing directive)
+## Chain preference (captain's standing directive — superseded 2026-09-01)
 
-Every agent constructs its fallback chain to match this ladder; implementation mechanics (chain files, retry semantics) stay agent-specific.
+The historical "Lead PGS free band → paid-first through zen → go → GOAT → Z.AI → CF → OpenRouter → Zen → free tail" directive is **superseded for interactive chains** as of 2026-09-01 (decision A v5). The live ladders per agent live in each agent's own config:
 
-1. **Lead:** `phoenixgrove/glm-5.3-flash` (PGS free band, gateway-proxied) — preferred working model.
-2. **Then paid-first:** `opencode-zen/big-pickle` → `opencode-go` models → commandcode (GOAT) → zai-coding → cloudflare @cf → openrouter GLM-5.
-3. **Tail:** free pools (zen free, phoenixgrove) as last resort.
+- Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Now the GLM-5.1 ladder (`big-pickle → opencode-go/glm-5.1 → commandcode/zai-org/GLM-5.2 → openrouter/z-ai/glm-5 → opencode-zen/glm-5.1`) on every `agents.*` and `categories.*` entry; PGS, Cloudflare Workers, Z.AI Coding Plan, and the openrouter `:free` trio are dropped.
+- Pi default chain — `~/.pi/fallback-chains.json` → `default` key (added 2026-09-01). Same GLM-5.1 ladder; activates via `fallback/default` model string.
+- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key (unchanged 2026-09-01, gate-chain v4: openrouter `:free` trio first, gemini-2.5-flash demoted, `phoenixgrove/glm-5.3-flash` kept as manual tail; CF `@cf` and opencode-go excluded: no 1M models in either pool).
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
