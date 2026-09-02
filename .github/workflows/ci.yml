@@ -85,7 +85,3 @@ jobs:
         run: |
           python3 -c "import json; json.load(open('private_dot_pi/fallback-chains.json')); json.load(open('private_dot_pi/private_agent/models.json')); json.load(open('private_dot_pi/private_agent/settings.json')); print('pi config valid')"
 
-      - name: Install and verify hermes-gateway
-        run: |
-          npm install -g hermes-gateway
-          hermes onboard --help || true
