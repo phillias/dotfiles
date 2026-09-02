@@ -25,8 +25,11 @@ npm.shell_out = true
 # no-mistakes gate pipeline (kunchenguid/no-mistakes) — NOT the unrelated npm
 # "no-mistakes" package (jonathanong, TS analysis). Installed via mise's go
 # backend (system go toolchain); repave 2026-09-02 after the wipe deleted
-# ~/.no-mistakes/bin. v1.53.0 = the version that ran pre-incident.
-"go:github.com/kunchenguid/no-mistakes" = "1.53.0"
+# ~/.no-mistakes/bin. Main package lives in the module's cmd/no-mistakes
+# subdir (module root has no non-test Go files). 1.60.2: the global config
+# schema (review_agent_timeout etc.) post-dates 1.53.0 — strict unmarshal
+# rejects it there; 1.60.2 is the release line the fleet config targets.
+"go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes" = "1.60.2"
 # @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
 # The working `pi` is @earendil-works/pi-coding-agent@0.84.2 (legacy global, kept).
 # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
