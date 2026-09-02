@@ -2,3 +2,16 @@
 # Declare no_ci so the gate treats an empty forge checks response as all-passed
 # instead of waiting for checks that never register.
 no_ci: true
+
+# (2026-09-02 stale-path incident) This repo's apply target is the ENTIRE home
+# directory of every fleet host that runs chezmoi against it. No pipeline step
+# may auto-fix anything here: every finding escalates to a human decision.
+# This is belt-and-suspenders behind the firstmate-layer rule that dotfiles
+# ships [direct-PR] and never enters a no-mistakes run at all.
+auto_fix:
+  rebase: 0
+  lint: 0
+  test: 0
+  review: 0
+  document: 0
+  ci: 0

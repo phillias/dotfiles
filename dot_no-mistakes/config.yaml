@@ -64,8 +64,9 @@ session_reuse: true
 log_level: info
 
 # Override native agent binary paths (optional)
-agent_path_override:
-  opencode: /home/ubuntu/.opencode/bin/opencode
+# (2026-09-02: removed the active opencode override — it hardcoded a
+# /home/ubuntu path from primary55522 onto every other host in the fleet.
+# Auto-detection resolves the correct per-host binary.)
 # agent_path_override:
 #   claude: /usr/local/bin/claude
 #   codex: /opt/codex
@@ -112,8 +113,12 @@ ci:
 # Copilot CLI), pick the session that produced the change, summarize the user
 # intent, and feed it to review, test, document, lint, and PR agents so they
 # understand what you were trying to do - not just the diff.
+# (2026-09-02: disabled fleet-wide after the keys-profile-migration incident —
+# intent extraction read local agent transcripts and fed unrelated cleanup
+# intent into a no-mistakes run operating on the dotfiles repo, whose apply
+# target is the entire home directory. Re-enable only with per-repo scoping.)
 intent:
-  enabled: true
+  enabled: false
   threshold: 0.2
   slack_days: 3
   # disabled_readers: [codex]
