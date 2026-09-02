@@ -1,5 +1,5 @@
 # shellcheck shell=sh
-. "$HOME/.cargo/env"
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # mise shims must be on PATH in non-interactive shells too: .zshrc only runs
 # `mise activate` for interactive zsh, so headless callers (scripts, daemons,
