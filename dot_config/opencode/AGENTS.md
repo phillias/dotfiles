@@ -55,6 +55,8 @@ When pushing changes intended for a pull request:
 
 To infer the base branch: compare `git merge-base` against `master` and `develop` and any other likely upstream branches, then pick the closest one (smallest divergence).
 
+Add a mermaid chart to PR's explaining relationships and flows if the description warrants it.
+
 ## Docker Service Discovery
 
 When a live URL or container name is given, locate its compose/project dir via the running container before grep-ing the filesystem:
