@@ -14,7 +14,6 @@ npm.shell_out = true
 
 [tools]
 "npm:chrome-devtools-axi" = "0.1.29"
-"npm:codemem" = "0.39.0"
 "npm:composio" = "1.0.0"
 "npm:gh-axi" = "0.1.30"
 "npm:lavish-axi" = "0.1.50"
