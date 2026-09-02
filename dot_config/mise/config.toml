@@ -14,7 +14,6 @@ npm.shell_out = true
 
 [tools]
 "npm:chrome-devtools-axi" = "0.1.29"
-"npm:codemem" = "0.39.0"
 "npm:composio" = "1.0.0"
 "npm:gh-axi" = "0.1.30"
 "npm:lavish-axi" = "0.1.50"
@@ -23,6 +22,11 @@ npm.shell_out = true
 "npm:tasks-axi" = "0.2.5"
 "npm:wrangler" = "4.125.0"
 "npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin)
+# no-mistakes gate pipeline (kunchenguid/no-mistakes) — NOT the unrelated npm
+# "no-mistakes" package (jonathanong, TS analysis). Installed via mise's go
+# backend (system go toolchain); repave 2026-09-02 after the wipe deleted
+# ~/.no-mistakes/bin. v1.53.0 = the version that ran pre-incident.
+"go:github.com/kunchenguid/no-mistakes" = "1.53.0"
 # @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
 # The working `pi` is @earendil-works/pi-coding-agent@0.84.2 (legacy global, kept).
 # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
