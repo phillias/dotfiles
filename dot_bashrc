@@ -227,3 +227,14 @@ export PATH="$HOME/.npm-global/bin:$PATH"
 # mise (last: shims must precede every export above to win version resolution)
 # mise - pinned tool manifest (~/.config/mise/config.toml); shims precede legacy npm-global
 command -v mise >/dev/null 2>&1 && eval "$(mise activate bash)"
+
+# Provider agent keys (age-encrypted in dotfiles source; decrypted on chezmoi apply)
+if [ -f "$HOME/.agents/keys/.qwen-key" ]; then
+    export QWEN_API_KEY="$(cat $HOME/.agents/keys/.qwen-key)"
+fi
+if [ -f "$HOME/.agents/keys/.synthetic-key" ]; then
+    export SYNTHETIC_API_KEY="$(cat $HOME/.agents/keys/.synthetic-key)"
+fi
+if [ -f "$HOME/.agents/keys/.kenari-key" ]; then
+    export KENARI_API_KEY="$(cat $HOME/.agents/keys/.kenari-key)"
+fi
