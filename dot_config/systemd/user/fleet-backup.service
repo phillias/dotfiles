@@ -3,4 +3,4 @@ Description=Fleet agent-state restic backup (daily, host tag = %H-hostname)
 
 [Service]
 Type=oneshot
-ExecStart=%h\/.local/bin/fleet-backup.sh
+ExecStart=%h/.local/bin/fleet-backup.sh
