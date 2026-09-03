@@ -68,14 +68,6 @@ docker inspect <container> | grep -iE 'WorkingDir|com.docker.compose.*Working.*D
 
 The runtime always knows where a running container came from; the filesystem does not.
 
-## Compound Engineering Integration
-
-When the compound-engineering plugin is installed (via `opencode.json`):
-- Skill catalog and chaining guide: https://github.com/EveryInc/compound-engineering-plugin/blob/main/skills/guides/README.md (the guides catalog ships on `main` only — not in the pinned release tag the plugin is running, so reference the URL, not a local path)
-- `/lfg` is the default hands-off shipping gateway (plan → implement → review/fix → commit → push → PR → CI-to-green). Use `/ce-plan` when a plan gate is wanted first.
-- Plan-first → `/ce-plan`; ambiguous scope → `/ce-brainstorm`; bugs → `/ce-debug`. Skill descriptions in the plugin's skill list are the authoritative routing triggers.
-- Sub-agents are pinned to budget-optimized models — do not override their assignments.
-
 ## Safety Guardrails
 
 The agent **must not** perform the following without explicit user confirmation:
@@ -86,26 +78,6 @@ The agent **must not** perform the following without explicit user confirmation:
 - `git rebase --onto` against shared branches
 - Deleting files outside the project scope
 - Modifying files in `~/.config/opencode/` without being asked to
-
-## Compound Engineering Skills
-
-Short references; full trigger conditions and behavior live in each skill's `SKILL.md` (in the plugin's skills directory):
-
-- **`/lfg`** — full autonomous shipping pipeline to a green PR (plan → implement → review/fix → commit → push → PR → CI). Default gateway for clear ship requests.
-- **`/ce-plan`** — structured planning with confidence gating; durable plans in `docs/plans/`.
-- **`/ce-brainstorm`** — interactive requirements exploration; outputs a requirements doc for `/ce-plan`.
-- **`/ce-work`** — execute a plan end-to-end (implementation → review → PR within Phases 3-4).
-- **`/ce-code-review`** — parallel multi-agent review (`mode:autofix` for hands-off fixing, `mode:report-only` for read-only).
-- **`/ce-debug`** — root-cause analysis with test-first fixes.
-- **`/ce-compound`** — capture solved problems as durable learnings in `docs/solutions/`.
-- **`/ce-optimize`** — metric-driven improvement loops.
-- **`/ce-strategy`** — create or maintain `STRATEGY.md`.
-
-**Invocation:** Use the `skill` tool with `name: ce-<skill>` (e.g. `name: lfg`). Sub-agents are pinned to budget-optimized models — do not override.
-
-## Model Budget Awareness
-
-All CE sub-agents are pinned to budget-optimized models. Do not override their model assignments. The session's current model is used for skill entry points only; sub-agents use their own pinned models.
 
 ## Token Budget Discipline
 

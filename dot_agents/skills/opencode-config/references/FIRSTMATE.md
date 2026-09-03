@@ -35,7 +35,6 @@ Projects carry a standing delivery posture from the registry:
 - `/stow` — knowledge sweep + startup-memory curation before context reset.
 - `/bearings` / `/ahoy` — fleet status recaps.
 - `/updatefirstmate` — self-update.
-- `/lfg` and CE skills — autonomous ship-to-PR pipeline (via compound-engineering integration).
 
 ## Agent architecture
 
