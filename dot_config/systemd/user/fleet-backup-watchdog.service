@@ -3,4 +3,4 @@ Description=Fleet backup watchdog (alerts if last backup >26h old or failed)
 
 [Service]
 Type=oneshot
-ExecStart=%h\/.local/bin/fleet-backup-watchdog.sh
+ExecStart=%h/.local/bin/fleet-backup-watchdog.sh
