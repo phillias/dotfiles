@@ -1,22 +1,6 @@
 # Skills
 
-CE skills and dispatch coordination relevant to OpenCode config work. The compound-engineering plugin installs skills at `~/.agents/skills/ce-*`; firstmate loads its own skills from `.agents/skills/` (metadata.internal=true).
-
-## CE skill stagger dispatch map
-
-Parallel dispatch sites for large CE flows — stagger to avoid hammering a single provider/concurrency pool.
-
-| Dispatch site | Parallel agents |
-|---|---|
-| ce-code-review Stage 4 | ~18 |
-| ce-code-review Stage 5b | ~15 |
-| ce-agent-native-audit | 8 |
-| ce-doc-review | 7 |
-| ce-ideate Phase 2 | 6 |
-| ce-compound Phase 3 | 6 |
-| (remaining sites) | smaller fan-outs |
-
-Recommendation: 5-10s jitter between parallel dispatches. CE sub-agents are pinned to budget-optimized models (never override); session model is used for skill entry points only.
+Dispatch coordination relevant to OpenCode config work. firstmate loads its own skills from `.agents/skills/` (metadata.internal=true).
 
 ## Related skill pointers
 

@@ -14,7 +14,7 @@ A drop-in trial of three external skill/agent suites, placed in overlay director
 ## The 4-Gate Core (what the drops feed into)
 
 ```
-Metis (brainstorm — always first) → [GATE] → plan (built-in) → [GATE] → build/Sisyphus-Junior → [GATE] → verify (ce-* personas or pro/reviewer)
+Metis (brainstorm — always first) → [GATE] → plan (built-in) → [GATE] → build/Sisyphus-Junior → [GATE] → verify (built-in reviewer)
 ```
 
 Design folds into Metis+plan (brainstorm is always the first step of the Metis-plan agent). Four named phases, four approval stops. No loops.
@@ -26,7 +26,7 @@ Design folds into Metis+plan (brainstorm is always the first step of the Metis-p
 | **pro-workflow agents** | [rohitg00/pro-workflow](https://github.com/rohitg00/pro-workflow) (MIT) | `~/.config/opencode/agents/pro/` | 8 | `pro/scout`, `pro/planner`, `pro/reviewer`, `pro/orchestrator`, `pro/context-engineer`, `pro/cost-analyst`, `pro/permission-analyst`, `pro/debugger` |
 | **finding-unknowns skills** | [Neeeophytee/finding-unknowns-skills](https://github.com/Neeeophytee/finding-unknowns-skills) (MIT) | `~/.agents/skills/fu-*/` | 11 | `fu-blindspot-pass`, `fu-interview-me`, `fu-reference-hunt`, `fu-implementation-plan`, `fu-implementation-notes`, `fu-brainstorm-prototypes`, `fu-pitch-packager`, `fu-change-quiz`, `fu-context-audit`, `fu-agent-interface-design`, `fu-progressive-disclosure` |
 | **pro-workflow skills (curated)** | rohitg00/pro-workflow (MIT) | `~/.agents/skills/pro-*/` | 8 | `pro-token-efficiency`, `pro-compact-guard`, `pro-cost-tracker`, `pro-tdd`, `pro-design-engineering`, `pro-plan-interrogate`, `pro-skill-router`, `pro-thoroughness-scoring` |
-| **CE personas** | [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) (MIT) | `~/.config/opencode/agents/` (already installed, flat) | 49 | `ce-correctness-reviewer`, `ce-security-sentinel`, etc. |
+| **CE personas** | [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) (MIT) | ~~`~/.config/opencode/agents/`~~ | 0 | **removed 2026-09-02** — plugin deregistered; roles covered by firstmate crewmates + no-mistakes review |
 
 **Full pro-workflow skill set (41) is NOT dropped** — only the 8 token-economy / TDD / design / interrogation skills. The rest (wiki-*, batch-orchestration, parallel-worktrees, llm-council, orchestrate) are loop/parallel machinery that violates design priority #3. Available upstream if a later stage wants them.
 
@@ -34,7 +34,7 @@ Design folds into Metis+plan (brainstorm is always the first step of the Metis-p
 
 | Source | License | Credit |
 |---|---|---|
-| EveryInc/compound-engineering-plugin | MIT | Upstream; 49 personas already installed via plugin |
+| EveryInc/compound-engineering-plugin | MIT | Upstream; removed 2026-09-02 (plugin deregistered) |
 | rohitg00/pro-workflow | MIT | Rohit G. — independent CE-inspired suite, 41 skills + 8 agents |
 | Neeeophytee/finding-unknowns-skills | MIT | Neeeophytee — distillation of Thariq Shihipar's "Finding Your Unknowns" essay |
 
@@ -73,7 +73,7 @@ Teams are **team compositions** (not agent definitions). Stored as `~/.omo/teams
 - `kind: "category"` — composes a model tier (category) + custom behavior (prompt) + instance name. **This is the abstraction layer**: behavior decoupled from model tier from identity.
 - `kind: "subagent_type"` — reuses an existing opencode agent (from `~/.config/opencode/agents/`), with optional prompt override.
 
-Not used in this MVP (the 4-gate core doesn't need parallel team_mode). Add later if parallel execution is wanted — members would reference the `pro/*` and `ce-*` agents defined above.
+Not used in this MVP (the 4-gate core doesn't need parallel team_mode). Add later if parallel execution is wanted — members would reference user-approved agent definitions.
 
 ## Token Economy of Agents (reference)
 
