@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode-zen/big-pickle",
+  "model": "cf-aig-dynamic/dynamic/TUI",
   "small_model": "opencode-zen/nemotron-3-ultra-free",
   "disabled_providers": [
     "zai",
@@ -9,6 +9,21 @@
     "zhipuai-coding-plan"
   ],
   "provider": {
+    "cf-aig-dynamic": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "CF AI Gateway dynamic routes",
+      "options": {
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": { "cf-aig-gateway-id": "opencode" }
+      },
+      "models": {
+        "dynamic/TUI": { "name": "TUI (subsidized low-tier daily driver)" },
+        "dynamic/high": { "name": "high (GLM-5.3-class + fable)" },
+        "dynamic/pr-gate": { "name": "pr-gate (free 1M background CI)" },
+        "dynamic/vision": { "name": "vision (GLM-4.5V + gemini-2.5-flash)" }
+      }
+    },
     "opencode-go": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "OpenCode Go (AI Gateway)",
