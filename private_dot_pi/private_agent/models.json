@@ -327,6 +327,32 @@
           "maxTokens": 32768
         }
       ]
+    },
+    "cf-aig-dynamic": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": {
+        "dynamic/TUI": {
+          "name": "TUI (subsidized low-tier daily driver)"
+        },
+        "dynamic/high": {
+          "name": "high (GLM-5.3-class + fable)"
+        },
+        "dynamic/pr-gate": {
+          "name": "pr-gate (free 1M background CI)"
+        },
+        "dynamic/vision": {
+          "name": "vision (GLM-4.5V + gemini-2.5-flash)"
+        }
+      }
     }
   }
 }

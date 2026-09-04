@@ -120,3 +120,67 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 ## Gate chain (pi-fallback-provider)
 
 Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml` (gate-chain v4: openrouter :free trio first, gemini-2.5-flash demoted after live performance issues, `phoenixgrove/glm-5.3-flash` kept as manual tail). CF @cf and opencode-go excluded: no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only).
+
+## Dynamic routes on the `opencode` gateway (2026-09-04)
+
+The gateway runs named dynamic routes (CF "dynamic routing", OpenAI-compatible
+endpoint `…/opencode/compat/chat/completions`, model string `dynamic/<name>`).
+Route contents will churn — this catalog records *purpose*, not lane lists:
+
+- `TUI` — daily-driver, lowest-version models (GLM-5.1-class or cheapest flash
+  variants), **subsidized plans first** (opencode-go → z.ai→ go/zen pools).
+- `high` — latest-version models (`GLM-5.3` class, fable, astra when a lane
+  appears) from reliable providers; aihubmix GLM discount lane sits top.
+- `pr-gate` — free-as-possible 1M-ctx CI/background "second set of eyes"
+  ladder; faithful to the hand-tuned pi gate chain.
+- `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
+  via google-ai-studio, zen/openrouter gemini variants).
+
+Owner defaults (2026-09-04): pi `default` chain = `cf-aig-dynamic/dynamic/TUI`
+exactly; pi `gate` chain = `cf-aig-dynamic/dynamic/pr-gate` exactly;
+opencode.json `model` = `cf-aig-dynamic/dynamic/TUI` with the legacy local
+ladder remaining as the fallback tail.
+
+### Custom providers (gateway BYOK, dashboard-only management)
+
+REST `/ai-gateway/...` surfaces routes/logs only — **custom providers are
+dashboard-edited**, not token-manageable. URL segment beats shared rules:
+`custom-<name>/<version-tag>` where `<version-tag>` must be re-supplied in the
+URL (e.g. `custom-zai-coding/v4`) — the gateway strips trailing version-like
+segments from the base_url. Confirmed segments: `custom-aihubmix/v1`,
+`custom-together/v1`, `custom-deepinfra/v1` (upstream 404s on all shapes — base
+URL suspect), `custom-friendli/v1`, `custom-zai-coding/(v4 or /api/coding)`,
+`custom-commandcode/v1`, `custom-nvidia-nim/v1`, `custom-phoenixgrove/v1`,
+`custom-opencode-zen/v1`, plus native `openrouter/` + `google-ai-studio/`.
+DYNAMIC-route caveat: model nodes naming bare custom-provider names
+(`aihubmix`, `deepinfra`, `friendli`) error `Provider not found` — use the
+`custom-` prefix form.
+
+### In2.5 discounts / billing states (2026-09-04)
+
+- aihubmix: glm-5.3 discount — keep lane 1 in `high`.
+- friendli: BYOK key repaired; credits live on team `fndycazh1NMA` but the
+  stored key needs to be a **team-scoped** key (dashboard) before billing
+  succeeds.
+- deepinfra: `$10 credits` exist, but the provider 404s everywhere; base URL
+  correction pending captain.
+- opencode-zen: confirmed flaky (`500/401` intermittent) on gemini lanes.
+- commandcode: healthy; monthly limit resets Sept 12.
+- openrouter `thinkingmachines/inkling:free`: agentic-harness-gated upstream —
+  excluded from all gateway dynamic routes (kept in pi's local chain).
+- together: `$10` credit added; catalog confirmed cheap (glm-5.3 $1.4/$4.4,
+  glm-5.3-Flash $0.15/$0.50, FP8/FP4 rate $0) — lane usable once credits clear.
+
+## pi + opencode wiring for dynamic routes
+
+- pi (`private_dot_pi/private_agent/models.json`): provider `cf-aig-dynamic`
+  with baseUrl `…/opencode/compat`, `api: openai-completions`, gateway token,
+  `cf-aig-gateway-id` header, and model keys `dynamic/TUI|dynamic/high|dynamic/pr-gate|dynamic/vision`.
+- pi (`~/.pi/fallback-chains.json`): `default` ⇒ single `cf-aig-dynamic/dynamic/TUI`;
+  `gate` ⇒ single `cf-aig-dynamic/dynamic/pr-gate`.
+- opencode (`dot_config/opencode/opencode.json`): provider `cf-aig-dynamic`
+  with the four dynamic-route model keys; top-level `model` = `cf-aig-dynamic/dynamic/TUI`;
+  agent/category chains unchanged (fallback jsonc tail unchanged).
+- hermes: provider config lives outside `dot_config/hermes/config.yaml.tmpl`
+  (its template has no model/provider keys) — to be wired once hermes's
+  provider config file location is confirmed by the captain.
