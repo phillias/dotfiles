@@ -339,20 +339,32 @@
         "supportsDeveloperRole": false,
         "supportsReasoningEffort": false
       },
-      "models": {
-        "dynamic/TUI": {
-          "name": "TUI (subsidized low-tier daily driver)"
+      "models": [
+        {
+          "id": "dynamic/TUI",
+          "name": "TUI \u2014 subsidied low-tier daily driver (CF GW dynamic)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
         },
-        "dynamic/high": {
-          "name": "high (GLM-5.3-class + fable)"
+        {
+          "id": "dynamic/high",
+          "name": "high \u2014 GLM-5.3-class + fable (CF GW dynamic)",
+          "contextWindow": 1048576,
+          "maxTokens": 32768
         },
-        "dynamic/pr-gate": {
-          "name": "pr-gate (free 1M background CI)"
+        {
+          "id": "dynamic/pr-gate",
+          "name": "pr-gate \u2014 free 1M background CI (CF GW dynamic)",
+          "contextWindow": 1048576,
+          "maxTokens": 32768
         },
-        "dynamic/vision": {
-          "name": "vision (GLM-4.5V + gemini-2.5-flash)"
+        {
+          "id": "dynamic/vision",
+          "name": "vision \u2014 GLM-4.5V + gemini-2.5-flash (CF GW dynamic)",
+          "contextWindow": 1048576,
+          "maxTokens": 32768
         }
-      }
+      ]
     }
   }
 }

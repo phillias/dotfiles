@@ -1,9 +1,27 @@
 # ~/.config/hermes/config.yaml — chezmoi-managed
 # Hermes CLI runtime configuration
 
+model:
+  provider: cf-aig-dynamic
+  default: dynamic/TUI
+  api_mode: chat_completions
 api:
   listen: "{{ dig "hermes" "listenAddr" "127.0.0.1:8443" . }}"
   tls_enabled: false
+
+providers:
+  cf-aig-dynamic:
+    api: https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat
+    key_env: CF_AI_GATEWAY_TOKEN
+    name: CF AI Gateway dynamic routes
+    api_mode: chat_completions
+    headers:
+      cf-aig-gateway-id: opencode
+    models:
+      - dynamic/TUI
+      - dynamic/high
+      - dynamic/pr-gate
+      - dynamic/vision
 
 paths:
   mybrain: "{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}"
