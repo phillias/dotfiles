@@ -46,6 +46,10 @@ const BASE_URL =
 const EXPECTED_ROUTES = ["TUI", "high", "pr-gate", "vision"];
 const TIMEOUT_MS = 60_000;
 const PROBE_GAP_MS = 2_000;
+/** Availability CSV authored by the big-pickle-watch.sh probe, documented in
+ *  provider-catalog; the audit folds its 24h aggregate into the same log. */
+const AVAILABILITY_CSV = "/tmp/big-pickle-availability.csv";
+const AVAILABILITY_WINDOW_H = 24;
 
 mkdirSync(STATE_DIR, { recursive: true });
 
@@ -198,6 +202,41 @@ async function probeRoute(route, token) {
   return fields;
 }
 
+/** Test 3 — availability window: fold big-pickle-watch.sh CSV evidence into
+ *  the audit log as a per-route 24h aggregate. pure file read, no network. */
+function providerWindow() {
+  try {
+    if (!existsSync(AVAILABILITY_CSV)) {
+      logEvent("provider_window", { status: "no-log", detail: `${AVAILABILITY_CSV} not yet created` });
+      return;
+    }
+    const rows = readFileSync(AVAILABILITY_CSV, "utf8").trim().split("\n").slice(1);
+    const now = Date.now();
+    const cutoff = now - AVAILABILITY_WINDOW_H * 3_600_000;
+    const byRoute = {};
+    for (const line of rows) {
+      const [ts, route, , result] = line.split(",");
+      const t = Date.parse(ts);
+      if (Number.isNaN(t) || t < cutoff) continue;
+      const r = (byRoute[route] ||= { ok: 0, limited: 0, error: 0, timeout: 0 });
+      if (result in r) r[result] += 1;
+    }
+    for (const [route, counts] of Object.entries(byRoute)) {
+      logEvent("provider_window", {
+        status: "summary",
+        route,
+        window_hours: AVAILABILITY_WINDOW_H,
+        ok: counts.ok,
+        limited: counts.limited,
+        error: counts.error,
+        timeout: counts.timeout,
+      });
+    }
+  } catch (e) {
+    logEvent("provider_window", { status: "unreadable", detail: String(e.message).slice(0, 80) });
+  }
+}
+
 function main() {
   if (!existsSync(GW_TOKEN_FILE)) {
     logEvent("audit_error", { detail: "gateway token file missing" });
@@ -220,6 +259,7 @@ function main() {
       await new Promise((r) => setTimeout(r, PROBE_GAP_MS));
     }
     const healthy = probes.filter((p) => p.status === "ok").length;
+    providerWindow();
     const line = `drift=${driftExit === 0 ? "clean" : "DRIFT"} routes_healthy=${healthy}/${probes.length}`;
     console.log(`dynamic-audit: ${line} log=${LOG}`);
     if (driftExit !== 0) process.exit(1);
