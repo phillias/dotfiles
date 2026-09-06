@@ -4,5 +4,20 @@
   ],
   "default": [
     "cf-aig-dynamic/dynamic/TUI"
+  ],
+  "claude": [
+    "cf-aig-dynamic/dynamic/claude"
+  ],
+  "codex": [
+    "cf-aig-dynamic/dynamic/codex"
+  ],
+  "grok": [
+    "cf-aig-dynamic/dynamic/grok"
+  ],
+  "kimi": [
+    "cf-aig-dynamic/dynamic/kimi"
+  ],
+  "muse": [
+    "cf-aig-dynamic/dynamic/muse"
   ]
 }
