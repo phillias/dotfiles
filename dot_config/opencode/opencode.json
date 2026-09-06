@@ -264,11 +264,8 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Cerebras",
       "options": {
-        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/cerebras/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
-        "headers": {
-          "cf-aig-gateway-id": "opencode"
-        }
+        "baseURL": "https://api.cerebras.ai/v1",
+        "apiKey": "{env:CEREBRAS_API_KEY}"
       },
       "models": {
         "llama3.3-70b": {
@@ -328,11 +325,7 @@
       "npm": "@ai-sdk/google",
       "name": "Google",
       "options": {
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
-        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/google-ai-studio/v1beta",
-        "headers": {
-          "cf-aig-gateway-id": "opencode"
-        }
+        "apiKey": "{env:GOOGLE_API_KEY}"
       },
       "models": {
         "gemini-2.5-flash": {
@@ -342,9 +335,6 @@
             "output": 8192
           },
           "temperature": true
-        },
-        "gemini-3.6-flash": {
-          "name": "Gemini 3.6 Flash"
         }
       }
     },
@@ -1337,11 +1327,8 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "NVIDIA NIM",
       "options": {
-        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-nvidia-nim/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
-        "headers": {
-          "cf-aig-gateway-id": "opencode"
-        }
+        "baseURL": "https://integrate.api.nvidia.com/v1",
+        "apiKey": "{env:NVIDIA_API_KEY}"
       },
       "models": {
         "nvidia/nemotron-3-ultra-550b-a55b": {
@@ -1653,10 +1640,7 @@
       "name": "Phoenix Grove Systems (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-phoenixgrove/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
-        "headers": {
-          "cf-aig-gateway-id": "opencode"
-        }
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
       },
       "models": {
         "glm-5.3-flash": {
