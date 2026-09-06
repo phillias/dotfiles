@@ -184,3 +184,93 @@ DYNAMIC-route caveat: model nodes naming bare custom-provider names
 - hermes: provider config lives outside `dot_config/hermes/config.yaml.tmpl`
   (its template has no model/provider keys) — to be wired once hermes's
   provider config file location is confirmed by the captain.
+
+## Gateway route node types beyond the linear ladder (2026-09-05)
+
+RouterModule nodes beyond `model`/`start`/`end`, from the CF dynamic-routing
+reference:
+
+- `percent` — probabilistic split across outputs (A/B, gradual rollout).
+  Stateless per request. The valuable shapes for the fleet: canarying a
+  cheaper lane on 5–10% of TUI traffic before re-ordering the ladder
+  (evidence over paper prices), and splitting shared account-wide rate pools
+  (e.g. the ~40 RPM nvidia-nim nemotron family) across two key entries.
+- `conditional` — if/else on expressions over the request body, headers, or
+  custom metadata (e.g. `user_plan == "paid"`). The high-value node for us:
+  attach metadata like `crew=firstmate` / `crew=mybrain` / `class=gate` at the
+  harness layer and ONE route can dispatch firstmate interactive → high,
+  secondmate/telegram → TUI, review/gate traffic → pr-gate — no new provider
+  entries per agent. Conditions on model ids (e.g. starts-with
+  `claude-fable`) also let one route serve multiple lane families by name.
+- `rate_limit` / `budget_limit` — enforce per-key/per-period request or cost
+  quotas whose breach walks the node's fallback edge instead of failing:
+  self-limiting guardrails on subsidized lanes so a runaway agent can never
+  drain a plan window faster than the chain can re-route.
+
+## Budget-access playbook (2026-09-05 pricing facts)
+
+Ranked cheapest-first for accessing openai/anthropic/xai/kimi-class traffic
+without the $100+/mo native-subscription seats:
+
+- **OpenRouter PAYG + `:free` trio**: 5.5% platform fee on credit purchases
+  ($0.80 min per purchase), zero token markup — provider list rates pass
+  through. Free-model ceiling 50 req/day, **1,000/day after a $10 deposit**
+  (one-time, never expires) at 20 RPM. Separate 1M-requests/mo PAYG band
+  before a 5% per-request fee. `openrouter/free` router picks arbitrary free
+  models; `:floor` routes to the cheapest provider for a chosen model;
+  `max_price` caps spend per call. Below ~$15/mo the $0.80 floor dominates
+  (5–25% effective tax); above ~$50/mo single-provider, a direct key beats
+  OpenRouter by the 5.5%; above ~$5k/mo, negotiated enterprise tiers win.
+- **Direct provider credits** (OpenAI $5 min, Anthropic $5 min, xAI, Kimi
+  API): per-token, no platform fee, no subscription. Right choice above
+  ~$50/mo per provider.
+- **Plan/subsidized lanes already in the chains**: z.ai Coding Lite ($18/mo),
+  opencode-zen console free (~200/day), PGS coding-tester plan (glm-5.3-flash
+  + deepseek-v4-flash-0731 plan-subsidized — verified 2026-09-01), GOAT
+  monthly pool (resets Sept 12), aihubmix glm-5.3 discount (TUI lane 1),
+  together `$0` FP8/FP4 quantized GLM items, nvidia-nim nemotron (free, 40
+  RPM account-wide), cerebras paygo ($5 + card, big TPM small RPM).
+- **Google AI Studio**: $5 min via AI Studio, then $0.15/$0.50 MTok flash —
+  strongest budget agentic lane (1M ctx), reachable natively through pi's
+  `google-generative-ai` api type.
+- **Cursor: has no BYOK/per-token bridge.** Seat-based subscription,
+  workstation-scoped identity, machine-locked; wire it at most as a paid TUI
+  lane, never a model lane.
+
+## Auth-shape clarifications (2026-09-05)
+
+- **pi-signed** is not a different harness: it is the signed wrapper identity
+  of the pi coding agent (exact `pi-signed` wrapper parent around the Pi
+  binary, foreground name `pi-launcher`). Firstmate records the identity as
+ -is and refuses rather than silently falling back when the wrapper is
+  missing. The signed wrapper is what keeps the launch provenance legitimate;
+  there is no separate provider behind it.
+- **OpenRouter PAYG vs subscriptions**: OpenRouter gives *API-key pass-through
+  list pricing*, which is NOT the same as a harness subscription rate — you
+  pay the provider's listed per-token price (their $186/mo-example is
+  identical either way) plus OpenRouter's 5.5%. Harness/OAuth subscriptions
+  (Claude Code 5-hour windows, Codex/Cursor seats) are different accounting
+  systems with their own subsidized lanes and can be *cheaper per hour of
+  agent use* than PAYG when the model is subscription-exclusive. They are a
+  per-seat recurring fixed cost; our budget goal is to stay per-token and let
+  `TUI`'s plan-subsidized lanes absorb interactive volume.
+- **Harness-recognition gates** are a real auth-shape class to watch:
+  openrouter gate-checks the calling harness before honoring some price bands
+  (verified: `thinkingmachines/inkling:free` 403s through the gateway because
+  the harness signature doesn't survive the hop; same model works from pi
+  directly, or from Ori Harness). Budget implication: harness-gated models can
+  only be reached via their recognized client, so "one harness for everything"
+  is not a pricing win — per-(harness, provider) headphones stay necessary
+  where the gate exists.
+
+## Harness fleet admin cost (2026-09-05)
+
+Verified-shape notes for standing up each additional TUI in the fleet,
+roughly uniform: install once (npm/curl), login once (browser/OAuth or key
+paste into its native provider dir), then quota-axi picks headroom up
+automatically from its local auth dir (claude/codex/opencode/grok/kimi/
+cursor providers are all already-read). Recurring maintenance is version
+upgrades plus trust-dialog acceptance on fresh worktrees; no recurring
+provider-edit work is added per harness (all harnesses point at the same
+`cf-aig-dynamic` provider entry, so dynamic-route lane changes stay
+config-free).
