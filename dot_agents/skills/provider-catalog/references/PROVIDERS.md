@@ -274,3 +274,80 @@ upgrades plus trust-dialog acceptance on fresh worktrees; no recurring
 provider-edit work is added per harness (all harnesses point at the same
 `cf-aig-dynamic` provider entry, so dynamic-route lane changes stay
 config-free).
+## Deterministic dynamic-route audit (2026-09-06)
+
+`~/.config/opencode/scripts/dynamic-audit.mjs` (source: dotfiles
+`dot_config/opencode/scripts/executable_dynamic-audit.mjs`) is the scheduled,
+fully deterministic audit of the `cf-aig-dynamic` routes — no LLM step exists;
+LLM interpretation happens only when the captain interrogates it, reading the
+audit log rather than re-probing the gateway.
+
+**Why the tests exist:**
+
+1. `config-drift` compares the route keys declared in
+   `dot_config/opencode/opencode.json`, `~/.pi/agent/models.json`, and the
+   `default`/`gate` chain entries in `~/.pi/fallback-chains.json` against the
+   purpose list in "Dynamic routes" above. Catches route renames made
+   dashboard-side, stale agent configs, unresolved merges in the chains file,
+   and purpose entries dropped from the catalog without a code change.
+2. `route-probe` sends one fixed 4-token completion (`dynamic/<route>`) per
+   route and logs HTTP code, latency, the upstream model id each route served,
+   and `retry-after` / `cf-aig-status` headers on 429/5xx. 429/5xx/timeout is
+   recorded as *routing evidence*, never a tool failure — repeated
+   `status":"limited"` on a route is a lane-health fact, not a broken audit.
+
+**Log (the interrogation substrate):** append-only JSONL at
+`~/.local/state/opencode-fleet/dynamic-audit.jsonl`:
+
+```
+{"ts":"…","test":"route_probe","route":"dynamic/high","status":"ok","http":200,"latency_ms":589,"served_model":"z-ai/glm-5.3"}
+```
+
+`served_model` history is ground truth for which upstream each route currently
+maps to; diff it against the "Dynamic routes" purpose definitions when
+rebuilding routes. `config_drift` events name the exact file and key so a
+rebuild starts from the diff.
+
+**Usage:**
+- Scheduled: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads.
+- `tail -F ~/.local/state/opencode-fleet/dynamic-audit.jsonl` to follow.
+- Interrogation (captain-triggered, interactive): aggregate `route_probe` events per route — `served_model` counts, latency percentiles, 429/limited frequency/retry-after rate — and check the ladder against the purpose definitions in "Dynamic routes" above.
+- **LLM proposals are interactive-only:** the captain triggers them on request ("interrogate the audit"); there is no scheduled LLM step. Any LLM run reads
+  these logs — never re-probes the gateway on its own authority.
+
+### Why the tests exist (design rationale)
+
+The catalog reacts to invisible churn: dynamic-route contents change dashboard-side only, provider windows exhaust silently, and the last human-visible signal is often a failed chain somewhere. Recording each route's served_model per test run plus the provider availability aggregate gives every lane a *replayable history* of when the route healthy and who served it — the same ground truth `quota-axi` provides for quota, here for route/availability identity.
+
+### Test 3: `provider_window` — the availability probe
+
+`dot_local/bin/big-pickle-watch.sh` (source: `~/.local/bin/big-pickle-watch.sh`, cron-entry: * per-minute, both direct zen route + gateway BYOK lane, CSV). It is the design template the audit extends:
+
+| Column | Curl response dependency |
+|---|---|
+| ts | wall-clock test start (ISO-8601) |
+| route | direct | gateway which of two parallel lanes |
+| http_code | probe return code (000 = never connected) |
+| result | ok | limited | error | timeout (the four cardinal outcomes, categorizing every curl exit) |
+| latency_ms | curl `%{time_total}` |
+| err_type | upstream's own error.type field — the direct route's canonical exhaustion signal (`FreeUsageLimitError`) |
+| retry_after_s | the strongest server-side signal, `Retry-After` from 429s |
+| rate_headers | ratelimit/exhaustion headers preserved for trend reading |
+
+The audit (`executable_dynamic-audit.mjs`, Test 3) folds this CSV into a
+`provider_window` log event per route every hour with 24h ok/limited/timeout
+aggregates: a single JSONL record per route telling a reviewing agent what the
+last day of lane health actually looked like without reading the raw minutes.
+
+Design principles (applies to both):
+- **Write everything down, decide nothing.** The scheduled layer never mutates
+  the gateway, routes, or provider config; scheduled logs are committed to disk
+  for later review.
+- **LLM proposals only on manual interrogation:** the captain (or the agent
+  reading the skill after captain's request, via structured review) examines
+  the logs and drives route-adjustment edits; any LLM formulation is a read of
+  the record, and then proposes for human confirmation.
+- **Both logs are cheap and structure-stable:** the audit log is JSONL keyed by
+  `test` (`route_probe` / `config_drift` / `provider_window`); the CSV has a
+  fixed 10-column header (see script header), published as a stable format
+  others can parse.

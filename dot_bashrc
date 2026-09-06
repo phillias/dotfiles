@@ -168,59 +168,59 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 # OpenCode provider API keys
-if [ -f "$HOME/.config/opencode/.groq-key" ]; then
-    export GROQ_API_KEY="$(cat $HOME/.config/opencode/.groq-key)"
+if [ -f "$HOME/.agents/keys/.groq-key" ]; then
+    export GROQ_API_KEY="$(cat $HOME/.agents/keys/.groq-key)"
 fi
-if [ -f "$HOME/.config/opencode/.cerebras-key" ]; then
-    export CEREBRAS_API_KEY="$(cat $HOME/.config/opencode/.cerebras-key)"
+if [ -f "$HOME/.agents/keys/.cerebras-key" ]; then
+    export CEREBRAS_API_KEY="$(cat $HOME/.agents/keys/.cerebras-key)"
 fi
-if [ -f "$HOME/.config/opencode/.mistral-key" ]; then
-    export MISTRAL_API_KEY="$(cat $HOME/.config/opencode/.mistral-key)"
+if [ -f "$HOME/.agents/keys/.mistral-key" ]; then
+    export MISTRAL_API_KEY="$(cat $HOME/.agents/keys/.mistral-key)"
 fi
-if [ -f "$HOME/.config/opencode/.sambanova-key" ]; then
-    export SAMBANOVA_API_KEY="$(cat $HOME/.config/opencode/.sambanova-key)"
+if [ -f "$HOME/.agents/keys/.sambanova-key" ]; then
+    export SAMBANOVA_API_KEY="$(cat $HOME/.agents/keys/.sambanova-key)"
 fi
-if [ -f "$HOME/.config/opencode/.google-key" ]; then
-    export GOOGLE_API_KEY="$(cat $HOME/.config/opencode/.google-key)"
+if [ -f "$HOME/.agents/keys/.google-key" ]; then
+    export GOOGLE_API_KEY="$(cat $HOME/.agents/keys/.google-key)"
 fi
-if [ -f "$HOME/.config/opencode/.together-key" ]; then
-    export TOGETHER_API_KEY="$(cat $HOME/.config/opencode/.together-key)"
+if [ -f "$HOME/.agents/keys/.together-key" ]; then
+    export TOGETHER_API_KEY="$(cat $HOME/.agents/keys/.together-key)"
 fi
-if [ -f "$HOME/.config/opencode/.zen-key" ]; then
-    export OPENCODE_ZEN_API_KEY="$(cat $HOME/.config/opencode/.zen-key)"
+if [ -f "$HOME/.agents/keys/.zen-key" ]; then
+    export OPENCODE_ZEN_API_KEY="$(cat $HOME/.agents/keys/.zen-key)"
 fi
-if [ -f "$HOME/.config/opencode/.google-client-id" ]; then
-    export GOOGLE_CLIENT_ID="$(cat $HOME/.config/opencode/.google-client-id)"
+if [ -f "$HOME/.agents/keys/.google-client-id" ]; then
+    export GOOGLE_CLIENT_ID="$(cat $HOME/.agents/keys/.google-client-id)"
 fi
-if [ -f "$HOME/.config/opencode/.google-client-secret" ]; then
-    export GOOGLE_CLIENT_SECRET="$(cat $HOME/.config/opencode/.google-client-secret)"
+if [ -f "$HOME/.agents/keys/.google-client-secret" ]; then
+    export GOOGLE_CLIENT_SECRET="$(cat $HOME/.agents/keys/.google-client-secret)"
 fi
-if [ -f "$HOME/.config/opencode/.fireworks-key" ]; then
-    export FIREWORKS_API_KEY="$(cat $HOME/.config/opencode/.fireworks-key)"
+if [ -f "$HOME/.agents/keys/.fireworks-key" ]; then
+    export FIREWORKS_API_KEY="$(cat $HOME/.agents/keys/.fireworks-key)"
 fi
-if [ -f "$HOME/.config/opencode/.exa-key" ]; then
-    export EXA_API_KEY="$(cat $HOME/.config/opencode/.exa-key)"
+if [ -f "$HOME/.agents/keys/.exa-key" ]; then
+    export EXA_API_KEY="$(cat $HOME/.agents/keys/.exa-key)"
 fi
-if [ -f "$HOME/.config/opencode/.composio-key" ]; then
-    export COMPOSIO_API_KEY="$(cat $HOME/.config/opencode/.composio-key)"
+if [ -f "$HOME/.agents/keys/.composio-key" ]; then
+    export COMPOSIO_API_KEY="$(cat $HOME/.agents/keys/.composio-key)"
 fi
-if [ -f "$HOME/.config/opencode/.hf-key" ]; then
-    export HF_API_KEY="$(cat $HOME/.config/opencode/.hf-key)"
+if [ -f "$HOME/.agents/keys/.hf-key" ]; then
+    export HF_API_KEY="$(cat $HOME/.agents/keys/.hf-key)"
 fi
-if [ -f "$HOME/.config/opencode/.nvidia-key" ]; then
-    export NVIDIA_API_KEY="$(cat $HOME/.config/opencode/.nvidia-key)"
+if [ -f "$HOME/.agents/keys/.nvidia-key" ]; then
+    export NVIDIA_API_KEY="$(cat $HOME/.agents/keys/.nvidia-key)"
 fi
-if [ -f "$HOME/.config/opencode/.baseten-key" ]; then
-    export BASETEN_API_KEY="$(cat $HOME/.config/opencode/.baseten-key)"
+if [ -f "$HOME/.agents/keys/.baseten-key" ]; then
+    export BASETEN_API_KEY="$(cat $HOME/.agents/keys/.baseten-key)"
 fi
-if [ -f "$HOME/.config/opencode/.intern-key" ]; then
-    export INTERN_API_KEY="$(cat $HOME/.config/opencode/.intern-key)"
+if [ -f "$HOME/.agents/keys/.intern-key" ]; then
+    export INTERN_API_KEY="$(cat $HOME/.agents/keys/.intern-key)"
 fi
-if [ -f "$HOME/.config/opencode/.openrouter-key" ]; then
-    export OPENROUTER_API_KEY="$(cat $HOME/.config/opencode/.openrouter-key)"
+if [ -f "$HOME/.agents/keys/.openrouter-key" ]; then
+    export OPENROUTER_API_KEY="$(cat $HOME/.agents/keys/.openrouter-key)"
 fi
-if [ -f "$HOME/.config/opencode/.zai-key" ]; then
-    export ZHIPU_API_KEY="$(cat $HOME/.config/opencode/.zai-key)"
+if [ -f "$HOME/.agents/keys/.zai-key" ]; then
+    export ZHIPU_API_KEY="$(cat $HOME/.agents/keys/.zai-key)"
 fi
 export PATH="$HOME/.npm-global/bin:$PATH"
 
