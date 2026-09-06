@@ -1,0 +1,18 @@
+{
+  "events": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "chrome-devtools-axi"
+      },
+      {
+        "type": "command",
+        "command": "lavish-axi"
+      },
+      {
+        "type": "command",
+        "command": "gh-axi"
+      }
+    ]
+  }
+}
