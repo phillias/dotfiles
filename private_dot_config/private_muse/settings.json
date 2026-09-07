@@ -1,7 +1,11 @@
 {
   "endpoint_transport": {
     "base_url": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
-    "auth": "bearer"
+    "auth": "bearer",
+    "headers": {
+      "cf-aig-gateway-id": "opencode",
+      "cf-aig-metadata": "{\"harness\":\"muse\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+    }
   },
   "sandbox": {
     "enabled": true,

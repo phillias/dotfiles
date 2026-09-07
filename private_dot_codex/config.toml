@@ -5,3 +5,13 @@ model = "o3"
 
 [shell_environment_policy]
 inherit = "all"
+
+[model_providers.cf-aig]
+name = "CF AI Gateway"
+base_url = "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
+env_key = "CF_AI_GATEWAY_TOKEN"
+http_headers = { "cf-aig-gateway-id" = "opencode", "cf-aig-metadata" = "{\"harness\":\"codex\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}" }
+
+[profiles.gateway]
+model_provider = "cf-aig"
+model = "dynamic/TUI"

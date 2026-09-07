@@ -15,7 +15,10 @@
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
         "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
-        "headers": { "cf-aig-gateway-id": "opencode" }
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+        }
       },
       "models": {
         "dynamic/TUI": { "name": "TUI (subsidized low-tier daily driver)" },
@@ -29,7 +32,11 @@
       "name": "OpenCode Go (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+        }
       },
       "models": {
         "kimi-k2.6": {
@@ -135,7 +142,11 @@
       "name": "OpenRouter (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+        }
       },
       "models": {
         "nvidia/nemotron-3-super-120b-a12b:free": {
@@ -492,7 +503,11 @@
       "name": "OpenCode Zen (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-zen/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+        }
       },
       "models": {
         "big-pickle": {
@@ -857,7 +872,7 @@
         "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
-          "cf-aig-metadata": "{\"application\":\"opencode\"}"
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
         }
       },
       "models": {
@@ -1046,7 +1061,11 @@
       "name": "Command Code (GOAT, AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-commandcode/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+        }
       },
       "models": {
         "gpt-5.6-luna": {
@@ -1598,7 +1617,11 @@
       "name": "Z.AI Coding Plan Lite (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-zai-coding/v4",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+        }
       },
       "models": {
         "glm-5.3": {
@@ -1640,7 +1663,11 @@
       "name": "Phoenix Grove Systems (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-phoenixgrove/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}"
+        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+        }
       },
       "models": {
         "glm-5.3-flash": {

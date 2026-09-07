@@ -4,6 +4,7 @@ default_model = "tui-via-cf"
 type = "openai_legacy"
 base_url = "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
 api_key = "{env:CF_AI_GATEWAY_TOKEN}"
+custom_headers = { "cf-aig-gateway-id" = "opencode", "cf-aig-metadata" = "{\"harness\":\"kimi-code\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}" }
 
 [models.tui-via-cf]
 provider = "cf-aig"
