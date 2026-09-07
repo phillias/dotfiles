@@ -1,0 +1,12 @@
+default_model = "tui-via-cf"
+
+[providers.cf-aig]
+type = "openai_legacy"
+base_url = "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
+api_key = "{env:CF_AI_GATEWAY_TOKEN}"
+
+[models.tui-via-cf]
+provider = "cf-aig"
+model = "dynamic/TUI"
+max_context_size = 200000
+protocol = "openai"
