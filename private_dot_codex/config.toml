@@ -1,0 +1,7 @@
+[features]
+hooks = true
+
+model = "o3"
+
+[shell_environment_policy]
+inherit = "all"
