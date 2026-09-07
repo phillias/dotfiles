@@ -9,12 +9,12 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 export CF_AI_GATEWAY_TOKEN="$(cat "$HOME/.config/opencode/.cf-ai-gw-token" 2>/dev/null)"
 
 # Route Kimi Code through CF AI Gateway (already configured in ~/.kimi-code/config.toml)
-export KIMI_CODE_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"kimi-code","host":"CabinInspiron22Kali","agent":"primary"}'
+export KIMI_CODE_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"kimi-code","host":"{{ .chezmoi.hostname }}","agent":"primary"}'
 
 # Route Claude Code through CF AI Gateway
 export ANTHROPIC_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
 export ANTHROPIC_API_KEY="$CF_AI_GATEWAY_TOKEN"
-export ANTHROPIC_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"claude","host":"CabinInspiron22Kali","agent":"primary"}'
+export ANTHROPIC_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"claude","host":"{{ .chezmoi.hostname }}","agent":"primary"}'
 
 # Route Codex through CF AI Gateway  
 export OPENAI_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"

@@ -4,7 +4,7 @@
     "auth": "bearer",
     "headers": {
       "cf-aig-gateway-id": "opencode",
-      "cf-aig-metadata": "{\"harness\":\"muse\",\"host\":\"CabinInspiron22Kali\",\"agent\":\"primary\"}"
+      "cf-aig-metadata": "{\"harness\":\"muse\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
     }
   },
   "sandbox": {
