@@ -1,0 +1,14 @@
+{
+  "endpoint_transport": {
+    "base_url": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
+    "auth": "bearer"
+  },
+  "sandbox": {
+    "enabled": true,
+    "network": "proxy-only"
+  },
+  "approval": {
+    "mode": "on-request",
+    "judge": "on"
+  }
+}
