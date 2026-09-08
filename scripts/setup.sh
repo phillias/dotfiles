@@ -29,7 +29,7 @@ fi
 echo "=== phillias/dotfiles bootstrap ($(hostname)) ==="
 
 # Ensure user-local bin directories are in PATH permanently for future shells
-PATH_EXPORT='export PATH="$HOME/.opencode/bin:$HOME/.local/bin:$HOME/bin:$PATH"'
+PATH_EXPORT='export PATH="$HOME/.local/bin:$HOME/bin:$PATH"'
 
 for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
     if [ -f "$shell_rc" ]; then
@@ -287,41 +287,6 @@ if ! command -v cloudflared &>/dev/null; then
         fi
     fi
     echo "cloudflared: $(cloudflared --version 2>&1 | head -1)"
-fi
-
-# ── 6. Install opencode (user-local, not OS package manager) ──────
-if ! command -v opencode &>/dev/null; then
-    echo "==> Installing opencode (user-local)..."
-    mkdir -p "$HOME/.opencode"
-    if command -v bun &>/dev/null; then
-        echo "  Using bun..."
-        cd "$HOME/.opencode" && bun add @opencode-ai/plugin
-    elif command -v npm &>/dev/null; then
-        echo "  Using npm..."
-        cd "$HOME/.opencode" && npm install @opencode-ai/plugin
-    else
-        echo "WARN: Neither bun nor npm found. Skipping opencode install."
-        echo "      Install Node.js or Bun first, then run:"
-        echo "        npm install -g @opencode-ai/plugin"
-    fi
-    # Create wrapper script in ~/.opencode/bin
-    mkdir -p "$HOME/.opencode/bin"
-    cat > "$HOME/.opencode/bin/opencode" << 'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-cd "$ROOT_DIR"
-if [ -f "$ROOT_DIR/node_modules/.bin/opencode" ]; then
-    exec "$ROOT_DIR/node_modules/.bin/opencode" "$@"
-else
-    echo "ERROR: opencode not found in $ROOT_DIR/node_modules/.bin/"
-    echo "Run: cd $ROOT_DIR && npm install"
-    exit 1
-fi
-EOF
-    chmod +x "$HOME/.opencode/bin/opencode"
-    echo "opencode: installed to ~/.opencode/bin/opencode"
 fi
 
 # ═══════════════════════════════════════════════════════════════════
