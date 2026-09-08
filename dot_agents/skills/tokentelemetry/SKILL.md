@@ -18,21 +18,100 @@ proxy pattern managed by godoxy hostapps.
   (`/agents* /sessions* /analytics* /version /health /openapi.json /remote-access /config* /pricing /quotas /notifications /telemetry*`)
   to `http://127.0.0.1:18000`.
 
-## Gotchas (verbatim)
+## Simplified godoxy pattern (no code customization)
 
-- The Dockerfile needs `ARG NEXT_PUBLIC_API_BASE=""` declared explicitly, and
-  compose must pass it as a build arg — without it same-origin API calls fall
-  back to `:18000`, which godoxy doesn't route, and every API call times out.
-- No godoxy restart after config: `hostapps.yml` requires a `godoxy-proxy`
+The split proxy pattern uses godoxy route rules to route backend API calls to
+`:18000`. No custom proxy.js code is required.
+
+### godoxy hostapps.yml configuration
+
+```yaml
+tokentelemetry:
+  host: 127.0.0.1
+  port: :13000
+  rules: |-
+    path glob("/agents") |
+    path /agents |
+    path /sessions |
+    path /analytics |
+    path /version |
+    path /health |
+    path /openapi.json |
+    path /remote-access |
+    path /pricing |
+    path /quotas |
+    path /notifications |
+    path glob("/config/*") |
+    path glob("/pricing/*") |
+    path glob("/quotas/*") |
+    path glob("/notifications/*") |
+    path glob("/telemetry/*") {
+      proxy http://127.0.0.1:18000
+    }
+```
+
+**Key routing gotcha:** `glob("/agents")` only matches the bare path without trailing
+slash; both `path glob("/agents")` and `path /agents` entries are needed for
+complete coverage. The same applies to other API root paths.
+
+## compose.yml template
+
+```yaml
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "127.0.0.1:18000:8000"
+    environment:
+      - TT_HOST=0.0.0.0
+      - TT_API_PORT=8000
+      - TOKENTELEMETRY_DATA_DIR=/tt-data
+      - TOKENTELEMETRY_HOME=/tt-data
+      - TZ=${TZ:-}
+      - TT_AUTH_TOKEN=${TT_AUTH_TOKEN:-}
+    volumes:
+      - tt_data:/tt-data
+      - "${HOME}/.claude:/root/.claude:ro,z"
+      - "${HOME}/.codex:/root/.codex:ro,z"
+      - "${HOME}/.copilot:/root/.copilot:ro,z"
+      - "${HOME}/.pi:/root/.pi:ro,z"
+      - "${HOME}/.local/share/opencode:/root/.local/share/opencode:ro,z"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(3); s.connect(('localhost', 8000)); s.close()\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_PORT: 18000
+        NEXT_PUBLIC_API_BASE: ""
+    ports:
+      - "127.0.0.1:13000:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  tt_data:
+```
+
+## Gotchas
+
+- **NEXT_PUBLIC_API_BASE build arg:** Set to empty string (not omitted) so the
+  frontend uses same-origin API calls, which godoxy routes to `:18000` via the
+  rules block.
+- **No godoxy restart after config:** `hostapps.yml` requires a `godoxy-proxy`
   restart before edits take effect (unless godoxy gains hot-reload).
-- The API route match: `glob("/agents/*")` only matches subpaths; bare
-  `/agents` needs its own `path /agents` entry in godoxy rule blocks.
-- Agent-log mounts in compose are per-host — enable ONLY the agents that host
-  actually uses (`.claude`, `.codex`, `.copilot`, `.pi`,
-  `$HOME/.local/share/opencode`).
-- The split proxy at :3011 (proxy/proxy.js + tokentelemetry-proxy.service) is
-  retired on this host; it can be made redundant if godoxy rules ever need it,
-  removed lazy — re-add if the godoxy rule ever regresses.
+- **Agent-log mounts are per-host:** Enable only the agents that host actually
+  uses. The template includes `.claude`, `.codex`, `.copilot`, `.pi`, and
+  `.local/share/opencode` by default.
 
 ## Data location
 
@@ -41,8 +120,5 @@ Never delete this dir: it's the cost/yield ledger.
 
 ## Key files on each host
 
-- `~/tokentelemetry/compose.yml`, `agent-log` mounts
-- `~/tokentelemetry/proxy/proxy.js` — split proxy (retired on most hosts,
-  still useful reference)
-- `~/.config/systemd/user/tokentelemetry-proxy.service` — disable+rm when proxy
-  goes away.
+- `~/tokentelemetry/compose.yml` with agent-log mounts
+- godoxy `hostapps.yml` entry with split proxy rules
