@@ -81,6 +81,10 @@ STALE_TARGETS=(
     "$HOME/.config/systemd/user/codemem-anchor-watchdog.timer"    # purged 2026-08-06
     "$HOME/.config/systemd/user/codemem-coordinator.service"      # purged 2026-08-06
     "$HOME/.agents/.skill-lock.json"                          # skills CLI residue — CE now via opencode plugin (2026-08-27)
+    "$HOME/.opencode/node_modules"                             # broken npm install from setup.sh (2026-09-08)
+    "$HOME/.opencode/package.json"                             # broken npm install from setup.sh (2026-09-08)
+    "$HOME/.opencode/package-lock.json"                        # broken npm install from setup.sh (2026-09-08)
+    "$HOME/.opencode/.gitignore"                                # broken npm install from setup.sh (2026-09-08)
 )
 
 cleanup_stale() {
