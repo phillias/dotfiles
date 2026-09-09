@@ -37,7 +37,7 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | Provider | URL segment | Notes |
 |---|---|---|
 | opencode-zen | `custom-opencode-zen/v1` | primary quality (big-pickle) + free tier |
-| opencode-go | `custom-opencode-go/v1` | subsidized pool (kimi-k2.6, deepseek-v4-flash) |
+| opencode-go | `custom-opencode-go/v1` | subsidized pool (kimi-k2.6, deepseek-v4-flash). **Session-gated 2026-09-08**: requests require a per-conversation `x-opencode-session` header; a static config header cannot satisfy it. Direct-client use only (opencode/pi send it natively) — EXCLUDES opencode-go models from gateway dynamic routes and any static-header custom-provider hop. Clean 400 `MissingSessionID` otherwise. |
 | commandcode | `custom-commandcode/v1` | GOAT paid pool (Kimi-K2.6, DS-V4-Flash) |
 | zai-coding | `custom-zai-coding/v4` | Z.AI Coding Plan Lite; **`/v4`, not `/v1`** |
 | phoenixgrove | `custom-phoenixgrove/v1` | GLM-5.3-flash, deepseek-v4-flash |
@@ -129,8 +129,12 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
 
 - `TUI` — daily-driver, lowest-version models (GLM-5.1-class or cheapest flash
   variants), **subsidized plans first** (opencode-go → z.ai→ go/zen pools).
+  Reordered 2026-09-09: head = `custom-phoenixgrove/glm-5.3-flash`; opencode-go
+  and aihubmix demoted (ail 200-wrapped 404s; opencode-go session-gated).
 - `high` — latest-version models (`GLM-5.3` class, fable, astra when a lane
-  appears) from reliable providers; aihubmix GLM discount lane sits top.
+  appears) from reliable providers; aihubmix GLM discount lane sits top
+  (caution 2026-09-08: aihubmix began 200-wrapped 404s — verify before
+  trusting that head lane).
 - `pr-gate` — free-as-possible 1M-ctx CI/background "second set of eyes"
   ladder; faithful to the hand-tuned pi gate chain.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
@@ -140,6 +144,33 @@ Owner defaults (2026-09-04): pi `default` chain = `cf-aig-dynamic/dynamic/TUI`
 exactly; pi `gate` chain = `cf-aig-dynamic/dynamic/pr-gate` exactly;
 opencode.json `model` = `cf-aig-dynamic/dynamic/TUI` with the legacy local
 ladder remaining as the fallback tail.
+
+### Route management via REST — dynamic routes ARE token-manageable (2026-09-09)
+
+Contrary to the earlier "dashboard-only" note for *custom providers*, dynamic
+ROUTE graphs are fully token-manageable:
+
+- `POST /accounts/{acc}/ai-gateway/gateways/{gw}/versions`
+  (`{'elements': [...]}`) → new draft version.
+- `POST …/routes/{route_id}/deployments` (`{'version_id': …}`) → deploys it
+  live (instant rollback = deploy an older version_id).
+- Verified 2026-09-09 by repairing the TUI route (poisoned head node, below).
+- Every `model` node requires an explicit `outputs.fallback` (validation
+  rejects the last node falling through implicitly — chain it to `END`).
+- Probe route health with header `cf-aig-skip-cache: true` first — the
+  gateway serves cached failed responses for `cache_ttl` (ours 1800s), so
+  unburst errors look instantly healthy/dead.
+
+**Head-node poisoning failure mode (observed 2026-09-08):** an upstream that
+returns HTTP 200 wrapping an error JSON (aihubmix style, `{"code":500,"msg":"404
+NOT_FOUND"}`) is treated by the route as a *successful stream*. The node's
+`success` edge fires, fallback never runs, and `END` passes the error body
+verbatim. A single 200-wrapped-error head node kills the whole ladder. Fix:
+broken or suspicious providers go LAST in the chain, healthy named first; the
+error surfaces only when the real head is healthy.
+Corollary: an opencode agent loop fed this error spins ~1 step/1.5s (1,300+
+steps, 71min CPU before SIGINT on kali) — runaway `loop step=` growth in
+`~/.local/share/opencode/log/opencode.log` is the signature.
 
 ### Custom providers (gateway BYOK, dashboard-only management)
 
