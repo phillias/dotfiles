@@ -32,11 +32,10 @@ steps[12]{n,action}:
 
 Interactive prompts you'll answer:
 
-prompts[5]{item}:
+prompts[4]{item}:
   GitHub token (if gh not authenticated)
   Profile branch choice
   Bitwarden master password + 2FA
-  "Bitwarden API key (optional, for cron)"
   Age key passphrase (auto-fetched from Bitwarden if available)
 
 Prerequisites: curl, python3, ssh-keygen, Node.js or Bun, sudo (optional)
