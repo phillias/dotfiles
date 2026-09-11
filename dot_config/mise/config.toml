@@ -50,3 +50,5 @@ bun = "1.3.14"
 opencode = "1.18.29"
 # opencode plugin SDK — TypeScript API for building plugins
 "npm:@opencode-ai/plugin" = "1.18.29"
+# herdr — agent terminal workspace manager (static binary via GitHub release)
+"github:herdrdev/herdr" = "0.9.0"
