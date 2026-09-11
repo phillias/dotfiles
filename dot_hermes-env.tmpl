@@ -28,4 +28,23 @@ if [ -f "$_HERMES_SECRETS" ]; then
   source "$_HERMES_SECRETS"
   set +a
 fi
+
+# ── AI Gateway routing (identity tracking) ──────────────────────
+# When Hermes job scripts or MCP servers make AI API calls, route
+# through CF AI Gateway with identity tracking by harness+host.
+# 
+# Example for scripts using Anthropic SDK:
+# export ANTHROPIC_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
+# export ANTHROPIC_API_KEY="${CF_AI_GATEWAY_TOKEN}"
+# export ANTHROPIC_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"hermes","host":"{{ .chezmoi.hostname }}","agent":"cron-job"}'
+#
+# Example for scripts using OpenAI SDK:
+# export OPENAI_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
+# export OPENAI_API_KEY="${CF_AI_GATEWAY_TOKEN}"
+#
+# For direct gateway calls using the dynamic/TUI route:
+# export HERMES_MODEL_ROUTE="cf-aig-dynamic/dynamic/TUI"
+#
+# Scripts should use $HERMES_MODEL_ROUTE as the model string when
+# making AI calls through the gateway with identity tracking.
 unset _HERMES_SECRETS

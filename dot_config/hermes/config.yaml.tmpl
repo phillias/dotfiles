@@ -27,3 +27,27 @@ mcp:
 logging:
   level: "{{ dig "hermes" "logLevel" "info" . }}"
   directory: "{{ .chezmoi.homeDir }}/.local/share/hermes/logs"
+
+# ── AI Gateway integration ──────────────────────────────────────
+# Hermes job scripts and MCP servers can route AI calls through
+# the CF AI Gateway with identity tracking. Configure gateway
+# routing in ~/.hermes-env (see dot_hermes-env.tmpl).
+#
+# Example job script using the gateway:
+#   #!/bin/bash
+#   source ~/.hermes-env
+#   # Use $HERMES_MODEL_ROUTE or explicit cf-aig-dynamic provider
+#   curl -X POST "$ANTHROPIC_BASE_URL/v1/messages" \
+#     -H "Authorization: Bearer $ANTHROPIC_API_KEY" \
+#     -H "Content-Type: application/json" \
+#     -H "cf-aig-gateway-id: opencode" \
+#     -H "cf-aig-metadata: {\"harness\":\"hermes\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"cron-job\"}" \
+#     -d "{\"model\": \"$HERMES_MODEL_ROUTE\", \"messages\": [...]}"
+#
+# Identity tracking metadata schema:
+#   harness: "hermes" (fixed, identifies this scheduler)
+#   host: dynamic hostname via chezmoi template
+#   agent: "cron-job" or job-specific identifier
+#
+# Dashboard filtering:
+#   metadata.harness == "hermes" && metadata.host == "<hostname>"
