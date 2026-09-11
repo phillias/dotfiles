@@ -1,12 +1,14 @@
 {
   // PAID-FIRST fallback policy (captain decision 2026-08-12, DESIGN.md §2.6).
   // 2026-08-25 (captain decision): Z.AI Coding Plan (Lite $18/mo) inserted
-  // between GOAT and Cloudflare. Chain: Go → GOAT → Z.AI → Cloudflare →
-  // OpenRouter → Zen. Z.AI Lite provides GLM-5.3 (exclusive), GLM-5.2,
+  // between GOAT and OpenRouter. Chain: Go → GOAT → Z.AI → OpenRouter → Zen.
+  // Z.AI Lite provides GLM-5.3 (exclusive), GLM-5.2,
   // GLM-5-Turbo at credits-based metering with 0.5x off-peak during ET
-  // 7am-11pm operational hours. Cloudflare Workers AI now routes through
-  // AI Gateway (BYOK) for analytics/caching; $50/mo spend cap enforced.
-  // OpenRouter added for cheapest GLM-5 per-token overflow ($0.60/$1.92).
+  // 7am-11pm operational hours. Cloudflare AI Gateway stage removed
+  // 2026-09-11 — @cf/(BYOK) routing thrashed across three failed fixes
+  // (workers-ai/ prefix, REST API migration, PGS free-band lane) and never
+  // resolved; fallback order re-evaluated separately. OpenRouter covers the
+  // cheapest GLM-5 per-token overflow ($0.60/$1.92).
   // go-pool-guard.ts retired 2026-08-12 — reactive chain stepping here is
   // the single owner of exhaustion handling.
   //
@@ -19,7 +21,7 @@
   // at Zen and FAILS visibly instead of silently downgrading to the free tier.
   //
   // Decision A: utility agents (firstmate/crewmate/secondmate) run
-  // big-pickle → GO → GOAT → Z.AI → Cloudflare → OpenRouter → Zen → Free.
+  // big-pickle → GO → GOAT → Z.AI → OpenRouter → Zen → Free.
   // Reasoning/high-effort/visual/looker/special agents keep their pinned
   // models and fall back GOAT → Z.AI → Go → Zen only.
   "enabled": true,
@@ -42,28 +44,25 @@
     "commandcode/deepseek/deepseek-v4-flash",
     // STAGE 3: Z.AI Coding Plan Lite ($18/mo, credits-based, 0.5x off-peak ET)
     "zai-coding/glm-5.2",
-    // STAGE 4: Cloudflare AI Gateway (BYOK, analytics, $50/mo spend cap)
-    "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-    "cloudflare/@cf/zai-org/glm-4.7-flash",
-    // STAGE 5: OpenRouter (cheapest per-token, $0.60/$1.92 GLM-5 via DeepInfra)
+    // STAGE 4: OpenRouter (cheapest per-token, $0.60/$1.92 GLM-5 via DeepInfra)
     "openrouter/z-ai/glm-5",
-    // STAGE 6: OpenCode Zen free tier
+    // STAGE 5: OpenCode Zen free tier
     "opencode-zen/deepseek-v4-flash-free",
     "opencode-zen/nemotron-3-ultra-free",
-    // STAGE 7: FREE providers
+    // STAGE 6: FREE providers
     // Phoenix Grove Everyday band: free during trial month (glm-5.3-flash 321B/18B, 1M ctx)
     "phoenixgrove/glm-5.3-flash",
     "phoenixgrove/deepseek-v4-flash",
     "nvidia/deepseek-ai/deepseek-v4-flash",
     "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
     "baseten/openai/gpt-oss-120b",
-    // STAGE 8: PAY last resort
+    // STAGE 7: PAY last resort
     "google/gemini-2.5-flash"
   ],
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Utility crewmates: big-pickle primary → GO → GOAT → Z.AI → CF → OR → Zen (global tail adds free)
+    // Utility crewmates: big-pickle primary → GO → GOAT → Z.AI → OR → Zen (global tail adds free)
     "general": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -72,8 +71,6 @@
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
         "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free",
@@ -89,8 +86,6 @@
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
         "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free",
@@ -138,7 +133,7 @@
   // DISPATCH CATEGORIES — firstmate picks at the intent gate via
   // dispatch-rules.json → task(category=...).
   "categories": {
-    // UTILITY (decision A): big-pickle primary → GO → GOAT → Z.AI → CF → OR → Zen → Free.
+    // UTILITY (decision A): big-pickle primary → GO → GOAT → Z.AI → OR → Zen → Free.
     "quick": {
       "model": "opencode-zen/big-pickle",
       "fallback_models": [
@@ -147,8 +142,6 @@
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
         "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free",
@@ -164,8 +157,6 @@
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
         "zai-coding/glm-5.2",
-        "cloudflare/@cf/moonshotai/kimi-k2.7-code",
-        "cloudflare/@cf/zai-org/glm-4.7-flash",
         "openrouter/z-ai/glm-5",
         "opencode-zen/deepseek-v4-flash-free",
         "opencode-zen/nemotron-3-ultra-free",
@@ -213,7 +204,7 @@
       "no_global_tail": true
     },
     "artistry": {
-      "model": "cloudflare/@cf/google/gemma-4-26b-a4b-it",
+      "model": "opencode-zen/gemini-3.5-flash",  // CF AI Gateway gemma dropped 2026-09-11 (never resolved routing)
       "fallback_models": [
         "commandcode/xiaomi/mimo-v2.5",
         "commandcode/thinkingmachines/inkling",
