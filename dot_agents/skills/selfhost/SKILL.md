@@ -1995,3 +1995,6 @@ Complete list of Docker label properties for godoxy service configuration:
 
 ---
 
+## Linkwarden (`~/docker/linkwarden`)
+
+Full runbook lives in the selfhost repo's `~/docker/LINKWARDEN.md` (architecture, `link_health` signal table, link-check procedure, storage policy, re-archive plan). See it for anything linkwarden-specific.
