@@ -52,3 +52,6 @@ opencode = "1.18.29"
 "npm:@opencode-ai/plugin" = "1.18.29"
 # herdr — agent terminal workspace manager (static binary via GitHub release)
 "github:herdrdev/herdr" = "0.9.0"
+# treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
+# standalone installer copy, the manifest now owns it)
+"github:kunchenguid/treehouse" = "2.3.0"
