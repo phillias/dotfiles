@@ -33,6 +33,37 @@ Conventions:
   (`ln -s phillias default` — not an absolute path; the loader resolves it
   under `~/.agents/keys`).
 
+## Multi-harness contract (primary)
+
+`~/.agents/keys` serves **every** harness firstmate dispatches — claude, codex,
+pi, grok, kimi, cursor, opencode — through one primary contract plus per-agent
+sourcing conventions:
+
+1. **Shell-level env export is the universal availability layer.** All agent
+   harnesses are launched through a login/non-interactive or interactive shell,
+   so they inherit whatever the `~/.agents/keys` loaders exported
+   (`CF_AI_GATEWAY_TOKEN`, `<PROVIDER>_API_KEY`, OAuth ids/secrets). Once a key
+   is exported after `exec zsh -l` (or the equivalent zshenv evaluation), every
+   harness can read it without per-agent wiring. This shell inheritance is the
+   documented primary contract; nothing below bypasses it.
+2. **Per-agent configs consume env vars or `{file:}` reads — provenance stays
+   in the shell export or `~/.agents/keys`.** e.g. Codex consumes via
+   `env_key = "CF_AI_GATEWAY_TOKEN"` with `shell_environment_policy`
+   `inherit = "all"` in `~/.codex/config.toml`; opencode resolves
+   `{file:~/.agents/keys/<profile>/…}` at config parse. Neither pattern reads
+   keystores directly.
+3. **Skills follow the same single-source pattern** at `~/.agents/skills`:
+   per-agent harnesses source them via **symlink farms**, e.g.
+   `~/.claude/skills/<name> -> ../../.agents/skills/<name>`; other harnesses do
+   the equivalent. (Documented here only — consolidation of live skill symlinks
+   is out of scope for this task.)
+
+Offloaded rc-block consolidation note: some vars (`HARBOR_API_KEY` in zshrc,
+several flat keys after guard checks in bashrc) are exported **only** in
+interactive rc files. Moving those loads into zshenv would change behavior for
+non-interactive shells/reparented daemons — a **needs-decision** for the
+captain if we ever want one consolidated loader. Not changed in this task.
+
 ## Loader contract
 
 | Loader | When | Behavior |
