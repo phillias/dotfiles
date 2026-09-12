@@ -83,7 +83,7 @@ jobs:
 
       - name: Validate pi config
         run: |
-          python3 -c "import json; json.load(open('private_dot_pi/fallback-chains.json')); json.load(open('private_dot_pi/private_agent/models.json')); json.load(open('private_dot_pi/private_agent/settings.json')); print('pi config valid')"
+          python3 -c "import json, re; strip = lambda p: re.sub(r'\s*\{\{.*?\}\}\s*', 'host', open(p).read(), flags=re.S); json.loads(open('private_dot_pi/fallback-chains.json').read()); json.loads(strip('private_dot_pi/private_agent/models.json.tmpl')); json.loads(open('private_dot_pi/private_agent/settings.json').read()); print('pi config valid')"
 
       - name: Install and verify hermes-gateway
         run: |
