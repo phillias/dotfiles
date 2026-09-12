@@ -13,7 +13,11 @@ _default_profile="$(readlink "$HOME/.agents/keys/default" 2>/dev/null)" || _defa
 if [ -z "$_default_profile" ] || [ ! -d "$HOME/.agents/keys/$_default_profile" ]; then
 	[ -t 0 ] && printf 'zshenv: ~/.agents/keys/default symlink missing; not exporting key profile vars\n' >&2
 else
-	[ -r "$HOME/.agents/keys/$_default_profile/.cf-ai-gw" ] && export CF_AI_GATEWAY_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.cf-ai-gw")" || { [ -t 0 ] && printf 'zshenv: ~/.agents/keys/%s/.cf-ai-gw missing or unreadable; not exporting CF_AI_GATEWAY_TOKEN\n' "$_default_profile" >&2; }
+if [ -r "$HOME/.agents/keys/$_default_profile/.cf-ai-gw" ]; then
+	CF_AI_GATEWAY_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.cf-ai-gw")" && export CF_AI_GATEWAY_TOKEN
+else
+	[ -t 0 ] && printf 'zshenv: ~/.agents/keys/%s/.cf-ai-gw missing or unreadable; not exporting CF_AI_GATEWAY_TOKEN\n' "$_default_profile" >&2
+fi
 fi
 unset _default_profile
 

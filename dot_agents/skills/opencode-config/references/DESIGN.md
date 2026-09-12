@@ -250,6 +250,7 @@ END of chains).
    gateway — required for Workers AI traffic, and the only thing binding
    requests to the gateway's analytics/caching/spend-cap controls. OpenCode
    authenticates with a CF API token (Workers AI Read; the existing
+   token file now `~/.agents/keys/<profile>/.cf-ai-gw`; legacy
    `.cf-ai-gw-token` verified working live 2026-08-28).
    **Migrated 2026-08-29 off the deprecated `/compat` endpoint** (deprecated
    for single-model calls 2026-08-07; still required for dynamic routes).
@@ -270,7 +271,7 @@ END of chains).
 1. **Six providers routed through gateway `opencode` via BYOK**: `opencode-zen`,
    `opencode-go`, `commandcode`, `zai-coding`, `openrouter`, `phoenixgrove` all route through
    `https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/` with the gateway
-   token (`.cf-ai-gw-token`) in `Authorization`. No per-provider key files in
+   gateway token (`.cf-ai-gw` in the active keys profile) in `Authorization`. No per-provider key files in
    config — BYOK stored keys (alias `default` on gateway `opencode`, all six
    present) inject upstream. The `Authorization` header is consumed as gateway
    auth and not forwarded. URL version-segment rule: the gateway strips a
