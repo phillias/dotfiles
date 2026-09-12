@@ -340,6 +340,36 @@ fi
 echo "==> Registering deploy key..."
 gh repo deploy-key add "${DEPLOY_KEY}.pub" --repo phillias/dotfiles --title "chezmoi@$(hostname)" --allow-write 2>/dev/null || echo "  Key may already exist"
 
+# ── 8b. Provision per-repo GitHub deploy keys (pirate, selfhost) ──
+# Each additional repo (pirate, selfhost) gets its own minted ed25519 deploy
+# key registered on its repo, plus a matching Host block managed in
+# dot_ssh/config.tmpl (applied by chezmoi before this point). Extensible:
+# append repos to DEPLOY_KEY_REPOS.
+if gh auth status &>/dev/null 2>&1 && [ -d "$HOME/.ssh" ]; then
+    DEPLOY_KEY_REPOS=(pirate selfhost)
+    for REPO in "${DEPLOY_KEY_REPOS[@]}"; do
+        RKEY="$HOME/.ssh/${REPO}-deploy-key"
+        if [ ! -f "$RKEY" ]; then
+            ssh-keygen -t ed25519 -f "$RKEY" -N "" -C "github-${REPO}-deploy-key@$(hostname)" >/dev/null
+            chmod 600 "$RKEY"
+            chmod 644 "${RKEY}.pub"
+            echo "==> Minted $RKEY"
+        fi
+        local_res="$(grep -c "$(cut -d' ' -f2 "${RKEY}.pub")" < <(gh api "repos/phillias/${REPO}/keys" --jq '.[]?.key' 2>/dev/null) || true)"
+        if [ "${local_res:-0}" -gt 0 ]; then
+            echo "==> Deploy key for phillias/${REPO} already registered"
+            continue
+        fi
+        if gh api "repos/phillias/${REPO}/keys" -f "key=$(cat "${RKEY}.pub")" -F read_only=false >/dev/null 2>&1 \
+            || gh api "repos/phillias/${REPO}/keys" -f "key=$(cat "${RKEY}.pub")" -F read_only=false 2>&1 | grep -q "already in use"; then
+            echo "==> Deploy key for phillias/${REPO} registered"
+        else
+            echo "WARN: could not register deploy key for phillias/${REPO} (retry later)"
+        fi
+    done
+fi
+
+
 # ═══════════════════════════════════════════════════════════════════
 # Phase 3 — Profile selection
 # ═══════════════════════════════════════════════════════════════════
@@ -630,12 +660,9 @@ GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" \
 if $IS_MAC; then
     echo "==> macOS: use launchd for auto-sync"
 else
-    L="*/30 * * * * export PATH=\$HOME/bin:\$HOME/.local/bin:/usr/local/bin:\$PATH; chezmoi-axi sync --force >> \$HOME/.local/share/chezmoi/.chezmoi-sync.log 2>&1"
-    {
-        crontab -l 2>/dev/null | grep -v -E 'chezmoi update|chezmoi-axi sync' || true
-        echo "$L"
-    } | crontab -
-    echo "==> Cron: chezmoi-axi sync every 30 min"
+    L="*/30 * * * * export PATH=\$HOME/bin:\$HOME/.local/bin:\$PATH; chezmoi-sync-cron"
+    { { crontab -l 2>/dev/null || true; } | grep -Eiv 'chezmoi-sync-cron|chezmoi-axi sync.*chezmoi-sync\.log|chezmoi update >>.*chezmoi-sync\.log' || true; echo "$L"; } | crontab -
+    echo "==> Cron: chezmoi-sync-cron every 30 min"
 fi
 
 # ── 18. Verify ───────────────────────────────────────────────────

@@ -42,7 +42,7 @@ Prerequisites: curl, python3, ssh-keygen, Node.js or Bun, sudo (optional)
 
 Fresh-install bootstrap troubleshooting (first-time setup failing) → load `dotfiles-chezmoi`.
 The `scripts/` directory also holds standalone one-off installers (setup.sh, setup-omp.sh,
-install-hermes-honcho.sh, install-et-sslh-for-moshi.sh) — they are NOT chezmoi run scripts.
+install-et-sslh-for-moshi.sh) — they are NOT chezmoi run scripts.
 
 ---
 

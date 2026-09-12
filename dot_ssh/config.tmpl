@@ -22,6 +22,18 @@ Host github-mybiz
   IdentityFile ~/.ssh/mybiz-deploy-key
   IdentitiesOnly yes
 
+Host github.com-pirate
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/pirate-deploy-key
+  IdentitiesOnly yes
+
+Host github.com-selfhost
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/selfhost-deploy-key
+  IdentitiesOnly yes
+
 Host gcp
   IdentityFile ~/.ssh/id_ed25519_inspironkali
   HostName gcp.phillias.us

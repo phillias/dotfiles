@@ -22,7 +22,7 @@ set -u
 CSV=/tmp/big-pickle-availability.csv
 MODEL=big-pickle
 ZEN_KEY=$(python3 -c "import json;print(json.load(open('$HOME/.local/share/opencode/auth.json'))['opencode']['key'])" 2>/dev/null || true)
-GW_TOKEN=$(cat "$HOME/.config/opencode/.cf-ai-gw-token" 2>/dev/null || true)
+GW_TOKEN=${CF_AI_GATEWAY_TOKEN:-}
 GW_URL='https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-zen/v1/chat/completions'
 DIRECT_URL='https://opencode.ai/zen/v1/chat/completions'
 

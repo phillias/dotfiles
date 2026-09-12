@@ -14,7 +14,7 @@
       "name": "CfAiGw",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
@@ -32,7 +32,7 @@
       "name": "OpenCode Go (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
@@ -150,7 +150,7 @@
       "name": "OpenRouter (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
@@ -283,8 +283,11 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Cerebras",
       "options": {
-        "baseURL": "https://api.cerebras.ai/v1",
-        "apiKey": "{env:CEREBRAS_API_KEY}"
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/cerebras/v1",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode"
+        }
       },
       "models": {
         "llama3.3-70b": {
@@ -344,7 +347,11 @@
       "npm": "@ai-sdk/google",
       "name": "Google",
       "options": {
-        "apiKey": "{env:GOOGLE_API_KEY}"
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/google-ai-studio/v1beta",
+        "headers": {
+          "cf-aig-gateway-id": "opencode"
+        }
       },
       "models": {
         "gemini-2.5-flash": {
@@ -511,7 +518,7 @@
       "name": "OpenCode Zen (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-zen/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
@@ -877,7 +884,7 @@
       "name": "Cloudflare Workers AI",
       "options": {
         "baseURL": "https://api.cloudflare.com/client/v4/accounts/{env:CLOUDFLARE_ACCOUNT_ID}/ai/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
@@ -1069,7 +1076,7 @@
       "name": "Command Code (GOAT, AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-commandcode/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
@@ -1354,8 +1361,11 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "NVIDIA NIM",
       "options": {
-        "baseURL": "https://integrate.api.nvidia.com/v1",
-        "apiKey": "{env:NVIDIA_API_KEY}"
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-nvidia-nim/v1",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode"
+        }
       },
       "models": {
         "nvidia/nemotron-3-ultra-550b-a55b": {
@@ -1625,7 +1635,7 @@
       "name": "Z.AI Coding Plan Lite (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-zai-coding/v4",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
@@ -1671,7 +1681,7 @@
       "name": "Phoenix Grove Systems (AI Gateway)",
       "options": {
         "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-phoenixgrove/v1",
-        "apiKey": "{file:~/.config/opencode/.cf-ai-gw-token}",
+        "apiKey": "{file:~/.agents/keys/phillias/.cf-ai-gw}",
         "headers": {
           "cf-aig-gateway-id": "opencode",
           "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"

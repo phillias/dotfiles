@@ -85,7 +85,3 @@ jobs:
         run: |
           python3 -c "import json, re; strip = lambda p: re.sub(r'\s*\{\{.*?\}\}\s*', 'host', open(p).read(), flags=re.S); json.loads(open('private_dot_pi/fallback-chains.json').read()); json.loads(strip('private_dot_pi/private_agent/models.json.tmpl')); json.loads(open('private_dot_pi/private_agent/settings.json').read()); print('pi config valid')"
 
-      - name: Install and verify hermes-gateway
-        run: |
-          npm install -g hermes-gateway
-          hermes onboard --help || true

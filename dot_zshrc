@@ -302,9 +302,6 @@ if [ -f "$HOME/.agents/keys/.cloudflare-key" ]; then
     export CLOUDFLARE_API_KEY="$(cat $HOME/.agents/keys/.cloudflare-key)"
 fi
 export CLOUDFLARE_ACCOUNT_ID="a7fa198dd5b359a187c671064fe6b36e"
-if [ -f "$HOME/.agents/keys/.cf-ai-gw-token" ]; then
-    export CF_AI_GATEWAY_TOKEN="$(cat $HOME/.agents/keys/.cf-ai-gw-token)"
-fi
 if [ -f "$HOME/.agents/keys/.command-code-key" ]; then
     export COMMAND_CODE_API_KEY="$(cat $HOME/.agents/keys/.command-code-key)"
 fi

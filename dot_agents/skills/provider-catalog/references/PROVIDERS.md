@@ -32,7 +32,7 @@ Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes 
 
 All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/…` with header `cf-aig-gateway-id: opencode` and the gateway token.
 
-**Token:** `$CF_AI_GATEWAY_TOKEN` (exported from `~/.zshenv`, reading `~/.config/opencode/.cf-ai-gw-token`). The token covers both the `/ai/*` (Workers AI REST) and `/ai-gateway/*` planes. BYOK upstream keys live in the gateway dashboard (alias `default`); clients authenticate with the gateway token only, which the gateway does not forward upstream.
+**Token:** `$CF_AI_GATEWAY_TOKEN` (exported from `~/.zshenv`, reading `.cf-ai-gw` from the default keys profile — `~/.agents/keys/$(readlink ~/.agents/keys/default)/.cf-ai-gw`). The token covers both the `/ai/*` (Workers AI REST) and `/ai-gateway/*` planes. BYOK upstream keys live in the gateway dashboard (alias `default`); clients authenticate with the gateway token only, which the gateway does not forward upstream.
 
 | Provider | URL segment | Notes |
 |---|---|---|
@@ -212,9 +212,6 @@ DYNAMIC-route caveat: model nodes naming bare custom-provider names
 - opencode (`dot_config/opencode/opencode.json`): provider `cf-aig-dynamic`
   with the four dynamic-route model keys; top-level `model` = `cf-aig-dynamic/dynamic/TUI`;
   agent/category chains unchanged (fallback jsonc tail unchanged).
-- hermes: provider config lives outside `dot_config/hermes/config.yaml.tmpl`
-  (its template has no model/provider keys) — to be wired once hermes's
-  provider config file location is confirmed by the captain.
 
 ## Gateway route node types beyond the linear ladder (2026-09-05)
 
