@@ -10,8 +10,10 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 # Non-default profiles are selected by consumers via explicit path, never auto-loaded.
 # Filename -> env var mapping: .cf-ai-gw -> CF_AI_GATEWAY_TOKEN.
 _default_profile="$(readlink "$HOME/.agents/keys/default" 2>/dev/null)" || _default_profile=""
-if [ -n "$_default_profile" ] && [ -d "$HOME/.agents/keys/$_default_profile" ]; then
-	[ -r "$HOME/.agents/keys/$_default_profile/.cf-ai-gw" ] && export CF_AI_GATEWAY_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.cf-ai-gw")"
+if [ -z "$_default_profile" ] || [ ! -d "$HOME/.agents/keys/$_default_profile" ]; then
+	[ -t 0 ] && printf 'zshenv: ~/.agents/keys/default symlink missing; not exporting key profile vars\n' >&2
+else
+	[ -r "$HOME/.agents/keys/$_default_profile/.cf-ai-gw" ] && export CF_AI_GATEWAY_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.cf-ai-gw")" || { [ -t 0 ] && printf 'zshenv: ~/.agents/keys/%s/.cf-ai-gw missing or unreadable; not exporting CF_AI_GATEWAY_TOKEN\n' "$_default_profile" >&2; }
 fi
 unset _default_profile
 

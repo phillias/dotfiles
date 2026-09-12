@@ -40,7 +40,6 @@ const SKILL_PROVIDERS_MD = join(
   HOME,
   ".agents/skills/provider-catalog/references/PROVIDERS.md"
 );
-const GW_TOKEN_FILE = join(HOME, ".config/opencode/.cf-ai-gw-token");
 const BASE_URL =
   "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat";
 const EXPECTED_ROUTES = ["TUI", "high", "pr-gate", "vision"];
@@ -238,12 +237,12 @@ function providerWindow() {
 }
 
 function main() {
-  if (!existsSync(GW_TOKEN_FILE)) {
-    logEvent("audit_error", { detail: "gateway token file missing" });
-    console.error("dynamic-audit: gateway token file missing");
+  const token = (process.env.CF_AI_GATEWAY_TOKEN || "").trim();
+  if (!token) {
+    logEvent("audit_error", { detail: "CF_AI_GATEWAY_TOKEN missing" });
+    console.error("dynamic-audit: CF_AI_GATEWAY_TOKEN missing");
     process.exit(2);
   }
-  const token = readFileSync(GW_TOKEN_FILE, "utf8").trim();
 
   const driftExit = configDrift();
 

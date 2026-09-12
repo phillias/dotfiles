@@ -631,7 +631,7 @@ if $IS_MAC; then
     echo "==> macOS: use launchd for auto-sync"
 else
     L="*/30 * * * * export PATH=\$HOME/bin:\$HOME/.local/bin:\$PATH; chezmoi-sync-cron"
-    { { crontab -l 2>/dev/null || true; } | grep -Ev 'chezmoi-sync-cron|chezmoi update >>.*chezmoi-sync\.log' || true; echo "$L"; } | crontab -
+    { { crontab -l 2>/dev/null || true; } | grep -Ev 'chezmoi-sync-cron|chezmoi-axi sync.*chezmoi-sync\.log|chezmoi update >>.*chezmoi-sync\.log' || true; echo "$L"; } | crontab -
     echo "==> Cron: chezmoi-sync-cron every 30 min"
 fi
 
