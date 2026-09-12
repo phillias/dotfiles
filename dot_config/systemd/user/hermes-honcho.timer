@@ -1,0 +1,10 @@
+[Unit]
+Description=Honcho scheduler health check — restarts if stale
+Documentation=https://github.com/phillias/dotfiles
+
+[Timer]
+OnCalendar=*-*-* *:0/15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

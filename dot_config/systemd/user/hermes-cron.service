@@ -1,0 +1,15 @@
+[Unit]
+Description=Hermes cron job runner
+Documentation=https://github.com/phillias/dotfiles
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/hermes cron run --all
+EnvironmentFile=%h/.hermes-env
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target

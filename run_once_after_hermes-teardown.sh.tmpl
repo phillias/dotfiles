@@ -1,9 +1,0 @@
-#!/bin/bash
-# Self-cleaning teardown for retired hermes systemd units. Chezmoi no longer
-# manages the hermes unit files, but on already-deployed machines the timers
-# stay enabled after apply and trip systemd against missing ExecStart binaries.
-# This tears them down for users with an active systemd user session;chezmoi
-# removes the managed unit files itself.
-
-systemctl --user disable --now hermes-cron.timer hermes-honcho.timer hermes-cron.service hermes-honcho.service 2>/dev/null || true
-systemctl --user daemon-reload 2>/dev/null || true

@@ -1,0 +1,50 @@
+# ~/.hermes-env — chezmoi-managed
+# Hermes+Honcho environment variables.
+# Source this file in systemd service units or shell.
+
+# ── mybrain paths ──────────────────────────────────────────────
+export MYBRAIN_HOME="{{ dig "mybrain" "repoPath" "$HOME/mybrain" . }}"
+export MYBRAIN_DB_PATH="${MYBRAIN_HOME}/data/brain.db"
+export MYBRAIN_RUNNER_IMAGE="{{ dig "mybrain" "runnerImage" "python:3.11-slim" . }}"
+
+# ── Hermes ─────────────────────────────────────────────────────
+export HERMES_HOME="${HOME}/.local/share/hermes"
+export HERMES_CONFIG="${HOME}/.config/hermes/config.yaml"
+export HERMES_CRON_JOBS="${HERMES_HOME}/cron/jobs.json"
+export HERMES_IMAGE_CACHE_DIR="${HERMES_HOME}/cache/images"
+export HERMES_DOCUMENT_CACHE_DIR="${HERMES_HOME}/cache/documents"
+export HERMES_AUDIO_CACHE_DIR="${HERMES_HOME}/cache/audio"
+export HERMES_LOG_LEVEL="{{ dig "hermes" "logLevel" "info" . }}"
+
+# ── Honcho ─────────────────────────────────────────────────────
+export HONCHO_CONFIG="${HOME}/.config/honcho/jobs.yaml"
+
+# ── API Keys (secrets come from age-encrypted dotfiles) ────────
+# These are populated from ~/.config/hermes/env (chezmoi-managed, age-encrypted).
+# If the file exists, source it for the secret values.
+_HERMES_SECRETS="${HOME}/.config/hermes/env"
+if [ -f "$_HERMES_SECRETS" ]; then
+  set -a
+  source "$_HERMES_SECRETS"
+  set +a
+fi
+
+# ── AI Gateway routing (identity tracking) ──────────────────────
+# When Hermes job scripts or MCP servers make AI API calls, route
+# through CF AI Gateway with identity tracking by harness+host.
+# 
+# Example for scripts using Anthropic SDK:
+# export ANTHROPIC_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
+# export ANTHROPIC_API_KEY="${CF_AI_GATEWAY_TOKEN}"
+# export ANTHROPIC_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"hermes","host":"{{ .chezmoi.hostname }}","agent":"cron-job"}'
+#
+# Example for scripts using OpenAI SDK:
+# export OPENAI_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
+# export OPENAI_API_KEY="${CF_AI_GATEWAY_TOKEN}"
+#
+# For direct gateway calls using the dynamic/TUI route:
+# export HERMES_MODEL_ROUTE="cf-aig-dynamic/dynamic/TUI"
+#
+# Scripts should use $HERMES_MODEL_ROUTE as the model string when
+# making AI calls through the gateway with identity tracking.
+unset _HERMES_SECRETS
