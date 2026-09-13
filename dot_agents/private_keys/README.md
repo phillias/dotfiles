@@ -3,7 +3,9 @@
 Owner documentation for the `~/.agents/keys` key-profile scheme: flat keys plus
 per-profile key directories, and the shell-level loader contract.
 
-Applied by chezmoi via `dot_agents/keys/README.md` → `~/.agents/keys/README.md`.
+Applied by chezmoi via `dot_agents/private_keys/README.md` →
+`~/.agents/keys/README.md` (the `chezmoi add` convention target for the
+live `~/.agents/keys` dir).
 
 ## Layout
 
