@@ -34,15 +34,18 @@ auto_fix:
   document: 0
   ci: 0
 
-# --- Review-guide availability without forking (on-ramp note; deliberately
-# LEFT COMMENTED in this pass — gate suppression semantics are NOT changing).
-# disable_project_settings: true (repo-level, respected only on the trusted
-# default branch) is the supported switch that conditionally passes repo
-# AGENTS.md review guidance to the gate agent instead of the
-# --no-context-files harness flag currently in dot_no-mistakes/config.yaml
-# (agent_args_override.pi). Cross-reference: no-mistakes repo docs,
-# "disable_project_settings". Reason for any future per-repo flip must be
-# authored here BEFORE enabling: exempt only repos whose
-# apply target is not the whole home directory (dotfiles-style failures like
-# the 2026-09-02 stale-path incident are the counterexample).
-# disable_project_settings: true
+# --- Review-guide posture register (suppressed-posture entry). Enabled
+# 2026-09-13 (captain decision, per-repo posture now authoritative instead of
+# the removed --no-context-files harness flag in dot_no-mistakes/config.yaml):
+# agent-orchestration/apply-target-is-the-home surfaces run suppressed — the
+# gate validation agent must not adopt home AGENTS.md authority, because this
+# repo's apply target is the ENTIRE home directory on every fleet host and
+# stale guidance would be applied everywhere (2026-09-02 stale-path incident
+# is the counterexample class). disable_project_settings (repo-level) is
+# respected only on the trusted default branch. Cross-reference: no-mistakes
+# repo docs, "disable_project_settings".
+#
+# Fleet convention: unset/false (default) -> repo AGENTS.md review guides flow
+# to the gate agent; true -> suppressed. Any future flip must be authored here
+# BEFORE enabling.
+disable_project_settings: true
