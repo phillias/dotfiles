@@ -4,10 +4,13 @@
 	name = glm-5.2@InspironOne
 	email = phillias@InspironOne.local
 
-[credential "https://github.com/masculinecache"]
-	helper = !GH_CONFIG_DIR="$HOME"/.config/gh-masculinecache /usr/bin/gh auth git-credential
 [credential "https://github.com"]
 	helper = 
 	helper = !"$HOME"/.local/bin/gh-credential-dispatch
 [credential]
 	useHttpPath = true
+
+[includeIf "hasconfig:remote.*.url:https://github.com/masculinecache/*"]
+	path = ~/.config/git/masculinecache.gitconfig
+[includeIf "hasconfig:remote.*.url:git@github.com:masculinecache/*"]
+	path = ~/.config/git/masculinecache.gitconfig
