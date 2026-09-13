@@ -29,7 +29,22 @@ npm.shell_out = true
 # subdir (module root has no non-test Go files). 1.60.2: the global config
 # schema (review_agent_timeout etc.) post-dates 1.53.0 — strict unmarshal
 # rejects it there; 1.60.2 is the release line the fleet config targets.
-"go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes" = "1.60.2"
+# 1.72.0 (2026-09-13 bump): catches the v1.60.2→v1.72.0 maintenance line —
+# pipeline features shipped between the two release lines; the fleet global
+# config (dot_no-mistakes/config.yaml) parses on 1.72.0 per `no-mistakes
+# doctor` (not the pi thinking-mode tool_choice issue).
+"go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes" = "1.72.0"
+# semgrep — deterministic static-analysis security gate for the dotfiles repo
+# (scripts/validate.sh). Matches SonarQube-class findings (OSS rule packs,
+# taint mode) without standing up a Sonar server. Pinned equality-only: semgrep
+# doesn't guarantee replays, so CI never resolves a floating range. 1.177.0 is
+# current but ships only manylinux_2_34 wheels; this host's fleet baseline is
+# glibc 2.31 (Ubuntu), so the newest release still publishing manylinux2014
+# (glibc-2.17-compatible) wheels is 1.157.0 — pinned to that for portability.
+"pipx:semgrep" = "1.157.0"
+# gitleaks — deterministic secret-leak gate for the dotfiles repo
+# (scripts/validate.sh), default ruleset; equality-only pin.
+"github:gitleaks/gitleaks" = "8.30.1"
 # @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
 # The working `pi` is @earendil-works/pi-coding-agent@0.84.2 (legacy global, kept).
 # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).

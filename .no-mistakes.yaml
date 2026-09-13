@@ -3,6 +3,24 @@
 # instead of waiting for checks that never register.
 no_ci: true
 
+# --- CI replay-workflow hardening pattern (documentation only; dotfiles stays
+# no_ci: true and its existing CI surface is structural/tool-config-only, with
+# NO PR-code-checkout steps today). For the next repo that adopts a PR-review
+# job, the hardened pattern is:
+#   1. PR-triggered jobs (pull_request) must pin the action SHAs, not branch
+#      tags (actions/checkout@<sha>), and reuse a repo-own runner set.
+#   2. Never check out PR head with full write tokens: checkout uses
+#      persist-credentials: false, and any push/review replay runs from the
+#      *base* branch of a trusted workflow instead of the PR checkout.
+#   3. "Replay" of review/test jobs on the same PR head is re-triggered only
+#      by re-running the workflow (gh run rerun / rebase land), never by a
+#      comment-triggered dispatch that merges untrusted fork checks into a
+#      privileged context.
+#   4. Gate commands (scripts/validate.sh, semgrep, gitleaks) are invoked from
+#      a single repo-owned script so tool config lives in the repo, not in
+#      inline CI YAML.
+# Keep this block next to the no_ci declaration so the two are read together.
+
 # (2026-09-02 stale-path incident) This repo's apply target is the ENTIRE home
 # directory of every fleet host that runs chezmoi against it. No pipeline step
 # may auto-fix anything here: every finding escalates to a human decision.
@@ -15,3 +33,16 @@ auto_fix:
   review: 0
   document: 0
   ci: 0
+
+# --- Review-guide availability without forking (on-ramp note; deliberately
+# LEFT COMMENTED in this pass — gate suppression semantics are NOT changing).
+# disable_project_settings: true (repo-level, respected only on the trusted
+# default branch) is the supported switch that conditionally passes repo
+# AGENTS.md review guidance to the gate agent instead of the
+# --no-context-files harness flag currently in dot_no-mistakes/config.yaml
+# (agent_args_override.pi). Cross-reference: no-mistakes repo docs,
+# "disable_project_settings". Reason for any future per-repo flip must be
+# authored here BEFORE enabling: exempt only repos whose
+# apply target is not the whole home directory (dotfiles-style failures like
+# the 2026-09-02 stale-path incident are the counterexample).
+# disable_project_settings: true

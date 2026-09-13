@@ -127,8 +127,9 @@ intent:
 # gathers to demonstrate the change works). By default they are kept in a
 # temporary directory and referenced by local path. Opt in to store_in_repo to
 # commit them into the repo under a readable, branch-named directory so they are
-# pushed and render directly on the PR.
-# test:
-#   evidence:
-#     store_in_repo: true
-#     dir: .no-mistakes/evidence
+# pushed and render directly on the PR. Enabled 2026-09-13 (no longer commented
+# out — schema verified against no-mistakes 1.72.0 via `no-mistakes doctor`).
+test:
+  evidence:
+    store_in_repo: true
+    dir: .no-mistakes/evidence
