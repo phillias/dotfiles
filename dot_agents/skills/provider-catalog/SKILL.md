@@ -14,3 +14,12 @@ Read `references/PROVIDERS.md` for the provider table, gateway URL segments, BYO
 ## Deterministic dynamic-route audit
 
 Route health prefers `~/.config/opencode/scripts/dynamic-audit.mjs` (scheduled; hourly cron), never a live LLM probe: transcript at `~/.local/state/opencode-fleet/dynamic-audit.jsonl` ("dynamic-audit.jsonl"). See `references/PROVIDERS.md` §"Deterministic dynamic-route audit" for the test list, log schema, and the interactive-LLM interrogation procedure. Ask the captain before mutating any gateway route — `served_model` counts in the audit log are the evidence base.
+
+## Catalog maintenance pre-approval (captain, 2026-09-14)
+
+Whenever a review effort touches this catalog — route rebuilds, model swaps, pricing or staleness findings — the reviewing agent is pre-approved to, without asking per instance:
+
+1. Update `references/PROVIDERS.md` and `models.snapshot.json` in place, in both the installed copy and the dotfiles source (`~/.local/share/chezmoi/dot_agents/skills/provider-catalog/`).
+2. Commit, push a branch, and open a PR to the dotfiles repo.
+
+Verify facts against live lanes before recording; record a price only when verified upstream or explicitly marked as a family-band carry. This pre-approval covers catalog files and dotfiles PRs only — gateway route mutation still follows the ask-first rule above unless the captain ordered that exact route change.

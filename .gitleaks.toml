@@ -1,0 +1,37 @@
+# gitleaks allowlist for the dotfiles repo — verified false positives 2026-09-14 (PR #299).
+# Extends the default ruleset; suppresses only third-party skill documentation
+# examples (public Cloudflare docs mirrored into skills) and one SSH-config
+# prose comment. Any NEW finding in these areas still surfaces unless it
+# matches an identical fingerprint.
+[extend]
+useDefault = true
+
+# Third-party skill documentation examples (public Cloudflare docs mirrored
+# into agent skills) — doc snippets, not secrets.
+[[allowlists]]
+description = "Cloudflare/workers skill reference-doc examples"
+paths = [
+  '''^dot_agents/skills/cloudflare/references/''',
+  '''^dot_agents/skills/workers-best-practices/references/rules\.md''',
+]
+
+# dot_ssh/config.tmpl:12 — "# Register ..." prose comment; identifiers only.
+[[allowlists]]
+description = "ssh-config comment prose (verified 2026-09-14)"
+paths = [
+  '''^dot_ssh/config\.tmpl''',
+]
+fingerprints = [
+  "4bd48df35ac00f4a286f55bbe4096e6950083ba4:dot_ssh/config.tmpl:generic-api-key:12",
+]
+
+# Remediated 2026-06-10; live only in git history.
+[[allowlists]]
+description = "selfhost-infra-mgmt SKILL.md examples, remediated 2026-06-10"
+paths = [
+  '''^dot_config/opencode/skills/selfhost-infra-mgmt/''',
+]
+fingerprints = [
+  "fb7c6b11952a9cb733f242992d23034466a878d8:dot_config/opencode/skills/selfhost-infra-mgmt/SKILL.md:generic-api-key:348",
+  "fb7c6b11952a9cb733f242992d23034466a878d8:dot_config/opencode/skills/selfhost-infra-mgmt/SKILL.md:generic-api-key:456",
+]
