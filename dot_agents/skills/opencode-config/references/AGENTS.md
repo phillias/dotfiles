@@ -55,4 +55,4 @@ ce-* deliberately omits the Go stage — 35/51 personas are Go-pinned as primary
 
 `enabled: true` · `retry_on_errors: [400,401,402,403,429,500,502,503,504,529]` · `max_fallback_attempts: 15` · `cooldown_seconds: 60` · `timeout_seconds: 120` · `notify_on_fallback: true`.
 
-KTD6 constraints enforced at chain authoring: GPT-class models only via `opencode/` prefix; Ternary Bonsai never primary (single-shot only); ≤1-2 NIM models per chain; 400 stays in `retry_on_errors`.
+KTD6 constraints enforced at chain authoring: GPT-class **primary** models via the `opencode/` prefix in opencode harness chains (openrouter/GOAT GPT lanes are valid as fallbacks and gateway dynamic-route lanes — zen gpt-5.x itself is broken on chat/completions, so no `opencode/` lane can exist inside a gateway route graph); Ternary Bonsai never primary (single-shot only); ≤1-2 NIM models per chain; 400 stays in `retry_on_errors`.

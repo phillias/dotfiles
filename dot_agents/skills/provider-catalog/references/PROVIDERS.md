@@ -81,7 +81,7 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 
 - `zai-coding` uses `/v4` in the gateway URL (all others `/v1`).
 - `openrouter` keeps the native passthrough slug (`openrouter/`, not `custom-openrouter/`).
-- GPT routing (opencode): `opencode/gpt-5.x` works · `opencode-go/gpt-5.x` fails "Model not supported" · `opencode-zen/gpt-5.x` HTTP 400 (chat/completions, not `/v1/responses`). Re-verified 2026-09-14 via `custom-opencode-zen/v1` compat: `gpt-5.6-luna` and `gpt-5.5` both fail chat/completions with HTTP 500 "Internal server error" — still broken.
+- GPT routing (opencode): `opencode/gpt-5.x` works · `opencode-go/gpt-5.x` fails "Model not supported" · `opencode-zen/gpt-5.x` historically returned HTTP 400 (chat/completions, not `/v1/responses`); re-verified 2026-09-14 via `custom-opencode-zen/v1` compat: `gpt-5.6-luna` and `gpt-5.5` fail with HTTP 500 "Internal server error" — still broken; gateway dynamic routes ride `openrouter/openai/gpt-5.x` (or GOAT `custom-commandcode/gpt-5.x`) instead.
 
 ## pi retry semantics (pi-fallback-provider)
 
