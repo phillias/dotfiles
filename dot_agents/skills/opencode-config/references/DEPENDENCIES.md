@@ -8,14 +8,18 @@ The OpenCode config and the firstmate distro rely on a set of host tools. All pa
 |---|---|---|
 | opencode | the runtime itself; `oc` alias launches `opencode --port 42069` (bare TUI only serves `/`; attach fails without port) | system |
 | chezmoi | dotfiles source-of-truth (`~/.local/share/chezmoi`); configs are chezmoi-tracked, machine diffs via `.tmpl` | system |
-| gh | GitHub (issues/PRs/checks/releases); `gh-axi` skill wraps it | ~/bin/gh |
-| bw | Bitwarden CLI (vault/secrets); `bws-axi` skill wraps BWS | ~/bin/bw |
-| wrangler | Cloudflare Workers CLI (deploy/dev) | mise-managed (shim via `mise activate`) |
+| gh | GitHub (issues/PRs/checks/releases); `gh-axi` skill wraps it; identity router at `~/.local/bin/gh` (shipped via chezmoi) wraps the mise-managed gh | mise-managed (`mise` shim → `~/.local/share/mise/installs/gh/*`) |
+| bw | Bitwarden CLI (`@bitwarden/cli`); `bws-axi` skill wraps BWS | mise-managed (`npm:@bitwarden/cli`) |
+| wrangler | Cloudflare Workers CLI (deploy/dev) | mise-managed (`npm:wrangler`) |
 | sqlite3 | local DB reads + opencode.db session queries (commit identity resolution) | /usr/bin/sqlite3 |
 | no-mistakes | delivery-pipeline gate (PR/review/CI; dotfiles runs `no_ci: true` — empty forge checks pass) | ~/.local/bin/no-mistakes |
 | node | JSONC validation, drift scripts (catalog-drift.mjs) | system |
 | jq | JSON parsing (Zen model catalog checks) | system |
-| **mise** | declarative npm-global CLI fleet + per-project node pins; activated in zshrc | ~/.local/bin/mise |
+| **mise** | declarative manifest (global manifest owns gh, bw, wrangler + npm-global CLI fleet; per-project pins activated in zshrc) | ~/.config/mise/config.toml · binary ~/.local/bin/mise |
+
+### PATH precedence contract
+
+Non-interactive: `dot_zshenv` exports `$HOME/.local/bin` before mise shims (`$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH`), so bare `gh` reaches the shipped `~/.local/bin/gh` identity router first; the router's own PATH-resolution self-skip then finds the mise-managed gh shim for passthrough and within routed gh-ms identities. This order also keeps manifest tools (bw, wrangler) and shim-only runtimes (pi/node) resolvable headless. Interactive: `.zshrc` activates mise for versioned runtimes; `scripts/setup.sh` Phase 1 bootstraps mise before the manifest apply, pins gh/bw/wrangler inline (idempotent, guarded by manifest grep), then Phase 7's chezmoi apply makes `dot_config/mise/config.toml` the sole owner of `~/.config/mise/config.toml`. Known gap: `bws` (Bitwarden Secrets CLI) has no mise backend — still materialized by its skill/setup, flag for future batch.
 
 ## API keys (`~/.config/opencode/.*-key` files, chezmoi age-encrypted)
 

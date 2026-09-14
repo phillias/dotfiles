@@ -28,7 +28,7 @@ flowchart TD
 
         subgraph CONFIG["Configuration"]
             S["Shell<br/>zsh, bash, tmux, screen"]
-            SK["Agent Skills<br/>25+ synced skills"]
+            SK["Agent Skills<br/>60+ synced skills"]
             SEC["Encrypted Secrets<br/>age-encrypted at rest"]
             SYSD["Systemd Services<br/>Hermes, telemetry, tunnel"]
         end
@@ -72,7 +72,7 @@ flowchart TD
 |----------|-----------|
 | **Shell** | zsh, bash, tmux, screen, git |
 | **Agent Runtime** | OpenCode (50+ subagents, themes), Pi, Oh My Posh extensions, Herdr |
-| **Agent Skills** | 25+ synced skills (CE suite, AXI tools, Cloudflare, debugging, design) |
+| **Agent Skills** | 60+ synced skills (CE suite, AXI tools, Cloudflare, debugging, design) |
 | **Secrets** | All provider keys age-encrypted (Google, Cloudflare, Composio, Telegram, etc.) |
 | **Systemd** | Hermes, Honcho, catalog drift, self-improvement, telemetry, Cloudflare tunnel |
 | **SSH** | 6+ key pairs, all age-encrypted |
@@ -89,11 +89,10 @@ flowchart TD
 
 ```bash
 # On a new machine
-curl -fsSL https://get.chezmoi.io | sh
-chezmoi init --apply phillias
+curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/setup.sh | bash
 ```
 
-This clones the repo, applies all configs, installs age keys, and sets up agent environments.
+`scripts/setup.sh` bootstraps everything in one pass: chezmoi, then mise (the one installer for manifest-managed CLIs — gh, bw, wrangler and the npm-global fleet are versioned by the committed `dot_config/mise/config.toml`), GitHub auth + deploy key, chezmoi init, Bitwarden unlock, age-key decrypt, and `chezmoi apply`. Pre-mise hand-installed copies of gh/bw/wrangler in `~/bin` are removed best-effort; system copies are untouched. Known gap: `bws` (Bitwarden Secrets CLI) has no mise backend and is left outside the manifest. The shipped `dot_local/bin/executable_gh` (installed to `~/.local/bin/gh`) intentionally deviates from the legacy host copy: it resolves gh via PATH (skipping itself) rather than hard-coded `/usr/local/bin/gh`/`/usr/bin/gh`, so it also works on fresh mise-only hosts where no system gh binary exists.
 
 ## Secrets
 

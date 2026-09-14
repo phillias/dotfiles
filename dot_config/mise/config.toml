@@ -34,6 +34,11 @@ npm.shell_out = true
 # config (dot_no-mistakes/config.yaml) parses on 1.72.0 per `no-mistakes
 # doctor` (not the pi thinking-mode tool_choice issue).
 "go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes" = "1.72.0"
+# mise's registry-resolved gh tool (cli/cli release binary; verified via
+# `mise x gh@2.100.0 -- gh --version`). Replaces the ~/bin/gh hand-download
+# branch in scripts/setup.sh; the identity router (dot_local/bin/executable_gh)
+# wraps this mise binary.
+gh = "2.100.0"
 # semgrep — deterministic static-analysis security gate for the dotfiles repo
 # (scripts/validate.sh). Matches SonarQube-class findings (OSS rule packs,
 # taint mode) without standing up a Sonar server. Pinned equality-only: semgrep
