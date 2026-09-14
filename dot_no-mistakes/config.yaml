@@ -32,6 +32,16 @@ agent: pi
 agent_args_override:
   pi: [--model, "fallback/gate"]
 
+# Review role uses a dedicated fleet route (cf-aig-dynamic/dynamic/pr-reviewer):
+# budget-subsidized ladder (PGS plan glm-5.3-flash → zen nemotron-3-ultra-free →
+# GOAT pool nemotron-550b / Kimi-K3 → aihubmix claude-fable-5-1 → paid
+# openrouter gpt-5.6-luna → gemini floor). The fixer keeps the global chain.
+# (Schema: review_agents.{reviewer,fixer}; verified against no-mistakes 1.72.0.)
+review_agents:
+  reviewer:
+    agent: pi
+    model: cf-aig-dynamic/dynamic/pr-reviewer
+
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
 
