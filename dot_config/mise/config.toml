@@ -70,3 +70,4 @@ opencode = "1.18.29"
 # treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
 # standalone installer copy, the manifest now owns it)
 "github:kunchenguid/treehouse" = "2.3.0"
+go = "1.25"
