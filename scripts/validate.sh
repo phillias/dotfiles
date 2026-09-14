@@ -37,17 +37,34 @@ if semgrep_run --version >/dev/null 2>&1; then
   # so pre-existing findings elsewhere are NOT re-raised by this gate. Without
   # a base (detached/bootstrapped checkout) the repo-wide scan is skipped and
   # reported distinctly rather than failing on the pre-existing baseline.
+  # Scope to the files changed vs the PR base (open PR commits + working tree)
+  # plus UNTRACKED non-ignored files, so a brand-new file is scanned too.
+  # NUL-delimited everywhere so paths with spaces/globs stay single entries.
+  # Without a base (detached/bootstrapped checkout) the repo-wide scan is
+  # skipped and reported distinctly rather than failing on the pre-existing
+  # baseline.
   base="origin/master"
   base_ref="$base"
   git cat-file -e "$base" 2>/dev/null || base_ref="master"
   if git rev-parse --verify -q "$base_ref" >/dev/null; then
-    changed=$( { git diff --name-only "$base_ref...HEAD" 2>/dev/null; git diff --name-only "$base_ref" 2>/dev/null; } | sort -u | tr '\n' ' ')
+    changed_files=()
+    while IFS= read -r -d '' f; do
+      # Filter to files that EXIST: deleted diff paths must not reach the
+      # scanners, and untracked files are always present in the worktree.
+      [ -f "$f" ] || continue
+      changed_files+=("$f")
+    done < <(
+      {
+        git diff --name-only -z "$base_ref...HEAD" 2>/dev/null
+        git diff --name-only -z "$base_ref" 2>/dev/null
+        git ls-files --others --exclude-standard -z
+      } | sort -zu
+    )
   else
-    changed=""
+    changed_files=()
   fi
-  if [ -n "$changed" ]; then
-    # shellcheck disable=SC2086
-    semgrep_run scan --error --config "$SEMGREP_RULESET" $changed || fail=1
+  if [ "${#changed_files[@]}" -gt 0 ]; then
+    semgrep_run scan --error --config "$SEMGREP_RULESET" "${changed_files[@]}" || fail=1
   else
     echo "note: no PR-base diff context (detached HEAD / empty diff) — repo-wide semgrep skipped (121 pre-existing baseline findings at 1.157.0, 2026-09-13)"
   fi
@@ -61,9 +78,8 @@ gitleaks_run() { mise x "github:gitleaks/gitleaks@8.30.1" -- gitleaks "$@"; }
 if gitleaks_run version >/dev/null 2>&1; then
   # Same changed-file scoping as semgrep; the repo tree holds 7 pre-existing
   # gitleaks findings (2026-09-13 baseline) which are reported, not gated here.
-  if [ -n "${changed:-}" ]; then
-    for f in $changed; do
-      [ -f "$f" ] || continue
+  if [ "${#changed_files[@]}" -gt 0 ]; then
+    for f in "${changed_files[@]}"; do
       gitleaks_run dir "$f" --no-banner --redact || fail=1
     done
   else
