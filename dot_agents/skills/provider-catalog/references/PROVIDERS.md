@@ -137,15 +137,17 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   (caution 2026-09-08: aihubmix began 200-wrapped 404s — verify before
   trusting that head lane).
 - `pr-gate` — no-mistakes gate/background ladder, **linear** (conditionals
-  removed 2026-09-14, version `6ed05d99`): phase dispatch was removed because
-  no client can supply the metadata — no-mistakes/pi send identical requests
-  for every phase, and CF conditionals match `metadata.*` only (body
-  conditions validate but never evaluate). Ladder: nemotron-3-super (NIM) →
-  lightning:free → zen nemotron → openrouter luna → GOAT GLM-5.2/Kimi-K3/
-  nemotron-550b/ds-v4-flash → PGS `deepseek-v4-flash-0731` (plan/PAYG tail) →
-  gemini-2.5-flash floor. Reviewer phase routing stays on the separate
-  `pr-reviewer` route; re-introduce conditionals only if a client can send
-  `cf-aig-metadata` phase values.
+  removed 2026-09-14 version `6ed05d99`; **openrouter `:free` lanes removed
+  version `91701376`** after three no-mistakes run deaths): openrouter free
+  lanes 200-wrap Nvidia-pool overload errors ("Service temporarily
+  overloaded") — the route's success edge passes the error body verbatim,
+  killing runs exactly when the pool is loaded (pipeline bursts 429 NIM m0 →
+  the openrouter lane catches it poisoned). Ladder: nemotron-3-super (NIM) →
+  zen nemotron → openrouter luna (paid, non-Nvidia upstream) → GOAT
+  GLM-5.2/Kimi-K3/nemotron-550b/ds-v4-flash → PGS `deepseek-v4-flash-0731`
+  (plan/PAYG tail) → gemini floor. Reviewer phase routing stays on the
+  separate `pr-reviewer` route; re-introduce conditionals only if a client
+  can send `cf-aig-metadata` phase values.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer

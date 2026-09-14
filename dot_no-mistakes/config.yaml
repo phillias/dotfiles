@@ -15,12 +15,15 @@ agent: pi
 # harness that avoids that adapter path entirely.
 #
 # Gate reserves the model's full output budget for structured review output, so
-# a 1M-context model is required for large diffs. The pin is the cost-ordered
-# `fallback/gate` chain (~/.pi/fallback-chains.json): it leads with the openrouter :free trio
-# (nemotron-3.5-lightning, minimax-m3, inkling), then opencode-zen gemini-3.5-flash,
-# the GOAT paid-pool 1M models, paid lanes (openrouter/openai/gpt-5.6-luna),
-# then phoenixgrove/glm-5.3-flash and gemini/gemini-2.5-flash at the tail as
-# manual fallbacks.
+# a 1M-context model is required for large diffs. The pin is the
+# `fallback/gate` chain (~/.pi/fallback-chains.json), 2026-09-14 shape:
+# cf-aig-dynamic/dynamic/pr-gate (the gateway's linear free-first ladder) →
+# opencode-go/deepseek-v4-flash (1M, subsidized pool — session-gated, so it can
+# only ride pi directly, never a gateway route) → openrouter-direct
+# thinkingmachines/inkling:free (1M, free — harness-gated upstream that 403s
+# any gateway hop, so it rides pi's own client signature via the direct
+# openrouter.ai provider entry). kimi-k2.6 is excluded: 262K < the gate's 1M
+# bar.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -29,8 +32,15 @@ agent: pi
 # trusted per-repo `disable_project_settings` option: the dotfiles repo sets it
 # true (suppressed posture; its apply target is the entire home directory), all
 # other repos leave it unset/false so repo AGENTS.md review guides flow.
-agent_args_override:
-  pi: [--model, "fallback/gate"]
+# (2026-09-14) The global pi model pin moved from agent_args_override into
+# agent_config: agent_args_override native argv always wins over the same
+# knob, which silently nullified review_agents.reviewer.model (review steps
+# kept riding fallback/gate head dynamic/pr-gate). Profile-level model lets
+# review_agents.reviewer.model win for review steps only; all other steps
+# keep fallback/gate.
+agent_config:
+  pi:
+    model: fallback/gate
 
 # Review role uses a dedicated fleet route (cf-aig-dynamic/dynamic/pr-reviewer):
 # budget-subsidized ladder (PGS plan glm-5.3-flash → zen nemotron-3-ultra-free →
