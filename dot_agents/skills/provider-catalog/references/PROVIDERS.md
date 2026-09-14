@@ -197,6 +197,7 @@ Empirical facts from rebuilding `dynamic/pr-reviewer` (versions deployed, probed
 - **END is implicit:** route-version `elements` must NOT include a literal END element (validation fails `elements[n].outputs Required`); the last model node's `outputs.fallback` targets the string `"END"`.
 - **zen `glm-5.2`:** free lane confirmed live ($0/$0 row; probes 200 with real content). Thinking model consumes small `max_tokens` budgets before emitting content — probe with ≥500.
 - **openrouter `nvidia/nemotron-3-ultra-550b-a55b:free`:** real but transiently "Upstream error from Nvidia: Service temporarily overloaded" — the budget-lane flakiness matches historical parse-failure windows.
+- **Conditional conditions match `metadata.*` only (empirical 2026-09-14):** body-referencing condition paths (`body.*`, `messages.*`) VALIDATE cleanly but never evaluate — unresolvable paths are truthy (both branches saw the true-node serve regardless of content), and `$regex` on them errors the request outright (null response, no fallback). Only `metadata.*` conditions dispatch reliably; pi/no-mistakes send static `cf-aig-metadata`, so per-phase body-content branching has no working zero-patch path. Keep route conditions metadata-only until CF ships body matching.
 
 ### Custom providers (gateway BYOK, dashboard-only management)
 
