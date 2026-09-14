@@ -21,8 +21,16 @@ agent: pi
 # the GOAT paid-pool 1M models, paid lanes (openrouter/openai/gpt-5.6-luna),
 # then phoenixgrove/glm-5.3-flash and gemini/gemini-2.5-flash at the tail as
 # manual fallbacks.
+# (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
+# harness flag. That flag only stops AGENTS.md /
+# CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
+# never suppressed (verified against pi 0.84.2 --help) — so it was a poor
+# proxy for "no repo review-guide posture". Suppression now rides solely on the
+# trusted per-repo `disable_project_settings` option: the dotfiles repo sets it
+# true (suppressed posture; its apply target is the entire home directory), all
+# other repos leave it unset/false so repo AGENTS.md review guides flow.
 agent_args_override:
-  pi: [--no-context-files, --model, "fallback/gate"]
+  pi: [--model, "fallback/gate"]
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
