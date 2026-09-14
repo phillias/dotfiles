@@ -98,6 +98,7 @@ Design invariants:
 .google-client-secret GOOGLE_CLIENT_SECRET   .qwen-key         QWEN_API_KEY
 .fireworks-key       FIREWORKS_API_KEY       .synthetic-key    SYNTHETIC_API_KEY
                                              .kenari-key       KENARI_API_KEY
+                                             .seevio-key       SEEVIO_API_KEY
 ```
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
