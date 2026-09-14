@@ -81,7 +81,7 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 
 - `zai-coding` uses `/v4` in the gateway URL (all others `/v1`).
 - `openrouter` keeps the native passthrough slug (`openrouter/`, not `custom-openrouter/`).
-- GPT routing (opencode): `opencode/gpt-5.x` works · `opencode-go/gpt-5.x` fails "Model not supported" · `opencode-zen/gpt-5.x` HTTP 400 (chat/completions, not `/v1/responses`).
+- GPT routing (opencode): `opencode/gpt-5.x` works · `opencode-go/gpt-5.x` fails "Model not supported" · `opencode-zen/gpt-5.x` HTTP 400 (chat/completions, not `/v1/responses`). Re-verified 2026-09-14 via `custom-opencode-zen/v1` compat: `gpt-5.6-luna` and `gpt-5.5` both fail chat/completions with HTTP 500 "Internal server error" — still broken.
 
 ## pi retry semantics (pi-fallback-provider)
 
@@ -139,6 +139,13 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   ladder; faithful to the hand-tuned pi gate chain.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
+- `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
+  rides `cf-aig-dynamic/dynamic/pr-reviewer` via `review_agents.reviewer`
+  (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14):
+  `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` →
+  `openrouter/openai/gpt-5.6-luna` →
+  `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
+  `custom-opencode-zen/glm-5.2`.
 
 Owner defaults (2026-09-04): pi `default` chain = `cf-aig-dynamic/dynamic/TUI`
 exactly; pi `gate` chain = `cf-aig-dynamic/dynamic/pr-gate` exactly;
@@ -171,6 +178,16 @@ error surfaces only when the real head is healthy.
 Corollary: an opencode agent loop fed this error spins ~1 step/1.5s (1,300+
 steps, 71min CPU before SIGINT on kali) — runaway `loop step=` growth in
 `~/.local/share/opencode/log/opencode.log` is the signature.
+
+### Route-graph facts (2026-09-14, pr-reviewer rebuild)
+
+Empirical facts from rebuilding `dynamic/pr-reviewer` (versions deployed, probed with `cf-aig-skip-cache: true`):
+
+- **NIM end-of-life rows — snapshot was stale:** `deepseek-ai/deepseek-v4-flash` EOL 2026-08-07 and `z-ai/glm-5.2` EOL 2026-08-21 (both 410 Gone on `custom-nvidia-nim`). Live NIM replacements from `/v1/models`: `deepseek-ai/deepseek-v4-flash-0731` (snapshot row now `-0731`, family-band price $0.14/$0.28 carried, not independently verified) and `z-ai/glm-5.3-flash` (price unverified, no snapshot row).
+- **Provider naming in route graphs:** bare custom-provider names are dead — the pr-reviewer head fell through with provider `nvidia-nim`; `custom-nvidia-nim` serves. The custom- prefix rule above is empirically confirmed. **pr-gate m1 still uses bare `nvidia-nim`** (`nvidia/nemotron-3-super-120b-a12b`) — suspected silently-dead node that always falls through; fix = rename to `custom-nvidia-nim`, not yet applied.
+- **END is implicit:** route-version `elements` must NOT include a literal END element (validation fails `elements[n].outputs Required`); the last model node's `outputs.fallback` targets the string `"END"`.
+- **zen `glm-5.2`:** free lane confirmed live ($0/$0 row; probes 200 with real content). Thinking model consumes small `max_tokens` budgets before emitting content — probe with ≥500.
+- **openrouter `nvidia/nemotron-3-ultra-550b-a55b:free`:** real but transiently "Upstream error from Nvidia: Service temporarily overloaded" — the budget-lane flakiness matches historical parse-failure windows.
 
 ### Custom providers (gateway BYOK, dashboard-only management)
 
