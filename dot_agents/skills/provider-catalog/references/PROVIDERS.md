@@ -136,16 +136,16 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   appears) from reliable providers; aihubmix GLM discount lane sits top
   (caution 2026-09-08: aihubmix began 200-wrapped 404s — verify before
   trusting that head lane).
-- `pr-gate` — no-mistakes gate/background ladder, **stage-dispatched on
-  `cf-aig-metadata` `phase`** (redesigned 2026-09-14, version `b7701729`):
-  `phase=reviewer` → reviewer ladder (NIM deepseek-v4-flash-0731 → openrouter
-  gpt-5.6-luna → openrouter nemotron:free → zen glm-5.2, JSON discipline);
-  `phase=document` → gemini-2.5-flash → zen glm-5.2 → GOAT deepseek-v4-flash;
-  default → nemotron-3-super (NIM) → lightning:free → zen nemotron → luna →
-  GOAT GLM-5.2/Kimi-K3/nemotron-550b/ds-v4-flash → PGS deepseek-v4-flash-0731
-  (plan/PAYG tail) → gemini floor. **No harness sends `phase` yet** — wiring
-  (pi provider entries with static phase headers) is pending; until then only
-  the default ladder carries real traffic.
+- `pr-gate` — no-mistakes gate/background ladder, **linear** (conditionals
+  removed 2026-09-14, version `6ed05d99`): phase dispatch was removed because
+  no client can supply the metadata — no-mistakes/pi send identical requests
+  for every phase, and CF conditionals match `metadata.*` only (body
+  conditions validate but never evaluate). Ladder: nemotron-3-super (NIM) →
+  lightning:free → zen nemotron → openrouter luna → GOAT GLM-5.2/Kimi-K3/
+  nemotron-550b/ds-v4-flash → PGS `deepseek-v4-flash-0731` (plan/PAYG tail) →
+  gemini-2.5-flash floor. Reviewer phase routing stays on the separate
+  `pr-reviewer` route; re-introduce conditionals only if a client can send
+  `cf-aig-metadata` phase values.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
