@@ -29,8 +29,15 @@ agent: pi
 # trusted per-repo `disable_project_settings` option: the dotfiles repo sets it
 # true (suppressed posture; its apply target is the entire home directory), all
 # other repos leave it unset/false so repo AGENTS.md review guides flow.
-agent_args_override:
-  pi: [--model, "fallback/gate"]
+# (2026-09-14) The global pi model pin moved from agent_args_override into
+# agent_config: agent_args_override native argv always wins over the same
+# knob, which silently nullified review_agents.reviewer.model (review steps
+# kept riding fallback/gate head dynamic/pr-gate). Profile-level model lets
+# review_agents.reviewer.model win for review steps only; all other steps
+# keep fallback/gate.
+agent_config:
+  pi:
+    model: fallback/gate
 
 # Review role uses a dedicated fleet route (cf-aig-dynamic/dynamic/pr-reviewer):
 # budget-subsidized ladder (PGS plan glm-5.3-flash → zen nemotron-3-ultra-free →
