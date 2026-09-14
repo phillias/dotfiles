@@ -90,7 +90,7 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 ## Live statuses (dated; verify with quota-axi)
 
 - 2026-08-30: big-pickle → FreeUsageLimitError (falls through); zai-coding → 429, weekly reset 2026-09-02.
-- 2026-09-14 (corrected same day): the PGS plan DOES cover `glm-5.3-flash` — the morning 402 `insufficient_quota` was transient; the plan key serves both `glm-5.3-flash` and `deepseek-v4-flash-0731` (200). Remaining gap: the gateway's `custom-phoenixgrove` BYOK upstream key still 402s glm-5.3-flash while the plan key serves — the dashboard-stored key is not the current plan key. Swap it dashboard-side (dashboard BYOK update, captain action) to revive the TUI head lane and any phoenixgrove lanes; until then those lanes fall through one hop.
+- 2026-09-14 (corrected same day, captain-confirmed): PGS is **Coding-Plan-only — the PAYG balance is intentionally exhausted**. Any phoenixgrove request outside plan coverage (model not on the plan list at that moment, or plan window exhausted) returns 402 `insufficient_quota` and falls through; that fallthrough is expected, not a fault. The plan key serves `glm-5.3-flash` and `deepseek-v4-flash-0731` (200) while plan-covered, and the gateway BYOK key IS the plan key — no dashboard swap needed. Phoenixgrove lanes therefore breathe: plan-covered periods serve, otherwise the ladder falls through one hop (~4 s tax). Watch coverage via `/v1/usage` percent windows (weekly 17.9%, daily 59.6% at 2026-09-14 morning).
 
 ## PGS coding tester plan (2026-09-01)
 
