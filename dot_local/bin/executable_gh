@@ -1,0 +1,25 @@
+#!/bin/sh
+# gh identity router for the no-mistakes daemon and other PATH-based gh
+# callers on this host. Routes gh invocations that target kunchenguid/axi or
+# any masculinecache/* repository through the masculinecache account
+# (GH_CONFIG_DIR=~/.config/gh-masculinecache), per the fleet identity
+# decision: contributions owned by masculinecache must never be created or
+# mutated with the default phillias credentials (cross-fork PR creation as
+# phillias fails with "must be a collaborator"). Everything else passes
+# through to the system gh unchanged. An explicit GH_CONFIG_DIR from the
+# caller always wins. No secrets live here; it only selects a config dir.
+GH=/usr/local/bin/gh
+[ -x "$GH" ] || GH=/usr/bin/gh
+if [ -n "$GH_CONFIG_DIR" ]; then
+  exec "$GH" "$@"
+fi
+for arg in "$@"; do
+  case "$arg" in
+    kunchenguid/axi|masculinecache/*)
+      GH_CONFIG_DIR="$HOME/.config/gh-masculinecache"
+      export GH_CONFIG_DIR
+      exec "$GH" "$@"
+      ;;
+  esac
+done
+exec "$GH" "$@"
