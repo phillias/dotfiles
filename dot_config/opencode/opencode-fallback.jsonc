@@ -21,7 +21,7 @@
   // at Zen and FAILS visibly instead of silently downgrading to the free tier.
   //
   // Decision A: utility agents (firstmate/crewmate/secondmate) run
-  // big-pickle → GO → GOAT → Z.AI → OpenRouter → Zen → Free.
+  // Go → GOAT → Z.AI → OpenRouter → Zen → Free (big-pickle retired 2026-09-14).
   // Reasoning/high-effort/visual/looker/special agents keep their pinned
   // models and fall back GOAT → Z.AI → Go → Zen only.
   "enabled": true,
@@ -34,8 +34,8 @@
   // GLOBAL LADDER — firstmate & secondmate main sessions (agent=undefined),
   // and the deduped tail of every non-no_global_tail chain.
   "fallback_models": [
-    // STAGE 0: session primary (utility)
-    "opencode-zen/big-pickle",
+    // STAGE 0: session primary (utility). big-pickle retired 2026-09-14 —
+    // opencode-zen closed it; utility head is now the Go pool's kimi-k2.6.
     // STAGE 1: OpenCode Go ($60 pool, $12/$30/$60 windows)
     "opencode-go/kimi-k2.6",
     "opencode-go/deepseek-v4-flash",
@@ -62,11 +62,10 @@
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Utility crewmates: big-pickle primary → GO → GOAT → Z.AI → OR → Zen (global tail adds free)
+    // Utility crewmates: Go kimi-k2.6 primary → GOAT → Z.AI → OR → Zen (global tail adds free)
     "general": {
-      "model": "opencode-zen/big-pickle",
+      "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
@@ -79,9 +78,8 @@
       ]
     },
     "explore": {
-      "model": "opencode-zen/big-pickle",
+      "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
@@ -133,11 +131,10 @@
   // DISPATCH CATEGORIES — firstmate picks at the intent gate via
   // dispatch-rules.json → task(category=...).
   "categories": {
-    // UTILITY (decision A): big-pickle primary → GO → GOAT → Z.AI → OR → Zen → Free.
+    // UTILITY (decision A): Go kimi-k2.6 primary → GOAT → Z.AI → OR → Zen → Free.
     "quick": {
-      "model": "opencode-zen/big-pickle",
+      "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
@@ -150,9 +147,8 @@
       ]
     },
     "unspecified-low": {
-      "model": "opencode-zen/big-pickle",
+      "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
         "commandcode/moonshotai/Kimi-K2.6",
         "commandcode/deepseek/deepseek-v4-flash",
@@ -176,7 +172,7 @@
       "no_global_tail": true
     },
     "deep": {
-      "model": "opencode-zen/big-pickle",
+      "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
         "zai-coding/glm-5.2",
         "commandcode/moonshotai/Kimi-K2.6",
@@ -186,7 +182,7 @@
       "no_global_tail": true
     },
     "unspecified-high": {
-      "model": "opencode-zen/big-pickle",
+      "model": "opencode-go/kimi-k2.6",
       "fallback_models": [
         "zai-coding/glm-5.2",
         "commandcode/moonshotai/Kimi-K2.6",
@@ -217,8 +213,7 @@
       "model": "opencode-zen/deepseek-v4-flash-free",
       "fallback_models": [
         "commandcode/deepseek/deepseek-v4-flash",
-        "opencode-go/deepseek-v4-flash",
-        "opencode-zen/big-pickle"
+        "opencode-go/deepseek-v4-flash"
       ],
       "no_global_tail": true
     }
