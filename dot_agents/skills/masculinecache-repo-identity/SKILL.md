@@ -25,6 +25,10 @@ How every GitHub and npm operation on `masculinecache/*` repositories routes to 
    pass a repo by argument (the no-mistakes daemon, harness-level gh invocations): args matching
    `masculinecache/*` or `kunchenguid/axi` get `GH_CONFIG_DIR` set to the masc dir; an explicit
    `GH_CONFIG_DIR` from the caller always wins; anything else passes through unchanged.
+   Note: the shipped `dot_local/bin/executable_gh` deliberately deviates from this host's
+   current copy — it resolves gh from PATH (skipping itself) instead of hard-coded
+   `/usr/local/bin/gh`/`/usr/bin/gh`, so it works on a fresh mise-only host with no
+   system gh binary.
    gh-axi inherits this by shelling to the wrapped gh.
 5. **npm publishing with zero credentials** — masc repos publish via npm **Trusted Publishing
    with OIDC** (workflow `id-token: write`, no PAT/gh token in the publish path).

@@ -6,10 +6,29 @@
 # decision: contributions owned by masculinecache must never be created or
 # mutated with the default phillias credentials (cross-fork PR creation as
 # phillias fails with "must be a collaborator"). Everything else passes
-# through to the system gh unchanged. An explicit GH_CONFIG_DIR from the
-# caller always wins. No secrets live here; it only selects a config dir.
-GH=/usr/local/bin/gh
-[ -x "$GH" ] || GH=/usr/bin/gh
+# through to the first gh found on PATH (the mise-managed gh on a fresh
+# host, the system gh elsewhere). An explicit GH_CONFIG_DIR from the caller
+# always wins. No secrets live here; it only selects a config dir.
+# Resolve gh from PATH, skipping this script itself to avoid self-recursion:
+# PATH may contain ~/.local/bin before the mise shims dir, in which scenario
+# "command -v gh" would resolve here.
+GH=$(command -v gh 2>/dev/null)
+_self=$(readlink -f "$0" 2>/dev/null || printf '%s' "$0")
+if [ -z "$GH" ] || [ "$(readlink -f "$GH" 2>/dev/null || printf '%s' "$GH")" = "$_self" ]; then
+  IFS=:
+  for _d in $PATH; do
+    [ -x "$_d/gh" ] || continue
+    GH=$_d/gh
+    [ "$(readlink -f "$GH" 2>/dev/null || printf '%s' "$GH")" = "$_self" ] && continue
+    break
+  done
+  unset _d IFS
+fi
+if [ -z "$GH" ] || [ ! -x "$GH" ] || [ "$(readlink -f "$GH" 2>/dev/null || printf '%s' "$GH")" = "$_self" ]; then
+  echo "gh: no gh binary found on PATH" >&2
+  exit 127
+fi
+unset _self
 if [ -n "$GH_CONFIG_DIR" ]; then
   exec "$GH" "$@"
 fi

@@ -140,11 +140,11 @@ fi
 # apply depends on it.
 if ! command -v mise &>/dev/null; then
     echo "==> Installing mise..."
-    if $BREW_OK; then
+    # Stated precedence: official installer first; brew only as a fallback
+    # when the installer route can't run on the platform.
+    curl -fsSL https://mise.run | sh 2>/dev/null || true
+    if ! command -v mise &>/dev/null && $BREW_OK; then
         brew install mise 2>/dev/null || true
-    fi
-    if ! command -v mise &>/dev/null; then
-        curl -fsSL https://mise.run | sh
     fi
 fi
 # mise shims first: manifest-managed tools (gh, bw, wrangler, ...) resolve here

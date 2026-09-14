@@ -92,7 +92,7 @@ flowchart TD
 curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/setup.sh | bash
 ```
 
-`scripts/setup.sh` bootstraps everything in one pass: chezmoi, then mise (the one installer for manifest-managed CLIs — gh, bw, wrangler and the npm-global fleet are versioned by the committed `dot_config/mise/config.toml`), GitHub auth + deploy key, chezmoi init, Bitwarden unlock, age-key decrypt, and `chezmoi apply`. Pre-mise hand-installed copies of gh/bw/wrangler in `~/bin` are removed best-effort; system copies are untouched. Known gap: `bws` (Bitwarden Secrets CLI) has no mise backend and is left outside the manifest.
+`scripts/setup.sh` bootstraps everything in one pass: chezmoi, then mise (the one installer for manifest-managed CLIs — gh, bw, wrangler and the npm-global fleet are versioned by the committed `dot_config/mise/config.toml`), GitHub auth + deploy key, chezmoi init, Bitwarden unlock, age-key decrypt, and `chezmoi apply`. Pre-mise hand-installed copies of gh/bw/wrangler in `~/bin` are removed best-effort; system copies are untouched. Known gap: `bws` (Bitwarden Secrets CLI) has no mise backend and is left outside the manifest. The shipped `dot_local/bin/executable_gh` (installed to `~/.local/bin/gh`) intentionally deviates from the legacy host copy: it resolves gh via PATH (skipping itself) rather than hard-coded `/usr/local/bin/gh`/`/usr/bin/gh`, so it also works on fresh mise-only hosts where no system gh binary exists.
 
 ## Secrets
 
