@@ -1,0 +1,14 @@
+# masculinecache identity + scoped credential helper, included by dot_gitconfig's
+# hasconfig includeIf when a repo's remote URL matches masculinecache/*.
+# Handlers route every credential lookup through ~/.local/bin/gh-credential-dispatch,
+# which picks the masculinecache gh config dir on path=masculinecache*.
+# No secret values live here — tokens stay in ~/.config/gh-masculinecache/.
+
+[user]
+	name = masculinecache
+	email = masculinecache@users.noreply.github.com
+[credential "https://github.com"]
+	helper =
+	helper = $HOME/.local/bin/gh-credential-dispatch
+[credential]
+	useHttpPath = true
