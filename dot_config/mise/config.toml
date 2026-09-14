@@ -37,7 +37,9 @@ npm.shell_out = true
 # mise's registry-resolved gh tool (cli/cli release binary; verified via
 # `mise x gh@2.100.0 -- gh --version`). Replaces the ~/bin/gh hand-download
 # branch in scripts/setup.sh; the identity router (dot_local/bin/executable_gh)
-# wraps this mise binary.
+# wraps this mise binary. Pinned 2026-09-14 to stop the infinite config
+# re-parse hang when installs/gh existed with no [tools] entry (every gh shim
+# invocation spun re-parsing the config instead of resolving).
 gh = "2.100.0"
 # semgrep — deterministic static-analysis security gate for the dotfiles repo
 # (scripts/validate.sh). Matches SonarQube-class findings (OSS rule packs,
@@ -64,12 +66,6 @@ gh = "2.100.0"
 "npm:@anthropic-ai/claude-code" = "2.1.263"
 "npm:@openai/codex" = "0.153.4"
 "npm:@xai-official/grok" = "1.0.13"
-# gh — GitHub CLI (mise registry backend). Pinned 2026-09-14 to stop the
-# infinite config re-parse hang: installs/gh existed with no [tools] entry,
-# so every gh shim invocation spun re-parsing the config instead of
-# resolving. The live ~/.config/mise/config.toml already carries this pin
-# (live-only drift); the durable fix mirrors into chezmoi source.
-gh = "2.100.0"
 # bun via mise's core backend (replaces the npm-packaged bun.exe global; dedupe removes it).
 bun = "1.3.14"
 # opencode CLI — core backend (standalone binary)
