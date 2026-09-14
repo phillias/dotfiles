@@ -107,7 +107,10 @@ sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
 ## Repo mapping (chezmoi)
 
 Age-encrypted copies live in the dotfiles repo at `dot_agents/private_keys/`
-(target `~/.agents/keys` as a private dir):
+(target `~/.agents/keys` as a private dir). One exception: the bench-studio
+runtime env is encrypted at `docker/private_bench-studio/
+encrypted_private_dot_env.age` → `~/docker/private_bench-studio/.env`, scoped
+to that compose project rather than the shared keys dir.
 
 - `encrypted_dot_<name>.age` → flat `~/.agents/keys/.<name>`
 - `private_<profile>/encrypted_private_dot_<name>.age`
