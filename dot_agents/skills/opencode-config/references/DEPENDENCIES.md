@@ -19,7 +19,7 @@ The OpenCode config and the firstmate distro rely on a set of host tools. All pa
 
 ### PATH precedence contract
 
-Non-interactive: `dot_zshenv` exports `mise shims:~/.local/bin:...` so manifest tools (gh, bw, wrangler) and the shipped `~/.local/bin/gh` identity router resolve headless. Interactive: `.zshrc` activates mise for versioned runtimes; `scripts/setup.sh` Phase 1 bootstraps mise before the manifest apply, pins gh/bw/wrangler inline (idempotent, guarded by manifest grep), then Phase 7's chezmoi apply makes `dot_config/mise/config.toml` the sole owner of `~/.config/mise/config.toml`. Known gap: `bws` (Bitwarden Secrets CLI) has no mise backend — still materialized by its skill/setup, flag for future batch.
+Non-interactive: `dot_zshenv` exports `$HOME/.local/bin` before mise shims (`$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH`), so bare `gh` reaches the shipped `~/.local/bin/gh` identity router first; the router's own PATH-resolution self-skip then finds the mise-managed gh shim for passthrough and within routed gh-ms identities. This order also keeps manifest tools (bw, wrangler) and shim-only runtimes (pi/node) resolvable headless. Interactive: `.zshrc` activates mise for versioned runtimes; `scripts/setup.sh` Phase 1 bootstraps mise before the manifest apply, pins gh/bw/wrangler inline (idempotent, guarded by manifest grep), then Phase 7's chezmoi apply makes `dot_config/mise/config.toml` the sole owner of `~/.config/mise/config.toml`. Known gap: `bws` (Bitwarden Secrets CLI) has no mise backend — still materialized by its skill/setup, flag for future batch.
 
 ## API keys (`~/.config/opencode/.*-key` files, chezmoi age-encrypted)
 
