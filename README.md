@@ -89,11 +89,10 @@ flowchart TD
 
 ```bash
 # On a new machine
-curl -fsSL https://get.chezmoi.io | sh
-chezmoi init --apply phillias
+curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/setup.sh | bash
 ```
 
-This clones the repo, applies all configs, installs age keys, and sets up agent environments.
+`scripts/setup.sh` bootstraps everything in one pass: chezmoi, then mise (the one installer for manifest-managed CLIs — gh, bw, wrangler and the npm-global fleet are versioned by the committed `dot_config/mise/config.toml`), GitHub auth + deploy key, chezmoi init, Bitwarden unlock, age-key decrypt, and `chezmoi apply`. Pre-mise hand-installed copies of gh/bw/wrangler in `~/bin` are removed best-effort; system copies are untouched. Known gap: `bws` (Bitwarden Secrets CLI) has no mise backend and is left outside the manifest.
 
 ## Secrets
 

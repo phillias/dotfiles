@@ -131,119 +131,56 @@ if [ -n "$CHEZMOI_LATEST" ] && [ "$CHEZMOI_CURRENT" != "$CHEZMOI_LATEST" ]; then
     echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
 fi
 
-# ── 3. Install GitHub CLI ────────────────────────────────────────
-if ! command -v gh &>/dev/null; then
-    echo "==> Installing GitHub CLI..."
+# ── 3. Bootstrap mise — the one installer for manifest-managed CLIs ──
+# gh, bw (@bitwarden/cli), and wrangler are installed and versioned by mise
+# from the committed manifest (dot_config/mise/config.toml →
+# ~/.config/mise/config.toml via chezmoi apply). chezmoi and cloudflared are
+# NOT mise-managed (backlog items own that migration); their branches below
+# are unchanged. mise itself must bootstrap first because the manifest
+# apply depends on it.
+if ! command -v mise &>/dev/null; then
+    echo "==> Installing mise..."
     if $BREW_OK; then
-        brew install gh
-    else
-        GH_TAG=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.76.0")
-        echo "==> gh: downloading ${GH_TAG}"
-        ARCH=$(uname -m)
-        if [ "$IS_MAC" = true ]; then
-            case "$ARCH" in arm64) GA="macOS_arm64.zip" ;; *) GA="macOS_amd64.zip" ;; esac
-            TMP=$(mktemp -d)
-            curl -fsSL -o "$TMP/gh.zip" "https://github.com/cli/cli/releases/download/${GH_TAG}/gh_${GH_TAG#v}_${GA}"
-            unzip -o "$TMP/gh.zip" -d "$TMP"
-            find "$TMP" -name "gh" -type f -exec cp {} "$HOME/bin/" \;
-            rm -rf "$TMP"
-        else
-            case "$ARCH" in
-                x86_64)  GH_DEB="amd64" ;;
-                aarch64) GH_DEB="arm64" ;;
-                armv7l)  GH_DEB="armv6" ;;
-                *)       GH_DEB="amd64" ;;
-            esac
-            GH_DEB_FILE="gh_${GH_TAG#v}_linux_${GH_DEB}.deb"
-            TMP=$(mktemp -d)
-            if curl -fsSL -o "$TMP/gh.deb" "https://github.com/cli/cli/releases/download/${GH_TAG}/${GH_DEB_FILE}" 2>/dev/null; then
-                if command -v sudo &>/dev/null; then
-                    sudo dpkg -i "$TMP/gh.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
-                else
-                    dpkg -i "$TMP/gh.deb" 2>/dev/null
-                fi
-            fi
-            rm -rf "$TMP"
-        fi
+        brew install mise 2>/dev/null || true
+    fi
+    if ! command -v mise &>/dev/null; then
+        curl -fsSL https://mise.run | sh
     fi
 fi
-if command -v gh &>/dev/null; then
-    echo "gh: $(gh --version 2>&1 | head -1)"
-else
-    echo "ERROR: gh install failed. Downloading binary directly..."
-    GH_TAG=$(curl -fsSL https://api.github.com/repos/cli/cli/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.76.0")
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64)  GA="linux_amd64.tar.gz" ;;
-        aarch64) GA="linux_arm64.tar.gz" ;;
-        *)       GA="linux_amd64.tar.gz" ;;
-    esac
-    TMP=$(mktemp -d)
-    curl -fsSL -o "$TMP/gh.tar.gz" "https://github.com/cli/cli/releases/download/${GH_TAG}/gh_${GH_TAG#v}_${GA}"
-    tar xzf "$TMP/gh.tar.gz" -C "$TMP"
-    mkdir -p "$HOME/bin"
-    cp "$TMP/gh" "$HOME/bin/"
-    chmod +x "$HOME/bin/gh"
-    rm -rf "$TMP"
-    echo "gh: $(gh --version 2>&1 | head -1)"
-fi
+# mise shims first: manifest-managed tools (gh, bw, wrangler, ...) resolve here
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+echo "mise: $(mise --version 2>&1 | head -1)"
 
-# ── 4. Install Bitwarden CLI ─────────────────────────────────────
-if ! command -v bw &>/dev/null; then
-    echo "==> Installing Bitwarden CLI..."
-    if $BREW_OK; then
-        brew install bitwarden-cli
-    else
-        ARCH=$(uname -m)
-        BW_TAG=$(curl -fsSL "https://api.github.com/repos/bitwarden/clients/releases?per_page=10" 2>/dev/null | python3 -c "
-import sys,json
-for r in json.load(sys.stdin):
-    if r['tag_name'].startswith('cli-'):
-        print(r['tag_name'])
-        break
-" 2>/dev/null || echo "")
-        if [ -n "$BW_TAG" ]; then
-            BW_VERSION="${BW_TAG#cli-}"
-            BW_VERSION="${BW_VERSION#v}"
-            echo "==> bw: downloading ${BW_VERSION}"
-            TMP=$(mktemp -d)
-            if [ "$IS_MAC" = true ]; then
-                case "$ARCH" in arm64) BW_FILE="bw-macos-arm64-${BW_VERSION}.zip" ;; *) BW_FILE="bw-macos-${BW_VERSION}.zip" ;; esac
-            else
-                case "$ARCH" in aarch64) BW_FILE="bw-linux-arm64-${BW_VERSION}.zip" ;; *) BW_FILE="bw-linux-${BW_VERSION}.zip" ;; esac
-            fi
-            if curl -fsSL -o "$TMP/bw.zip" "https://github.com/bitwarden/clients/releases/download/${BW_TAG}/${BW_FILE}" 2>/dev/null; then
-                unzip -o "$TMP/bw.zip" -d "$TMP" 2>/dev/null
-                if [ -f "$TMP/bw" ]; then
-                    chmod +x "$TMP/bw"
-                    mkdir -p "$HOME/bin"
-                    mv "$TMP/bw" "$HOME/bin/"
-                    rm -rf "$TMP"
-                    echo "==> bw: installed"
-                else
-                    rm -rf "$TMP"
-                    echo "==> bw: binary not found in archive"
-                fi
-            else
-                rm -rf "$TMP" 2>/dev/null
-                echo "==> bw: download failed"
-            fi
-        fi
-        if ! command -v bw &>/dev/null; then
-            if command -v npm &>/dev/null; then
-                echo "==> bw: installing via npm @bitwarden/cli"
-                npm install -g @bitwarden/cli
-            elif command -v bun &>/dev/null; then
-                echo "==> bw: installing via bun @bitwarden/cli"
-                bun add -g @bitwarden/cli
-            else
-                echo "==> bw: ERROR — install npm or bun first"
-                exit 1
-            fi
-        fi
+# ── 3b. mise-managed tools (gh, bw, wrangler) ────────────────────
+# Inline Phase-1 pins mirror the committed manifest exactly. Guarded by a
+# grep of the existing global config so re-runs on a manifest-managed host
+# never rewrite ~/.config/mise/config.toml; after Phase 7 applies chezmoi the
+# committed manifest is the sole owner and replaces that file wholesale.
+_mise_cfg="$HOME/.config/mise/config.toml"
+_ensure_mise() {
+    # _ensure_mise "<mise tool spec>" "<config.toml key regex>"
+    if [ -f "$_mise_cfg" ] && grep -qE "$2 *=" "$_mise_cfg"; then
+        echo "==> $1 already manifest-managed, skipping pin"
+        return 0
     fi
-fi
-echo "bw: $(bw --version 2>&1)"
+    MISE_NPM__SHELL_OUT=true mise use -g --pin "$1"
+}
+_ensure_mise "gh@2.100.0" '^(gh|"github:cli/cli")'
+_ensure_mise "npm:@bitwarden/cli@2026.5.0" '^"npm:@bitwarden/cli"'
+_ensure_mise "npm:wrangler@4.125.0" '^"npm:wrangler"'
+echo "gh: $(gh --version 2>&1 | head -1)"
+echo "bw: $(bw --version 2>&1 | head -1)"
+echo "wrangler: $(wrangler --version 2>&1 | head -1)"
+
+# Cleanup of pre-mise hand-installed copies — approved for gh, bw, wrangler
+# only (chezmoi and cloudflared keep their old copies; backlog owns those).
+# System/OS-owned copies (dpkg/brew system prefixes) are never touched.
+for _old in "$HOME/bin/gh" "$HOME/bin/bw" "$HOME/bin/wrangler"; do
+    if [ -f "$_old" ]; then
+        rm -f "$_old"
+        echo "==> removed old hand-installed $(basename "$_old") (mise-managed now)"
+    fi
+done
 
 # ── 5. Install cloudflared ───────────────────────────────────────
 if ! command -v cloudflared &>/dev/null; then
