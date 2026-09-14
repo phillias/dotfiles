@@ -90,6 +90,7 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 ## Live statuses (dated; verify with quota-axi)
 
 - 2026-08-30: big-pickle → FreeUsageLimitError (falls through); zai-coding → 429, weekly reset 2026-09-02.
+- 2026-09-14: PGS Coding Plan no longer covers `glm-5.3-flash` — the plan key returns HTTP 402 `insufficient_quota` for it despite open windows (weekly 17.9%, daily 59.6%), while `deepseek-v4-flash-0731` still serves 200 on the same key. phoenixgrove glm-5.3-flash lanes are dead until the plan list or key changes; **TUI's head lane still rides the 402-ing glm-5.3-flash** and falls through one hop on every request.
 
 ## PGS coding tester plan (2026-09-01)
 
@@ -135,8 +136,16 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   appears) from reliable providers; aihubmix GLM discount lane sits top
   (caution 2026-09-08: aihubmix began 200-wrapped 404s — verify before
   trusting that head lane).
-- `pr-gate` — free-as-possible 1M-ctx CI/background "second set of eyes"
-  ladder; faithful to the hand-tuned pi gate chain.
+- `pr-gate` — no-mistakes gate/background ladder, **stage-dispatched on
+  `cf-aig-metadata` `phase`** (redesigned 2026-09-14, version `b7701729`):
+  `phase=reviewer` → reviewer ladder (NIM deepseek-v4-flash-0731 → openrouter
+  gpt-5.6-luna → openrouter nemotron:free → zen glm-5.2, JSON discipline);
+  `phase=document` → gemini-2.5-flash → zen glm-5.2 → GOAT deepseek-v4-flash;
+  default → nemotron-3-super (NIM) → lightning:free → zen nemotron → luna →
+  GOAT GLM-5.2/Kimi-K3/nemotron-550b/ds-v4-flash → PGS deepseek-v4-flash-0731
+  (plan/PAYG tail) → gemini floor. **No harness sends `phase` yet** — wiring
+  (pi provider entries with static phase headers) is pending; until then only
+  the default ladder carries real traffic.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
