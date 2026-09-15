@@ -32,6 +32,7 @@ SEMGREP_RULESET="${SEMGREP_RULESET:-auto}"
 # Equality-only semgrep pin lives in dot_config/mise/config.toml. Resolve via
 # mise (version-pinned) so it works before the pinned shim is on PATH.
 semgrep_run() { mise x "pipx:semgrep@1.157.0" -- semgrep "$@"; }
+changed_files=()
 if semgrep_run --version >/dev/null 2>&1; then
   # Scope to the files changed vs the PR base (open PR commits + working tree)
   # so pre-existing findings elsewhere are NOT re-raised by this gate. Without
@@ -47,21 +48,24 @@ if semgrep_run --version >/dev/null 2>&1; then
   base_ref="$base"
   git cat-file -e "$base" 2>/dev/null || base_ref="master"
   if git rev-parse --verify -q "$base_ref" >/dev/null; then
-    changed_files=()
+    filelist=$(mktemp /tmp/opencode/validate-files.XXXXXX)
+    {
+      git diff --name-only -z "$base_ref...HEAD" 2>/dev/null
+      git diff --name-only -z "$base_ref" 2>/dev/null
+      git ls-files --others --exclude-standard -z
+    } | sort -zu > "$filelist"
+    pipe_status=("${PIPESTATUS[@]}")
+    if [ "${pipe_status[0]}" -ne 0 ] || [ "${pipe_status[1]}" -ne 0 ]; then
+      echo "FAIL: file enumeration pipeline failed (git or sort error)"
+      fail=1
+    fi
     while IFS= read -r -d '' f; do
       # Filter to files that EXIST: deleted diff paths must not reach the
       # scanners, and untracked files are always present in the worktree.
       [ -f "$f" ] || continue
       changed_files+=("$f")
-    done < <(
-      {
-        git diff --name-only -z "$base_ref...HEAD" 2>/dev/null
-        git diff --name-only -z "$base_ref" 2>/dev/null
-        git ls-files --others --exclude-standard -z
-      } | sort -zu
-    )
-  else
-    changed_files=()
+    done < "$filelist"
+    rm -f "$filelist"
   fi
   if [ "${#changed_files[@]}" -gt 0 ]; then
     semgrep_run scan --error --config "$SEMGREP_RULESET" "${changed_files[@]}" || fail=1
