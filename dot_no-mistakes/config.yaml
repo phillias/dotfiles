@@ -43,11 +43,20 @@ agent_config:
   pi:
     model: fallback/gate
 
-# Review role uses a dedicated fleet route (cf-aig-dynamic/dynamic/pr-reviewer):
-# budget-subsidized ladder (PGS plan glm-5.3-flash → zen nemotron-3-ultra-free →
-# GOAT pool nemotron-550b / Kimi-K3 → aihubmix claude-fable-5-1 → paid
-# openrouter gpt-5.6-luna → gemini floor). The fixer keeps the global chain.
-# (Schema: review_agents.{reviewer,fixer}; verified against no-mistakes 1.72.0.)
+# (2026-09-15) Review stage stays on pi → the pr-reviewer route (its deepseek
+# head passed every no-mistakes run). The codex→inkling:free wiring was built
+# and then disproven by live probes: OpenRouter's routing funnel 403s
+# codex-cli ("only available on agentic harnesses — plug into an app listed
+# on https://openrouter.ai/apps") — TM's announcement named Codex the OpenAI
+# PRODUCT, not the codex CLI, and impersonating a listed app is off the
+# table. Additionally codex-cli 0.153.4 speaks ONLY the Responses wire, which
+# the gateway compat plane rejects ("responses is not supported", code 2019),
+# so codex cannot ride pr-gate either. Inkling:free remains reachable only
+# from listed apps / pi-direct-smoke (unreliable) — treat it as a personal
+# experiments lane; the PAID tier ($0.95/$4.05, no gate, no logging) is the
+# legitimate route if inkling is ever wanted for reviews. The fixer and every
+# other stage keep the global pi chain. (Schema:
+# review_agents.{reviewer,fixer}; no-mistakes 1.72.0.)
 review_agents:
   reviewer:
     agent: pi
