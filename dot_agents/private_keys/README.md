@@ -99,6 +99,7 @@ Design invariants:
 .fireworks-key       FIREWORKS_API_KEY       .synthetic-key    SYNTHETIC_API_KEY
                                              .kenari-key       KENARI_API_KEY
                                              .seevio-key       SEEVIO_API_KEY
+.atlascloud-key      ATLASCLOUD_API_KEY
 ```
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
@@ -108,9 +109,10 @@ sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
 
 Age-encrypted copies live in the dotfiles repo at `dot_agents/private_keys/`
 (target `~/.agents/keys` as a private dir). One exception: the bench-studio
-runtime env is encrypted at `docker/private_bench-studio/
-encrypted_private_dot_env.age` → `~/docker/private_bench-studio/.env`, scoped
-to that compose project rather than the shared keys dir.
+runtime env is tracked unencrypted at `docker/private_bench-studio/
+private_dot_env` → `~/docker/bench-studio/.env`: it carries interpolation
+placeholders (`KEY=${KEY}`) so the variables resolve from the host shell env at
+compose runtime, scoped to that compose project rather than the shared keys dir.
 
 - `encrypted_dot_<name>.age` → flat `~/.agents/keys/.<name>`
 - `private_<profile>/encrypted_private_dot_<name>.age`
