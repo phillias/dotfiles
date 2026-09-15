@@ -319,6 +319,22 @@ without the $100+/mo native-subscription seats:
   only be reached via their recognized client, so "one harness for everything"
   is not a pricing win — per-(harness, provider) headphones stay necessary
   where the gate exists.
+- **Inkling free endpoint = a TM research program, not a free tier
+  (2026-09-14 production data):** OpenRouter's routing funnel admits only
+  requests it classifies as agentic harnesses (TM's announcement names Claude
+  Code, Codex, Hermes Agent, Ori — criteria undocumented; pi passed a live
+  one-shot smoke but no-mistakes' shaped gate request got `403: inkling:free
+  is only available on agentic harnesses — OpenRouter's routing funnel
+  rejects pi as non-agentic`, so the verdict is not reliably controllable
+  from client signature alone). The free endpoint's terms also log all
+  prompts/outputs (disassociated) for TM model improvement and forbid
+  confidential/personal data — repository diffs and review content must
+  never ride it. Verdict: unsuitable for no-mistakes gate traffic even when
+  the funnel accepts a request; personal agentic experiments via pi direct
+  only, paid tier ($0.95/$4.05) for anything sensitive or
+  production-facing. Honest attribution headers (pi provider entry
+  `headers`) are untested; impersonating a recognized harness (e.g. Ori) to
+  pass the funnel is off the table.
 
 ## Harness fleet admin cost (2026-09-05)
 
