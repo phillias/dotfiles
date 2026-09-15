@@ -120,7 +120,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml` (gate-chain v4: openrouter :free trio first, gemini-2.5-flash demoted after live performance issues, `phoenixgrove/glm-5.3-flash` kept as manual tail). CF @cf and opencode-go excluded: no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only).
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `cf-aig-dynamic/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
 
 ## Dynamic routes on the `opencode` gateway (2026-09-04)
 
@@ -319,6 +319,22 @@ without the $100+/mo native-subscription seats:
   only be reached via their recognized client, so "one harness for everything"
   is not a pricing win — per-(harness, provider) headphones stay necessary
   where the gate exists.
+- **Inkling free endpoint = a TM research program, not a free tier
+  (2026-09-14 production data):** OpenRouter's routing funnel admits only
+  requests it classifies as agentic harnesses (TM's announcement names Claude
+  Code, Codex, Hermes Agent, Ori — criteria undocumented; pi passed a live
+  one-shot smoke but no-mistakes' shaped gate request got `403: inkling:free
+  is only available on agentic harnesses — OpenRouter's routing funnel
+  rejects pi as non-agentic`, so the verdict is not reliably controllable
+  from client signature alone). The free endpoint's terms also log all
+  prompts/outputs (disassociated) for TM model improvement and forbid
+  confidential/personal data — repository diffs and review content must
+  never ride it. Verdict: unsuitable for no-mistakes gate traffic even when
+  the funnel accepts a request; personal agentic experiments via pi direct
+  only, paid tier ($0.95/$4.05) for anything sensitive or
+  production-facing. Honest attribution headers (pi provider entry
+  `headers`) are untested; impersonating a recognized harness (e.g. Ori) to
+  pass the funnel is off the table.
 
 ## Harness fleet admin cost (2026-09-05)
 

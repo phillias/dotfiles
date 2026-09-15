@@ -19,11 +19,12 @@ agent: pi
 # `fallback/gate` chain (~/.pi/fallback-chains.json), 2026-09-14 shape:
 # cf-aig-dynamic/dynamic/pr-gate (the gateway's linear free-first ladder) →
 # opencode-go/deepseek-v4-flash (1M, subsidized pool — session-gated, so it can
-# only ride pi directly, never a gateway route) → openrouter-direct
-# thinkingmachines/inkling:free (1M, free — harness-gated upstream that 403s
-# any gateway hop, so it rides pi's own client signature via the direct
-# openrouter.ai provider entry). kimi-k2.6 is excluded: 262K < the gate's 1M
-# bar.
+# only ride pi directly, never a gateway route). That is the tail: inkling was
+# removed 2026-09-15 — OpenRouter's routing funnel rejects pi-shaped requests
+# unreliably (403 non-agentic on production gate traffic) and the free
+# endpoint's terms log all traffic for TM training. The openrouter-direct pi
+# provider entry stays for personal agentic experiments. kimi-k2.6 is
+# excluded: 262K < the gate's 1M bar.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -42,11 +43,20 @@ agent_config:
   pi:
     model: fallback/gate
 
-# Review role uses a dedicated fleet route (cf-aig-dynamic/dynamic/pr-reviewer):
-# budget-subsidized ladder (PGS plan glm-5.3-flash → zen nemotron-3-ultra-free →
-# GOAT pool nemotron-550b / Kimi-K3 → aihubmix claude-fable-5-1 → paid
-# openrouter gpt-5.6-luna → gemini floor). The fixer keeps the global chain.
-# (Schema: review_agents.{reviewer,fixer}; verified against no-mistakes 1.72.0.)
+# (2026-09-15) Review stage stays on pi → the pr-reviewer route (its deepseek
+# head passed every no-mistakes run). The codex→inkling:free wiring was built
+# and then disproven by live probes: OpenRouter's routing funnel 403s
+# codex-cli ("only available on agentic harnesses — plug into an app listed
+# on https://openrouter.ai/apps") — TM's announcement named Codex the OpenAI
+# PRODUCT, not the codex CLI, and impersonating a listed app is off the
+# table. Additionally codex-cli 0.153.4 speaks ONLY the Responses wire, which
+# the gateway compat plane rejects ("responses is not supported", code 2019),
+# so codex cannot ride pr-gate either. Inkling:free remains reachable only
+# from listed apps / pi-direct-smoke (unreliable) — treat it as a personal
+# experiments lane; the PAID tier ($0.95/$4.05, no gate, no logging) is the
+# legitimate route if inkling is ever wanted for reviews. The fixer and every
+# other stage keep the global pi chain. (Schema:
+# review_agents.{reviewer,fixer}; no-mistakes 1.72.0.)
 review_agents:
   reviewer:
     agent: pi
