@@ -1,0 +1,15 @@
+reviews:
+  profile: "assertive"
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/.mise/**"
+    - "!**/*.lock"
+    - "!**/package-lock.json"
+    - "!**/bun.lockb"
+  review_instructions: |
+    Focus on security implications of credential/key file paths.
+    Check that new files under .agents/keys/ follow the documented 
+    profile layout and default symlink contract (flat keys/, per-profile 
+    subdirs, relative symlinks for default profile).
+    Flag hardcoded absolute home paths that break portability.
+    For chezmoi .tmpl files, check that template syntax is valid.
