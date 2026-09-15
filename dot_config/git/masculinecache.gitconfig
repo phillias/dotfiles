@@ -1,0 +1,6 @@
+[credential "https://github.com"]
+	helper =
+	helper = !GH_CONFIG_DIR="$HOME/.config/gh-masculinecache" gh auth git-credential
+[user]
+	name = masculinecache
+	email = 153141468+masculinecache@users.noreply.github.com

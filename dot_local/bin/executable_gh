@@ -16,41 +16,50 @@
 GH=$(command -v gh 2>/dev/null)
 _self=$(readlink -f "$0" 2>/dev/null || printf '%s' "$0")
 _walk_path() {
-  case "$1" in
-    '') return 1 ;;
-    *:*) _d=${1%%:*}; _rest=${1#*:} ;;
-    *) _d=$1; _rest= ;;
-  esac
-  if [ -n "$_d" ] && [ -x "$_d/gh" ]; then
-    _t=$(readlink -f "$_d/gh" 2>/dev/null || printf '%s' "$_d/gh")
-    if [ "$_t" != "$_self" ]; then
-      GH="$_d/gh"; _d=; _rest=; _t=
-      return 0
-    fi
-    _t=
-  fi
-  _d=
-  [ -n "$_rest" ] && _walk_path "$_rest"
+	case "$1" in
+	'') return 1 ;;
+	*:*)
+		_d=${1%%:*}
+		_rest=${1#*:}
+		;;
+	*)
+		_d=$1
+		_rest=
+		;;
+	esac
+	if [ -n "$_d" ] && [ -x "$_d/gh" ]; then
+		_t=$(readlink -f "$_d/gh" 2>/dev/null || printf '%s' "$_d/gh")
+		if [ "$_t" != "$_self" ]; then
+			GH="$_d/gh"
+			_d=
+			_rest=
+			_t=
+			return 0
+		fi
+		_t=
+	fi
+	_d=
+	[ -n "$_rest" ] && _walk_path "$_rest"
 }
 if [ -z "$GH" ] || [ "$(readlink -f "$GH" 2>/dev/null || printf '%s' "$GH")" = "$_self" ]; then
-  GH=
-  _walk_path "$PATH"
+	GH=
+	_walk_path "$PATH"
 fi
 if [ -z "$GH" ] || [ ! -x "$GH" ] || [ "$(readlink -f "$GH" 2>/dev/null || printf '%s' "$GH")" = "$_self" ]; then
-  echo "gh: no gh binary found on PATH" >&2
-  exit 127
+	echo "gh: no gh binary found on PATH" >&2
+	exit 127
 fi
 unset _self
 if [ -n "$GH_CONFIG_DIR" ]; then
-  exec "$GH" "$@"
+	exec "$GH" "$@"
 fi
 for arg in "$@"; do
-  case "$arg" in
-    kunchenguid/axi|masculinecache/*)
-      GH_CONFIG_DIR="$HOME/.config/gh-masculinecache"
-      export GH_CONFIG_DIR
-      exec "$GH" "$@"
-      ;;
-  esac
+	case "$arg" in
+	kunchenguid/axi | masculinecache/* | --repo=kunchenguid/axi | --repo=masculinecache/* | -R=kunchenguid/axi | -R=masculinecache/*)
+		GH_CONFIG_DIR="$HOME/.config/gh-masculinecache"
+		export GH_CONFIG_DIR
+		exec "$GH" "$@"
+		;;
+	esac
 done
 exec "$GH" "$@"
