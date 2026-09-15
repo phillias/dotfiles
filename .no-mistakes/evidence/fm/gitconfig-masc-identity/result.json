@@ -1,0 +1,88 @@
+{
+  "findings": [],
+  "summary": "Validated that the gitconfig include file matches the proven file and the gh router correctly handles equals-form arguments.",
+  "tested": [
+    "F1-content: verified dot_config/git/masculinecache.gitconfig byte-identical to proven file",
+    "F2-equals-form-repo: gh --repo=masculinecache/foo sets GH_CONFIG_DIR",
+    "F2-equals-form-R: gh -R=masculinecache/foo sets GH_CONFIG_DIR",
+    "F2-equals-form-axi: gh --repo=kunchenguid/axi sets GH_CONFIG_DIR",
+    "F2-equals-form-R-axi: gh -R=kunchenguid/axi sets GH_CONFIG_DIR",
+    "F2-standalone: gh masculinecache/foo sets GH_CONFIG_DIR",
+    "F2-non-matching: gh other/repo leaves GH_CONFIG_DIR unset",
+    "F2-explicit-wins: pre-set GH_CONFIG_DIR is preserved"
+  ],
+  "testing_summary": "All scenarios passed: gitconfig include file is byte-identical to proven file; router correctly sets GH_CONFIG_DIR for equals-form and standalone matches, leaves it unset for non-matches, and respects explicit GH_CONFIG_DIR.",
+  "artifacts": [
+    {
+      "kind": "command-output",
+      "label": "F2 router test transcript",
+      "path": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "content": null
+    },
+    {
+      "kind": "text",
+      "label": "Test summary",
+      "path": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/summary.txt",
+      "content": "Validation complete: gitconfig include file matches proven file; gh router correctly handles equals-form arguments."
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "F1-content",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    },
+    {
+      "name": "F2-equals-form-repo",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    },
+    {
+      "name": "F2-equals-form-R",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    },
+    {
+      "name": "F2-equals-form-axi",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    },
+    {
+      "name": "F2-equals-form-R-axi",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    },
+    {
+      "name": "F2-standalone",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    },
+    {
+      "name": "F2-non-matching",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    },
+    {
+      "name": "F2-explicit-wins",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/ubuntu/.no-mistakes/evidence/01M2HH88NGFGKRJE60XX21333Y/f2-router-equals-form.txt",
+      "reason": ""
+    }
+  ],
+  "verdict": "go"
+}

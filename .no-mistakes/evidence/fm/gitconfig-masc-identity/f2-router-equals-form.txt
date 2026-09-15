@@ -1,0 +1,43 @@
+=== standalone masculinecache/foo ===
+GH_CONFIG_DIR=/tmp/tmp.j8TDzF8nCG/.config/gh-masculinecache
+ARGS=masculinecache/foo
+(exit: 0)
+=== standalone kunchenguid/axi ===
+GH_CONFIG_DIR=/tmp/tmp.j8TDzF8nCG/.config/gh-masculinecache
+ARGS=kunchenguid/axi
+(exit: 0)
+=== --repo=masculinecache/foo ===
+GH_CONFIG_DIR=/tmp/tmp.j8TDzF8nCG/.config/gh-masculinecache
+ARGS=--repo=masculinecache/foo
+(exit: 0)
+=== --repo=kunchenguid/axi ===
+GH_CONFIG_DIR=/tmp/tmp.j8TDzF8nCG/.config/gh-masculinecache
+ARGS=--repo=kunchenguid/axi
+(exit: 0)
+=== -R=masculinecache/foo ===
+GH_CONFIG_DIR=/tmp/tmp.j8TDzF8nCG/.config/gh-masculinecache
+ARGS=-R=masculinecache/foo
+(exit: 0)
+=== -R=kunchenguid/axi ===
+GH_CONFIG_DIR=/tmp/tmp.j8TDzF8nCG/.config/gh-masculinecache
+ARGS=-R=kunchenguid/axi
+(exit: 0)
+=== no args ===
+GH_CONFIG_DIR=<unset>
+ARGS=
+(exit: 0)
+=== non-matching standalone other/repo ===
+GH_CONFIG_DIR=<unset>
+ARGS=other/repo
+(exit: 0)
+=== non-matching --repo=other/foo ===
+GH_CONFIG_DIR=<unset>
+ARGS=--repo=other/foo
+(exit: 0)
+=== near-miss --repo=masculinecachex/foo ===
+GH_CONFIG_DIR=<unset>
+ARGS=--repo=masculinecachex/foo
+(exit: 0)
+=== explicit GH_CONFIG_DIR wins ===
+GH_CONFIG_DIR=/custom/configdir
+ARGS=masculinecache/foo

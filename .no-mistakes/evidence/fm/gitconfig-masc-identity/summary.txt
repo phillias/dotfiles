@@ -1,0 +1,1 @@
+Validation complete: gitconfig include file matches proven file; gh router correctly handles equals-form arguments.
