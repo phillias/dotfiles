@@ -15,12 +15,7 @@ How every GitHub and npm operation on `masculinecache/*` repositories routes to 
    `https://` and `git@` URL forms, returning `~/.config/git/masculinecache.gitconfig`, which
    sets the masculinecache identity and a scoped credential helper. Source of truth: that file
    and `dot_gitconfig`.
-3. **Credential-helper plumbing** — the helper pipeline ends in
-   `~/.local/bin/gh-credential-dispatch`, which reads the `path=` line of the credential payload
-   and routes `path=masculinecache*` to `GH_CONFIG_DIR=$HOME/.config/gh-masculinecache gh auth
-   git-credential`; everything else uses the default gh config. Token values live inside
-   `~/.config/gh-masculinecache/` (config.yml, hosts.yml) — never read, print, copy, or commit
-   them; reference only the directory.
+3. **Credential-helper plumbing** — for masculinecache/* repositories, the credential helper is defined inline in `~/.config/git/masculinecache.gitconfig` (see layer 2). For all other GitHub HTTPS credential operations, the helper pipeline ends in `~/.local/bin/gh-credential-dispatch`.
 4. **Host PATH gh identity router** — `~/.local/bin/gh` wraps the system gh for callers that
    pass a repo by argument (the no-mistakes daemon, harness-level gh invocations): args matching
    `masculinecache/*` or `kunchenguid/axi` get `GH_CONFIG_DIR` set to the masc dir; an explicit
