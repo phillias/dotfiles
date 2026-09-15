@@ -120,7 +120,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml` (gate-chain v4: openrouter :free trio first, gemini-2.5-flash demoted after live performance issues, `phoenixgrove/glm-5.3-flash` kept as manual tail). CF @cf and opencode-go excluded: no 1M models in either pool. opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only).
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `cf-aig-dynamic/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Inkling IS reachable from TM-recognized harnesses (Claude Code, Codex, Hermes Agent, Ori) — a codex-based review stage could ride it legitimately, subject to the logging terms.
 
 ## Dynamic routes on the `opencode` gateway (2026-09-04)
 

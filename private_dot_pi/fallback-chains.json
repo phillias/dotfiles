@@ -1,8 +1,7 @@
 {
   "gate": [
     "cf-aig-dynamic/dynamic/pr-gate",
-    "opencode-go/deepseek-v4-flash",
-    "openrouter-direct/thinkingmachines/inkling:free"
+    "opencode-go/deepseek-v4-flash"
   ],
   "default": [
     "cf-aig-dynamic/dynamic/TUI"

@@ -19,11 +19,12 @@ agent: pi
 # `fallback/gate` chain (~/.pi/fallback-chains.json), 2026-09-14 shape:
 # cf-aig-dynamic/dynamic/pr-gate (the gateway's linear free-first ladder) →
 # opencode-go/deepseek-v4-flash (1M, subsidized pool — session-gated, so it can
-# only ride pi directly, never a gateway route) → openrouter-direct
-# thinkingmachines/inkling:free (1M, free — harness-gated upstream that 403s
-# any gateway hop, so it rides pi's own client signature via the direct
-# openrouter.ai provider entry). kimi-k2.6 is excluded: 262K < the gate's 1M
-# bar.
+# only ride pi directly, never a gateway route). That is the tail: inkling was
+# removed 2026-09-15 — OpenRouter's routing funnel rejects pi-shaped requests
+# unreliably (403 non-agentic on production gate traffic) and the free
+# endpoint's terms log all traffic for TM training. The openrouter-direct pi
+# provider entry stays for personal agentic experiments. kimi-k2.6 is
+# excluded: 262K < the gate's 1M bar.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
