@@ -46,7 +46,7 @@ if [ -n "$GH_CONFIG_DIR" ]; then
 fi
 for arg in "$@"; do
   case "$arg" in
-    kunchenguid/axi|masculinecache/*)
+    kunchenguid/axi|masculinecache/*|--repo=kunchenguid/axi|--repo=masculinecache/*|-R=kunchenguid/axi|-R=masculinecache/*)
       GH_CONFIG_DIR="$HOME/.config/gh-masculinecache"
       export GH_CONFIG_DIR
       exec "$GH" "$@"
