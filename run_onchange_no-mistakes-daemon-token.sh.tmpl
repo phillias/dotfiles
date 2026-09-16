@@ -12,6 +12,14 @@
 # The script discovers the hashed daemon unit name (no-mistakes-daemon-*.service)
 # automatically, so it works across machines with different unit hashes.
 #
+# POLICY NOTE: captain.md states "no systemd drop-ins" for gate auth. This script
+# creates a drop-in as an exception because:
+#   - The daemon needs CF_AI_GATEWAY_TOKEN but doesn't inherit shell env
+#   - environment.d doesn't provide variables to processes (only SHELL)
+#   - The "apply login shell environment" feature requires explicit invocation
+# If captain prefers an alternative mechanism, this script should be removed and
+# the daemon configured to read the token via a different path.
+#
 # Fingerprint (token): {{ output "bash" "-c" "sha256sum ~/.agents/keys/default/.cf-ai-gw 2>/dev/null | cut -d' ' -f1" }}
 set -euo pipefail
 
@@ -26,6 +34,15 @@ shopt -u nullglob
 if [[ ${#DAEMON_UNITS[@]} -eq 0 ]]; then
   echo "[no-mistakes-token] No daemon unit found; skipping (daemon not installed on this machine)"
   exit 0
+fi
+
+if [[ ${#DAEMON_UNITS[@]} -gt 1 ]]; then
+  echo "[no-mistakes-token] ERROR: Multiple daemon units found - cleanup required before proceeding:" >&2
+  for unit in "${DAEMON_UNITS[@]}"; do
+    echo "  - $(basename "$unit")" >&2
+  done
+  echo "Run cleanup-and-sync hook or manually remove obsolete units." >&2
+  exit 1
 fi
 
 DAEMON_UNIT="$(basename "${DAEMON_UNITS[0]}")"
