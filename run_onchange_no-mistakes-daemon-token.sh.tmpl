@@ -2,20 +2,20 @@
 # no-mistakes daemon token single-source mechanism.
 #
 # Creates a systemd drop-in override that:
-#   1. Stamps CF_AI_GATEWAY_TOKEN from ~/.agents/keys/.cf-ai-gw-token into
-#      a transient /run env file via ExecStartPre
+#   1. Stamps CF_AI_GATEWAY_TOKEN from ~/.agents/keys/default/.cf-ai-gw
+#      (profile symlink) into a transient XDG_RUNTIME_DIR env file via ExecStartPre
 #   2. Points EnvironmentFile to that transient location
 #
 # This eliminates duplication (token was in both .pi-env and as a standalone
-# key file) and keeps the token out of git (both locations are gitignored).
+# key file) and keeps the token out of git (all key locations are gitignored).
 #
 # The script discovers the hashed daemon unit name (no-mistakes-daemon-*.service)
 # automatically, so it works across machines with different unit hashes.
 #
-# Fingerprint (token): {{ output "bash" "-c" "sha256sum ~/.agents/keys/.cf-ai-gw-token 2>/dev/null | cut -d' ' -f1" }}
+# Fingerprint (token): {{ output "bash" "-c" "sha256sum ~/.agents/keys/default/.cf-ai-gw 2>/dev/null | cut -d' ' -f1" }}
 set -euo pipefail
 
-TOKEN_FILE="$HOME/.agents/keys/.cf-ai-gw-token"
+TOKEN_FILE="$HOME/.agents/keys/default/.cf-ai-gw"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 
 # Discover the hashed daemon unit name
@@ -32,10 +32,14 @@ OVERRIDE_CONF="$OVERRIDE_DIR/override.conf"
 
 mkdir -p "$OVERRIDE_DIR"
 
-cat >"$OVERRIDE_CONF" <<'EOF'
+# Use the user's actual runtime directory
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+ENV_FILE="$RUNTIME_DIR/no-mistakes-daemon.env"
+
+cat >"$OVERRIDE_CONF" <<EOF
 [Service]
-ExecStartPre=/bin/bash -c 'token=$(cat ~/.agents/keys/.cf-ai-gw-token); echo "CF_AI_GATEWAY_TOKEN=$token" > /run/user/1001/no-mistakes-daemon.env'
-EnvironmentFile=-/run/user/1001/no-mistakes-daemon.env
+ExecStartPre=/bin/bash -c 'token=\$(cat ~/.agents/keys/default/.cf-ai-gw); echo "CF_AI_GATEWAY_TOKEN=\$token" > $ENV_FILE'
+EnvironmentFile=-$ENV_FILE
 EOF
 
 chmod 644 "$OVERRIDE_CONF"
@@ -43,8 +47,12 @@ chmod 644 "$OVERRIDE_CONF"
 echo "[no-mistakes-token] Installed drop-in override for $DAEMON_UNIT"
 echo "[no-mistakes-token] Token source: $TOKEN_FILE"
 
-# Reload systemd if daemon is running
+# Reload systemd and restart daemon if running
 if systemctl --user is-active --quiet "$DAEMON_NAME" 2>/dev/null; then
   systemctl --user daemon-reload
-  echo "[no-mistakes-token] Daemon reload triggered (daemon is active)"
+  systemctl --user restart "$DAEMON_NAME"
+  echo "[no-mistakes-token] Daemon restarted to apply new token mechanism"
+else
+  systemctl --user daemon-reload
+  echo "[no-mistakes-token] Daemon reload triggered (daemon is not active)"
 fi
