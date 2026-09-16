@@ -14,9 +14,11 @@
 #
 # POLICY NOTE: captain.md states "no systemd drop-ins" for gate auth. This script
 # creates a drop-in as an exception because:
-#   - The daemon needs CF_AI_GATEWAY_TOKEN but doesn't inherit shell env
-#   - environment.d doesn't provide variables to processes (only SHELL)
-#   - The "apply login shell environment" feature requires explicit invocation
+#   - The daemon needs CF_AI_GATEWAY_TOKEN loaded from a profile-specific key file
+#   - environment.d passes static KEY=value assignments to services but cannot
+#     execute commands like `cat` to dynamically load the token
+#   - A drop-in with ExecStartPre is the minimal mechanism to read the token at
+#     service start time
 # If captain prefers an alternative mechanism, this script should be removed and
 # the daemon configured to read the token via a different path.
 #
