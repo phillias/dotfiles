@@ -6,7 +6,7 @@ description: >
   of keeping a chezmoi-managed dotfiles repo healthy.
   Use when the user asks about adding a file to their dotfiles, encrypting a secret,
   syncing changes, managing profiles/branches, or general dotfiles housekeeping.
-  NOT for fresh install/bootstrap troubleshooting (use dotfiles-chezmoi for that).
+  NOT for fresh install/bootstrap troubleshooting (use dotfiles-setup for that).
 ---
 
 # dotfiles

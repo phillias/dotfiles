@@ -1,5 +1,5 @@
 ---
-name: dotfiles-chezmoi
+name: dotfiles-setup
 description: >
   Skill for managing chezmoi-based dotfiles with age encryption, Bitwarden integration,
   GitHub deploy keys, and multi-profile branch setup (master/personal/work).
