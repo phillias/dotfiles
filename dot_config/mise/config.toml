@@ -74,6 +74,11 @@ opencode = "1.18.29"
 "npm:@opencode-ai/plugin" = "1.18.29"
 # DSP dynamic context pruning — token optimization plugin for OpenCode
 "npm:@tarquinen/opencode-dcp" = "3.1.15"
+# opencode plugins — notification, sanitization, guards, telemetry
+"npm:opencode-ntfy.sh" = "1.1.0"
+"npm:opencode-log-sanitizer" = "1.3.0"
+"npm:envsitter-guard" = "0.0.4"
+"npm:opencode-telemetry" = "0.1.19"
 # herdr — agent terminal workspace manager (static binary via GitHub release)
 "github:herdrdev/herdr" = "0.9.0"
 # treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
