@@ -94,7 +94,7 @@ const triage = await evaluate({
 });
 
 // High confidence → auto-route
-if (triage.answers.severity.confidence > 0.9 && triage.answers.auto_fixable.noul > 0.95) {
+if (triage.answers.severity.confidence > 0.9 && triage.answers.auto_fixable.probability > 0.95) {
   queueAutoFix(finding, triage.answers.severity.choice);
 }
 // Medium confidence → escalate to frontier model
@@ -136,7 +136,7 @@ const decision = await evaluate({
 
 // Escalate to captain if high-blast-radius or genuinely ambiguous
 if (decision.answers.blast_radius.choice === 'cross_repo' ||
-    decision.answers.genuinely_ambiguous.noul > 0.8) {
+    decision.answers.genuinely_ambiguous.probability > 0.8) {
   escalateToCaptain(finding, decision.answers);
 }
 ```
@@ -150,8 +150,8 @@ Default thresholds (tune against labeled data):
 | `severity.confidence` | > 0.9 | Auto-route |
 | `severity.confidence` | > 0.7 | Route to fixer |
 | `severity.confidence` | < 0.7 | Human review |
-| `auto_fixable.noul` | > 0.95 | Queue auto-fix |
-| `needs_human.noul` | > 0.8 | Escalate |
+| `auto_fixable.probability` | > 0.95 | Queue auto-fix |
+| `needs_human.probability` | > 0.8 | Escalate |
 | `blast_radius.choice` | === 'cross_repo' | Always escalate |
 
 ## Calibration

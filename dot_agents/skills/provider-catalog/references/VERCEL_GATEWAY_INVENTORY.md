@@ -9,7 +9,7 @@
 
 | Model ID | Context | Input Price | Output Price | ZDR | Notes |
 |----------|---------|-------------|--------------|-----|-------|
-| `typesafe-ai/jev` | 32K | $0.042/MTok | FREE | ✅ | System One decisions — choice/score/boolean |
+| `typesafe-ai/jev` | N/A | $0.042/MTok | FREE | ✅ | System One decisions — choice/score/boolean |
 
 ## Daily Driver Standouts (TUI Route)
 
@@ -87,6 +87,7 @@ Moonshot-native:
 
 ```typescript
 import { gateway } from '@ai-sdk/gateway';
+import { experimental_evaluate as evaluate } from 'ai';
 
 // Daily driver
 const tui = gateway('alibaba/qwen3.7-flash');
@@ -97,8 +98,17 @@ const reviewer = gateway('openai/gpt-5.6-luna');
 // Gate
 const gate = gateway('anthropic/claude-opus-5');
 
-// Evaluation
-const triage = gateway.evaluationModel('typesafe-ai/jev');
+// Evaluation (Jev) — experimental_evaluate with model string
+const triage = await evaluate({
+  model: 'typesafe-ai/jev',
+  state: 'The support agent issued a full refund to the customer.',
+  questions: {
+    refunded: {
+      type: 'boolean',
+      instructions: 'Was a refund issued?',
+    },
+  },
+});
 ```
 
 ## Cost Comparison vs CF AI Gateway

@@ -129,10 +129,10 @@ const decision = await evaluate({
 
 // Escalate if genuinely ambiguous, high blast radius, or security-sensitive
 const shouldEscalate =
-  decision.answers.genuinely_ambiguous.noul > 0.8 ||
+  decision.answers.genuinely_ambiguous.probability > 0.8 ||
   decision.answers.blast_radius.choice === 'cross_repo' ||
   decision.answers.blast_radius.choice === 'fleet_wide' ||
-  decision.answers.security_sensitive.noul > 0.7;
+  decision.answers.security_sensitive.probability > 0.7;
 
 if (shouldEscalate) {
   escalateToCaptain(finding, decision.answers);
@@ -157,9 +157,9 @@ const safetyCheck = await evaluate({
 });
 
 // Always escalate destructive + irreversible + production
-if (safetyCheck.answers.is_destructive.noul > 0.8 &&
-    !safetyCheck.answers.reversible.noul > 0.7 &&
-    safetyCheck.answers.affects_production.noul > 0.7) {
+if (safetyCheck.answers.is_destructive.probability > 0.8 &&
+    safetyCheck.answers.reversible.probability < 0.3 &&
+    safetyCheck.answers.affects_production.probability > 0.7) {
   requireCaptainApproval(action, safetyCheck.answers);
   return;
 }
@@ -204,12 +204,12 @@ Default thresholds (tune against labeled escalation history):
 
 | Metric | Threshold | Action |
 |--------|-----------|--------|
-| `genuinely_ambiguous.noul` | > 0.8 | Escalate |
+| `genuinely_ambiguous.probability` | > 0.8 | Escalate |
 | `blast_radius.choice` | === 'cross_repo' | Escalate |
 | `blast_radius.choice` | === 'fleet_wide' | Escalate + log |
-| `security_sensitive.noul` | > 0.7 | Escalate |
-| `is_destructive.noul` | > 0.8 AND `is_irreversible.noul` > 0.7 | Escalate |
-| `expanding_scope.noul` | > 0.8 | File follow-up task |
+| `security_sensitive.probability` | > 0.7 | Escalate |
+| `is_destructive.probability` | > 0.8 AND `is_irreversible.probability` > 0.7 | Escalate |
+| `expanding_scope.probability` | > 0.8 | File follow-up task |
 
 ## Relationship to ask-user-authority
 

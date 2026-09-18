@@ -49,8 +49,8 @@
 ```
 
 **Returns:**
-- `noul`: Probability `true` (range 0-1)
-- For `auto_fixable`: `noul > 0.95` suggests auto-fix safe
+- `probability`: Probability `true` (range 0-1)
+- For `auto_fixable`: `probability > 0.95` suggests auto-fix safe
 
 ### Human Review Decision
 
@@ -85,8 +85,8 @@
 ```
 
 **Returns:**
-- `noul`: Probability `true`
-- For `needs_human`: `noul > 0.8` suggests escalation
+- `probability`: Probability `true`
+- For `needs_human`: `probability > 0.8` suggests escalation
 - For `blast_radius`: Always escalate if `choice === 'cross_repo'`
 
 ### Quality Gate Verification
@@ -170,11 +170,11 @@
 ```javascript
 {
   type: 'boolean',
-  noul: 0.97 // probability true
+  probability: 0.97 // probability true
 }
 ```
 
-Note: Boolean questions return `noul` (probability true), not separate confidence.
+Note: Boolean questions return `probability` (probability true), not separate confidence.
 
 ### Score Question (rubric)
 

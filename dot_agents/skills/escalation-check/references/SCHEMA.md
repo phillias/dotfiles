@@ -26,7 +26,7 @@
 ```
 
 **Returns:**
-- `noul`: Probability `true`
+- `probability`: Probability `true`
 
 ### Blast Radius Evaluation
 
@@ -193,5 +193,5 @@ const decision = await evaluate({
 });
 
 // All questions evaluated in parallel
-// Check decision.answers.genuinely_ambiguous.noul for escalation
+// Check decision.answers.genuinely_ambiguous.probability for escalation
 ```

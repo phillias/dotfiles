@@ -52,7 +52,7 @@
 ```
 
 **Returns:**
-- `noul`: Probability `true`
+- `probability`: Probability `true`
 
 ### Safety Assessment
 
