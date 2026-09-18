@@ -1115,7 +1115,31 @@
       "in": 0,
       "out": 0,
       "free": true
+    },
+    "typesafe-ai/jev": {
+      "context": 32768,
+      "in": 0.042,
+      "out": 0,
+      "free": false
+    },
+    "typesafe-ai/jev-latest": {
+      "context": 32768,
+      "in": 0.042,
+      "out": 0,
+      "free": false
+    },
+    "typesafe-ai/jev-preview": {
+      "context": 32768,
+      "in": 0.042,
+      "out": 0,
+      "free": false
+    },
+    "typesafe-ai/jev-1.13.0": {
+      "context": 32768,
+      "in": 0.042,
+      "out": 0,
+      "free": false
     }
   },
-  "updated_at": "2026-08-09T03:32:50.810Z"
+  "updated_at": "2026-09-17T00:00:00.000Z"
 }

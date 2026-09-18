@@ -57,10 +57,86 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | phoenixgrove | GLM-5.3 exclusive band, free + paid tiers | $4–$195/mo / $5+ per-token |
 | cloudflare | Workers AI @cf lane, free tier | $0 |
 | openrouter | GLM-5 overflow + free ladder | $0 / pay |
+| typesafe-ai | System One evaluation (Jev) — fast structured decisions | $0.042/MTok input, output free |
 
 ## Model ids
 
 Model ids are the upstream API model names sent through the gateway verbatim — never rename them. Display names may carry a `· CF GW` marker (pi), but pi's picker shows `id [provider]` regardless.
+
+## TypeSafe Jev (System One evaluation model)
+
+**Provider:** `typesafe-ai` — native provider for Jev evaluation model
+
+**Gateway paths:**
+- CF AI Gateway custom provider: `custom-typesafe-ai/v1`
+- Vercel AI Gateway: `typesafe-ai/jev` (model ID string)
+
+**Pricing:** $0.042/MTok input, output free (too cheap to meter)
+
+**Model IDs:**
+- `jev-latest` — stable alias (SDK default)
+- `jev-preview` — preview builds
+- `jev-1.13.0` — pin for production (response includes versioned ID)
+
+**Capabilities:**
+- Question types: Choice (pick from list), Score (rubric), Boolean (probability)
+- Parallel evaluation: all questions in single call
+- Calibrated confidence: probability distributions match outcomes (RLCD training)
+- Speed: 70–500ms end-to-end, ~100ms typical
+- Context: 32K input budget (documented 32,768 tokens)
+
+**Limitations:**
+- Cannot generate prose, code, or explanations
+- Output is strictly structured (cannot invent values outside schema)
+- No image input
+- No chat interface
+
+**Use cases:**
+- Task routing and classification
+- Finding triage (severity, auto-fixable, needs-human)
+- Mention classification (spam, mention_type, safe_to_reply)
+- Escalation decisions (genuinely_ambiguous, blast_radius)
+- Guardrail verification (policy violations, jailbreak detection)
+- Model selection routing (reasoning needed, profile fit)
+
+**Integration pattern (cascade):**
+```
+Jev (fast, cheap) → Classify/route
+   ↓ (low confidence cases)
+Frontier model (slow, expensive) → Handle ambiguous cases
+   ↓ (needs prose)
+LLM (text generation) → Write output
+```
+
+**Example request (Vercel AI SDK):**
+```javascript
+import { experimental_evaluate } from 'ai';
+
+const result = await experimental_evaluate({
+  model: 'typesafe-ai/jev',
+  state: 'The support agent issued a full refund to the customer.',
+  questions: {
+    refunded: { type: 'boolean', instructions: 'Was a refund issued?' },
+    severity: { type: 'choice', instructions: 'Severity level',
+      criteria: { critical: 'Breaks build/tests', warning: 'Style/best-practice', info: 'Nitpick' }},
+    needs_human: { type: 'boolean', instructions: 'Requires human judgment?' }
+  }
+});
+
+// result.answers.refunded.noul → 0.99
+// result.answers.severity.choice → 'warning', confidence: 0.95
+// result.providerMetadata.typesafe.confidence.refunded → separate confidence metric
+```
+
+**Gateway URL construction:**
+- Custom provider path: `https://gateway.ai.cloudflare.com/v1/{account}/opencode/custom-typesafe-ai/v1`
+- Vercel path: model ID `typesafe-ai/jev` resolves through AI Gateway
+
+**Auth:**
+- CF AI Gateway: BYOK in dashboard (TypeSafe API key), client sends gateway token only
+- Vercel: `AI_GATEWAY_API_KEY` environment variable
+
+**Status (2026-09-17):** Early access, waitlist onboarding. Available immediately through Vercel AI Gateway; CF custom provider requires dashboard BYOK setup.
 
 ## Gemini 2.5 Flash — limits surfaced live (2026-08-30)
 
