@@ -4,4 +4,4 @@
 # the other key-profile vars; profile restructures (e.g. the masculinecache
 # split) have orphaned this symlink before, so re-create it idempotently on
 # every apply. The profile name matches the fleet-uniform keys layout.
-[ -e "$HOME/.agents/keys/default" ] || ln -s phillias "$HOME/.agents/keys/default"
+[ -e "$HOME/.agents/keys/default" ] || ln -s "$HOME/.agents/keys/phillias" "$HOME/.agents/keys/default"
