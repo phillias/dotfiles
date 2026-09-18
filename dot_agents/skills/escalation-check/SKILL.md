@@ -158,7 +158,7 @@ const safetyCheck = await evaluate({
 
 // Always escalate destructive + irreversible + production
 if (safetyCheck.answers.is_destructive.probability > 0.8 &&
-    safetyCheck.answers.reversible.probability < 0.3 &&
+    safetyCheck.answers.is_irreversible.probability > 0.7 &&
     safetyCheck.answers.affects_production.probability > 0.7) {
   requireCaptainApproval(action, safetyCheck.answers);
   return;

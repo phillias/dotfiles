@@ -93,8 +93,12 @@ const triage = await evaluate({
   }
 });
 
+// High needs_human → route to human review first
+if (triage.answers.needs_human.probability > 0.8) {
+  queueHumanReview(finding, triage.answers);
+}
 // High confidence → auto-route
-if (triage.answers.severity.confidence > 0.9 && triage.answers.auto_fixable.probability > 0.95) {
+else if (triage.answers.severity.confidence > 0.9 && triage.answers.auto_fixable.probability > 0.95) {
   queueAutoFix(finding, triage.answers.severity.choice);
 }
 // Medium confidence → escalate to frontier model
