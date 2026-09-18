@@ -198,7 +198,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `cf-aig-dynamic/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
 
 ## Dynamic routes on the `opencode` gateway (2026-09-04)
 
@@ -229,16 +229,16 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
-  rides `cf-aig-dynamic/dynamic/pr-reviewer` via `review_agents.reviewer`
+  rides `CfAiGw/dynamic/pr-reviewer` via `review_agents.reviewer`
   (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14):
   `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` →
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
   `custom-opencode-zen/glm-5.2`.
 
-Owner defaults (2026-09-04): pi `default` chain = `cf-aig-dynamic/dynamic/TUI`
-exactly; pi `gate` chain = `cf-aig-dynamic/dynamic/pr-gate` exactly;
-opencode.json `model` = `cf-aig-dynamic/dynamic/TUI` with the legacy local
+Owner defaults (2026-09-04): pi `default` chain = `CfAiGw/dynamic/TUI`
+exactly; pi `gate` chain = `CfAiGw/dynamic/pr-gate` exactly;
+opencode.json `model` = `CfAiGw/dynamic/TUI` with the legacy local
 ladder remaining as the fallback tail.
 
 ### Route management via REST — dynamic routes ARE token-manageable (2026-09-09)
@@ -311,13 +311,13 @@ DYNAMIC-route caveat: model nodes naming bare custom-provider names
 
 ## pi + opencode wiring for dynamic routes
 
-- pi (`private_dot_pi/private_agent/models.json`): provider `cf-aig-dynamic`
+- pi (`private_dot_pi/private_agent/models.json`): provider `CfAiGw`
   with baseUrl `…/opencode/compat`, `api: openai-completions`, gateway token,
   `cf-aig-gateway-id` header, and model keys `dynamic/TUI|dynamic/high|dynamic/pr-gate|dynamic/vision`.
-- pi (`~/.pi/fallback-chains.json`): `default` ⇒ single `cf-aig-dynamic/dynamic/TUI`;
-  `gate` ⇒ single `cf-aig-dynamic/dynamic/pr-gate`.
-- opencode (`dot_config/opencode/opencode.json`): provider `cf-aig-dynamic`
-  with the four dynamic-route model keys; top-level `model` = `cf-aig-dynamic/dynamic/TUI`;
+- pi (`~/.pi/fallback-chains.json`): `default` ⇒ single `CfAiGw/dynamic/TUI`;
+  `gate` ⇒ single `CfAiGw/dynamic/pr-gate`.
+- opencode (`dot_config/opencode/opencode.json`): provider `CfAiGw`
+  with the four dynamic-route model keys; top-level `model` = `CfAiGw/dynamic/TUI`;
   agent/category chains unchanged (fallback jsonc tail unchanged).
 
 ## Gateway route node types beyond the linear ladder (2026-09-05)
@@ -423,13 +423,13 @@ automatically from its local auth dir (claude/codex/opencode/grok/kimi/
 cursor providers are all already-read). Recurring maintenance is version
 upgrades plus trust-dialog acceptance on fresh worktrees; no recurring
 provider-edit work is added per harness (all harnesses point at the same
-`cf-aig-dynamic` provider entry, so dynamic-route lane changes stay
+`CfAiGw` provider entry, so dynamic-route lane changes stay
 config-free).
 ## Deterministic dynamic-route audit (2026-09-06)
 
 `~/.config/opencode/scripts/dynamic-audit.mjs` (source: dotfiles
 `dot_config/opencode/scripts/executable_dynamic-audit.mjs`) is the scheduled,
-fully deterministic audit of the `cf-aig-dynamic` routes — no LLM step exists;
+fully deterministic audit of the `CfAiGw` routes — no LLM step exists;
 LLM interpretation happens only when the captain interrogates it, reading the
 audit log rather than re-probing the gateway.
 
