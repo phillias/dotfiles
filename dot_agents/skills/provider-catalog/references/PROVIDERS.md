@@ -67,9 +67,10 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 
 **Provider:** `typesafe-ai` — native provider for Jev evaluation model
 
-**Gateway paths:**
-- CF AI Gateway custom provider: `custom-typesafe-ai/v1`
-- Vercel AI Gateway: `typesafe-ai/jev` (model ID string)
+**Access:**
+- Direct API: `POST https://api.typesafe.ai/v1/systemone` with `TYPESAFE_API_KEY`
+- CF AI Gateway: Custom provider (dashboard BYOK setup, base URL `api.typesafe.ai/v1`)
+- Vercel AI Gateway: Model ID `typesafe-ai/jev` (separate service, not covered here)
 
 **Pricing:** $0.042/MTok input, output free (too cheap to meter)
 
@@ -77,6 +78,8 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 - `jev-latest` — stable alias (SDK default)
 - `jev-preview` — preview builds
 - `jev-1.13.0` — pin for production (response includes versioned ID)
+
+**Status (2026-09-17):** Early access waitlist. Direct API key provided upon acceptance.
 
 **Capabilities:**
 - Question types: Choice (pick from list), Score (rubric), Boolean (probability)
@@ -108,35 +111,34 @@ Frontier model (slow, expensive) → Handle ambiguous cases
 LLM (text generation) → Write output
 ```
 
-**Example request (Vercel AI SDK):**
-```javascript
-import { experimental_evaluate } from 'ai';
-
-const result = await experimental_evaluate({
-  model: 'typesafe-ai/jev',
-  state: 'The support agent issued a full refund to the customer.',
-  questions: {
-    refunded: { type: 'boolean', instructions: 'Was a refund issued?' },
-    severity: { type: 'choice', instructions: 'Severity level',
-      criteria: { critical: 'Breaks build/tests', warning: 'Style/best-practice', info: 'Nitpick' }},
-    needs_human: { type: 'boolean', instructions: 'Requires human judgment?' }
-  }
-});
-
-// result.answers.refunded.noul → 0.99
-// result.answers.severity.choice → 'warning', confidence: 0.95
-// result.providerMetadata.typesafe.confidence.refunded → separate confidence metric
+**Example request (direct API):**
+```bash
+curl -X POST https://api.typesafe.ai/v1/systemone \
+  -H "Authorization: Bearer $TYPESAFE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "jev-latest",
+    "state": "The support agent issued a full refund to the customer.",
+    "questions": {
+      "refunded": { "type": "boolean", "instructions": "Was a refund issued?" },
+      "severity": { "type": "choice", "instructions": "Severity level",
+        "criteria": { "critical": "Breaks build/tests", "warning": "Style/best-practice", "info": "Nitpick" }},
+      "needs_human": { "type": "boolean", "instructions": "Requires human judgment?" }
+    }
+  }'
 ```
 
-**Gateway URL construction:**
-- Custom provider path: `https://gateway.ai.cloudflare.com/v1/{account}/opencode/custom-typesafe-ai/v1`
-- Vercel path: model ID `typesafe-ai/jev` resolves through AI Gateway
-
-**Auth:**
-- CF AI Gateway: BYOK in dashboard (TypeSafe API key), client sends gateway token only
-- Vercel: `AI_GATEWAY_API_KEY` environment variable
-
-**Status (2026-09-17):** Early access, waitlist onboarding. Available immediately through Vercel AI Gateway; CF custom provider requires dashboard BYOK setup.
+**Response structure:**
+```json
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "refunded": { "type": "boolean", "noul": 0.99 },
+    "severity": { "type": "choice", "choice": "warning", "confidence": 0.95 },
+    "needs_human": { "type": "boolean", "noul": 0.12 }
+  }
+}
+```
 
 ## Gemini 2.5 Flash — limits surfaced live (2026-08-30)
 

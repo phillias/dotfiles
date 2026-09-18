@@ -16,8 +16,8 @@ Uses TypeSafe's Jev evaluation model to make fast, cheap structured decisions ab
 
 ## Prerequisites
 
-- `TYPESAFE_API_KEY` environment variable (direct) OR `AI_GATEWAY_API_KEY` (Vercel path)
-- Jev available through CF AI Gateway custom provider OR Vercel AI Gateway
+- `TYPESAFE_API_KEY` environment variable (from TypeSafe waitlist acceptance)
+- Direct API access: `https://api.typesafe.ai/v1/systemone`
 
 ## Question Schemas
 
