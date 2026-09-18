@@ -1,9 +1,9 @@
 {
   "gate": [
-    "cf-aig-dynamic/dynamic/pr-gate",
+    "CfAiGw/dynamic/pr-gate",
     "opencode-go/deepseek-v4-flash"
   ],
   "default": [
-    "cf-aig-dynamic/dynamic/TUI"
+    "CfAiGw/dynamic/TUI"
   ]
 }

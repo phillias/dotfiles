@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Deterministic audit for the CF AI Gateway dynamic routes (cf-aig-dynamic).
+ * Deterministic audit for the CF AI Gateway dynamic routes (CfAiGw).
  *
  * Rule-based only — no LLM. Documented by the provider-catalog skill
  * (~/.agents/skills/provider-catalog), which explains what each test means and
@@ -8,7 +8,7 @@
  * triggers interactive LLM proposals from this log.
  *
  * Tests (per run):
- *   1. config-drift — cf-aig-dynamic routes declared in opencode.json, pi
+ *   1. config-drift — CfAiGw routes declared in opencode.json, pi
  *      models.json, and pi fallback-chains.json match each other and the
  *      catalog's purpose list (TUI, high, pr-gate, vision).
  *   2. route-probe  — one fixed 4-token completion per route; records HTTP
@@ -71,7 +71,7 @@ const stripJsonc = (src) =>
 /** Return the routes referenced by a provider block; null when unreadable. */
 function routesFromProviderModels(src) {
   const doc = JSON.parse(stripJsonc(src));
-  const block = doc?.providers?.["cf-aig-dynamic"] ?? doc?.provider?.["cf-aig-dynamic"];
+  const block = doc?.providers?.["CfAiGw"] ?? doc?.provider?.["CfAiGw"];
   return block?.models ? Object.keys(block.models) : null;
 }
 
@@ -87,7 +87,7 @@ const readJsoncRoutes = (path) => {
 /** Pull an exact one-line JSON string out of a raw JSON file. */
 const routeInFallbackChains = (src) => {
   const flat = JSON.stringify(JSON.parse(stripJsonc(src)));
-  return EXPECTED_ROUTES.filter((r) => flat.includes(`cf-aig-dynamic/dynamic/${r}`));
+  return EXPECTED_ROUTES.filter((r) => flat.includes(`CfAiGw/dynamic/${r}`));
 };
 
 function dynamicSection(md) {
@@ -100,8 +100,8 @@ function configDrift() {
   const details = [];
   const oc = readRoutesFromOpencode();
   const pi = readRoutesFromPi();
-  if (!oc) details.push("opencode.json cf-aig-dynamic routes unreadable");
-  if (!pi) details.push("pi agent/models.json cf-aig-dynamic routes unreadable");
+  if (!oc) details.push("opencode.json CfAiGw routes unreadable");
+  if (!pi) details.push("pi agent/models.json CfAiGw routes unreadable");
   if (oc && pi && oc !== pi)
     details.push("opencode.json and pi agent/models.json list different routes");
   let catalog = "";
@@ -117,7 +117,7 @@ function configDrift() {
   try {
     const flat = JSON.stringify(JSON.parse(stripJsonc(readFileSyncSafe(PI_CHAINS_JSON))));
     for (const [chain, route] of Object.entries(CHAIN_EXPECT)) {
-      if (!flat.includes(`"cf-aig-dynamic/${route}"`))
+      if (!flat.includes(`"CfAiGw/${route}"`))
         details.push(`pi fallback chain "${chain}" missing ${route}`);
     }
   } catch (e) {
@@ -134,7 +134,7 @@ function configDrift() {
 function readRoutesFromOpencode() {
   try {
     const doc = JSON.parse(readFileSync(OPENCODE_JSON, "utf8"));
-    const models = doc?.provider?.["cf-aig-dynamic"]?.models;
+    const models = doc?.provider?.["CfAiGw"]?.models;
     return models ? Object.keys(models).sort().join("|") : null;
   } catch {
     return null;
