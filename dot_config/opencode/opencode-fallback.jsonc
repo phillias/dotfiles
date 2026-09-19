@@ -1,29 +1,17 @@
 {
-  // PAID-FIRST fallback policy (captain decision 2026-08-12, DESIGN.md §2.6).
-  // 2026-08-25 (captain decision): Z.AI Coding Plan (Lite $18/mo) inserted
-  // between GOAT and OpenRouter. Chain: Go → GOAT → Z.AI → OpenRouter → Zen.
-  // Z.AI Lite provides GLM-5.3 (exclusive), GLM-5.2,
-  // GLM-5-Turbo at credits-based metering with 0.5x off-peak during ET
-  // 7am-11pm operational hours. Cloudflare AI Gateway stage removed
-  // 2026-09-11 — @cf/(BYOK) routing thrashed across three failed fixes
-  // (workers-ai/ prefix, REST API migration, PGS free-band lane) and never
-  // resolved; fallback order re-evaluated separately. OpenRouter covers the
-  // cheapest GLM-5 per-token overflow ($0.60/$1.92).
-  // go-pool-guard.ts retired 2026-08-12 — reactive chain stepping here is
-  // the single owner of exhaustion handling.
+  // TWO-PATH ARCHITECTURE (captain decision 2026-09-19):
+  // Path 1 - CF AI Gateway dynamic/TUI route: cascading GLM ladder
+  //   (free → subsidized → PAYG, NO opencode-go - session-gated).
+  // Path 2 - This fallback config: dynamic/TUI first → opencode-go tail.
+  // The gateway route owns intra-GLM cascade; this chain owns the
+  // gateway-vs-direct-client hop. opencode-go can never be a gateway
+  // route node (x-opencode-session header requirement).
   //
-  // Fleet taxonomy (the retired OmO agent keys are gone): the global ladder is
-  // firstmate's + every secondmate's session chain (no agent name → resolves
-  // here). `agents` covers crewmate subagent types + the ce-* persona swarm.
-  // `categories` covers firstmate's dispatch categories. Resolution order:
-  // session model → agent (exact, then longest `*` wildcard) → category →
-  // global ladder. Specialized entries set `no_global_tail` so the chain ends
-  // at Zen and FAILS visibly instead of silently downgrading to the free tier.
-  //
-  // Decision A: utility agents (firstmate/crewmate/secondmate) run
-  // Go → GOAT → Z.AI → OpenRouter → Zen → Free (big-pickle retired 2026-09-14).
-  // Reasoning/high-effort/visual/looker/special agents keep their pinned
-  // models and fall back GOAT → Z.AI → Go → Zen only.
+  // Fleet taxonomy: the global ladder is firstmate's + every secondmate's
+  // session chain (no agent name → resolves here). `agents` covers crewmate
+  // subagent types + the ce-* persona swarm. `categories` covers firstmate's
+  // dispatch categories. Resolution order: session model → agent (exact,
+  // then longest `*` wildcard) → category → global ladder.
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
   "max_fallback_attempts": 20,
@@ -33,54 +21,38 @@
 
   // GLOBAL LADDER — firstmate & secondmate main sessions (agent=undefined),
   // and the deduped tail of every non-no_global_tail chain.
+  // Two-stage architecture:
+  // - Stage 0: CF AI Gateway dynamic/TUI route (free → subsidized → PAYG ladder)
+  // - Stage 1: opencode-go subsidized pool (session-gated, direct client only)
   "fallback_models": [
-    // STAGE 0: Free GLM models (expected to regularly fail)
-    "opencode-zen/glm-5.2",
-    "opencode-zen/glm-5.1",
-    "opencode-zen/glm-5",
+    // STAGE 0: Gateway dynamic route (cascading GLM ladder)
+    // Route handles free → subsidized → PAYG internally
+    // Budget: GLM 5.1 → 5.2 → 5.3 preference
+    "dynamic/TUI",
     
-    // STAGE 1: Subsidized plans (expected to regularly fail)
+    // STAGE 1: opencode-go subsidized pool (session-gated fallback)
     "opencode-go/kimi-k2.6",
     "opencode-go/deepseek-v4-flash",
-    "opencode-go/glm-5.1",
-    "commandcode/zai-org/glm-5.2",
-    "commandcode/zai-org/glm-5.3-flash",
-    "phoenixgrove/glm-5.3-flash",
-    "phoenixgrove/deepseek-v4-flash",
-    
-    // STAGE 2: PAYG best API rate (reliable tail)
-    "openrouter/z-ai/glm-5.1"
+    "opencode-go/glm-5.1"
   ],
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Utility crewmates: Go kimi-k2.6 primary → GOAT → Z.AI → OR → Zen (global tail adds free)
+    // Utility crewmates: Gateway route first → opencode-go fallback
     "general": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "dynamic/TUI",
       "fallback_models": [
+        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        "opencode-go/glm-5.1"
       ]
     },
     "explore": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "dynamic/TUI",
       "fallback_models": [
+        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        "opencode-go/glm-5.1"
       ]
     },
     // Specialized flywheel agents: models pinned, fallback Z.AI → GOAT → Go → Zen only.
@@ -123,33 +95,21 @@
   // DISPATCH CATEGORIES — firstmate picks at the intent gate via
   // dispatch-rules.json → task(category=...).
   "categories": {
-    // UTILITY (decision A): Go kimi-k2.6 primary → GOAT → Z.AI → OR → Zen → Free.
+    // UTILITY (decision A): Gateway route first → opencode-go fallback.
     "quick": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "dynamic/TUI",
       "fallback_models": [
+        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        "opencode-go/glm-5.1"
       ]
     },
     "unspecified-low": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "dynamic/TUI",
       "fallback_models": [
+        "opencode-go/kimi-k2.6",
         "opencode-go/deepseek-v4-flash",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/deepseek/deepseek-v4-flash",
-        "zai-coding/glm-5.2",
-        "openrouter/z-ai/glm-5",
-        "opencode-zen/deepseek-v4-flash-free",
-        "opencode-zen/nemotron-3-ultra-free",
-        "phoenixgrove/glm-5.3-flash",
-        "phoenixgrove/deepseek-v4-flash"
+        "opencode-go/glm-5.1"
       ]
     },
     // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback
