@@ -395,3 +395,8 @@ fi
 if [ -r "$HOME/.agents/keys/default/.abliteration-key" ]; then
     ABLITERATION_API_KEY="$(cat "$HOME/.agents/keys/default/.abliteration-key")" && export ABLITERATION_API_KEY
 fi
+
+# TSFM API
+if [ -r "$HOME/.agents/keys/default/.tsfm-key" ]; then
+    TSFM_API_KEY="$(cat "$HOME/.agents/keys/default/.tsfm-key")" && export TSFM_API_KEY
+fi
