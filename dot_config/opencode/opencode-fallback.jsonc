@@ -26,38 +26,30 @@
   // models and fall back GOAT → Z.AI → Go → Zen only.
   "enabled": true,
   "retry_on_errors": [400, 401, 402, 403, 429, 500, 502, 503, 504, 529],
-  "max_fallback_attempts": 15,
-  "cooldown_seconds": 60,
-  "timeout_seconds": 120,
+  "max_fallback_attempts": 20,
+  "cooldown_seconds": 15,
+  "timeout_seconds": 30,
   "notify_on_fallback": true,
 
   // GLOBAL LADDER — firstmate & secondmate main sessions (agent=undefined),
   // and the deduped tail of every non-no_global_tail chain.
   "fallback_models": [
-    // STAGE 0: session primary (utility). big-pickle retired 2026-09-14 —
-    // opencode-zen closed it; utility head is now the Go pool's kimi-k2.6.
-    // STAGE 1: OpenCode Go ($60 pool, $12/$30/$60 windows)
+    // STAGE 0: Free GLM models (expected to regularly fail)
+    "opencode-zen/glm-5.2",
+    "opencode-zen/glm-5.1",
+    "opencode-zen/glm-5",
+    
+    // STAGE 1: Subsidized plans (expected to regularly fail)
     "opencode-go/kimi-k2.6",
     "opencode-go/deepseek-v4-flash",
-    // STAGE 2: Command Code GOAT ($70 pool, $14/$35/$70 windows) — exhaust first
-    "commandcode/moonshotai/Kimi-K2.6",
-    "commandcode/deepseek/deepseek-v4-flash",
-    // STAGE 3: Z.AI Coding Plan Lite ($18/mo, credits-based, 0.5x off-peak ET)
-    "zai-coding/glm-5.2",
-    // STAGE 4: OpenRouter (cheapest per-token, $0.60/$1.92 GLM-5 via DeepInfra)
-    "openrouter/z-ai/glm-5",
-    // STAGE 5: OpenCode Zen free tier
-    "opencode-zen/deepseek-v4-flash-free",
-    "opencode-zen/nemotron-3-ultra-free",
-    // STAGE 6: FREE providers
-    // Phoenix Grove Everyday band: free during trial month (glm-5.3-flash 321B/18B, 1M ctx)
+    "opencode-go/glm-5.1",
+    "commandcode/zai-org/glm-5.2",
+    "commandcode/zai-org/glm-5.3-flash",
     "phoenixgrove/glm-5.3-flash",
     "phoenixgrove/deepseek-v4-flash",
-    "nvidia/deepseek-ai/deepseek-v4-flash",
-    "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-    "baseten/openai/gpt-oss-120b",
-    // STAGE 7: PAY last resort
-    "google/gemini-2.5-flash"
+    
+    // STAGE 2: PAYG best API rate (reliable tail)
+    "openrouter/z-ai/glm-5.1"
   ],
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
