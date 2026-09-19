@@ -37,6 +37,7 @@ set -euo pipefail
 
 usage() { echo "usage: pr-ready-check PR_NUMBER [REPO] [--strict]" >&2; exit 2; }
 
+
 PR=${1:-}
 STRICT=false
 REPO=""
@@ -54,7 +55,6 @@ OWNER="${REPO%%/*}"
 NAME="${REPO#*/}"
 
 die() { echo "error: $1" >&2; exit 2; }
-
 HEAD_SHA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid -q '.headRefOid' 2>/dev/null) \
   || die "cannot fetch PR $PR on $REPO"
 
@@ -88,8 +88,8 @@ STATS=$(printf '%s' "$THREADS_JSON" | jq '
   | [ $conn.nodes[] | select(.isOutdated == false)
       | . as $t
       | ([ $t.comments.nodes[]
-           | select((.author.login | endswith("[bot]"))
-                    and (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor"))) ]
+            | select((.author.login | endswith("[bot]"))
+                     and (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor"))) ]
          | length) as $findings
       | ([ $t.comments.nodes[]
            | select(((.author.login | endswith("[bot]")) | not)
