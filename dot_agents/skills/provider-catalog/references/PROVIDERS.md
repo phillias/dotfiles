@@ -720,38 +720,35 @@ When diagnosing step failures with unknown model attribution:
 
 2. **Cross-reference with dynamic-audit for route attribution:**
    ```bash
-   # Find which route served which model within the failure window
-   # Exact model match first, then separately list unattributed non-OK probes
+   # Two-pass query: attributed (exact model match) + unattributed (non-ok, no model)
+   # Labeled separately so unattributed failures are not falsely attributed to the model
    model_id="<model-id-from-step-1>"
    earliest="<earliest-failure-ts>"
    latest="<latest-failure-ts>"
    
-   # Attributed probes: exact served_model match
-   jq -c --arg model "$model_id" --arg earliest "$earliest" --arg latest "$latest" '
-     select(.test == "route_probe") |
-     select(.ts >= $earliest and .ts <= $latest) |
-     select(.served_model == $model) |
-     {ts, route, served_model, status, http, cf_aig_status, retry_after_s}
-   ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
+    # Pass 1: Model-correlated — exact model match
+    jq -c --arg model "$model_id" --arg earliest "$earliest" --arg latest "$latest" '
+      select(.test == "route_probe") |
+      select(.ts >= $earliest and .ts <= $latest) |
+      select(.served_model == $model) |
+      {ts, route, served_model, status, http, cf_aig_status, retry_after_s, evidence: "model_correlated"}
+    ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
    
-   # Unattributed candidates: non-OK probes where served_model is absent
-   # (the producer omits served_model for 429s, HTTP errors, timeouts, and
-   # exceptions). Review these separately — do NOT treat them as model matches.
+   # Pass 2: Unattributed — non-ok status with no served_model, labeled as such
    jq -c --arg earliest "$earliest" --arg latest "$latest" '
      select(.test == "route_probe") |
      select(.ts >= $earliest and .ts <= $latest) |
      select(.served_model == null and .status != "ok") |
-     {ts, route, served_model, status, http, cf_aig_status, retry_after_s}
+     {ts, route, served_model, status, http, cf_aig_status, retry_after_s, evidence: "unattributed"}
    ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
    ```
-   Note: The second query is a candidate list, not model attribution. A non-OK probe on an unrelated route may appear here; correlate with the route-to-model purpose definitions in "Dynamic routes" before attributing.
+   Note: Unattributed records (null `served_model`, non-ok status) may include failures from unrelated routes. Do not interpret them as model-specific evidence. Use them only as ancillary signals after consulting `provider_window` aggregates and correlating with route-to-model mappings if available.
 
 3. **Interpret:**
-   - If `served_model` differs from expected → route drift or misconfiguration
-   - `limited` status (HTTP 429) or `retry_after_s` present → rate-limit evidence only; it does not identify which upstream applied the limit
-   - If route status was `error` alone → route failed, but not proof of provider exhaustion
-   - **Provider-window exhaustion** requires a provider-specific signal (e.g. the direct route's `err_type=FreeUsageLimitError`), not just 429 or Retry-After
-   - If NULL model in invocations → model attribution unavailable; step, provider, error_type, and failure counts remain usable
-   - Unattributed non-OK probes are candidates only; never treat a null `served_model` as a model match
+   - **Model-correlated records:** If `served_model` matches the requested model, these identify route behavior for that model. Invocation/provider attribution requires a verified provider-to-route mapping.
+   - **Unattributed records:** Non-ok status without `served_model` — may belong to any route. Correlate by timestamp with other evidence, or discard if no mapping exists.
+   - If route status was `limited` (HTTP 429) or retry evidence present → rate limit or routing constraint; verify provider window before concluding exhaustion.
+   - If route status was `error` alone → route failed, but not proof of provider exhaustion.
+   - If NULL model in invocations → model attribution unavailable; rely on model-correlated audit records plus any unattributed signals you can correlate.
 
 **Read-only constraint:** Never modify no-mistakes state. These queries only read existing diagnostic data.
