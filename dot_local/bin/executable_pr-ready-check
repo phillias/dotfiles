@@ -157,10 +157,10 @@ REVIEWS_JSON=$(gh api graphql -f query='
 REVIEWS_TRUNCATED=$(printf '%s' "$REVIEWS_JSON" | jq '.data.repository.pullRequest.reviews.pageInfo.hasNextPage == true')
 
 # Count severity-marked findings in outside-diff sections, filtered by HEAD_SHA
-OUTSIDE_DIFF_N=$(printf '%s' "$REVIEWS_JSON" | jq -r '
+OUTSIDE_DIFF_N=$(printf '%s' "$REVIEWS_JSON" | jq --arg head_sha "$HEAD_SHA" -r '
   [.data.repository.pullRequest.reviews.nodes[] |
     select((.author.login // "") | test("coderabbit"; "i")) |
-    select(.commit.oid == env.HEAD_SHA) |
+    select(.commit.oid == $head_sha) |
     .body | test("⚠️ Outside diff range|Outside diff range comments")
   ] | length')
 
