@@ -253,8 +253,11 @@ git push
 gh api repos/phillias/dotfiles/pulls/313/comments/12345/replies \
   -X POST -f body="✅ Fixed in commit abc1234"
 
-# Wait 5 minutes
-sleep 300
+# Poll for bot review completion
+for i in {1..10}; do
+  sleep 30
+  echo "Polling for bot review... ($((i*30))s)"
+done
 
 # Check 2: No unresolved, all checks pass, CLEAN
 pr-ready-check 313 phillias/dotfiles
