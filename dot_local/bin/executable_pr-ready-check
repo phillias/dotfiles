@@ -102,7 +102,7 @@ THREADS_JSON=$(gh api graphql -f query='
 # Severity markers require the emoji prefix — lesson #6.
 # Comment-page truncation detected per-thread — lesson #7.
 STATS=$(printf '%s' "$THREADS_JSON" | jq '
-  def isbot: ((.author.__typename? == "Bot") or (((.author.login? // "") | endswith("[bot]")));
+  def isbot: ((.author.__typename? == "Bot") or ((.author.login? // "") | endswith("[bot]")));
   def severity: (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor"));
   .data.repository.pullRequest.reviewThreads as $conn
   | [ $conn.nodes[] | select(.isOutdated == false)
@@ -140,24 +140,33 @@ TRUNCATED=$(printf '%s' "$STATS" | jq '.truncated')
 # Reviews: fetch review bodies to detect outside-diff findings — lesson #10
 # CodeRabbit places findings outside the diff in the review body when GitHub
 # cannot attach them inline. Parse "⚠️ Outside diff range comments" sections.
+# Paginate reviews and filter by HEAD_SHA — CodeRabbit finding from PR#318.
 REVIEWS_JSON=$(gh api graphql -f query='
   query($owner: String!, $name: String!, $number: Int!) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $number) {
-        reviews(first: 20) {
-          nodes { databaseId author { login } body state }
+        reviews(first: 100) {
+          nodes { databaseId author { login } body state commit { oid } }
+          pageInfo { hasNextPage }
         }
       }
     }
   }' -f owner="$OWNER" -f name="$NAME" -F number="$PR" 2>/dev/null) \
   || die "cannot fetch reviews"
 
-# Count severity-marked findings in outside-diff sections
+REVIEWS_TRUNCATED=$(printf '%s' "$REVIEWS_JSON" | jq '.data.repository.pullRequest.reviews.pageInfo.hasNextPage == true')
+
+# Count severity-marked findings in outside-diff sections, filtered by HEAD_SHA
 OUTSIDE_DIFF_N=$(printf '%s' "$REVIEWS_JSON" | jq -r '
   [.data.repository.pullRequest.reviews.nodes[] |
-    select(.author.login | test("coderabbit"; "i")) |
+    select((.author.login // "") | test("coderabbit"; "i")) |
+    select(.commit.oid == env.HEAD_SHA) |
     .body | test("⚠️ Outside diff range|Outside diff range comments")
   ] | length')
+
+if [ "$REVIEWS_TRUNCATED" = "true" ]; then
+  TRUNCATED="true"
+fi
 
 ACTIONABLE_N=$((ACTIONABLE_N + OUTSIDE_DIFF_N))
 
