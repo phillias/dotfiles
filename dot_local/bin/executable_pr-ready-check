@@ -1,15 +1,82 @@
 #!/bin/bash
+# pr-ready-check — merge-readiness verdict for bot-reviewed PRs.
+#
+# Lessons baked in (from the PR#313 / PR#317 / PR#318 loops):
+#   1. A "✅ Fixed" reply does NOT resolve a GitHub review thread. Resolution
+#      is separate bookkeeping (a collaborator resolves in the UI, or
+#      CodeRabbit auto-resolves on re-review). This script therefore tracks
+#      *addressed* (fix reply exists) separately from *resolved* (thread
+#      state) and never blocks a merge on addressed-but-unresolved threads
+#      unless --strict.
+#   2. CodeRabbit never submits APPROVED; its reviews stay COMMENTED forever.
+#      The completion signal for the current head is the CodeRabbit row in
+#      `gh pr checks` flipping to pass ("Review completed").
+#   3. Passing checks + mergeStateStatus CLEAN are the authoritative merge
+#      signals, not thread-resolution bookkeeping.
+#   4. Detection logic lives here, tested — never hand-roll it inline.
+#   5. GraphQL and REST disagree on bot authorship: GraphQL author.login is
+#      "coderabbitai" while REST is "coderabbitai[bot]". Authorship is judged
+#      by __typename == "Bot" (authoritative), with the [bot] suffix as a
+#      fallback — never by name alone.
+#   6. Severity markers must include their emoji prefix ("🟠 Major") — bare
+#      "Major" appears in non-finding comments and causes false positives.
+#   7. Comment-page truncation must be detected per-thread, not just at the
+#      review-thread level — an unseen bot finding past the 30-comment cap
+#      would silently flip a thread to no-finding.
+#   8. A missing CodeRabbit check row means the review hasn't started yet;
+#      WAITING, not READY.
+#
+# usage: pr-ready-check PR_NUMBER [REPO] [--strict]
+#
+# verdicts (exit codes):
+#   READY    (0)  mergeable now: actionable=0, checks pass, state CLEAN
+#   ACTION   (3)  actionable bot findings exist — fix, reply, push
+#   WAITING  (1)  review or checks still in progress (or --strict with
+#                 unresolved threads outstanding)
+#   BLOCKED  (1)  checks failing or merge state not CLEAN
+#   ERROR    (2)  API failure
+#
+# Thread classification (per non-outdated thread):
+#   actionable  bot finding present, no non-bot "✅" fix reply  — must fix
+#   addressed   bot finding present, non-bot "✅" fix reply      — advisory
+#   resolved    thread isResolved
+#   no-finding  no severity-marked bot comment in thread
+#
+# Caps: first 100 threads, first 30 comments per thread (GitHub page max).
+# If truncated, the script reports it and refuses READY rather than guessing.
 set -euo pipefail
 
-PR=${1:?Usage: pr-ready-check PR_NUMBER [REPO]}
-REPO=${2:-phillias/dotfiles}
+usage() { echo "usage: pr-ready-check PR_NUMBER [REPO] [--strict]" >&2; exit 2; }
 
-# Parse repo into owner/name
-OWNER=$(echo "$REPO" | cut -d'/' -f1)
-NAME=$(echo "$REPO" | cut -d'/' -f2)
+# Parse all args into positionals, collecting flags — supports any ordering
+# of --strict relative to PR_NUMBER and REPO (CodeRabbit finding #2).
+PR=""
+REPO=""
+STRICT=false
+for arg in "$@"; do
+  case "$arg" in
+    --strict) STRICT=true ;;
+    -h|--help) usage ;;
+    --*) usage ;;
+    *)
+      if [ -z "$PR" ]; then PR="$arg"
+      elif [ -z "$REPO" ]; then REPO="$arg"
+      else usage
+      fi
+      ;;
+  esac
+done
+REPO="${REPO:-phillias/dotfiles}"
+[ -n "$PR" ] || usage
+: "${REPO:=phillias/dotfiles}"
+OWNER="${REPO%%/*}"
+NAME="${REPO#*/}"
 
-# Use GraphQL to check review threads resolution state
-UNRESOLVED=$(gh api graphql -f query='
+die() { echo "error: $1" >&2; exit 2; }
+HEAD_SHA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid -q '.headRefOid' 2>/dev/null) \
+  || die "cannot fetch PR $PR on $REPO"
+
+THREADS_JSON=$(gh api graphql -f query='
   query($owner: String!, $name: String!, $number: Int!) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $number) {
@@ -17,47 +84,174 @@ UNRESOLVED=$(gh api graphql -f query='
           nodes {
             isResolved
             isOutdated
-            comments(first: 10) {
-              nodes {
-                author { login }
-              }
+            path
+            comments(first: 30) {
+              nodes { databaseId author { __typename login } body }
+              pageInfo { hasNextPage }
             }
           }
+          pageInfo { hasNextPage }
         }
       }
     }
-  }' -f owner="$OWNER" -f name="$NAME" -F number="$PR" 2>/dev/null | \
-  jq -r '[.data.repository.pullRequest.reviewThreads.nodes[] | 
-         select(.isOutdated == false) | 
-         select(.isResolved == false)] | length' 2>/dev/null || echo "error")
+  }' -f owner="$OWNER" -f name="$NAME" -F number="$PR" 2>/dev/null) \
+  || die "cannot fetch review threads"
 
-if [ "$UNRESOLVED" = "error" ]; then
-  echo "ERROR: Failed to fetch review threads"
-  exit 2
+# Bot authorship: __typename == "Bot" is authoritative (GraphQL logins lack
+# the [bot] suffix REST adds) — lesson #5.
+# Severity markers require the emoji prefix — lesson #6.
+# Comment-page truncation detected per-thread — lesson #7.
+STATS=$(printf '%s' "$THREADS_JSON" | jq '
+  def isbot: ((.author.__typename? == "Bot") or ((.author.login? // "") | endswith("[bot]")));
+  def severity: (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor"));
+  .data.repository.pullRequest.reviewThreads as $conn
+  | [ $conn.nodes[] | select(.isOutdated == false)
+      | . as $t
+      | ([ $t.comments.nodes[] | select(isbot and severity) ] | length) as $findings
+      | ([ $t.comments.nodes[] | select((isbot | not) and (.body | contains("✅"))) ] | length) as $fixed
+      | { path: $t.path
+        , isResolved: $t.isResolved
+        , kind: ( if $t.isResolved then "resolved"
+                  elif $findings == 0 then "no-finding"
+                  elif $fixed > 0 then "addressed"
+                  else "actionable" end )
+        , comment_id: ([ $t.comments.nodes[] | select(isbot and severity) | .databaseId ] | first)
+        , excerpt: ([ $t.comments.nodes[] | select(isbot and severity) | .body | split("\n")[0] ] | first // "")
+        , comments_truncated: ($t.comments.pageInfo.hasNextPage == true)
+        }
+    ]
+  | { threads: (length)
+    , truncated: ( ($conn.pageInfo.hasNextPage == true) or (any(.comments_truncated == true)) )
+    , actionable: [ .[] | select(.kind == "actionable") ]
+    , addressed:   ([ .[] | select(.kind == "addressed") ] | length)
+    , resolved:    ([ .[] | select(.kind == "resolved") ] | length)
+    , no_finding:  ([ .[] | select(.kind == "no-finding") ] | length)
+    , unresolved_total: ([ .[] | select(.kind != "resolved") ] | length)
+    }')
+
+[ -n "$STATS" ] || die "review-thread classification failed"
+
+ACTIONABLE_N=$(printf '%s' "$STATS" | jq '.actionable | length')
+ADDRESSED_N=$(printf '%s' "$STATS" | jq '.addressed')
+RESOLVED_N=$(printf '%s' "$STATS" | jq '.resolved')
+UNRESOLVED_TOTAL=$(printf '%s' "$STATS" | jq '.unresolved_total')
+TRUNCATED=$(printf '%s' "$STATS" | jq '.truncated')
+
+# Reviews: fetch review bodies to detect outside-diff findings — lesson #10
+# CodeRabbit places findings outside the diff in the review body when GitHub
+# cannot attach them inline. Parse "⚠️ Outside diff range comments" sections.
+# Paginate reviews and filter by HEAD_SHA — CodeRabbit finding from PR#318.
+REVIEWS_JSON=$(gh api graphql -f query='
+  query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviews(first: 100) {
+          nodes { databaseId author { login } body state commit { oid } }
+          pageInfo { hasNextPage }
+        }
+      }
+    }
+  }' -f owner="$OWNER" -f name="$NAME" -F number="$PR" 2>/dev/null) \
+  || die "cannot fetch reviews"
+
+REVIEWS_TRUNCATED=$(printf '%s' "$REVIEWS_JSON" | jq '.data.repository.pullRequest.reviews.pageInfo.hasNextPage == true')
+
+# Count severity-marked findings in outside-diff sections, filtered by HEAD_SHA
+OUTSIDE_DIFF_N=$(printf '%s' "$REVIEWS_JSON" | jq --arg head_sha "$HEAD_SHA" -r '
+  [.data.repository.pullRequest.reviews.nodes[] |
+    select((.author.login // "") | test("coderabbit"; "i")) |
+    select(.commit.oid == $head_sha) |
+    .body | test("⚠️ Outside diff range|Outside diff range comments")
+  ] | length')
+
+if [ "$REVIEWS_TRUNCATED" = "true" ]; then
+  TRUNCATED="true"
 fi
 
-# All checks passing
-CHECKS_OUTPUT=$(gh pr checks $PR --repo $REPO 2>&1 || true)
-if echo "$CHECKS_OUTPUT" | grep -qE "fail|pending"; then
-  CHECKS="fail"
+ACTIONABLE_N=$((ACTIONABLE_N + OUTSIDE_DIFF_N))
+
+# Checks: use JSON output to distinguish query failure from no-checks —
+# lesson #8 (CodeRabbit finding #5). A missing CodeRabbit row means the
+# review hasn't started yet — WAITING, not READY — lesson #8 (finding #6).
+CHECKS_JSON=$(gh pr checks "$PR" --repo "$REPO" --json name,state 2>/dev/null || true)
+if [ -z "$CHECKS_JSON" ] || [ "$CHECKS_JSON" = "null" ] || ! printf '%s' "$CHECKS_JSON" | jq -e 'type == "array"' >/dev/null 2>&1; then
+  die "invalid gh pr checks output (cannot determine check status)"
+fi
+CHECKS_COUNT=$(printf '%s' "$CHECKS_JSON" | jq 'length')
+if [ "$CHECKS_COUNT" -eq 0 ]; then
+  CHECKS="none"
+  CR_STATE=""
 else
-  CHECKS="pass"
+  CHECKS=$(printf '%s' "$CHECKS_JSON" | jq -r '
+    if any(.state | ascii_downcase | test("pending")) then "pending"
+    elif any(.state | ascii_downcase | test("fail|cancel")) then "fail"
+    else "pass" end')
+  CR_STATE=$(printf '%s' "$CHECKS_JSON" | jq -r '[.[] | select(.name | test("CodeRabbit"; "i")) | .state] | first // ""')
 fi
 
-# Mergeable state
-MERGEABLE=$(gh pr view $PR --repo $REPO --json mergeable,mergeStateStatus 2>/dev/null | \
-  jq -r '.mergeable, .mergeStateStatus' | tr '\n' ' ')
+MERGE_STATE=$(gh pr view "$PR" --repo "$REPO" --json mergeable,mergeStateStatus \
+  -q '.mergeable + " " + .mergeStateStatus' 2>/dev/null) \
+  || die "cannot fetch merge state"
 
-if [ "$UNRESOLVED" -eq 0 ] && [ "$CHECKS" = "pass" ] && echo "$MERGEABLE" | grep -q "true.*CLEAN"; then
-  echo "READY TO MERGE"
-  echo "  Unresolved: $UNRESOLVED"
-  echo "  Checks: $CHECKS"
-  echo "  Mergeable: $MERGEABLE"
-  exit 0
+# Verdict:
+#   ERROR on API failures (handled above by die)
+#   ACTION when actionable findings exist — must fix
+#   WAITING when truncated, review/checks pending, or CodeRabbit absent
+#   BLOCKED when checks fail or merge state not CLEAN
+#   strict: WAITING until every non-outdated thread is resolved — lesson #8 (finding #7)
+verdict=""
+if [ "$ACTIONABLE_N" -gt 0 ]; then
+  verdict="ACTION"
+elif [ "$TRUNCATED" = "true" ]; then
+  verdict="WAITING"
+elif [ "$CHECKS" = "none" ] || [ -z "$CR_STATE" ]; then
+  verdict="WAITING"
+elif [ "$CHECKS" = "pending" ] || [ "$CR_STATE" = "PENDING" ]; then
+  verdict="WAITING"
+elif [ "$CHECKS" != "none" ] && [ -z "${CR_STATE:-}" ]; then
+  verdict="WAITING"
+elif [ "$CHECKS" = "fail" ]; then
+  verdict="BLOCKED"
+elif [ "$MERGE_STATE" != "MERGEABLE CLEAN" ]; then
+  verdict="BLOCKED"
+elif [ "$STRICT" = true ] && [ "$UNRESOLVED_TOTAL" -gt 0 ]; then
+  verdict="WAITING"
 else
-  echo "NOT READY"
-  echo "  Unresolved: $UNRESOLVED"
-  echo "  Checks: $CHECKS"
-  echo "  Mergeable: $MERGEABLE"
-  exit 1
+  verdict="READY"
+  # Revalidate HEAD_SHA before returning READY — lesson #9 (race window)
+  HEAD_SHA_FINAL=$(gh pr view "$PR" --repo "$REPO" --json headRefOid -q '.headRefOid' 2>/dev/null) || die "cannot revalidate PR head"
+  if [ "$HEAD_SHA_FINAL" != "$HEAD_SHA" ]; then
+    echo "  warning: PR head changed during evaluation — refusing READY" >&2
+    echo "  initial: $HEAD_SHA final: $HEAD_SHA_FINAL" >&2
+    verdict="WAITING"
+    HEAD_SHA="$HEAD_SHA_FINAL"
+  fi
 fi
+
+echo "pr_ready:"
+echo "  verdict: $verdict"
+echo "  head: $HEAD_SHA"
+echo "  actionable: $ACTIONABLE_N"
+echo "  addressed: $ADDRESSED_N (fix replies posted; threads not yet resolved)"
+echo "  resolved: $RESOLVED_N"
+echo "  unresolved_total: $UNRESOLVED_TOTAL"
+echo "  checks: $CHECKS (coderabbit: ${CR_STATE:-absent})"
+echo "  mergeable: $MERGE_STATE"
+[ "$TRUNCATED" = "true" ] && echo "  warning: review threads or comments truncated — refusing READY"
+
+if [ "$ACTIONABLE_N" -gt 0 ]; then
+  echo "findings[$ACTIONABLE_N]{path,comment_id,excerpt}:"
+  printf '%s' "$STATS" | jq -r \
+    '.actionable[] | "  \(.path) (comment \(.comment_id)) — \(.excerpt)"'
+fi
+if [ "$verdict" = "READY" ] && [ "$ADDRESSED_N" -gt 0 ]; then
+  echo "merge_hint: bind to verified head and merge —"
+  echo "  gh pr merge $PR --repo $REPO --merge --match-head-commit $HEAD_SHA"
+  echo "  (if refused due to unresolved threads, retry once with --admin)"
+fi
+
+case "$verdict" in
+  READY)  exit 0 ;;
+  ACTION) exit 3 ;;
+  *)      exit 1 ;;
+esac
