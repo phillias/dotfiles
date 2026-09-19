@@ -683,3 +683,75 @@ Design principles (applies to both):
   `test` (`route_probe` / `config_drift` / `provider_window`); the CSV has a
   fixed 10-column header (see script header), published as a stable format
   others can parse.
+
+## Failure signatures & diagnostic queries (2026-09-19)
+
+When investigating provider/gateway failures, recognize these signatures:
+
+### Known failure patterns
+
+| Signature | Meaning | Action |
+|---|---|---|
+| **Fixed-duration ~274s timeout** | Gateway/edge cutoff (CF AI Gateway limit) | Route failed upstream; check provider window |
+| **Prose output before JSON fence** | Model contract fragility (gemini-2.5-flash) | Retry; documented quirk, not a lane change |
+| **`model` column NULL in agent_invocations** | Historical gap (pre-no-mistakes v1.72) | Model attribution unavailable; step, provider, error_type, and failure counts remain usable |
+
+### Diagnostic query process (pull-based)
+
+When diagnosing step failures with unknown model attribution:
+
+1. **Query no-mistakes state for failed invocations with timestamp window:**
+   ```sql
+   SELECT
+       step,
+       model,
+       provider,
+       error_type,
+       MIN(ts) as earliest_failure,
+       MAX(ts) as latest_failure,
+       COUNT(*) as failures
+   FROM agent_invocations
+   WHERE status = 'failed'
+     AND ts > datetime('now', '-60 minutes')
+   GROUP BY step, model, provider, error_type
+   ORDER BY failures DESC;
+   ```
+   Use the `earliest_failure` and `latest_failure` timestamps in Step 2.
+
+2. **Cross-reference with dynamic-audit for route attribution:**
+   ```bash
+   # Find which route served which model within the failure window
+   # Exact model match first, then separately list unattributed non-OK probes
+   model_id="<model-id-from-step-1>"
+   earliest="<earliest-failure-ts>"
+   latest="<latest-failure-ts>"
+   
+   # Attributed probes: exact served_model match
+   jq -c --arg model "$model_id" --arg earliest "$earliest" --arg latest "$latest" '
+     select(.test == "route_probe") |
+     select(.ts >= $earliest and .ts <= $latest) |
+     select(.served_model == $model) |
+     {ts, route, served_model, status, http, cf_aig_status, retry_after_s}
+   ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
+   
+   # Unattributed candidates: non-OK probes where served_model is absent
+   # (the producer omits served_model for 429s, HTTP errors, timeouts, and
+   # exceptions). Review these separately — do NOT treat them as model matches.
+   jq -c --arg earliest "$earliest" --arg latest "$latest" '
+     select(.test == "route_probe") |
+     select(.ts >= $earliest and .ts <= $latest) |
+     select(.served_model == null and .status != "ok") |
+     {ts, route, served_model, status, http, cf_aig_status, retry_after_s}
+   ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
+   ```
+   Note: The second query is a candidate list, not model attribution. A non-OK probe on an unrelated route may appear here; correlate with the route-to-model purpose definitions in "Dynamic routes" before attributing.
+
+3. **Interpret:**
+   - If `served_model` differs from expected → route drift or misconfiguration
+   - `limited` status (HTTP 429) or `retry_after_s` present → rate-limit evidence only; it does not identify which upstream applied the limit
+   - If route status was `error` alone → route failed, but not proof of provider exhaustion
+   - **Provider-window exhaustion** requires a provider-specific signal (e.g. the direct route's `err_type=FreeUsageLimitError`), not just 429 or Retry-After
+   - If NULL model in invocations → model attribution unavailable; step, provider, error_type, and failure counts remain usable
+   - Unattributed non-OK probes are candidates only; never treat a null `served_model` as a model match
+
+**Read-only constraint:** Never modify no-mistakes state. These queries only read existing diagnostic data.
