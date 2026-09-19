@@ -16,8 +16,8 @@ Uses TypeSafe's Jev evaluation model to classify public mentions and decide auto
 
 ## Prerequisites
 
-- `TYPESAFE_API_KEY` environment variable (from TypeSafe waitlist acceptance)
-- Direct API access: `https://api.typesafe.ai/v1/systemone`
+- `AI_GATEWAY_API_KEY` environment variable (Vercel AI Gateway, immediate access)
+- Model: `typesafe-ai/jev` via Vercel AI Gateway
 - Relay enabled (`FMX_PAIRING_TOKEN` present in `.env`)
 
 ## Question Schemas
@@ -130,13 +130,13 @@ const classification = await evaluate({
 });
 
 // High-quality, safe mentions → auto-reply
-if (classification.answers.safe_to_reply.noul > 0.9 &&
-    !classification.answers.is_spam.noul > 0.8 &&
+if (classification.answers.safe_to_reply.probability > 0.9 &&
+    classification.answers.is_spam.probability < 0.2 &&
     classification.answers.message_quality.score > 1) {
   autoReply(mention, classification.answers.mention_type.choice);
 }
 // Spam → dismiss
-else if (classification.answers.is_spam.noul > 0.8) {
+else if (classification.answers.is_spam.probability > 0.8) {
   dismissMention(mention);
 }
 // Everything else → manual review
@@ -158,8 +158,8 @@ const spamCheck = await evaluate({
   }
 });
 
-if (spamCheck.answers.is_spam.noul > 0.85 ||
-    (spamCheck.answers.is_automated.noul > 0.9 && !spamCheck.answers.has_value.noul > 0.7)) {
+if (spamCheck.answers.is_spam.probability > 0.85 ||
+    (spamCheck.answers.is_automated.probability > 0.9 && spamCheck.answers.has_value.probability < 0.3)) {
   dismissMention(mention);
 }
 ```
@@ -178,8 +178,8 @@ const safetyCheck = await evaluate({
 });
 
 // Block auto-reply on PII or sensitive content
-if (safetyCheck.answers.contains_pii.noul > 0.7 ||
-    safetyCheck.answers.is_sensitive.noul > 0.8) {
+if (safetyCheck.answers.contains_pii.probability > 0.7 ||
+    safetyCheck.answers.is_sensitive.probability > 0.8) {
   queueManualReview(mention, { reason: 'safety', ...safetyCheck.answers });
   return;
 }
@@ -191,12 +191,12 @@ Default thresholds (tune against labeled mention history):
 
 | Metric | Threshold | Action |
 |--------|-----------|--------|
-| `safe_to_reply.noul` | > 0.9 | Auto-reply |
-| `is_spam.noul` | > 0.85 | Dismiss |
-| `is_automated.noul` | > 0.9 | Require `has_value` check |
+| `safe_to_reply.probability` | > 0.9 | Auto-reply |
+| `is_spam.probability` | > 0.85 | Dismiss |
+| `is_automated.probability` | > 0.9 | Require `has_value` check |
 | `message_quality.score` | > 1.5 | Prioritize response |
-| `is_sensitive.noul` | > 0.8 | Manual review |
-| `contains_pii.noul` | > 0.7 | Manual review |
+| `is_sensitive.probability` | > 0.8 | Manual review |
+| `contains_pii.probability` | > 0.7 | Manual review |
 
 ## Integration with fmx-respond
 

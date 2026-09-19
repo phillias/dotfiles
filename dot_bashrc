@@ -247,3 +247,9 @@ fi
 if [ -r "$HOME/.agents/keys/default/.treg-token" ]; then
     TREG_TOKEN="$(cat "$HOME/.agents/keys/default/.treg-token")" && export TREG_TOKEN
 fi
+
+# Vercel AI Gateway
+if [ -f "$HOME/.agents/keys/default/.vercel-gateway-key" ]; then
+    export AI_GATEWAY_API_KEY="$(cat $HOME/.agents/keys/default/.vercel-gateway-key)"
+fi
+fi
