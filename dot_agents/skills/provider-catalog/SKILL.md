@@ -5,7 +5,7 @@ description: Agent-agnostic provider and model catalog for the Cloudflare AI Gat
 
 # Provider Catalog
 
-All agent providers route through Cloudflare AI Gateway `opencode` (BYOK). This skill is the shared, agent-agnostic reference; per-agent chain *design* lives in each agent's own config (`~/.pi/fallback-chains.json` for pi, `~/.config/opencode/opencode-fallback.jsonc` for opencode).
+Chat and completion providers route through Cloudflare AI Gateway `opencode` (BYOK). Specialized providers (TypeSafe Jev, TSFM.ai time-series forecasting) use direct API endpoints. This skill is the shared, agent-agnostic reference; per-agent chain *design* lives in each agent's own config (`~/.pi/fallback-chains.json` for pi, `~/.config/opencode/opencode-fallback.jsonc` for opencode).
 
 **Live quota and headroom come from `quota-axi`, never from this catalog** — cost/limit rows here are reference facts, not usage state.
 

@@ -59,11 +59,8 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | cloudflare | Workers AI @cf lane, free tier | $0 |
 | openrouter | GLM-5 overflow + free ladder | $0 / pay |
 | typesafe-ai | System One evaluation (Jev) — fast structured decisions | $0.042/MTok input, output free |
-<<<<<<< Updated upstream
 | abliteration-ai | unrestricted reasoning models | $1–$3/MTok input, $3–$5/MTok output |
-=======
 | tsfm-ai | Hosted time-series foundation models (54 models, 16 families) — not a chat provider | $0.00025/forecast (flat) |
->>>>>>> Stashed changes
 
 ## Model ids
 
@@ -245,7 +242,7 @@ curl https://api.abliteration.ai/v1/chat/completions \
 
 **Access:**
 - Endpoint: `POST https://api.tsfm.ai/v1/forecast`
-- Auth: `Bearer $TSFM_API_KEY` (key at `~/.agents/keys/default/.tsfm-key`, loaded in `.zshrc`)
+- Auth: `Bearer $TSFM_API_KEY` (key at `~/.agents/keys/default/.tsfm-key`, loaded in both `.bashrc` and `.zshrc`)
 - Model catalog: `GET https://api.tsfm.ai/api/models` (54 models, all $0.00025/forecast)
 - OpenAI-compat model list: `GET https://api.tsfm.ai/v1/models`
 - No GPU provisioning required — fully hosted, autoscaling, 99.9% uptime SLA
