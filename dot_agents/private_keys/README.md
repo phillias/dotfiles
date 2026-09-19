@@ -12,20 +12,20 @@ live `~/.agents/keys` dir).
 ```
 ~/.agents/keys/            # drwx------ (700)
 ├── README.md              # this file
-├── .<provider>-key        # FLAT keys: one raw secret per file, no newline guarantees
+├── load-keys.sh           # shared loader sourced by zshenv and profile
 ├── default -> <profile>   # RELATIVE symlink naming the default key profile
 ├── <profile>/             # PROFILE dirs: per-identity/per-host key sets (drwx------)
 │   ├── .cf-ai-gw          # CF AI Gateway token consumed by opencode + zshenv
 │   ├── .phoenixgrove-coding-plan-key
-│   └── .npmjs-key
+│   ├── .groq-key
+│   └── ...                # all keys live in profile subdirectories
 └── ...
 ```
 
 Conventions:
 
-- **Flat keys** (`.groq-key`, `.qwen-key`, …) live directly in the directory root.
-  One secret per file, value only (no `KEY=` prefix). All secrets are dotfiles
-  (leading `.`).
+- **All keys** live in profile subdirectories. One secret per file, value only
+  (no `KEY=` prefix). All secrets are dotfiles (leading `.`).
 - **Profiles** are subdirectories named with a lowercase slug identifying the
   machine or persona (e.g. `phillias`, `masculinecache`). Any consumer outside
   the shell rc selects a profile by **explicit path** — non-default profiles are
@@ -70,9 +70,11 @@ captain if we ever want one consolidated loader. Not changed in this task.
 
 | Loader | When | Behavior |
 |---|---|---|
-| `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Reads `~/.agents/keys/default`. If the symlink exists and names an existing profile dir, loads that profile's `.cf-ai-gw` into `CF_AI_GATEWAY_TOKEN`. On missing symlink/profile/key: exports nothing; prints a hint **only on interactive shells** (TTY check), so cron/scripts never see stderr noise. Downstream, `~/.zshenv` derives `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` from `CF_AI_GATEWAY_TOKEN` to route Claude Code / Codex through the CF AI Gateway. |
-| `~/.zshrc` | interactive zsh | Guards each flat key with `[ -f … ]` and exports its env var (mapping table below). Missing files are silently skipped — no errors, no partial exports. |
-| `~/.bashrc` | interactive bash | Same flat-key guard/export pattern as zshrc for the bash-side toolset. |
+| `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Shared loader that reads from `~/.agents/keys/default` profile. Loads all keys from the default profile directory into environment variables. Silently skips missing files. |
+| `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Sources `load-keys.sh` for non-interactive availability, then derives gateway routing vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) from `CF_AI_GATEWAY_TOKEN`. |
+| `~/.profile` | login shells | Sources `load-keys.sh` for bash login shells and SSH sessions. |
+| `~/.zshrc` | interactive zsh | Sources `load-keys.sh` (redundant but harmless) for interactive sessions. |
+| `~/.bashrc` | interactive bash | Sources `load-keys.sh` (redundant but harmless) for interactive sessions. |
 
 Design invariants:
 
@@ -108,22 +110,24 @@ sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
 ## Repo mapping (chezmoi)
 
 Age-encrypted copies live in the dotfiles repo at `dot_agents/private_keys/`
-(target `~/.agents/keys` as a private dir). One exception: the bench-studio
-runtime env is tracked unencrypted at `docker/private_bench-studio/
-private_dot_env` → `~/docker/bench-studio/.env`: it carries interpolation
-placeholders (`KEY=${KEY}`) so the variables resolve from the host shell env at
-compose runtime, scoped to that compose project rather than the shared keys dir.
+(target `~/.agents/keys` as a private dir). All encrypted files are stored in
+per-profile subdirectories:
 
-- `encrypted_dot_<name>.age` → flat `~/.agents/keys/.<name>`
 - `private_<profile>/encrypted_private_dot_<name>.age`
   → `~/.agents/keys/<profile>/.<name>`
-- Keys provisioned out-of-band (BWS cron sweeps, manual `chezmoi add --encrypt`
-  steps, ad-hoc machine setup) are not all in the repo; the absence of a repo
-  copy for a flat key is expected for locally-provisioned secrets — do not
-  "fix" that by committing plaintext.
+- `symlink_default` → relative symlink target (content: `<profile>`)
+
+Example: `private_phillias/encrypted_private_dot_groq-key.age` decrypts to
+`~/.agents/keys/phillias/.groq-key`, and `~/.agents/keys/default -> phillias`
+makes it the default profile.
+
+Keys provisioned out-of-band (BWS cron sweeps, manual `chezmoi add --encrypt`
+steps, ad-hoc machine setup) are not all in the repo; the absence of a repo
+copy for a key is expected for locally-provisioned secrets — do not "fix" that
+by committing plaintext.
 
 To add or rotate a managed key: edit the source value, then
-`chezmoi add --encrypt ~/.agents/keys/.<name>` (or
+`chezmoi add --encrypt ~/.agents/keys/<profile>/.<name>` (or
 `chezmoi re-add <path>`), commit the `.age` file, and `chezmoi apply` on target
 hosts. See the `dotfiles` / `chezmoi-axi` agent skills for the wrapper
 commands.

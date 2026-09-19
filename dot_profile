@@ -8,6 +8,12 @@
 # for ssh logins, install and configure the libpam-umask package.
 #umask 022
 
+# Load keys from the default profile (~/.agents/keys/default symlink).
+# This makes all provider keys available to login shells and SSH sessions.
+if [ -r "$HOME/.agents/keys/load-keys.sh" ]; then
+    . "$HOME/.agents/keys/load-keys.sh"
+fi
+
 # if running bash
 if [ -n "$BASH_VERSION" ]; then
     # include .bashrc if it exists
