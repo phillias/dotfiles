@@ -1,6 +1,6 @@
 ---
 name: provider-catalog
-description: Agent-agnostic provider and model catalog for the Cloudflare AI Gateway `opencode` gateway — provider roles, gateway URL segments, token location, retry semantics, and live statuses. Use when checking which provider/model to use, routing through the gateway, or debugging provider auth/URLs across pi, opencode, or any other agent.
+description: Agent-agnostic provider and model catalog for the Cloudflare AI Gateway `opencode` gateway — provider roles, gateway URL segments, token location, retry semantics, and live statuses. Also covers non-gateway providers (TypeSafe Jev, TSFM.ai time-series forecasting). Use when checking which provider/model to use, routing through the gateway, or debugging provider auth/URLs across pi, opencode, or any other agent.
 ---
 
 # Provider Catalog
