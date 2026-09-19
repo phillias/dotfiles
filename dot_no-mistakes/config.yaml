@@ -43,24 +43,13 @@ agent_config:
   pi:
     model: fallback/gate
 
-# (2026-09-15) Review stage stays on pi → the pr-reviewer route (its deepseek
-# head passed every no-mistakes run). The codex→inkling:free wiring was built
-# and then disproven by live probes: OpenRouter's routing funnel 403s
-# codex-cli ("only available on agentic harnesses — plug into an app listed
-# on https://openrouter.ai/apps") — TM's announcement named Codex the OpenAI
-# PRODUCT, not the codex CLI, and impersonating a listed app is off the
-# table. Additionally codex-cli 0.153.4 speaks ONLY the Responses wire, which
-# the gateway compat plane rejects ("responses is not supported", code 2019),
-# so codex cannot ride pr-gate either. Inkling:free remains reachable only
-# from listed apps / pi-direct-smoke (unreliable) — treat it as a personal
-# experiments lane; the PAID tier ($0.95/$4.05, no gate, no logging) is the
-# legitimate route if inkling is ever wanted for reviews. The fixer and every
-# other stage keep the global pi chain. (Schema:
-# review_agents.{reviewer,fixer}; no-mistakes 1.72.0.)
+# (2026-09-19) Review stage rides pr-gate (the only existing gate route).
+# The pr-reviewer route documented in PROVIDERS.md does not exist in CF AI Gateway.
+# Gate route serves GLM-5.x free ladder for deterministic review output.
 review_agents:
   reviewer:
     agent: pi
-    model: cf-aig-dynamic/dynamic/pr-reviewer
+    model: CfAiGw/dynamic/pr-gate
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
