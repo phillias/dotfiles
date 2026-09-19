@@ -1139,7 +1139,26 @@
       "in": 0.042,
       "out": 0,
       "free": false
+    },
+    "abliteration-ai/abliterated-model": {
+      "context": 262144,
+      "in": 1,
+      "out": 3,
+      "free": false,
+      "multimodal": true
+    },
+    "abliteration-ai/abliterated-model-large": {
+      "context": 1000000,
+      "in": 3,
+      "out": 5,
+      "free": false
+    },
+    "abliteration-ai/abliterated-model-large-v2": {
+      "context": 1000000,
+      "in": 3,
+      "out": 5,
+      "free": false
     }
   },
-  "updated_at": "2026-09-17T00:00:00.000Z"
+  "updated_at": "2026-09-18T22:30:00.000Z"
 }

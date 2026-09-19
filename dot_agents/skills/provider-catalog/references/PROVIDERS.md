@@ -43,6 +43,7 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | phoenixgrove | `custom-phoenixgrove/v1` | GLM-5.3-flash, deepseek-v4-flash |
 | openrouter | `openrouter/v1` | native passthrough slug, **NOT `custom-`** |
 | cloudflare | `custom-cloudflare/v1` | @cf lane (Workers AI, free tier) |
+| abliteration-ai | `custom-abliteration-ai/v1` | unrestricted reasoning models (abliterated-model, abliterated-model-large) |
 
 **URL version-segment rule:** the gateway strips a trailing version-like segment from the custom provider's `base_url` before appending the request path; carrying the version in the request URL restores correctness.
 
@@ -58,6 +59,7 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | cloudflare | Workers AI @cf lane, free tier | $0 |
 | openrouter | GLM-5 overflow + free ladder | $0 / pay |
 | typesafe-ai | System One evaluation (Jev) — fast structured decisions | $0.042/MTok input, output free |
+| abliteration-ai | unrestricted reasoning models | $1–$3/MTok input, $3–$5/MTok output |
 
 ## Model ids
 
@@ -137,6 +139,95 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
     "severity": { "type": "choice", "choice": "warning", "confidence": 0.95 },
     "needs_human": { "type": "boolean", "noul": 0.12 }
   }
+}
+```
+
+## Abliteration AI — unrestricted reasoning models (2026-09-18)
+
+**Provider:** `abliteration-ai` — native provider for unrestricted reasoning models
+
+**Access:**
+- Direct API: `POST https://api.abliteration.ai/v1/chat/completions` with `ABLITERATION_API_KEY` (starts with `ak_`)
+- CF AI Gateway: Custom provider (dashboard BYOK setup, base URL `api.abliteration.ai/v1`)
+- OpenAI SDK compatible: Set `baseURL: "https://api.abliteration.ai/v1"`
+
+**Model IDs:**
+- `abliterated-model` — general-purpose, multimodal (text + image), 256K context, bf16 quantization
+- `abliterated-model-large` — frontier-scale reasoning, text-only, 1M context, fp8 quantization
+- `abliterated-model-large-v2` — updated large variant (2026-09-18), same specs as large
+
+**Pricing:**
+- `abliterated-model`: $1/MTok input, $3/MTok output, $0.10/MTok cached read
+- `abliterated-model-large`: $3/MTok input, $5/MTok output, $0.30/MTok cached read
+- Same pricing for `abliterated-model-large-v2`
+
+**Context & Limits:**
+| Model | Context | Max Output | Modalities |
+|---|---|---|---|
+| `abliterated-model` | 262,144 | 262,134 | text, image |
+| `abliterated-model-large` | 1,000,000 | 999,990 | text |
+| `abliterated-model-large-v2` | 1,000,000 | 999,990 | text |
+
+**Supported Features:**
+- Tools (function calling)
+- JSON mode & structured outputs
+- Logprobs
+- Web search
+- Reasoning tokens
+- Streaming (SSE)
+- Prompt caching
+
+**Sampling Parameters:**
+- `temperature`: 0–2 (large: 0–1)
+- `top_p`: 0–1
+- `top_k`, `min_p`: supported
+- `frequency_penalty`, `presence_penalty`, `repetition_penalty`
+- `stop`, `seed`, `max_tokens`, `logit_bias`
+
+**Status (2026-09-18):** Live API with immediate access via API key. Credit-based billing with remaining_credits field in response.
+
+**Use Cases:**
+- Hard reasoning workloads requiring frontier-scale compute
+- Evaluation tasks needing 1M context
+- Multimodal inference (abliterated-model only)
+- Scenarios requiring unrestricted model behavior
+
+**Example request:**
+```bash
+curl https://api.abliteration.ai/v1/chat/completions \
+  -H "Authorization: Bearer $ABLITERATION_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "abliterated-model",
+    "messages": [{"role": "user", "content": "Explain quantum computing in one sentence"}],
+    "max_tokens": 128,
+    "temperature": 0.7
+  }'
+```
+
+**Response structure:**
+```json
+{
+  "id": "chatcmpl-abc123",
+  "object": "chat.completion",
+  "created": 1781324687,
+  "model": "abliterated-model",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "Quantum computing leverages superposition and entanglement..."
+    },
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 28,
+    "total_tokens": 40
+  },
+  "remaining_credits": 48,
+  "estimated_credits_used": 1,
+  "estimated_cost_usd": 0.000105
 }
 ```
 
