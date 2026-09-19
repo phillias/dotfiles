@@ -244,3 +244,6 @@ fi
 if [ -f "$HOME/.agents/keys/.atlascloud-key" ]; then
     export ATLASCLOUD_API_KEY="$(cat $HOME/.agents/keys/.atlascloud-key)"
 fi
+if [ -f "$HOME/.agents/keys/default/.treg-token" ]; then
+    export TREG_TOKEN="$(cat $HOME/.agents/keys/default/.treg-token)"
+fi
