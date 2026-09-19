@@ -683,3 +683,49 @@ Design principles (applies to both):
   `test` (`route_probe` / `config_drift` / `provider_window`); the CSV has a
   fixed 10-column header (see script header), published as a stable format
   others can parse.
+
+## Failure signatures & diagnostic queries (2026-09-19)
+
+When investigating provider/gateway failures, recognize these signatures:
+
+### Known failure patterns
+
+| Signature | Meaning | Action |
+|---|---|---|
+| **Fixed-duration ~274s timeout** | Gateway/edge cutoff (CF AI Gateway limit) | Route failed upstream; check provider window |
+| **Prose output before JSON fence** | Model contract fragility (gemini-2.5-flash) | Retry; documented quirk, not a lane change |
+| **`model` column NULL in agent_invocations** | Historical gap (pre-no-mistakes v1.72) | No runtime capture; ignore for diagnostics |
+
+### Diagnostic query process (pull-based)
+
+When diagnosing step failures with unknown model attribution:
+
+1. **Query no-mistakes state for failed invocations:**
+   ```sql
+   SELECT
+       step,
+       model,
+       provider,
+       error_type,
+       COUNT(*) as failures
+   FROM agent_invocations
+   WHERE status = 'failed'
+     AND ts > datetime('now', '-60 minutes')
+   GROUP BY step, model, provider, error_type
+   ORDER BY failures DESC;
+   ```
+
+2. **Cross-reference with dynamic-audit for route attribution:**
+   ```bash
+   # Find which route served which model at failure time
+   jq -c 'select(.test == "route_probe") | {ts, route, served_model}' \
+     ~/.local/state/opencode-fleet/dynamic-audit.jsonl \
+     | grep -E '<model-id-from-step-1>'
+   ```
+
+3. **Interpret:**
+   - If `served_model` differs from expected → route drift or misconfiguration
+   - If route was `limited`/`error` at that time → provider window exhausted
+   - If NULL model in invocations → historical record, rely on audit log only
+
+**Read-only constraint:** Never modify no-mistakes state. These queries only read existing diagnostic data.
