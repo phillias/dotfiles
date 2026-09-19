@@ -59,7 +59,11 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | cloudflare | Workers AI @cf lane, free tier | $0 |
 | openrouter | GLM-5 overflow + free ladder | $0 / pay |
 | typesafe-ai | System One evaluation (Jev) — fast structured decisions | $0.042/MTok input, output free |
+<<<<<<< Updated upstream
 | abliteration-ai | unrestricted reasoning models | $1–$3/MTok input, $3–$5/MTok output |
+=======
+| tsfm-ai | Hosted time-series foundation models (54 models, 16 families) — not a chat provider | $0.00025/forecast (flat) |
+>>>>>>> Stashed changes
 
 ## Model ids
 
@@ -142,6 +146,7 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 }
 ```
 
+<<<<<<< Updated upstream
 ## Abliteration AI — unrestricted reasoning models (2026-09-18)
 
 **Provider:** `abliteration-ai` — native provider for unrestricted reasoning models
@@ -231,6 +236,94 @@ curl https://api.abliteration.ai/v1/chat/completions \
 }
 ```
 
+=======
+## TSFM.ai — Time Series Foundation Model inference (2026-09-18)
+
+**Provider:** `tsfm-ai` — hosted inference for 54 time-series foundation models across 16 families.
+
+**Not a chat/completions provider** — TSFM.ai serves a dedicated `/v1/forecast` endpoint for zero-shot time-series forecasting. It does NOT route through the CF AI Gateway (different API shape). Use directly.
+
+**Access:**
+- Endpoint: `POST https://api.tsfm.ai/v1/forecast`
+- Auth: `Bearer $TSFM_API_KEY` (key at `~/.agents/keys/default/.tsfm-key`, loaded in `.zshrc`)
+- Model catalog: `GET https://api.tsfm.ai/api/models` (54 models, all $0.00025/forecast)
+- OpenAI-compat model list: `GET https://api.tsfm.ai/v1/models`
+- No GPU provisioning required — fully hosted, autoscaling, 99.9% uptime SLA
+
+**Verified (2026-09-18):** API key works. Live forecast test on `google/timesfm-2.5-200m-pytorch` returned 21-step forecast with 9 quantile levels in 27ms (790 tokens, $0.00025).
+
+**Pricing:** Flat $0.00025 per forecast request, regardless of model. No per-token billing. Free tier included (no credit card required for signup).
+
+**Request format (canonical):**
+```json
+{
+  "model": "google/timesfm-2.5-200m-pytorch",
+  "inputs": [{
+    "start": "2025-01-01T00:00:00Z",
+    "target": [[450.0], [451.2], [449.8], ...],
+    "metadata": {"item_id": "SPY"}
+  }],
+  "parameters": {
+    "prediction_length": 21,
+    "frequency": "B",
+    "quantile_levels": [0.1, 0.5, 0.9]
+  }
+}
+```
+
+Key format detail: `target` is **always 2D** — `[[val], [val], ...]` (outer=time, inner=channels). Univariate uses length-1 inner arrays. Passing 1D arrays returns 422.
+
+**Response format:**
+```json
+{
+  "id": "...", "object": "forecast", "model": "google/timesfm-2.5-200m-pytorch",
+  "horizon": 21, "prediction_length": 21,
+  "quantile_levels": [0.1, 0.5, 0.9],
+  "input_points": 252,
+  "outputs": [{
+    "mean": [[482.05], [482.82], ...],
+    "quantile_predictions": [
+      {"level": 0.1, "values": [[481.70], ...]},
+      {"level": 0.5, "values": [[480.43], ...]},
+      {"level": 0.9, "values": [[487.68], ...]}
+    ],
+    "timestamps": ["2025-12-29T00:00:00Z", ...],
+    "metadata": {"item_id": "SPY"}
+  }],
+  "usage": {"input_tokens": 706, "output_tokens": 84, "total_tokens": 790},
+  "latency_ms": 27
+}
+```
+
+**TimesFM model availability (2026-09-18):**
+
+| Model ID | Params | Context | Max Context | GPU | Status |
+|---|---|---|---|---|---|
+| `google/timesfm-2.0-500m-pytorch` | 500M | 2,048 | 2,048 | T4 | available |
+| `google/timesfm-2.5-200m-pytorch` | 200M | 16,384 | 16,384 | T4 | available |
+| `google/timesfm-3.0-pytorch` | 330M | 16,384 | 16,384 | — | **NOT hosted** |
+
+TimesFM-3 is NOT available on any hosted inference provider. The weights are non-commercial license (`timesfm-non-commercial-license-v1.0`), which blocks commercial hosting. TSFM.ai has a blog post analyzing TimesFM-3 but confirmed via live API query: zero TimesFM-3 models in catalog. Google's BigQuery integration for TimesFM-3 is announced "in coming weeks" — that may provide a commercial path.
+
+**Best models for financial time-series (Gambit use case):**
+
+| Model ID | Family | Params | Context | Why |
+|---|---|---|---|---|
+| `google/timesfm-2.5-200m-pytorch` | TimesFM | 200M | 16,384 | Longest context, quantile support, covariates |
+| `google/timesfm-2.0-500m-pytorch` | TimesFM | 500M | 2,048 | Higher capacity, shorter context |
+| `Salesforce/moirai-1.1-R-large` | Moirai | 311M | 8,192 | Native multivariate (Any-Variate Attention) |
+| `Salesforce/moirai-1.1-R-base` | Moirai | 91M | 8,192 | Balanced multivariate quality/cost |
+| `amazon/chronos-2` | Chronos | — | 8,192 | Strong zero-shot, Apache-2.0 licensed |
+| `NX-AI/TiRex-2` | TiRex | — | 8,192 | Multivariate xLSTM with covariates, streaming state |
+
+For Gambit's multivariate alpha forecasting: `Salesforce/moirai-1.1-R-large` is the best commercially-licensed, natively multivariate option. Use `google/timesfm-2.5-200m-pytorch` for long-context univariate forecasting (16K points = ~64 trading days of minute data or ~65 years of daily data).
+
+**Full model catalog (54 models, 16 families):**
+Chronos (6), Cisco TSM (1), Granite FlowState (2), Granite PatchTST (2), Granite TTM (2), Kairos (3), Kronos (3), Lag-Llama (1), MOMENT (3), Moirai (9), Sundial (1), TEMPO (1), TiRex (3), TimeMoE (2), Timer (1), Timer-S1 (1), TimesFM (2), TinyTimeMixer (1), Toto (6), YingLong (4). All $0.00025/forecast.
+
+**Key env var:** `TSFM_API_KEY` — set in `~/.zshrc` from `~/.agents/keys/default/.tsfm-key`
+
+>>>>>>> Stashed changes
 ## Gemini 2.5 Flash — limits surfaced live (2026-08-30)
 
 **Model:** `gemini/gemini-2.5-flash` — Google Generative AI (AI Studio), native `google-generative-ai` API type in pi. Input 1,048,576 tok (real 1M), output 65,536, ~0.6 s latency. Key: `~/.config/opencode/.google-key` (AQ.* OAuth-derived token; captain handles rotation on expiry).

@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euo pipefail
+
+PR=${1:?Usage: pr-ready-check PR_NUMBER [REPO]}
+REPO=${2:-phillias/dotfiles}
+
+# Unresolved bot comments
+UNRESOLVED=$(gh api "repos/$REPO/pulls/$PR/comments?per_page=100" 2>/dev/null | \
+  jq '[.[] | select(.user.login | test("coderabbitai|greptile")) | 
+       select(.body | test("🎯|Critical|Major|Minor")) | 
+       select(.body | contains("✅") | not)] | length' 2>/dev/null || echo "error")
+
+if [ "$UNRESOLVED" = "error" ]; then
+  echo "ERROR: Failed to fetch comments"
+  exit 2
+fi
+
+# All checks passing
+CHECKS_OUTPUT=$(gh pr checks $PR --repo $REPO 2>&1 || true)
+if echo "$CHECKS_OUTPUT" | grep -qE "fail|pending"; then
+  CHECKS="fail"
+else
+  CHECKS="pass"
+fi
+
+# Mergeable state
+MERGEABLE=$(gh pr view $PR --repo $REPO --json mergeable,mergeStateStatus 2>/dev/null | \
+  jq -r '.mergeable, .mergeStateStatus' | tr '\n' ' ')
+
+if [ "$UNRESOLVED" -eq 0 ] && [ "$CHECKS" = "pass" ] && echo "$MERGEABLE" | grep -q "true.*CLEAN"; then
+  echo "READY TO MERGE"
+  echo "  Unresolved: $UNRESOLVED"
+  echo "  Checks: $CHECKS"
+  echo "  Mergeable: $MERGEABLE"
+  exit 0
+else
+  echo "NOT READY"
+  echo "  Unresolved: $UNRESOLVED"
+  echo "  Checks: $CHECKS"
+  echo "  Mergeable: $MERGEABLE"
+  exit 1
+fi
