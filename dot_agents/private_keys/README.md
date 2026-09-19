@@ -92,6 +92,7 @@ Design invariants:
 .together-key        TOGETHER_API_KEY        .intern-key       INTERN_API_KEY
 .zen-key             OPENCODE_ZEN_API_KEY    .openrouter-key   OPENROUTER_API_KEY
 .zai-key             ZHIPU_API_KEY           .exa-key          EXA_API_KEY
+.vercel-gateway-key  AI_GATEWAY_API_KEY
 .google-client-id    GOOGLE_CLIENT_ID        .composio-key     COMPOSIO_API_KEY
 .google-client-secret GOOGLE_CLIENT_SECRET   .qwen-key         QWEN_API_KEY
 .fireworks-key       FIREWORKS_API_KEY       .synthetic-key    SYNTHETIC_API_KEY
