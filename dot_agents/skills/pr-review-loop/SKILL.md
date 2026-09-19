@@ -69,14 +69,14 @@ Per check (poll every 5 minutes by default, capped by a timeout — 90 minutes u
      ```
    - Continue the loop.
 
-3. **`READY` (0)** — merge and verify:
+3. **`READY` (0)** — merge and verify. The tool prints `head: $HEAD_SHA` — bind merge to that SHA:
    ```bash
-   gh pr merge $PR --repo $REPO --merge
+   gh pr merge $PR --repo $REPO --merge --match-head-commit
    gh pr view $PR --repo $REPO --json state,mergedAt
    ```
    If plain merge is refused (addressed-but-unresolved threads), retry once:
    ```bash
-   gh pr merge $PR --repo $REPO --admin --merge
+   gh pr merge $PR --repo $REPO --admin --merge --match-head-commit
    ```
    Never delete branches or force anything in the process. After merge, pull the base branch and confirm the merge commit landed.
 

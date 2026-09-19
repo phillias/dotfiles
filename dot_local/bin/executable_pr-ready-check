@@ -37,21 +37,24 @@ set -euo pipefail
 
 usage() { echo "usage: pr-ready-check PR_NUMBER [REPO] [--strict]" >&2; exit 2; }
 
+
 PR=${1:-}
-REPO=${2:-phillias/dotfiles}
 STRICT=false
-for arg in "${@:3}"; do
-  case "$arg" in
+REPO=""
+shift || true
+while [ $# -gt 0 ]; do
+  case "$1" in
     --strict) STRICT=true ;;
-    *) usage ;;
+    *) REPO="$1" ;;
   esac
+  shift
 done
 [ -n "$PR" ] || usage
+: "${REPO:=phillias/dotfiles}"
 OWNER="${REPO%%/*}"
 NAME="${REPO#*/}"
 
 die() { echo "error: $1" >&2; exit 2; }
-
 HEAD_SHA=$(gh pr view "$PR" --repo "$REPO" --json headRefOid -q '.headRefOid' 2>/dev/null) \
   || die "cannot fetch PR $PR on $REPO"
 
@@ -66,6 +69,7 @@ THREADS_JSON=$(gh api graphql -f query='
             path
             comments(first: 30) {
               nodes { databaseId author { login } body }
+              pageInfo { hasNextPage }
             }
           }
           pageInfo { hasNextPage }
@@ -84,8 +88,8 @@ STATS=$(printf '%s' "$THREADS_JSON" | jq '
   | [ $conn.nodes[] | select(.isOutdated == false)
       | . as $t
       | ([ $t.comments.nodes[]
-           | select((.author.login | endswith("[bot]"))
-                    and (.body | test("🎯|🔴|🟠|🟡|Critical|Major|Minor"))) ]
+            | select((.author.login | endswith("[bot]"))
+                     and (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor"))) ]
          | length) as $findings
       | ([ $t.comments.nodes[]
            | select(((.author.login | endswith("[bot]")) | not)
@@ -98,16 +102,16 @@ STATS=$(printf '%s' "$THREADS_JSON" | jq '
                   else "actionable" end )
         , comment_id: ([ $t.comments.nodes[]
                          | select((.author.login | endswith("[bot]"))
-                                  and (.body | test("🎯|🔴|🟠|🟡|Critical|Major|Minor")))
+                                  and (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor")))
                          | .databaseId ] | first)
         , excerpt: ([ $t.comments.nodes[]
                       | select((.author.login | endswith("[bot]"))
-                               and (.body | test("🎯|🔴|🟠|🟡|Critical|Major|Minor")))
+                               and (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor")))
                       | .body | split("\n")[0] ] | first // "")
         }
     ]
   | { threads: ($conn.nodes | length)
-    , truncated: ($conn.pageInfo.hasNextPage == true)
+    , truncated: (($conn.pageInfo.hasNextPage == true) or ([ .[] | .comments_truncated // false ] | any))
     , actionable: [ .[] | select(.kind == "actionable") ]
     , addressed:   ([ .[] | select(.kind == "addressed") ] | length)
     , resolved:    ([ .[] | select(.kind == "resolved") ] | length)
@@ -119,23 +123,35 @@ STATS=$(printf '%s' "$THREADS_JSON" | jq '
 ACTIONABLE_N=$(printf '%s' "$STATS" | jq '.actionable | length')
 ADDRESSED_N=$(printf '%s' "$STATS" | jq '.addressed')
 RESOLVED_N=$(printf '%s' "$STATS" | jq '.resolved')
+NO_FINDING_N=$(printf '%s' "$STATS" | jq '.no_finding')
 TRUNCATED=$(printf '%s' "$STATS" | jq '.truncated')
+THREADS_N=$(printf '%s' "$STATS" | jq '.threads')
+UNRESOLVED_TOTAL=$((THREADS_N - RESOLVED_N))
 
 # Checks: gh pr checks prints one tab-separated row per check.
-CHECKS_RAW=$(gh pr checks "$PR" --repo "$REPO" 2>&1 || true)
-if printf '%s' "$CHECKS_RAW" | grep -q "no checks reported" || [ -z "$CHECKS_RAW" ]; then
+CHECKS_JSON=$(gh pr checks "$PR" --repo "$REPO" --json name,status,conclusion 2>&1) || CHECKS_JSON=""
+if [ -z "$CHECKS_JSON" ] || printf '%s' "$CHECKS_JSON" | jq -e 'type != "array"' >/dev/null 2>&1; then
   CHECKS="none"
   CR_STATE=""
 else
-  CHECKS=$(printf '%s' "$CHECKS_RAW" | awk -F'\t' '
-    $2 == "pending"            { p=1 }
-    $2 ~ /fail|canceled/       { f=1 }
-    END {
-      if (f) print "fail"
-      else if (p) print "pending"
-      else print "pass"
-    }')
-  CR_STATE=$(printf '%s' "$CHECKS_RAW" | awk -F'\t' '$1 ~ /CodeRabbit/ {print $2; exit}')
+  CHECKS=$(printf '%s' "$CHECKS_JSON" | jq -r '
+    [ .[] |
+      if .status == "QUEUED" or .status == "IN_PROGRESS" then "pending"
+      elif .conclusion == "FAILURE" or .conclusion == "CANCELLED" or .conclusion == "TIMED_OUT" then "fail"
+      else "pass"
+      end
+    ] | unique | join(",") ')
+  CR_STATE=$(printf '%s' "$CHECKS_JSON" | jq -r '
+    [.[] | select(.name == "CodeRabbit") |
+      if .status == "QUEUED" or .status == "IN_PROGRESS" then "pending"
+      elif .conclusion == "SUCCESS" then "pass"
+      elif .conclusion == "FAILURE" then "fail"
+      else "unknown"
+      end
+    ] | first // empty')
+  if printf '%s' "$CHECKS" | grep -qE "fail|pending"; then
+    CHECKS=$(printf '%s' "$CHECKS" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+  fi
 fi
 
 MERGE_STATE=$(gh pr view "$PR" --repo "$REPO" --json mergeable,mergeStateStatus \
@@ -149,11 +165,13 @@ elif [ "$TRUNCATED" = "true" ]; then
   verdict="WAITING"
 elif [ "$CHECKS" = "pending" ] || [ "${CR_STATE:-}" = "pending" ]; then
   verdict="WAITING"
+elif [ "$CHECKS" != "none" ] && [ -z "${CR_STATE:-}" ]; then
+  verdict="WAITING"
 elif [ "$CHECKS" = "fail" ]; then
   verdict="BLOCKED"
 elif [ "$MERGE_STATE" != "MERGEABLE CLEAN" ]; then
   verdict="BLOCKED"
-elif [ "$STRICT" = true ] && [ "$ADDRESSED_N" -gt 0 ]; then
+elif [ "$STRICT" = true ] && [ "$UNRESOLVED_TOTAL" -gt 0 ]; then
   verdict="WAITING"
 else
   verdict="READY"
