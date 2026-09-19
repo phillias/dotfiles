@@ -65,79 +65,29 @@ if $IS_MAC; then
     fi
 fi
 
-# ── 2. Install chezmoi ───────────────────────────────────────────
-if ! command -v chezmoi &>/dev/null; then
-    echo "==> Installing chezmoi..."
-    if $BREW_OK; then
-        brew install chezmoi
-    else
-        TMP=$(mktemp -d)
-        ARCH=$(uname -m)
-        case "$ARCH" in
-            x86_64)  CZ_ARCH="amd64" ;;
-            aarch64) CZ_ARCH="arm64" ;;
-            armv7l)  CZ_ARCH="armhf" ;;
-            *)       CZ_ARCH="amd64" ;;
-        esac
-        CZ_TAG=$(curl -fsSL https://api.github.com/repos/twpayne/chezmoi/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null || echo "v2.70.4")
-        CZ_DEB="chezmoi_${CZ_TAG#v}_linux_${CZ_ARCH}.deb"
-        echo "==> Installing chezmoi ${CZ_TAG}..."
-        if curl -fsSL -o "$TMP/chezmoi.deb" "https://github.com/twpayne/chezmoi/releases/download/${CZ_TAG}/${CZ_DEB}" 2>/dev/null; then
-            if command -v sudo &>/dev/null; then
-                sudo dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
-            else
-                dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || apt-get install -f -y 2>/dev/null
-            fi
-        fi
-        if ! command -v chezmoi &>/dev/null; then
-            echo "  Falling back to binary download..."
-            for attempt in 1 2 3; do
-                if BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)" 2>/dev/null; then
-                    break
-                fi
-                echo "  Retry $attempt/3..."
-                sleep 2
-            done
-        fi
-        rm -rf "$TMP"
-    fi
-fi
-echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
+# ── 2. cloudflared and chezmoi (mise-managed) ───────────────────
+# Both tools are now installed via mise from the committed manifest
+# (dot_config/mise/config.toml). The setup.sh branch is removed.
+# Bootstrap ordering: mise itself (Phase 1) comes first; cloudflared
+# and chezmoi resolve via mise shims after manifest apply.
 
-# ── 2b. Update chezmoi if outdated ───────────────────────────────
-CHEZMOI_CURRENT=$(chezmoi --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-CHEZMOI_LATEST=$(curl -fsSL https://api.github.com/repos/twpayne/chezmoi/releases/latest 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['tag_name'])" 2>/dev/null | sed 's/^v//')
-if [ -n "$CHEZMOI_LATEST" ] && [ "$CHEZMOI_CURRENT" != "$CHEZMOI_LATEST" ]; then
-    echo "==> Updating chezmoi ${CHEZMOI_CURRENT} → ${CHEZMOI_LATEST}..."
-    TMP=$(mktemp -d)
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64)  CZ_ARCH="amd64" ;;
-        aarch64) CZ_ARCH="arm64" ;;
-        *)       CZ_ARCH="amd64" ;;
-    esac
-    CZ_DEB="chezmoi_${CHEZMOI_LATEST}_linux_${CZ_ARCH}.deb"
-    if curl -fsSL -o "$TMP/chezmoi.deb" "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_LATEST}/${CZ_DEB}" 2>/dev/null; then
-        if command -v sudo &>/dev/null; then
-            sudo dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
-        else
-            dpkg -i "$TMP/chezmoi.deb" 2>/dev/null || apt-get install -f -y 2>/dev/null
-        fi
+# Cleanup of pre-mise hand-installing copies (approved 2026-09-19)
+for _old in "$HOME/bin/cloudflared" "$HOME/bin/chezmoi" \
+            "/usr/local/bin/cloudflared" "/usr/local/bin/chezmoi"; do
+    if [ -f "$_old" ]; then
+        rm -f "$_old"
+        echo "==> removed old hand-installed $(basename "$_old") (mise-managed now)"
     fi
-    if ! command -v chezmoi &>/dev/null; then
-        BINDIR="$HOME/bin" sh -c "$(curl -fsLS get.chezmoi.io)" 2>/dev/null
-    fi
-    rm -rf "$TMP"
-    echo "chezmoi: $(chezmoi --version 2>&1 | head -1)"
-fi
+done
+
+echo "cloudflared: $(cloudflared --version 2>&1 | head -1 || echo 'pending mise install')"
+echo "chezmoi: $(chezmoi --version 2>&1 | head -1 || echo 'pending mise install')"
 
 # ── 3. Bootstrap mise — the one installer for manifest-managed CLIs ──
-# gh, bw (@bitwarden/cli), and wrangler are installed and versioned by mise
-# from the committed manifest (dot_config/mise/config.toml →
-# ~/.config/mise/config.toml via chezmoi apply). chezmoi and cloudflared are
-# NOT mise-managed (backlog items own that migration); their branches below
-# are unchanged. mise itself must bootstrap first because the manifest
-# apply depends on it.
+# gh, bw (@bitwarden/cli), wrangler, cloudflared, and chezmoi are installed
+# and versioned by mise from the committed manifest (dot_config/mise/config.toml →
+# ~/.config/mise/config.toml via chezmoi apply). mise itself must bootstrap
+# first because the manifest apply depends on it.
 if ! command -v mise &>/dev/null; then
     echo "==> Installing mise..."
     # Stated precedence: official installer first; brew only as a fallback
@@ -177,8 +127,8 @@ echo "gh: $(gh --version 2>&1 | head -1)"
 echo "bw: $(bw --version 2>&1 | head -1)"
 echo "wrangler: $(wrangler --version 2>&1 | head -1)"
 
-# Cleanup of pre-mise hand-installed copies — approved for gh, bw, wrangler
-# only (chezmoi and cloudflared keep their old copies; backlog owns those).
+# Cleanup of pre-mise hand-installed copies — approved for all mise-managed tools
+# (gh, bw, wrangler, cloudflared, chezmoi).
 # System/OS-owned copies (dpkg/brew system prefixes) are never touched.
 for _old in "$HOME/bin/gh" "$HOME/bin/bw" "$HOME/bin/wrangler"; do
     if [ -f "$_old" ]; then
@@ -186,50 +136,6 @@ for _old in "$HOME/bin/gh" "$HOME/bin/bw" "$HOME/bin/wrangler"; do
         echo "==> removed old hand-installed $(basename "$_old") (mise-managed now)"
     fi
 done
-
-# ── 5. Install cloudflared ───────────────────────────────────────
-if ! command -v cloudflared &>/dev/null; then
-    echo "==> Installing cloudflared..."
-    if $BREW_OK; then
-        brew install cloudflared
-    else
-        ARCH=$(uname -m)
-        if [ "$IS_MAC" = true ]; then
-            case "$ARCH" in arm64) CF_FILE="cloudflared-darwin-arm64.tgz" ;; *) CF_FILE="cloudflared-darwin-amd64.tgz" ;; esac
-            echo "==> cloudflared: downloading ${CF_FILE}"
-            TMP=$(mktemp -d)
-            curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_FILE}" | tar xzf - -C "$TMP"
-            chmod +x "$TMP/cloudflared"
-            mkdir -p "$HOME/bin"
-            mv "$TMP/cloudflared" "$HOME/bin/"
-            rm -rf "$TMP"
-        else
-            case "$ARCH" in
-                x86_64)  CF_DEB="cloudflared-linux-amd64.deb" ;;
-                aarch64) CF_DEB="cloudflared-linux-arm64.deb" ;;
-                armv7l)  CF_DEB="cloudflared-linux-armhf.deb" ;;
-                *)       CF_DEB="cloudflared-linux-amd64.deb" ;;
-            esac
-            echo "==> cloudflared: installing ${CF_DEB}"
-            TMP=$(mktemp -d)
-            if curl -fsSL -o "$TMP/cloudflared.deb" "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_DEB}" 2>/dev/null; then
-                if command -v sudo &>/dev/null; then
-                    sudo dpkg -i "$TMP/cloudflared.deb" 2>/dev/null || sudo apt-get install -f -y 2>/dev/null
-                else
-                    dpkg -i "$TMP/cloudflared.deb" 2>/dev/null
-                fi
-            fi
-            rm -rf "$TMP"
-            if ! command -v cloudflared &>/dev/null; then
-                echo "  Falling back to binary download..."
-                CF_BIN="cloudflared-linux-${CF_DEB##*-}"
-                curl -fsSL -o "$HOME/bin/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/${CF_BIN}" 2>/dev/null
-                chmod +x "$HOME/bin/cloudflared" 2>/dev/null
-            fi
-        fi
-    fi
-    echo "cloudflared: $(cloudflared --version 2>&1 | head -1)"
-fi
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase 2 — GitHub auth + deploy key

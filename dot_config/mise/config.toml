@@ -83,7 +83,11 @@ opencode = "1.18.29"
 "npm:opencode-models-discovery" = "1.5.5"
 # herdr — agent terminal workspace manager (static binary via GitHub release)
 "github:herdrdev/herdr" = "0.9.0"
-# treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
-# standalone installer copy, the manifest now owns it)
-"github:kunchenguid/treehouse" = "2.3.0"
-go = "1.25"
+ # treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
+ # standalone installer copy, the manifest now owns it)
+ "github:kunchenguid/treehouse" = "2.3.0"
+ # cloudflared — Cloudflare tunnel CLI (mise registry; replaces setup.sh branch)
+ cloudflared = "2025.9.0"
+ # chezmoi — dotfile manager (mise registry; replaces setup.sh branch)
+ chezmoi = "2.70.4"
+ go = "1.25"
