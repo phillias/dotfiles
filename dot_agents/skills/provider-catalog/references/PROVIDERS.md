@@ -721,24 +721,37 @@ When diagnosing step failures with unknown model attribution:
 2. **Cross-reference with dynamic-audit for route attribution:**
    ```bash
    # Find which route served which model within the failure window
-   # Use --arg for exact model matching; include non-2xx probes where served_model is absent
+   # Exact model match first, then separately list unattributed non-OK probes
    model_id="<model-id-from-step-1>"
    earliest="<earliest-failure-ts>"
    latest="<latest-failure-ts>"
    
+   # Attributed probes: exact served_model match
    jq -c --arg model "$model_id" --arg earliest "$earliest" --arg latest "$latest" '
      select(.test == "route_probe") |
      select(.ts >= $earliest and .ts <= $latest) |
-     select((.served_model == $model) or (.served_model == null and .status != "ok")) |
+     select(.served_model == $model) |
+     {ts, route, served_model, status, http, cf_aig_status, retry_after_s}
+   ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
+   
+   # Unattributed candidates: non-OK probes where served_model is absent
+   # (the producer omits served_model for 429s, HTTP errors, timeouts, and
+   # exceptions). Review these separately — do NOT treat them as model matches.
+   jq -c --arg earliest "$earliest" --arg latest "$latest" '
+     select(.test == "route_probe") |
+     select(.ts >= $earliest and .ts <= $latest) |
+     select(.served_model == null and .status != "ok") |
      {ts, route, served_model, status, http, cf_aig_status, retry_after_s}
    ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
    ```
-   Note: For non-2xx probes, the audit producer may not set `served_model`, so model-only matching misses `limited` and `error` records. The second `select` clause includes those. Consult `provider_window` aggregates before interpreting as exhaustion.
+   Note: The second query is a candidate list, not model attribution. A non-OK probe on an unrelated route may appear here; correlate with the route-to-model purpose definitions in "Dynamic routes" before attributing.
 
 3. **Interpret:**
    - If `served_model` differs from expected → route drift or misconfiguration
-   - If route status was `limited` (HTTP 429) or retry evidence present → provider window exhausted
+   - `limited` status (HTTP 429) or `retry_after_s` present → rate-limit evidence only; it does not identify which upstream applied the limit
    - If route status was `error` alone → route failed, but not proof of provider exhaustion
-   - If NULL model in invocations → model attribution unavailable, rely on audit log and other evidence
+   - **Provider-window exhaustion** requires a provider-specific signal (e.g. the direct route's `err_type=FreeUsageLimitError`), not just 429 or Retry-After
+   - If NULL model in invocations → model attribution unavailable; step, provider, error_type, and failure counts remain usable
+   - Unattributed non-OK probes are candidates only; never treat a null `served_model` as a model match
 
 **Read-only constraint:** Never modify no-mistakes state. These queries only read existing diagnostic data.
