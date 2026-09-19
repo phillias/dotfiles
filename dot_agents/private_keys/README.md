@@ -60,11 +60,7 @@ sourcing conventions:
    the equivalent. (Documented here only — consolidation of live skill symlinks
    is out of scope for this task.)
 
-Offloaded rc-block consolidation note: some vars (`HARBOR_API_KEY` in zshrc,
-several flat keys after guard checks in bashrc) are exported **only** in
-interactive rc files. Moving those loads into zshenv would change behavior for
-non-interactive shells/reparented daemons — a **needs-decision** for the
-captain if we ever want one consolidated loader. Not changed in this task.
+Offloaded rc-block consolidation note: `dot_zshenv.tmpl` and the shared loader handle all provider keys. The only exception is `HARBOR_API_KEY` (zshrc-only, sourced from `$HOME/firstmate/projects/mybiz/.harbor-key`). The loader silently skips missing default profiles to avoid noise in non-interactive shells.
 
 ## Loader contract
 
