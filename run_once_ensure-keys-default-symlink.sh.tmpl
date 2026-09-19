@@ -1,0 +1,26 @@
+#!/bin/sh
+# Ensure the default key profile symlink the zshenv loader expects.
+# ~/.zshenv reads ~/.agents/keys/default to export key profile vars;
+# profile restructures (e.g. the masculinecache split) have orphaned
+# this symlink before, so re-create it idempotently on every apply.
+# Use relative path for portability across different home directories.
+
+_default_link="$HOME/.agents/keys/default"
+_target="phillias"
+
+# Check if it's already a valid symlink pointing to phillias
+if [ -L "$_default_link" ]; then
+    _current_target="$(readlink "$_default_link")"
+    if [ "$_current_target" = "$_target" ]; then
+        # Already correct, nothing to do
+        exit 0
+    fi
+    # Wrong target, remove and recreate
+    rm "$_default_link"
+elif [ -e "$_default_link" ]; then
+    # Exists but not a symlink (regular file/dir), remove it
+    rm -rf "$_default_link"
+fi
+
+# Create the symlink
+ln -s "$_target" "$_default_link"

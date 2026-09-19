@@ -21,6 +21,11 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.cf-ai-gw" ]; then
 else
 	[ -t 0 ] && printf 'zshenv: ~/.agents/keys/%s/.cf-ai-gw missing or unreadable; not exporting CF_AI_GATEWAY_TOKEN\n' "$_default_profile" >&2
 fi
+if [ -r "$HOME/.agents/keys/$_default_profile/.treg-token" ]; then
+	TREG_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.treg-token")" && export TREG_TOKEN
+else
+	[ -t 0 ] && printf 'zshenv: ~/.agents/keys/%s/.treg-token missing or unreadable; not exporting TREG_TOKEN\n' "$_default_profile" >&2
+fi
 fi
 unset _default_profile
 
