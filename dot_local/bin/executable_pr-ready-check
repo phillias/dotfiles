@@ -102,7 +102,7 @@ THREADS_JSON=$(gh api graphql -f query='
 # Severity markers require the emoji prefix — lesson #6.
 # Comment-page truncation detected per-thread — lesson #7.
 STATS=$(printf '%s' "$THREADS_JSON" | jq '
-  def isbot: ((.author.__typename? == "Bot") or (.author.login | endswith("[bot]")));
+  def isbot: ((.author.__typename? == "Bot") or (((.author.login? // "") | endswith("[bot]")));
   def severity: (.body | test("🎯|🔴 Critical|🟠 Major|🟡 Minor"));
   .data.repository.pullRequest.reviewThreads as $conn
   | [ $conn.nodes[] | select(.isOutdated == false)
@@ -136,6 +136,30 @@ ADDRESSED_N=$(printf '%s' "$STATS" | jq '.addressed')
 RESOLVED_N=$(printf '%s' "$STATS" | jq '.resolved')
 UNRESOLVED_TOTAL=$(printf '%s' "$STATS" | jq '.unresolved_total')
 TRUNCATED=$(printf '%s' "$STATS" | jq '.truncated')
+
+# Reviews: fetch review bodies to detect outside-diff findings — lesson #10
+# CodeRabbit places findings outside the diff in the review body when GitHub
+# cannot attach them inline. Parse "⚠️ Outside diff range comments" sections.
+REVIEWS_JSON=$(gh api graphql -f query='
+  query($owner: String!, $name: String!, $number: Int!) {
+    repository(owner: $owner, name: $name) {
+      pullRequest(number: $number) {
+        reviews(first: 20) {
+          nodes { databaseId author { login } body state }
+        }
+      }
+    }
+  }' -f owner="$OWNER" -f name="$NAME" -F number="$PR" 2>/dev/null) \
+  || die "cannot fetch reviews"
+
+# Count severity-marked findings in outside-diff sections
+OUTSIDE_DIFF_N=$(printf '%s' "$REVIEWS_JSON" | jq -r '
+  [.data.repository.pullRequest.reviews.nodes[] |
+    select(.author.login | test("coderabbit"; "i")) |
+    .body | test("⚠️ Outside diff range|Outside diff range comments")
+  ] | length')
+
+ACTIONABLE_N=$((ACTIONABLE_N + OUTSIDE_DIFF_N))
 
 # Checks: use JSON output to distinguish query failure from no-checks —
 # lesson #8 (CodeRabbit finding #5). A missing CodeRabbit row means the
@@ -185,6 +209,14 @@ elif [ "$STRICT" = true ] && [ "$UNRESOLVED_TOTAL" -gt 0 ]; then
   verdict="WAITING"
 else
   verdict="READY"
+  # Revalidate HEAD_SHA before returning READY — lesson #9 (race window)
+  HEAD_SHA_FINAL=$(gh pr view "$PR" --repo "$REPO" --json headRefOid -q '.headRefOid' 2>/dev/null) || die "cannot revalidate PR head"
+  if [ "$HEAD_SHA_FINAL" != "$HEAD_SHA" ]; then
+    echo "  warning: PR head changed during evaluation — refusing READY" >&2
+    echo "  initial: $HEAD_SHA final: $HEAD_SHA_FINAL" >&2
+    verdict="WAITING"
+    HEAD_SHA="$HEAD_SHA_FINAL"
+  fi
 fi
 
 echo "pr_ready:"
