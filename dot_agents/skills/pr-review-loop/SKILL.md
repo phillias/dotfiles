@@ -36,15 +36,35 @@ Merge when CodeRabbit has no unresolved issues and all checks pass.
 
 All must be true before merge:
 
-1. **Unresolved bot comments = 0**
+1. **All review threads resolved**
 
+   Use GraphQL `reviewThreads` with `isResolved` field:
+   
    ```bash
-   gh api "repos/$REPO/pulls/$PR/comments?per_page=100" | \
-     jq '[.[] | select(.user.login | test("coderabbitai|greptile")) | 
-          select(.body | contains("🎯") or contains("Critical") or contains("Major") or contains("Minor")) | 
-          select(.body | contains("✅") | not)] | length'
+   gh api graphql -f query='
+     query($owner: String!, $repo: String!, $number: Int!) {
+       repository(owner: $owner, name: $repo) {
+         pullRequest(number: $number) {
+           reviewThreads(first: 100) {
+             nodes {
+               isResolved
+               isOutdated
+               comments(first: 10) {
+                 nodes {
+                   author { login }
+                   body
+                 }
+               }
+             }
+           }
+         }
+       }
+     }' -f owner="$OWNER" -f repo="$REPO" -F number="$PR" | \
+     jq -r '[.data.repository.pullRequest.reviewThreads.nodes[] | 
+            select(.isOutdated == false) | 
+            select(.isResolved == false)] | length'
    ```
-
+   
    Result must be: **0**
 
 2. **All CI checks passing**
@@ -62,6 +82,36 @@ All must be true before merge:
    ```
 
    Must return: `"mergeable": true`, `"mergeStateStatus": "CLEAN"`
+
+### Bot Completion Polling
+
+Instead of a fixed delay, poll for provider-specific completion signals:
+
+```bash
+# Poll for bot review completion (max 5 minutes)
+POLL_TIMEOUT=300
+POLL_INTERVAL=30
+ELAPSED=0
+HEAD_SHA=$(git rev-parse HEAD)
+
+while [ $ELAPSED -lt $POLL_TIMEOUT ]; do
+  # Check if CodeRabbit review exists for current head
+  CR_REVIEW=$(gh api "repos/$REPO/pulls/$PR/reviews" | \
+    jq -r '.[] | select(.user.login == "coderabbitai[bot]") | 
+           select(.commit_id == "'$HEAD_SHA'") | .state')
+  
+  if [ -n "$CR_REVIEW" ]; then
+    echo "CodeRabbit reviewed current head"
+    break
+  fi
+  
+  echo "Waiting for bot review... (${ELAPSED}s elapsed)"
+  sleep $POLL_INTERVAL
+  ELAPSED=$((ELAPSED + POLL_INTERVAL))
+done
+```
+
+This ensures we don't report readiness before the current head receives bot feedback.
 
 ### CodeRabbit-Specific Notes
 
@@ -92,9 +142,9 @@ All must be true before merge:
    - Commit with descriptive message referencing the feedback
    - Push to PR branch
    - Reply to comment: `✅ Fixed in commit <sha>`
-   - Wait 5 minutes for bot to re-review
+   - Poll for bot review completion (see Bot Completion Polling section)
 
-3. **If no unresolved comments:**
+3. **If no unresolved threads:**
    - Verify all checks passing
    - Verify mergeStateStatus is CLEAN
    - Merge the PR:
