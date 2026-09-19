@@ -183,4 +183,9 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key" ]; then
     AI_GATEWAY_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key")" && export AI_GATEWAY_API_KEY
 fi
 
+# Meta Model API (muse harness native provider)
+if [ -r "$HOME/.agents/keys/$_default_profile/.meta-key" ]; then
+    META_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.meta-key")" && export META_API_KEY
+fi
+
 unset _default_profile
