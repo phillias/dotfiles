@@ -1,20 +1,9 @@
 {
   "schema_version": 1,
   "endpoint_transport": {
-    "base_url": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
+    "base_url": "https://ai-gateway.vercel.sh",
     "auth": "bearer",
-    "headers": {
-      "cf-aig-gateway-id": "opencode",
-      "cf-aig-metadata": "{\"harness\":\"muse\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
-    }
+    "headers": {}
   },
-  "model": "dynamic/muse",
-  "sandbox": {
-    "enabled": true,
-    "network": "proxy-only"
-  },
-  "approval": {
-    "mode": "on-request",
-    "judge": "on"
-  }
+  "model": "meta/muse-spark-1.2"
 }
