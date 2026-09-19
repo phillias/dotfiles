@@ -694,19 +694,21 @@ When investigating provider/gateway failures, recognize these signatures:
 |---|---|---|
 | **Fixed-duration ~274s timeout** | Gateway/edge cutoff (CF AI Gateway limit) | Route failed upstream; check provider window |
 | **Prose output before JSON fence** | Model contract fragility (gemini-2.5-flash) | Retry; documented quirk, not a lane change |
-| **`model` column NULL in agent_invocations** | Historical gap (pre-no-mistakes v1.72) | No runtime capture; ignore for diagnostics |
+| **`model` column NULL in agent_invocations** | Historical gap (pre-no-mistakes v1.72) | Model attribution unavailable; step, provider, error_type, and failure counts remain usable |
 
 ### Diagnostic query process (pull-based)
 
 When diagnosing step failures with unknown model attribution:
 
-1. **Query no-mistakes state for failed invocations:**
+1. **Query no-mistakes state for failed invocations with timestamp window:**
    ```sql
    SELECT
        step,
        model,
        provider,
        error_type,
+       MIN(ts) as earliest_failure,
+       MAX(ts) as latest_failure,
        COUNT(*) as failures
    FROM agent_invocations
    WHERE status = 'failed'
@@ -714,18 +716,29 @@ When diagnosing step failures with unknown model attribution:
    GROUP BY step, model, provider, error_type
    ORDER BY failures DESC;
    ```
+   Use the `earliest_failure` and `latest_failure` timestamps in Step 2.
 
 2. **Cross-reference with dynamic-audit for route attribution:**
    ```bash
-   # Find which route served which model at failure time
-   jq -c 'select(.test == "route_probe") | {ts, route, served_model}' \
-     ~/.local/state/opencode-fleet/dynamic-audit.jsonl \
-     | grep -E '<model-id-from-step-1>'
+   # Find which route served which model within the failure window
+   # Use --arg for exact model matching; include non-2xx probes where served_model is absent
+   model_id="<model-id-from-step-1>"
+   earliest="<earliest-failure-ts>"
+   latest="<latest-failure-ts>"
+   
+   jq -c --arg model "$model_id" --arg earliest "$earliest" --arg latest "$latest" '
+     select(.test == "route_probe") |
+     select(.ts >= $earliest and .ts <= $latest) |
+     select((.served_model == $model) or (.served_model == null and .status != "ok")) |
+     {ts, route, served_model, status, http, cf_aig_status, retry_after_s}
+   ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
    ```
+   Note: For non-2xx probes, the audit producer may not set `served_model`, so model-only matching misses `limited` and `error` records. The second `select` clause includes those. Consult `provider_window` aggregates before interpreting as exhaustion.
 
 3. **Interpret:**
    - If `served_model` differs from expected → route drift or misconfiguration
-   - If route was `limited`/`error` at that time → provider window exhausted
-   - If NULL model in invocations → historical record, rely on audit log only
+   - If route status was `limited` (HTTP 429) or retry evidence present → provider window exhausted
+   - If route status was `error` alone → route failed, but not proof of provider exhaustion
+   - If NULL model in invocations → model attribution unavailable, rely on audit log and other evidence
 
 **Read-only constraint:** Never modify no-mistakes state. These queries only read existing diagnostic data.
