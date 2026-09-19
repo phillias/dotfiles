@@ -71,12 +71,12 @@ Per check (poll every 5 minutes by default, capped by a timeout — 90 minutes u
 
 3. **`READY` (0)** — merge and verify. The tool prints `head: $HEAD_SHA` — bind merge to that SHA:
    ```bash
-   gh pr merge $PR --repo $REPO --merge --match-head-commit
+   gh pr merge $PR --repo $REPO --merge --match-head-commit "$HEAD_SHA"
    gh pr view $PR --repo $REPO --json state,mergedAt
    ```
    If plain merge is refused (addressed-but-unresolved threads), retry once:
    ```bash
-   gh pr merge $PR --repo $REPO --admin --merge --match-head-commit
+   gh pr merge $PR --repo $REPO --admin --merge --match-head-commit "$HEAD_SHA"
    ```
    Never delete branches or force anything in the process. After merge, pull the base branch and confirm the merge commit landed.
 
@@ -129,7 +129,7 @@ pr_ready:
   mergeable: MERGEABLE CLEAN
 merge_hint: addressed threads remain unresolved — if plain merge is refused, retry once with --admin
 
-$ gh pr merge 317 --repo phillias/dotfiles --merge
+$ gh pr merge 317 --repo phillias/dotfiles --merge --match-head-commit "$HEAD_SHA"
 $ gh pr view 317 --repo phillias/dotfiles --json state,mergedAt
 {"mergedAt":"2026-09-19T03:50:19Z","state":"MERGED"}
 ```

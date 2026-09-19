@@ -120,7 +120,7 @@ STATS=$(printf '%s' "$THREADS_JSON" | jq '
         , comments_truncated: ($t.comments.pageInfo.hasNextPage == true)
         }
     ]
-  | { threads: ($conn.nodes | length)
+  | { threads: (length)
     , truncated: ( ($conn.pageInfo.hasNextPage == true) or (any(.comments_truncated == true)) )
     , actionable: [ .[] | select(.kind == "actionable") ]
     , addressed:   ([ .[] | select(.kind == "addressed") ] | length)
