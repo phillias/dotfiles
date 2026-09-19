@@ -66,22 +66,11 @@ if $IS_MAC; then
 fi
 
 # ── 2. cloudflared and chezmoi (mise-managed) ───────────────────
-# Both tools are now installed via mise from the committed manifest
-# (dot_config/mise/config.toml). The setup.sh branch is removed.
-# Bootstrap ordering: mise itself (Phase 1) comes first; cloudflared
-# and chezmoi resolve via mise shims after manifest apply.
-
-# Cleanup of pre-mise hand-installing copies (approved 2026-09-19)
-for _old in "$HOME/bin/cloudflared" "$HOME/bin/chezmoi" \
-            "/usr/local/bin/cloudflared" "/usr/local/bin/chezmoi"; do
-    if [ -f "$_old" ]; then
-        rm -f "$_old"
-        echo "==> removed old hand-installed $(basename "$_old") (mise-managed now)"
-    fi
-done
-
-echo "cloudflared: $(cloudflared --version 2>&1 | head -1 || echo 'pending mise install')"
-echo "chezmoi: $(chezmoi --version 2>&1 | head -1 || echo 'pending mise install')"
+# Both tools are installed via mise from the committed manifest
+# (dot_config/mise/config.toml). Bootstrap ordering: mise itself
+# (Phase 1) comes first; cloudflared and chezmoi resolve via mise
+# shims after manifest apply. Cleanup runs AFTER mise bootstrap
+# to ensure the replacements are available.
 
 # ── 3. Bootstrap mise — the one installer for manifest-managed CLIs ──
 # gh, bw (@bitwarden/cli), wrangler, cloudflared, and chezmoi are installed
@@ -123,17 +112,27 @@ _ensure_mise() {
 _ensure_mise "gh@2.100.0" '^(gh|"github:cli/cli")'
 _ensure_mise "npm:@bitwarden/cli@2026.5.0" '^"npm:@bitwarden/cli"'
 _ensure_mise "npm:wrangler@4.125.0" '^"npm:wrangler"'
+_ensure_mise "cloudflared@2025.9.0" '^cloudflared'
+_ensure_mise "chezmoi@2.70.4" '^chezmoi'
 echo "gh: $(gh --version 2>&1 | head -1)"
 echo "bw: $(bw --version 2>&1 | head -1)"
 echo "wrangler: $(wrangler --version 2>&1 | head -1)"
+echo "cloudflared: $(cloudflared --version 2>&1 | head -1 || echo 'pending mise install')"
+echo "chezmoi: $(chezmoi --version 2>&1 | head -1 || echo 'pending mise install')"
 
 # Cleanup of pre-mise hand-installed copies — approved for all mise-managed tools
-# (gh, bw, wrangler, cloudflared, chezmoi).
-# System/OS-owned copies (dpkg/brew system prefixes) are never touched.
-for _old in "$HOME/bin/gh" "$HOME/bin/bw" "$HOME/bin/wrangler"; do
+# (gh, bw, wrangler, cloudflared, chezmoi). Run AFTER mise bootstrap ensures
+# replacements are available. System/OS-owned copies (dpkg/brew system prefixes)
+# are never touched. Handle permission failures gracefully — don't abort setup.
+for _old in "$HOME/bin/gh" "$HOME/bin/bw" "$HOME/bin/wrangler" \
+             "$HOME/bin/cloudflared" "$HOME/bin/chezmoi" \
+             "/usr/local/bin/cloudflared" "/usr/local/bin/chezmoi"; do
     if [ -f "$_old" ]; then
-        rm -f "$_old"
-        echo "==> removed old hand-installed $(basename "$_old") (mise-managed now)"
+        if rm -f "$_old" 2>/dev/null; then
+            echo "==> removed old hand-installed $(basename "$_old") (mise-managed now)"
+        else
+            echo "WARNING: could not remove $_old (may need sudo); it may remain as fallback" >&2
+        fi
     fi
 done
 
