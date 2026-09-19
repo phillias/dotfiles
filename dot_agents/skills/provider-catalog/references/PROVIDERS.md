@@ -6,7 +6,7 @@ Shared reference for every agent that routes through Cloudflare AI Gateway `open
 
 The historical "Lead PGS free band → paid-first through zen → go → GOAT → Z.AI → CF → OpenRouter → Zen → free tail" directive is **superseded for interactive chains** as of 2026-09-01 (decision A v5). The live ladders per agent live in each agent's own config:
 
-- Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Now the GLM-5.1 ladder (`big-pickle → opencode-go/glm-5.1 → commandcode/zai-org/GLM-5.2 → openrouter/z-ai/glm-5 → opencode-zen/glm-5.1`) on every `agents.*` and `categories.*` entry; PGS, Cloudflare Workers, Z.AI Coding Plan, and the openrouter `:free` trio are dropped.
+- Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Two-path architecture (captain decision 2026-09-19, PRs #327 + #330): utility chains are `dynamic/TUI` (gateway cascading GLM ladder) → `opencode-go/glm-5.1` → `opencode-go/deepseek-v4-flash` (session-gated direct-client tail); specialized agents/categories keep pinned chains.
 - Pi default chain — `~/.pi/fallback-chains.json` → `default` key (added 2026-09-01). Same GLM-5.1 ladder; activates via `fallback/default` model string.
 - Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key (unchanged 2026-09-01, gate-chain v4: openrouter `:free` trio first, gemini-2.5-flash demoted, `phoenixgrove/glm-5.3-flash` kept as manual tail; CF `@cf` and opencode-go excluded: no 1M models in either pool).
 
@@ -143,7 +143,6 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 }
 ```
 
-<<<<<<< Updated upstream
 ## Abliteration AI — unrestricted reasoning models (2026-09-18)
 
 **Provider:** `abliteration-ai` — native provider for unrestricted reasoning models
@@ -233,7 +232,6 @@ curl https://api.abliteration.ai/v1/chat/completions \
 }
 ```
 
-=======
 ## TSFM.ai — Time Series Foundation Model inference (2026-09-18)
 
 **Provider:** `tsfm-ai` — hosted inference for 54 time-series foundation models across 16 families.
@@ -320,7 +318,6 @@ Chronos (6), Cisco TSM (1), Granite FlowState (2), Granite PatchTST (2), Granite
 
 **Key env var:** `TSFM_API_KEY` — set in `~/.zshrc` from `~/.agents/keys/default/.tsfm-key`
 
->>>>>>> Stashed changes
 ## Gemini 2.5 Flash — limits surfaced live (2026-08-30)
 
 **Model:** `gemini/gemini-2.5-flash` — Google Generative AI (AI Studio), native `google-generative-ai` API type in pi. Input 1,048,576 tok (real 1M), output 65,536, ~0.6 s latency. Key: `~/.config/opencode/.google-key` (AQ.* OAuth-derived token; captain handles rotation on expiry).
@@ -387,10 +384,19 @@ The gateway runs named dynamic routes (CF "dynamic routing", OpenAI-compatible
 endpoint `…/opencode/compat/chat/completions`, model string `dynamic/<name>`).
 Route contents will churn — this catalog records *purpose*, not lane lists:
 
-- `TUI` — daily-driver, lowest-version models (GLM-5.1-class or cheapest flash
-  variants), **subsidized plans first** (opencode-go → z.ai→ go/zen pools).
-  Reordered 2026-09-09: head = `custom-phoenixgrove/glm-5.3-flash`; opencode-go
-  and aihubmix demoted (ail 200-wrapped 404s; opencode-go session-gated).
+- `TUI` — daily-driver, budget GLM ladder (captain directive 2026-09-19):
+  **Free → Subsidized → PAYG**, GLM 5.1 → 5.2 → 5.3-flash within tiers,
+  NO opencode-go (session-gated — harness connections only, cannot be a
+  gateway route node). Ladder (version `d7fcd73f`, deployed 2026-09-19):
+  `custom-opencode-zen/glm-5.1` → `custom-opencode-zen/glm-5.2` →
+  `custom-opencode-zen/glm-5.3-flash` → `custom-commandcode/zai-org/GLM-5.1`
+  → `custom-phoenixgrove/glm-5.2` → `custom-commandcode/zai-org/GLM-5.2` →
+  `custom-commandcode/z-ai/glm-5.3-flash` → `custom-phoenixgrove/glm-5.3-flash`
+  → `openrouter/z-ai/glm-5.1` (PAYG tail). PGS nodes currently 402
+  insufficient-credits (plan window) — they fall through until the plan
+  resets; the ladder stays correct either way. Supersedes the 2026-09-09
+  phoenixgrove-head order and the aihubmix tail (bare-name nodes were
+  dead anyway).
 - `high` — latest-version models (`GLM-5.3` class, fable, astra when a lane
   appears) from reliable providers; aihubmix GLM discount lane sits top
   (caution 2026-09-08: aihubmix began 200-wrapped 404s — verify before
