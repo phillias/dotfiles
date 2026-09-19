@@ -126,7 +126,7 @@ Jev-router can cascade to existing profiles:
       "action": "spawn_with_profile: opencode-go/deepseek-v4-flash"
     },
     "needs_reasoning": {
-      "condition": "needs_reasoning.noul > 0.8",
+      "condition": "needs_reasoning.probability > 0.8",
       "action": "spawn_with_profile: opencode-zen/glm-5.2"
     }
   }

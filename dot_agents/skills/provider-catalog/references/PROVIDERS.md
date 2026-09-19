@@ -68,9 +68,9 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 **Provider:** `typesafe-ai` — native provider for Jev evaluation model
 
 **Access:**
-- Direct API: `POST https://api.typesafe.ai/v1/systemone` with `TYPESAFE_API_KEY`
+- Direct API: `POST https://api.typesafe.ai/v1/systemone` with `TYPESAFE_API_KEY` (waitlist)
+- Vercel AI Gateway: Model ID `typesafe-ai/jev` with `AI_GATEWAY_API_KEY` (immediate, no waitlist)
 - CF AI Gateway: Custom provider (dashboard BYOK setup, base URL `api.typesafe.ai/v1`)
-- Vercel AI Gateway: Model ID `typesafe-ai/jev` (separate service, not covered here)
 
 **Pricing:** $0.042/MTok input, output free (too cheap to meter)
 
@@ -79,7 +79,7 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 - `jev-preview` — preview builds
 - `jev-1.13.0` — pin for production (response includes versioned ID)
 
-**Status (2026-09-17):** Early access waitlist. Direct API key provided upon acceptance.
+**Status (2026-09-18):** Vercel AI Gateway provides immediate access. Direct TypeSafe API requires waitlist acceptance.
 
 **Capabilities:**
 - Question types: Choice (pick from list), Score (rubric), Boolean (probability)
