@@ -53,7 +53,7 @@ gh = "2.100.0"
 # (scripts/validate.sh), default ruleset; equality-only pin.
 "github:gitleaks/gitleaks" = "8.30.1"
 # @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
-# The working `pi` is @earendil-works/pi-coding-agent@0.86.0, pinned in this manifest.
+# The working `pi` is @earendil-works/pi-coding-agent@0.85.1, pinned in this manifest.
 # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
 "npm:@ast-grep/cli" = "0.43.0"
 "npm:@bitwarden/cli" = "2026.5.0"
