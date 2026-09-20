@@ -13,7 +13,7 @@
 ### BYOK
 - Team-level: dashboard-only (manual UI). No REST API for adding credentials.
 - Request-scoped: programmatic via `providerOptions.gateway.byok` per-request.
-- BYOK has zero markup. Requires paid tier (credits).
+- BYOK has zero markup. Requires credits available on any tier (free or paid).
 - Fallback: if BYOK fails, system credentials used (billed against credits).
 - BYOK spend does NOT count toward budgets.
 
@@ -21,7 +21,7 @@
 - Custom slugs (`vmc/<slug>`) with fallback chains, provider ordering, sort-by-cost, service tiers.
 - CLI-managed: `vercel ai-gateway virtual-models create/list/inspect/edit/remove/restore`.
 - More powerful than CF dynamic routes (per-slug settings, CLI management, archive/restore).
-- Routing rules (separate): REST API for team-wide model rewrites/denies.
+- Routing rules (separate): CLI-managed (`vercel ai-gateway rules add`) for team-wide model rewrites/denies.
 
 ### Harness surfaces (dedicated endpoints)
 - Claude Code: `https://ai-gateway.vercel.sh/claude-code`
@@ -38,7 +38,7 @@
 - `models`: fallback model chain
 - `byok`: request-scoped credentials
 - `providerTimeouts`: per-provider timeouts
-- `serviceTier`: `flex` | `priority`
+- `serviceTier`: `flex` | `priority` | `fast` (`fast` aliases `priority`)
 - `zeroDataRetention`: route to ZDR providers only
 - `tags`: observability tags for spend tracking
 - `caching`: `auto` for automatic prompt caching
@@ -66,12 +66,12 @@ Fast, cheap, >=128K context, tool-use:
 
 | Model ID | Context | Input | Output | Notes |
 |----------|---------|-------|--------|-------|
-| `anthropic/claude-sonnet-5` | 200K | $0.30/MTok | $1.50/MTok | Balanced reviewer |
-| `anthropic/claude-opus-5` | 200K | $1.50/MTok | $7.50/MTok | Flagship |
-| `anthropic/claude-fable-5` | 1M | $0.80/MTok | $4.00/MTok | 1M context |
+| `anthropic/claude-sonnet-5` | 1M | $2/MTok | $10/MTok | Balanced reviewer |
+| `anthropic/claude-opus-5` | 1M | $5/MTok | $25/MTok | Flagship |
+| `anthropic/claude-fable-5` | 1M | $10/MTok | $50/MTok | 1M context, premium |
 | `anthropic/claude-3-haiku` | 200K | $0.25/MTok | $1.25/MTok | Fastest |
 | `anthropic/claude-haiku-4.5` | 200K | $0.10/MTok | $0.50/MTok | Budget |
-| `anthropic/claude-opus-4.8` | 1M | $0.50/MTok | $2.50/MTok | 1M context |
+| `anthropic/claude-opus-4.8` | 1M | $5/MTok | $25/MTok | 1M context |
 
 ## Grok/xAI Models (Cursor-family)
 
@@ -86,7 +86,7 @@ Fast, cheap, >=128K context, tool-use:
 | Model | Context | Input | Output | Notes |
 |-------|---------|-------|--------|-------|
 | `openai/gpt-5.6-luna` | 1.05M | $0.20/MTok | $1.20/MTok | Flagship — 1M reasoning |
-| `anthropic/claude-sonnet-5` | 200K | $0.30/MTok | $1.50/MTok | Proven reviewer |
+| `anthropic/claude-sonnet-5` | 1M | $2/MTok | $10/MTok | Proven reviewer |
 | `deepseek/deepseek-v4-pro` | 1M | $0.66/MTok | $1.98/MTok | Deep 1M reasoning |
 | `alibaba/qwen3.7-plus` | 1M | $0.40/MTok | $1.60/MTok | Strong Qwen reasoning |
 | `openai/gpt-5.4-mini` | 400K | $0.20/MTok | $1.25/MTok | Reasoning budget option |
@@ -96,9 +96,9 @@ Fast, cheap, >=128K context, tool-use:
 
 | Model | Context | Reasoning | Input | Output |
 |-------|---------|-----------|-------|--------|
-| `anthropic/claude-opus-5` | 200K | Yes | $1.50/MTok | $7.50/MTok |
+| `anthropic/claude-opus-5` | 1M | Yes | $5/MTok | $25/MTok |
 | `openai/gpt-5.6-terra` | 1.05M | Yes | $1.00/MTok | $5.00/MTok |
-| `anthropic/claude-fable-5` | 1M | Yes | $0.80/MTok | $4.00/MTok |
+| `anthropic/claude-fable-5` | 1M | Yes | $10/MTok | $50/MTok |
 | `deepseek/deepseek-v4-pro` | 1M | Yes | $0.66/MTok | $1.98/MTok |
 
 ## Free Tier Models
@@ -155,7 +155,7 @@ Fast, cheap, >=128K context, tool-use:
    - opencode: `vercel` provider entry in opencode.json
    - pi: `vercel` provider in models.json
    - codex: `vercel` provider in config.toml
-   - claude: `ANTHROPIC_BASE_URL` env var
+    - claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (map from `AI_GATEWAY_API_KEY`), `ANTHROPIC_API_KEY` set empty to avoid direct-key preference
    - kimi: `vercel` provider in config.toml
    - muse: (rides Meta directly, not through gateway)
 5. Ship via dotfiles PR
