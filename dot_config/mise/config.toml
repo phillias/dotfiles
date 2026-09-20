@@ -21,7 +21,7 @@ npm.shell_out = true
 "npm:@masculinecache/quota-axi" = "0.1.30"
 "npm:tasks-axi" = "0.2.5"
 "npm:wrangler" = "4.125.0"
-"npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin)
+"npm:@earendil-works/pi-coding-agent" = "0.86.0"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin). 0.86.0 bump 2026-09-20: opencode.ai/zen made x-opencode-session mandatory and current pi builds send it natively (pi is a validated Go client per opencode.ai/docs/go; 0.84.2 predates it — the opencode-go-gw provider's static header was the 0.84.2 workaround and stays harmless). Verify the gate after any pi bump: no-mistakes pipeline run + pi -p smoke.
 # no-mistakes gate pipeline (kunchenguid/no-mistakes) — NOT the unrelated npm
 # "no-mistakes" package (jonathanong, TS analysis). Installed via mise's go
 # backend (system go toolchain); repave 2026-09-02 after the wipe deleted
