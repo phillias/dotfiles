@@ -1,8 +1,8 @@
 #!/bin/bash
 # ~/.local/bin/hermes-env-check.sh — chezmoi-managed, executable, in $PATH
-# Hermes+Honcho installation health check.
+# Hermes deployment health check. The units below are owned by hermes' own
+# installer (divested from dotfiles in #195); the honcho scheduler is retired.
 # Run manually:   hermes-env-check.sh
-# Runs daily via: honcho job (hermes-env-check)
 set -euo pipefail
 
 RED='\033[0;31m'
@@ -15,39 +15,29 @@ check() {
   local label="$1" cmd="$2"
   if eval "$cmd" &>/dev/null; then
     echo -e "  ${GREEN}✓${NC} $label"
-    ((PASS++))
+    ((++PASS))
   else
     echo -e "  ${RED}✗${NC} $label"
-    ((FAIL++))
+    ((++FAIL))
   fi
 }
 
-echo "=== Hermes+Honcho Environment Check ==="
+echo "=== Hermes Deployment Environment Check ==="
 echo ""
 
-echo " Binaries:"
-check "hermes           " "command -v hermes"
-check "honcho           " "command -v honcho"
-
-echo ""
-echo " Repo:"
-check "mybrain repo     " "test -d ${MYBRAIN_HOME:-$HOME/mybrain}/.git"
-check "hermes scripts   " "ls ${MYBRAIN_HOME:-$HOME/mybrain}/scripts/hermes/mybrain-daily.sh &>/dev/null"
-
-echo ""
 echo " Services:"
-check "hermes-cron.timer" "systemctl --user is-active hermes-cron.timer &>/dev/null"
-check "hermes-honcho.timer" "systemctl --user is-active hermes-honcho.timer &>/dev/null"
+check "hermes-gateway  " "systemctl --user is-active hermes-gateway.service &>/dev/null"
+check "gateway-mybiz   " "systemctl --user is-active hermes-gateway-mybiz.service &>/dev/null"
+check "gateway-mybrain " "systemctl --user is-active hermes-gateway-mybrain.service &>/dev/null"
+check "hermes-dashboard" "systemctl --user is-active hermes-dashboard.service &>/dev/null"
+check "opencode-proxy  " "systemctl --user is-active opencode-proxy.service &>/dev/null"
 
 echo ""
-echo " Config:"
-check "hermes config    " "test -f $HOME/.config/hermes/config.yaml"
-check "honcho jobs      " "test -f $HOME/.config/honcho/jobs.yaml"
-check "env file         " "test -f $HOME/.hermes-env"
-
-echo ""
-echo " Data:"
-check "brain.db         " "test -f ${MYBRAIN_DB_PATH:-$HOME/mybrain/data/brain.db}"
+echo " Deployment:"
+check "hermes config   " "test -f $HOME/.hermes/config.yaml"
+check "agent venv      " "test -x $HOME/.hermes/hermes-agent/venv/bin/python"
+check "profile mybiz   " "test -d $HOME/.hermes/profiles/mybiz"
+check "profile mybrain " "test -d $HOME/.hermes/profiles/mybrain"
 
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed ==="

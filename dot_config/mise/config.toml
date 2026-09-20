@@ -21,7 +21,7 @@ npm.shell_out = true
 "npm:@masculinecache/quota-axi" = "0.1.30"
 "npm:tasks-axi" = "0.2.5"
 "npm:wrangler" = "4.125.0"
-"npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin)
+"npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin). Kept at 0.84.2 2026-09-20: both 0.85.1 and 0.86.0 die on long gate agent sessions with "Stream ended without finish_reason" (three pipeline deaths) while raw streams through the same lane complete cleanly with finish_reason stop — a pi 0.85+ stream-parsing regression; 0.84.2 completed two full pipelines the same night. The static x-opencode-session header on opencode-go-gw is load-bearing on every version (pi does not send it natively for custom providers). Re-bump only after a full no-mistakes run passes on the candidate.
 # no-mistakes gate pipeline (kunchenguid/no-mistakes) — NOT the unrelated npm
 # "no-mistakes" package (jonathanong, TS analysis). Installed via mise's go
 # backend (system go toolchain); repave 2026-09-02 after the wipe deleted
@@ -53,7 +53,7 @@ gh = "2.100.0"
 # (scripts/validate.sh), default ruleset; equality-only pin.
 "github:gitleaks/gitleaks" = "8.30.1"
 # @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
-# The working `pi` is @earendil-works/pi-coding-agent@0.84.2 (legacy global, kept).
+# The working `pi` is @earendil-works/pi-coding-agent@0.84.2, pinned in this manifest.
 # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
 "npm:@ast-grep/cli" = "0.43.0"
 "npm:@bitwarden/cli" = "2026.5.0"

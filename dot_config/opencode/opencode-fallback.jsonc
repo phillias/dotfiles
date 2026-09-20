@@ -31,9 +31,9 @@
     "dynamic/TUI",
     
     // STAGE 1: opencode-go subsidized pool (session-gated fallback)
-    "opencode-go/kimi-k2.6",
-    "opencode-go/deepseek-v4-flash",
-    "opencode-go/glm-5.1"
+    // GLM first (matches TUI route budget preference), deepseek tail
+    "opencode-go/glm-5.1",
+    "opencode-go/deepseek-v4-flash"
   ],
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
@@ -42,17 +42,15 @@
     "general": {
       "model": "dynamic/TUI",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "opencode-go/glm-5.1"
+        "opencode-go/glm-5.1",
+        "opencode-go/deepseek-v4-flash"
       ]
     },
     "explore": {
       "model": "dynamic/TUI",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "opencode-go/glm-5.1"
+        "opencode-go/glm-5.1",
+        "opencode-go/deepseek-v4-flash"
       ]
     },
     // Specialized flywheel agents: models pinned, fallback Z.AI → GOAT → Go → Zen only.
@@ -99,17 +97,15 @@
     "quick": {
       "model": "dynamic/TUI",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "opencode-go/glm-5.1"
+        "opencode-go/glm-5.1",
+        "opencode-go/deepseek-v4-flash"
       ]
     },
     "unspecified-low": {
       "model": "dynamic/TUI",
       "fallback_models": [
-        "opencode-go/kimi-k2.6",
-        "opencode-go/deepseek-v4-flash",
-        "opencode-go/glm-5.1"
+        "opencode-go/glm-5.1",
+        "opencode-go/deepseek-v4-flash"
       ]
     },
     // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback

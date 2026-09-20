@@ -52,13 +52,14 @@
         }
       ]
     },
-    "opencode-go": {
+    "opencode-go-gw": {
       "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1",
       "api": "openai-completions",
       "apiKey": "$CF_AI_GATEWAY_TOKEN",
       "headers": {
         "cf-aig-gateway-id": "opencode",
-        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}",
+        "x-opencode-session": "pi-fleet-{{ .chezmoi.hostname }}"
       },
       "compat": {
         "supportsDeveloperRole": false,

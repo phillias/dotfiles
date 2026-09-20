@@ -80,6 +80,13 @@ STALE_TARGETS=(
     "$HOME/.config/systemd/user/codemem-anchor-watchdog.service"  # purged 2026-08-06
     "$HOME/.config/systemd/user/codemem-anchor-watchdog.timer"    # purged 2026-08-06
     "$HOME/.config/systemd/user/codemem-coordinator.service"      # purged 2026-08-06
+    "$HOME/.config/systemd/user/hermes-cron.service"      # hermes fiction set retired 2026-09-20
+    "$HOME/.config/systemd/user/hermes-cron.timer"        # hermes fiction set retired 2026-09-20
+    "$HOME/.config/systemd/user/hermes-honcho.service"    # hermes fiction set retired 2026-09-20
+    "$HOME/.config/systemd/user/hermes-honcho.timer"      # hermes fiction set retired 2026-09-20
+    "$HOME/.hermes-env"                                   # hermes fiction set retired 2026-09-20
+    "$HOME/.config/hermes/config.yaml"                    # hermes fiction set retired 2026-09-20
+    "$HOME/.config/honcho/jobs.yaml"                      # hermes fiction set retired 2026-09-20
     "$HOME/.agents/.skill-lock.json"                          # skills CLI residue — CE now via opencode plugin (2026-08-27)
     "$HOME/.opencode/node_modules"                             # broken npm install from setup.sh (2026-09-08)
     "$HOME/.opencode/package.json"                             # broken npm install from setup.sh (2026-09-08)
@@ -233,6 +240,10 @@ is_tool_skill() {
 # updates. Add the basename of any further divested unit here.
 EXTERNAL_SYSTEMD_UNITS=(
     hermes-gateway.service
+    hermes-gateway-mybiz.service
+    hermes-gateway-mybrain.service
+    hermes-dashboard.service
+    opencode-proxy.service
 )
 
 is_external_systemd_unit() {
