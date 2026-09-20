@@ -1,131 +1,161 @@
 # Vercel AI Gateway Model Inventory
 
-**Generated:** 2026-09-18  
-**Base URL:** `https://ai-gateway.vercel.sh/v1`  
-**Authentication:** `Authorization: Bearer $AI_GATEWAY_API_KEY`  
-**Total Models:** 376 (209 high-context ≥128K)
+**Updated:** 2026-09-20
+**Base URL:** `https://ai-gateway.vercel.sh/v1` (OpenAI-compat) / `https://ai-gateway.vercel.sh` (Anthropic Messages)
+**Authentication:** `Authorization: Bearer $AI_GATEWAY_API_KEY` or `x-api-key` header
+**Key file:** `~/.agents/keys/default/.vercel-gateway-key` (loaded by `load-keys.sh`)
+**Total Models:** 376 (16 Anthropic, 20 Grok/xAI, 4 free-tier)
+**Providers:** 47 (alibaba, anthropic, azure, bedrock, cerebras, deepseek, google, groq, mistral, moonshotai, openai, togetherai, xai, zai, and more)
+**Markup:** Zero (all requests, including system credentials and BYOK)
+
+## Key capabilities (2026-09-20 research)
+
+### BYOK
+- Team-level: dashboard-only (manual UI). No REST API for adding credentials.
+- Request-scoped: programmatic via `providerOptions.gateway.byok` per-request.
+- BYOK has zero markup. Available only on the paid tier and requires purchased AI Gateway Credits.
+- Fallback: if BYOK fails, system credentials used (billed against credits).
+- BYOK spend does NOT count toward budgets.
+
+### Virtual Models (dynamic route equivalent)
+- Custom slugs (`vmc/<slug>`) with fallback chains, provider ordering, sort-by-cost, service tiers.
+- CLI-managed: `vercel ai-gateway virtual-models create/list/inspect/edit/remove/restore`.
+- More powerful than CF dynamic routes (per-slug settings, CLI management, archive/restore).
+- Routing rules (separate): CLI-managed (`vercel ai-gateway rules add`) for team-wide model rewrites/denies.
+
+### Harness surfaces (dedicated endpoints)
+- Claude Code: `https://ai-gateway.vercel.sh/claude-code`
+- Codex: `https://ai-gateway.vercel.sh/codex/v1`
+- Cursor: `https://ai-gateway.vercel.sh/cursor/v1` (normalizes non-spec bodies)
+- OpenCode: provider entry in opencode.json
+- Kimi CLI: provider entry in config.toml
+- Generic coding agent: `https://ai-gateway.vercel.sh/coding-agent/v1`
+
+### Provider options (per-request)
+- `order`: provider try order
+- `only`: restrict to specific providers
+- `sort`: `cost` | `ttft` | `tps`
+- `models`: fallback model chain
+- `byok`: request-scoped credentials
+- `providerTimeouts`: per-provider timeouts
+- `serviceTier`: `flex` | `priority` | `fast` (`fast` aliases `priority`)
+- `zeroDataRetention`: route to ZDR providers only
+- `tags`: observability tags for spend tracking
+- `caching`: `auto` for automatic prompt caching
 
 ## Evaluation Models
 
 | Model ID | Context | Input Price | Output Price | ZDR | Notes |
 |----------|---------|-------------|--------------|-----|-------|
-| `typesafe-ai/jev` | N/A | $0.042/MTok | FREE | ✅ | System One decisions — choice/score/boolean |
+| `typesafe-ai/jev` | 32K | $0.042/MTok | FREE | Yes | System One decisions — immediate access (no waitlist) |
 
 ## Daily Driver Standouts (TUI Route)
 
-Fast, cheap, ≥128K context, tool-use:
+Fast, cheap, >=128K context, tool-use:
 
 | Model | Context | Reasoning | Tools | Input | Output | Notes |
 |-------|---------|-----------|-------|-------|--------|-------|
-| `alibaba/qwen3.7-flash` | 991K | ✅ | ✅ | $0.03/MTok | $0.13/MTok | **Best value** — near-1M context |
-| `deepseek/deepseek-v4-flash-0731` | 1M | ✅ | ✅ | $0.076/MTok | $0.153/MTok | Full 1M, reasoning |
-| `zai/glm-5.3-flash` | 1M | ✅ | ✅ | $0.15/MTok | $0.50/MTok | 1M context, reasoning |
-| `google/gemini-2.5-flash-lite` | 1M | ✅ | ✅ | $0.10/MTok | $0.40/MTok | 1M context |
-| `openai/gpt-5-nano` | 400K | ✅ | ✅ | $0.05/MTok | $0.40/MTok | Reasoning, small |
-| `openai/gpt-4o-mini` | 128K | ❌ | ✅ | $0.15/MTok | $0.60/MTok | Proven workhorse |
+| `alibaba/qwen3.7-flash` | 991K | Yes | Yes | $0.03/MTok | $0.13/MTok | Best value — near-1M context |
+| `deepseek/deepseek-v4-flash-0731` | 1M | Yes | Yes | $0.076/MTok | $0.153/MTok | Full 1M, reasoning |
+| `zai/glm-5.3-flash` | 1M | Yes | Yes | $0.15/MTok | $0.50/MTok | 1M context, reasoning |
+| `google/gemini-2.5-flash-lite` | 1M | Yes | Yes | $0.10/MTok | $0.40/MTok | 1M context |
+| `openai/gpt-5-nano` | 400K | Yes | Yes | $0.05/MTok | $0.40/MTok | Reasoning, small |
+| `openai/gpt-4o-mini` | 128K | No | Yes | $0.15/MTok | $0.60/MTok | Proven workhorse |
+
+## Anthropic Models (native Anthropic Messages API)
+
+| Model ID | Context | Input | Output | Notes |
+|----------|---------|-------|--------|-------|
+| `anthropic/claude-sonnet-5` | 1M | $2/MTok | $10/MTok | Balanced reviewer |
+| `anthropic/claude-opus-5` | 1M | $5/MTok | $25/MTok | Flagship |
+| `anthropic/claude-fable-5` | 1M | $10/MTok | $50/MTok | 1M context, premium |
+| `anthropic/claude-3-haiku` | 200K | $0.25/MTok | $1.25/MTok | Fastest |
+| `anthropic/claude-haiku-4.5` | 200K | $0.10/MTok | $0.50/MTok | Budget |
+| `anthropic/claude-opus-4.8` | 1M | $5/MTok | $25/MTok | 1M context |
+
+## Grok/xAI Models (Cursor-family)
+
+| Model ID | Context | Notes |
+|----------|---------|-------|
+| `spacexai/grok-4.1-fast-reasoning` | 1M | $0.20/$0.50 MTok |
+| `spacexai/grok-4.20-multi-agent` | 2M | Multi-agent |
+| `spacexai/grok-4.20-non-reasoning` | 2M | Non-reasoning |
 
 ## High Reasoning Standouts (PR-Reviewer, Gate)
 
-Reasoning + ≥128K context + tool-use:
-
 | Model | Context | Input | Output | Notes |
 |-------|---------|-------|--------|-------|
-| `openai/gpt-5.6-luna` | 1.05M | $0.20/MTok | $1.20/MTok | **Flagship** — 1M reasoning |
-| `anthropic/claude-sonnet-5` | 200K | $0.30/MTok | $1.50/MTok | Proven reviewer |
+| `openai/gpt-5.6-luna` | 1.05M | $0.20/MTok | $1.20/MTok | Flagship — 1M reasoning |
+| `anthropic/claude-sonnet-5` | 1M | $2/MTok | $10/MTok | Proven reviewer |
 | `deepseek/deepseek-v4-pro` | 1M | $0.66/MTok | $1.98/MTok | Deep 1M reasoning |
 | `alibaba/qwen3.7-plus` | 1M | $0.40/MTok | $1.60/MTok | Strong Qwen reasoning |
 | `openai/gpt-5.4-mini` | 400K | $0.20/MTok | $1.25/MTok | Reasoning budget option |
 | `zai/glm-5.3-flashx` | 1M | $0.37/MTok | $1.25/MTok | GLM reasoning |
-| `minimax/minimax-m3` | 512K | $0.30/MTok | $1.20/MTok | MiniMax reasoning |
 
 ## No-Mistakes Gate Candidates
 
-Reasoning + reliability + good context:
-
 | Model | Context | Reasoning | Input | Output |
 |-------|---------|-----------|-------|--------|
-| `anthropic/claude-opus-5` | 200K | ✅ | $1.50/MTok | $7.50/MTok |
-| `openai/gpt-5.6-terra` | 1.05M | ✅ | $1.00/MTok | $5.00/MTok |
-| `anthropic/claude-fable-5` | 200K | ✅ | $0.80/MTok | $4.00/MTok |
-| `deepseek/deepseek-v4-pro` | 1M | ✅ | $0.66/MTok | $1.98/MTok |
+| `anthropic/claude-opus-5` | 1M | Yes | $5/MTok | $25/MTok |
+| `openai/gpt-5.6-terra` | 1.05M | Yes | $1.00/MTok | $5.00/MTok |
+| `anthropic/claude-fable-5` | 1M | Yes | $10/MTok | $50/MTok |
+| `deepseek/deepseek-v4-pro` | 1M | Yes | $0.66/MTok | $1.98/MTok |
 
 ## Free Tier Models
 
 | Model | Context | Reasoning | Tools | Notes |
 |-------|---------|-----------|-------|-------|
-| `inclusionai/ling-3.0-flash-fin-free` | 256K | ✅ | ✅ | Financial domain |
-| `inclusionai/ling-3.0-flash-sante-free` | 256K | ✅ | ✅ | Health domain |
-| `inclusionai/ling-3.0-flash-vl-free` | 256K | ✅ | ✅ | Vision-language |
-| `poolside/laguna-s-2.1-free` | 256K | ✅ | ✅ | Coding model |
+| `inclusionai/ling-3.0-flash-fin-free` | 256K | Yes | Yes | Financial domain |
+| `inclusionai/ling-3.0-flash-sante-free` | 256K | Yes | Yes | Health domain |
+| `inclusionai/ling-3.0-flash-vl-free` | 256K | Yes | Yes | Vision-language |
+| `poolside/laguna-s-2.1-free` | 256K | Yes | Yes | Coding model |
 
-## Agent Family Recommendations
+## Cost Tracking API
 
-### Codex Workers
-Fast, tool-capable, good context:
+- `GET /v1/credits` — balance and total spend
+- `GET /v1/generation?id={id}` — per-request cost, latency, tokens, provider
+- `GET /v1/report?start_date=...&end_date=...&group_by=...` — aggregated spend
+  (group by: day, user, model, tag, provider, credential_type, zero_data_retention (ZDR), api_key_name)
+- `GET /v1/models/{creator}/{model}/endpoints` — per-provider pricing, uptime, latency
 
-1. `openai/gpt-5.1-codex-mini` — 400K context, reasoning, $0.25/$2.00/MTok
-2. `openai/gpt-4o-mini` — Proven, tools, $0.15/$0.60/MTok
-3. `alibaba/qwen3-coder-next` — Coding-focused, $0.50/$1.20/MTok
+## CF AI GW Weaknesses Solved by Vercel
 
-### Claude Workers
-Anthropic-native:
+1. Anthropic model paths — native Anthropic Messages API (CF compat layer breaks)
+2. Cursor support — dedicated Cursor surface (CF has none)
+3. Cost-based routing — `sort: 'cost'` (CF has none)
+4. Budget management — multi-scope budgets (CF's $50/30d failed on custom traffic)
+5. Error handling — proper provider failover (CF treats 200-wrapped errors as success)
+6. Per-request fallbacks — `models` array (CF is route-level only)
+7. Dynamic route management — CLI-managed virtual models (CF custom providers dashboard-only)
+8. Spend tracking — `GET /v1/generation` + `GET /v1/report` (CF has no cost API)
+9. Cache TTL — proper caching with invalidation (CF serves cached failures for 1800s)
+10. Body conditions — per-request options eliminate need (CF only matches metadata.*)
 
-1. `anthropic/claude-3-haiku` — Fastest, $0.25/$1.25/MTok
-2. `anthropic/claude-sonnet-5` — Balanced, $0.30/$1.50/MTok
+## CF AI GW Weaknesses NOT Solved by Vercel
 
-### Grok Workers
-X.AI-native:
+1. opencode-go — Vercel has no opencode.ai provider; subsidized pool can't ride Vercel
+2. opencode-go headers — `x-opencode-session` remains CF-specific
 
-1. `spacexai/grok-4.1-fast-reasoning` — 1M context, $0.20/$0.50/MTok
+## Implementation plan (for ship task)
 
-### Kimi Workers
-Moonshot-native:
-
-1. `moonshotai/kimi-k2-thinking` — 216K context, $0.47/$2.00/MTok
-
-## Integration Pattern
-
-```typescript
-import { gateway } from '@ai-sdk/gateway';
-import { experimental_evaluate as evaluate } from 'ai';
-
-// Daily driver
-const tui = gateway('alibaba/qwen3.7-flash');
-
-// High reasoning
-const reviewer = gateway('openai/gpt-5.6-luna');
-
-// Gate
-const gate = gateway('anthropic/claude-opus-5');
-
-// Evaluation (Jev) — experimental_evaluate with model string
-const triage = await evaluate({
-  model: 'typesafe-ai/jev',
-  state: 'The support agent issued a full refund to the customer.',
-  questions: {
-    refunded: {
-      type: 'boolean',
-      instructions: 'Was a refund issued?',
-    },
-  },
-});
-```
-
-## Cost Comparison vs CF AI Gateway
-
-For 1M tokens daily (triage/classification workload):
-
-| Provider | Daily Cost | Monthly Cost |
-|----------|------------|--------------|
-| Vercel (Jev) | $0.04 | $1.20 |
-| CF Gateway (custom) | $0.04 + setup | $1.20 + BYOK |
-| Direct TypeSafe | $0.04 (waitlist) | $1.20 |
-
-**Recommendation:** Use Vercel AI Gateway for immediate Jev access. Equivalent pricing, zero markup.
-
-## Next Steps
-
-1. Add Vercel to Firstmate fallback configs (codex, claude, grok, kimi)
-2. Create `config/crew-dispatch.json` profile for Jev-router
-3. Test Jev triage against real finding data
-4. Tune confidence thresholds per calibration run
+1. Install Vercel CLI: `npm i -g vercel`
+2. Refresh API key (current `vck_` key returns auth errors)
+3. Create virtual models mirroring CF dynamic routes:
+   - `vmc/tui` — daily driver GLM ladder
+   - `vmc/high` — high reasoning
+   - `vmc/pr-gate` — gate/background
+   - `vmc/pr-reviewer` — review second-set-of-eyes
+   - `vmc/claude` — Claude family
+   - `vmc/codex` — Codex family
+   - `vmc/grok` — Grok family
+   - `vmc/kimi` — Kimi family
+   - `vmc/muse` — Muse family
+   - `vmc/cursor` — Cursor family
+4. Wire Vercel as fallback in all harness configs:
+   - opencode: `vercel` provider entry in opencode.json
+   - pi: `vercel` provider in models.json
+   - codex: `vercel` provider in config.toml
+    - claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (map from `AI_GATEWAY_API_KEY`), `ANTHROPIC_API_KEY` set empty to avoid direct-key preference
+   - kimi: `vercel` provider in config.toml
+   - muse: (rides Meta directly, not through gateway)
+5. Ship via dotfiles PR
