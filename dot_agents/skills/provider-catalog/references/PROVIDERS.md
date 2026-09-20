@@ -797,3 +797,294 @@ When diagnosing step failures with unknown model attribution:
    - If NULL model in invocations → model attribution unavailable; rely on model-correlated audit records plus any unattributed signals you can correlate.
 
 **Read-only constraint:** Never modify no-mistakes state. These queries only read existing diagnostic data.
+
+## Vercel AI Gateway (2026-09-20)
+
+Vercel AI Gateway is a **zero-markup** multi-provider gateway with 376+ models
+from 47 providers. It serves as the fallback to Cloudflare AI Gateway, solving
+several CF weaknesses (Anthropic paths, Cursor support, cost-based routing,
+proper error handling). The `AI_GATEWAY_API_KEY` env var authenticates all
+requests; the model catalog endpoint (`GET /v1/models`) requires no auth.
+
+**Base URLs by API surface:**
+
+| API | Base URL | Use case |
+|---|---|---|
+| OpenAI Chat Completions | `https://ai-gateway.vercel.sh/v1` | General OpenAI-compat |
+| OpenAI Responses | `https://ai-gateway.vercel.sh/v1` | Responses API |
+| Anthropic Messages | `https://ai-gateway.vercel.sh` | Claude/Anthropic native |
+| OpenResponses | `https://ai-gateway.vercel.sh/v1` | Provider-agnostic REST |
+
+**Dedicated harness surfaces** (set up via `vercel ai-gateway` CLI one-command
+config — each gets its own endpoint shape):
+
+| Harness | URL | Why |
+|---|---|---|
+| Claude Code | `https://ai-gateway.vercel.sh/claude-code` | Anthropic-compat with Claude Code model catalog |
+| Codex | `https://ai-gateway.vercel.sh/codex/v1` | OpenAI-compat + `/codex/v1/models` shape |
+| Cursor | `https://ai-gateway.vercel.sh/cursor/v1` | Normalizes non-spec Cursor bodies |
+| OpenCode | `https://ai-gateway.vercel.sh/v1` (provider entry) | OpenAI-compat |
+| Kimi CLI | `https://ai-gateway.vercel.sh/v1` (provider entry) | OpenAI-compat |
+| Coding agent (generic) | `https://ai-gateway.vercel.sh/coding-agent/v1` | Aider, Continue, gptme, Grok Build, etc. |
+
+**Token:** `$AI_GATEWAY_API_KEY` (from `~/.agents/keys/default/.vercel-gateway-key`,
+loaded by `load-keys.sh`). Auth via `Authorization: Bearer <key>` or `x-api-key`
+header. OIDC tokens work on Vercel deployments (`VERCEL_OIDC_TOKEN`).
+
+### BYOK (Bring Your Own Key)
+
+Two BYOK modes:
+
+1. **Team-level (dashboard only):** Provider credentials added in the Vercel
+   dashboard → AI Gateway → BYOK section. No REST API for adding BYOK keys.
+   Scoped to the team; works across all projects. BYOK requests have **zero
+   markup**. Requires paid tier (purchased AI Gateway credits). If BYOK fails,
+   the gateway falls back to system credentials (billed against credits).
+2. **Request-scoped (programmatic):** Pass credentials per-request via
+   `providerOptions.gateway.byok`:
+   ```json
+   "providerOptions": { "gateway": { "byok": { "anthropic": [{ "apiKey": "..." }] } } }
+   ```
+   Multiple credentials per provider (tried in order); multiple providers in
+   one request. Bypasses dashboard-configured BYOK for that request.
+
+**BYOK spend is metered separately and does NOT count toward budgets.** To
+limit BYOK spend, enforce limits in your own code. Monitor via `GET /v1/report`
+with `group_by=credential_type`.
+
+Supported BYOK providers: Anthropic `{ apiKey }`, OpenAI `{ apiKey }`, Azure
+`{ apiKey, resourceName }`, Google Vertex `{ project, location, googleCredentials }`,
+Amazon Bedrock `{ accessKeyId, secretAccessKey, region? }`.
+
+### Virtual Models (dynamic route equivalent)
+
+Virtual Models (`vmc/<slug>`) are Vercel's equivalent to CF dynamic routes —
+**CLI-managed** custom slugs that bundle a model with provider routing,
+fallback behavior, observability tags, and more. More powerful than CF dynamic
+routes because they support per-slug provider ordering, sort-by-cost, service
+tiers, compliance, and per-provider options.
+
+**Management:** `vercel ai-gateway virtual-models create/list/inspect/edit/remove/restore`
+(CLI) or dashboard. The slug is immutable; all other settings are editable.
+
+**Per-virtual-model settings:**
+
+| Setting | Description | Request override |
+|---|---|---|
+| Provider order (`order`) | Ordered provider list to try | Virtual model wins |
+| Provider restriction (`only`) | Restrict to specific providers | Virtual model wins |
+| Model fallbacks (`models`) | Fallback chain | Virtual model wins, replaces request's chain |
+| Sort (`sort`) | `cost`, `ttft`, or `tps` | Virtual model wins |
+| Service tier (`serviceTier`) | `flex` or `priority` | Virtual model wins |
+| Prompt caching (`caching`) | `auto` or explicit | Virtual model wins |
+| Provider timeouts | Per-provider timeout in ms | Virtual model wins |
+| Required capabilities | `implicit_caching`, `vision` | Virtual model wins (replaces) |
+| Compliance (ZDR, HIPAA) | Restrict to compliant providers | Tightens (either side on → on) |
+| Provider options | Per-provider AI SDK options | Merges per option |
+| Observability tags | Tags for spend attribution | Virtual model wins |
+
+**Usage:** Call `vmc/<slug>` as the model string in any API surface (AI SDK,
+Chat Completions, Responses, Anthropic Messages). Example: `"model": "vmc/tui"`
+in a chat completions request routes through the virtual model's configuration.
+
+**Routing rules** (separate from virtual models): Team-wide model rewrites and
+denies, managed via REST API (`GET/POST/PATCH/DELETE /v1/ai-gateway/rules`) or
+CLI (`vercel ai-gateway rules add/list/edit/remove`). Rewrites apply before
+virtual model resolution. Deny rules block models everywhere including inside
+virtual models.
+
+### Provider Options (per-request routing)
+
+All options ride `providerOptions.gateway` in the request body:
+
+| Option | Type | Description |
+|---|---|---|
+| `order` | `string[]` | Provider try order (e.g. `['bedrock', 'anthropic']`) |
+| `only` | `string[]` | Restrict to these providers only |
+| `sort` | `'cost'\|'ttft'\|'tps'` | Rank providers by cost, latency, or throughput |
+| `models` | `string[]` | Fallback model chain |
+| `byok` | `Record<string, Array>` | Request-scoped BYOK credentials |
+| `providerTimeouts` | `{ byok: Record<string, number> }` | Per-provider timeout in ms |
+| `serviceTier` | `'flex'\|'priority'` | Service tier intent |
+| `zeroDataRetention` | `boolean` | Route only to ZDR providers |
+| `tags` | `string[]` | Observability tags for spend tracking |
+| `user` | `string` | End user ID for spend attribution |
+| `caching` | `'auto'` | Automatic prompt caching |
+
+### Anthropic on Vercel (solves CF weakness)
+
+Vercel has **native Anthropic Messages API** support — no compat layer needed.
+Dedicated Claude Code surface at `https://ai-gateway.vercel.sh/claude-code`.
+The Anthropic SDK appends `/v1/messages` itself, so the base URL has no `/v1`.
+
+16 Anthropic models available (2026-09-20), including:
+- `anthropic/claude-sonnet-5` — 200K ctx, $0.30/$1.50 MTok
+- `anthropic/claude-opus-5` — 200K ctx, $1.50/$7.50 MTok
+- `anthropic/claude-fable-5` — 1M ctx, $0.80/$4.00 MTok
+- `anthropic/claude-3-haiku` — 200K ctx, $0.25/$1.25 MTok
+- `anthropic/claude-haiku-4.5` — 200K ctx, $0.10/$0.50 MTok
+
+Prompt caching (`cache_control`) is passed through to Anthropic, Vertex AI
+Anthropic, and Bedrock Anthropic. `CLAUDE_CODE_EXTRA_BODY` env var can inject
+`providerOptions` into Claude Code requests.
+
+### Cursor on Vercel (solves CF weakness)
+
+Vercel has a **dedicated Cursor surface** at `https://ai-gateway.vercel.sh/cursor/v1`
+that normalizes the non-spec bodies Cursor's base URL override sends to
+`/chat/completions`. This is a major advantage — CF AI Gateway has no
+Cursor-specific surface. The `vercel ai-gateway` CLI can set up Cursor
+natively with one command.
+
+20 Grok/xAI models available (2026-09-20), including:
+- `spacexai/grok-4.1-fast-reasoning` — 1M ctx, $0.20/$0.50 MTok
+- `spacexai/grok-4.20-multi-agent` — 2M ctx
+
+### opencode-go on Vercel (limitation)
+
+Vercel does **NOT** list opencode.ai as a provider. The opencode-go subsidized
+pool cannot ride Vercel — the `x-opencode-session` header issue remains
+CF-specific. However, custom headers CAN be passed via `createGateway({ headers })`
+on the AI SDK provider instance for other providers that need them. The
+OpenCode CLI itself can point at Vercel via a `vercel` provider entry in
+`opencode.json` (the `vercel ai-gateway` CLI sets this up).
+
+### Cost tracking and credits
+
+- `GET /v1/credits` — team's credit balance and total spend
+- `GET /v1/generation?id={id}` — per-request cost, latency, token usage, provider
+- `GET /v1/report?start_date=...&end_date=...&group_by=...` — aggregated spend
+  (group by: day, user, model, tag, provider, credential_type, ZDR, api_key_name)
+- `GET /v1/models/{creator}/{model}/endpoints` — per-provider pricing, uptime,
+  throughput, latency for a specific model
+
+### Free tier models (2026-09-20)
+
+| Model | Context | Notes |
+|---|---|---|
+| `inclusionai/ling-3.0-flash-fin-free` | 256K | Financial domain |
+| `inclusionai/ling-3.0-flash-sante-free` | 256K | Health domain |
+| `inclusionai/ling-3.0-flash-vl-free` | 256K | Vision-language |
+| `poolside/laguna-s-2.1-free` | 256K | Coding model |
+
+### Key differences from CF AI Gateway
+
+| Capability | CF AI Gateway | Vercel AI Gateway |
+|---|---|---|
+| Dynamic routes | Route graphs (REST API for routes, dashboard for providers) | Virtual models (CLI-managed) + routing rules (REST API) |
+| Custom providers | Dashboard-only BYOK | Dashboard BYOK + request-scoped BYOK |
+| Anthropic | Compat layer (breaks on some models) | Native Anthropic Messages API + Claude Code surface |
+| Cursor | No dedicated surface | Dedicated Cursor surface (normalizes non-spec bodies) |
+| Cost-based routing | Not available | `sort: 'cost'` auto-picks cheapest provider |
+| Per-request fallbacks | Route-level only | Per-request `models` array |
+| Budget management | Failed on custom-provider traffic (403 code 2040) | Team/project/key/member level, separate from BYOK |
+| Error handling | 200-wrapped errors treated as success | Proper provider failover with timeouts |
+| Spend tracking | No per-request cost API | `GET /v1/generation` + `GET /v1/report` |
+| Markup | Zero (BYOK) | Zero (all, including system credentials) |
+| Body conditions | metadata.* only (body paths never match) | Not needed (per-request options) |
+| Cache TTL | Serves cached failed responses (1800s) | Proper caching with invalidation |
+| opencode-go | BYOK works (with header workaround) | Not available (no opencode provider) |
+| Service tiers | Not available | `flex` (cheaper) and `priority` (faster) |
+| ZDR | Not available | Per-request and team-wide ZDR |
+| CLI management | None | `vercel ai-gateway` CLI for all resources |
+
+### Known limitations
+
+- **No opencode.ai provider** — the subsidized pool (opencode-go) cannot ride
+  Vercel. The `x-opencode-session` header issue remains CF-specific.
+- **BYOK dashboard-only** — no REST API for adding team-level BYOK credentials.
+  Request-scoped BYOK is the programmatic alternative.
+- **Paid tier required for BYOK** — must purchase AI Gateway credits.
+- **BYOK fallback billing** — if BYOK fails, system credential fallback is
+  billed against credits.
+- **API key currently needs refresh** — the existing `vck_` key returns auth
+  errors on all authenticated endpoints (2026-09-20). Captain needs to refresh.
+
+## Cost Metrics & Provider Comparison (2026-09-20)
+
+Reference for evaluating cost across the three gateway/provider options. Live
+quota comes from `quota-axi`; rates here are reference facts verified against
+provider documentation.
+
+### Gateway markup comparison
+
+| Gateway | Markup | Platform fee | BYOK fee | Notes |
+|---|---|---|---|---|
+| **CF AI Gateway** | Zero (BYOK) | None | Zero | Custom providers dashboard-only; budget limits failed on custom traffic |
+| **Vercel AI Gateway** | **Zero (all)** | None | Zero | System credentials also zero-markup; credits-based |
+| **OpenRouter** | 5.5% on credits | $0.80 min/purchase | N/A | List-rate passthrough; free-tier 50/day (1000/day after $10 deposit) |
+
+### Per-token pricing access
+
+| Source | Method | Auth required |
+|---|---|---|
+| CF AI Gateway | Dashboard or probe | Gateway token |
+| Vercel AI Gateway | `GET /v1/models` (catalog) or `GET /v1/models/{creator}/{model}/endpoints` (per-provider) | No auth for catalog; key for endpoints |
+| OpenRouter | `GET /v1/models` | API key |
+
+### Cost-based routing
+
+| Gateway | Capability | How |
+|---|---|---|
+| CF AI Gateway | Not available | Must manually order route nodes by cost |
+| **Vercel AI Gateway** | **`sort: 'cost'`** | Auto-picks cheapest provider per model, per-request or per-virtual-model |
+| OpenRouter | `:floor` suffix | Routes to cheapest provider for a chosen model |
+
+### Budget management
+
+| Gateway | Scope | Behavior |
+|---|---|---|
+| CF AI Gateway | Per-key spend limit | **Failed** on custom-provider traffic (403 code 2040 for unpriceable requests) |
+| **Vercel AI Gateway** | Team, project, API key, team member | BYOK spend excluded; system-credential spend capped |
+| OpenRouter | Per-key | $10 deposit raises free tier from 50 to 1000/day |
+
+### Service tiers
+
+| Gateway | Tiers | Savings |
+|---|---|---|
+| CF AI Gateway | None | N/A |
+| **Vercel AI Gateway** | `flex` (cheaper), `priority` (faster) | Flex tier reduces cost at latency expense |
+| OpenRouter | None | N/A |
+
+### Free tier comparison
+
+| Gateway | Free models | Rate limits | Notes |
+|---|---|---|---|
+| CF AI Gateway | @cf Workers AI (metered, not truly free) | 10K Neurons/day | Evaporates on 120B-class traffic |
+| **Vercel AI Gateway** | 4 models (ling-3.0-flash-*-free, laguna-s-2.1-free) | Per-model rate limits | Credits-based; free tier subset of catalog |
+| OpenRouter | `:free` models | 50/day (1000/day after $10) | Shared free-tier bucket |
+
+### Spend tracking
+
+| Gateway | Method | Granularity |
+|---|---|---|
+| CF AI Gateway | Gateway logs (dashboard) | Per-request, no API |
+| **Vercel AI Gateway** | `GET /v1/generation` + `GET /v1/report` | Per-request cost/latency/tokens; aggregated by day/user/model/tag/provider/credential_type |
+| OpenRouter | Dashboard | Per-request, limited API |
+
+### BYOK economics
+
+| Factor | CF AI Gateway | Vercel AI Gateway | OpenRouter |
+|---|---|---|---|
+| Markup on BYOK | Zero | Zero | N/A (no BYOK) |
+| Request-scoped BYOK | Not available | **Available** (per-request credentials) | N/A |
+| Fallback on BYOK failure | Route-level fallback | System credentials (billed) | N/A |
+| Multiple credentials per provider | Not available | **Available** (tried in order) | N/A |
+| Provider timeout control | Gateway-level | **Per-provider** (`providerTimeouts.byok`) | N/A |
+
+### Cheapest-qualified-lane dispatch (updated 2026-09-20)
+
+The existing cheapest-qualified-lane rule (see above) now considers Vercel as a
+fallback lane when CF AI Gateway lanes are exhausted or degraded. The ranking
+remains by blended tokens-per-dollar from `models.snapshot.json`, with Vercel's
+zero-markup system credentials as a baseline and BYOK for zero-fee access to
+existing provider credits.
+
+### Volume discounts
+
+- **Vercel**: Custom discounts available for volume token spend
+  (`/docs/ai-gateway/pricing/discounts`). Enterprise teams can pay by invoice
+  (no payment processing fees).
+- **CF AI Gateway**: No volume discount documented.
+- **OpenRouter**: 5.5% platform fee dominates below ~$15/mo; above ~$5k/mo,
+  negotiated enterprise tiers win.
