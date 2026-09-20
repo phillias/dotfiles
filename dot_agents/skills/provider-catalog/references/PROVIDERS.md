@@ -804,7 +804,8 @@ Vercel AI Gateway is a **zero-markup** multi-provider gateway with 376+ models
 from 47 providers. It serves as the fallback to Cloudflare AI Gateway, solving
 several CF weaknesses (Anthropic paths, Cursor support, cost-based routing,
 proper error handling). The `AI_GATEWAY_API_KEY` env var authenticates all
-requests; the model catalog endpoint (`GET /v1/models`) requires no auth.
+inference and management requests; the model catalog endpoint (`GET /v1/models`)
+requires no auth.
 
 **Base URLs by API surface:**
 
@@ -875,7 +876,7 @@ tiers, compliance, and per-provider options.
 | Provider restriction (`only`) | Restrict to specific providers | Virtual model wins |
 | Model fallbacks (`models`) | Fallback chain | Virtual model wins, replaces request's chain |
 | Sort (`sort`) | `cost`, `ttft`, or `tps` | Virtual model wins |
-| Service tier (`serviceTier`) | `flex` or `priority` | Virtual model wins |
+| Service tier (`serviceTier`) | `flex`, `priority`, or `fast` (aliases `priority`) | Virtual model wins |
 | Prompt caching (`caching`) | `auto` or explicit | Virtual model wins |
 | Provider timeouts | Per-provider timeout in ms | Virtual model wins |
 | Required capabilities | `implicit_caching`, `vision` | Virtual model wins (replaces) |
@@ -905,7 +906,7 @@ All options ride `providerOptions.gateway` in the request body:
 | `models` | `string[]` | Fallback model chain |
 | `byok` | `Record<string, Array>` | Request-scoped BYOK credentials |
 | `providerTimeouts` | `{ byok: Record<string, number> }` | Per-provider timeout in ms |
-| `serviceTier` | `'flex'\|'priority'` | Service tier intent |
+| `serviceTier` | `'flex'\|'priority'\|'fast'` | Service tier intent (`fast` aliases `priority`) |
 | `zeroDataRetention` | `boolean` | Route only to ZDR providers |
 | `tags` | `string[]` | Observability tags for spend tracking |
 | `user` | `string` | End user ID for spend attribution |
@@ -1074,9 +1075,10 @@ provider documentation.
 
 ### Cheapest-qualified-lane dispatch (updated 2026-09-20)
 
-The existing cheapest-qualified-lane rule (see above) now considers Vercel as a
-fallback lane when CF AI Gateway lanes are exhausted or degraded. The ranking
-remains by blended tokens-per-dollar from `models.snapshot.json`, with Vercel's
+The existing cheapest-qualified-lane rule (see above) applies to initial dispatch
+only. Vercel does not participate in initial dispatch; it is used only after the
+CF AI Gateway fallback ladder is exhausted or degraded. The ranking remains by
+blended tokens-per-dollar from `models.snapshot.json`, with Vercel's
 zero-markup system credentials as a baseline and BYOK for zero-fee access to
 existing provider credits.
 

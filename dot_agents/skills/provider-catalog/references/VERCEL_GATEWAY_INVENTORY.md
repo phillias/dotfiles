@@ -138,9 +138,10 @@ Fast, cheap, >=128K context, tool-use:
 
 ## Implementation plan (for ship task)
 
-1. Install Vercel CLI: `npm i -g vercel`
-2. Refresh API key (current `vck_` key returns auth errors)
-3. Create virtual models mirroring CF dynamic routes:
+1. Install Vercel CLI: `mise install` (pinned at vercel@59.23.2 in mise config)
+2. Authenticate CLI: `vercel login` or pass `--token` for CI/automation
+3. Refresh API key (current `vck_` key returns auth errors)
+4. Create virtual models mirroring CF dynamic routes:
    - `vmc/tui` — daily driver GLM ladder
    - `vmc/high` — high reasoning
    - `vmc/pr-gate` — gate/background
@@ -151,11 +152,11 @@ Fast, cheap, >=128K context, tool-use:
    - `vmc/kimi` — Kimi family
    - `vmc/muse` — Muse family
    - `vmc/cursor` — Cursor family
-4. Wire Vercel as fallback in all harness configs:
+5. Wire Vercel as fallback in all harness configs:
    - opencode: `vercel` provider entry in opencode.json
    - pi: `vercel` provider in models.json
    - codex: `vercel` provider in config.toml
     - claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (map from `AI_GATEWAY_API_KEY`), `ANTHROPIC_API_KEY` set empty to avoid direct-key preference
    - kimi: `vercel` provider in config.toml
    - muse: (rides Meta directly, not through gateway)
-5. Ship via dotfiles PR
+6. Ship via dotfiles PR
