@@ -8,11 +8,11 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 - Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Two-path architecture (captain decision 2026-09-19, PRs #327 + #330): utility chains are `dynamic/TUI` (gateway cascading GLM ladder) → `opencode-go/glm-5.1` → `opencode-go/deepseek-v4-flash` (session-gated direct-client tail); specialized agents/categories keep pinned chains.
 - Pi default chain — `~/.pi/fallback-chains.json` → `default` key (added 2026-09-01). Same GLM-5.1 ladder; activates via `fallback/default` model string.
-- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key (unchanged 2026-09-01, gate-chain v4: openrouter `:free` trio first, gemini-2.5-flash demoted, `phoenixgrove/glm-5.3-flash` kept as manual tail; CF `@cf` and opencode-go excluded: no 1M models in either pool).
+- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key: `CfAiGw/dynamic/pr-gate` → `opencode-go-gw/deepseek-v4-flash` (tail renamed + header-fixed 2026-09-19; full history in the Gate chain section). Gate agents now pin the tail directly instead of walking this chain.
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`): `[--model, "fallback/gate"]` — the 1M-only cost-ordered ladder in `~/.pi/fallback-chains.json` (current order documented in the config's prose; see `dot_no-mistakes/config.yaml`). pi-fallback-provider activates on the `fallback/gate` model string: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
+**no-mistakes gate-agent pin (deterministic, 2026-09-19):** all no-mistakes pi agents (review and other steps) pin `opencode-go-gw/deepseek-v4-flash` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`; other steps = `agent_config.pi.model`, reviewer = `review_agents.reviewer.model`). The pin lives in `agent_config`, not `agent_args_override` — that knob's native argv always won and silently nullified the reviewer model, so it moved 2026-09-14 (the config's prose owns details and history). pi-fallback-provider still applies to manual `fallback/gate` chain use: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
 
 ## Cheapest-qualified-lane dispatch rule (spawn selection)
 
@@ -37,7 +37,7 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | Provider | URL segment | Notes |
 |---|---|---|
 | opencode-zen | `custom-opencode-zen/v1` | primary quality (big-pickle) + free tier |
-| opencode-go | `custom-opencode-go/v1` | subsidized pool (kimi-k2.6, deepseek-v4-flash). **Session-gated 2026-09-08**: requests require a per-conversation `x-opencode-session` header; a static config header cannot satisfy it. Direct-client use only (opencode/pi send it natively) — EXCLUDES opencode-go models from gateway dynamic routes and any static-header custom-provider hop. Clean 400 `MissingSessionID` otherwise. |
+| opencode-go | `custom-opencode-go/v1` | subsidized pool (kimi-k2.6, deepseek-v4-flash), paid 1M (deepseek-v4-flash). **Session header mandatory 2026-09-19**: requests need `x-opencode-session`; opencode sends it natively, and pi (0.84.2 predates native support) rides via the renamed `opencode-go-gw` provider (`private_dot_pi/private_agent/models.json.tmpl`) passing `x-opencode-session: pi-fleet-<host>` as a static header through the gateway custom-provider hop — verified 200 incl. 252K-token requests, so a static header DOES satisfy the gate from a client hop (the per-conversation belief of 2026-09-08 is superseded). Still EXCLUDED from gateway dynamic-route nodes (routes cannot inject headers). Clean 400 `MissingSessionID` without the header. |
 | commandcode | `custom-commandcode/v1` | GOAT paid pool (Kimi-K2.6, DS-V4-Flash) |
 | zai-coding | `custom-zai-coding/v4` | Z.AI Coding Plan Lite; **`/v4`, not `/v1`** |
 | phoenixgrove | `custom-phoenixgrove/v1` | GLM-5.3-flash, deepseek-v4-flash |
@@ -376,7 +376,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
+Chain order is owned by `private_dot_pi/fallback-chains.json`; the direct gate pins live in `dot_no-mistakes/config.yaml`. 2026-09-19 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go-gw/deepseek-v4-flash` (1M, subsidized pool — via the gateway custom-provider hop carrying the static `x-opencode-session: pi-fleet-<host>` header; renamed from `opencode-go` 2026-09-19, see the gateway routing table). History: the 2026-09-14/15 tail rode pi-direct as `opencode-go/deepseek-v4-flash` (session-gated, never a gateway route); on 2026-09-19 the non-review steps began pinning the tail directly (the chain walk false-failed its healthy head — pi-fallback-provider hardcodes a 10s stream timeout vs 12–45s first-byte on 220K–680K-token gate prompts — and bare `opencode-go` was then rejected without the now-mandatory session header), and the reviewer followed after the free NEMO-backed pr-gate lane intermittently returned "Service temporarily overloaded" (5/5-then-fail, same night). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
 
 ## Dynamic routes on the `opencode` gateway (2026-09-04)
 
@@ -410,14 +410,16 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   the openrouter lane catches it poisoned). Ladder: nemotron-3-super (NIM) →
   zen nemotron → openrouter luna (paid, non-Nvidia upstream) → GOAT
   GLM-5.2/Kimi-K3/nemotron-550b/ds-v4-flash → PGS `deepseek-v4-flash-0731`
-  (plan/PAYG tail) → gemini floor. Reviewer phase routing stays on the
-  separate `pr-reviewer` route; re-introduce conditionals only if a client
-  can send `cf-aig-metadata` phase values.
+  (plan/PAYG tail) → gemini floor. Reviewer phase has ridden the direct
+  `opencode-go-gw/deepseek-v4-flash` pin since 2026-09-19 (see the Gate chain
+  section; the route now serves external/probe traffic). Re-introduce
+  conditionals only if a client can send `cf-aig-metadata` phase values.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
-- `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
-  rides `CfAiGw/dynamic/pr-reviewer` via `review_agents.reviewer`
-  (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14):
+- `pr-reviewer` — second-set-of-eyes review ladder (rebuilt 2026-09-14; the pi
+  reviewer rode it earlier via `review_agents.reviewer` per dotfiles PR #297,
+  superseded 2026-09-19 by the direct `opencode-go-gw` pin — see the Gate
+  chain section). Budget-ranked, JSON discipline first:
   `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` →
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
@@ -502,7 +504,9 @@ DYNAMIC-route caveat: model nodes naming bare custom-provider names
   with baseUrl `…/opencode/compat`, `api: openai-completions`, gateway token,
   `cf-aig-gateway-id` header, and model keys `dynamic/TUI|dynamic/high|dynamic/pr-gate|dynamic/vision`.
 - pi (`~/.pi/fallback-chains.json`): `default` ⇒ single `CfAiGw/dynamic/TUI`;
-  `gate` ⇒ single `CfAiGw/dynamic/pr-gate`.
+  `gate` ⇒ `CfAiGw/dynamic/pr-gate` → `opencode-go-gw/deepseek-v4-flash`
+  (tail renamed + header-fixed 2026-09-19; gate agents pin the tail directly —
+  see the Gate chain section).
 - opencode (`dot_config/opencode/opencode.json`): provider `CfAiGw`
   with the four dynamic-route model keys; top-level `model` = `CfAiGw/dynamic/TUI`;
   agent/category chains unchanged (fallback jsonc tail unchanged).

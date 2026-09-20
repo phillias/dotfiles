@@ -24,7 +24,10 @@ export KIMI_CODE_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: 
 # code 2019); the REST API /ai/v1/messages accepts the request but the
 # dynamic route answers in OpenAI chat.completion shape, so Claude's SSE
 # parser hangs. Compat URL kept for fast-fail. Lanes that CAN consume
-# dynamic/claude: opencode, pi, codex, grok, kimi, muse (OpenAI protocol).
+# dynamic/claude: opencode, pi, codex, grok, kimi (OpenAI protocol). muse
+# dropped 2026-09-19: Muse Code 1.3.0 speaks the Meta Responses wire and the
+# public build compiles out the openai adapters, so it cannot ride the compat
+# plane — it talks to api.meta.ai natively (META_API_KEY via load-keys.sh).
 export ANTHROPIC_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
 export ANTHROPIC_API_KEY="$CF_AI_GATEWAY_TOKEN"
 export ANTHROPIC_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"claude","host":"{{ .chezmoi.hostname }}","agent":"primary"}'

@@ -32,7 +32,8 @@ agent: pi
 # "Service temporarily overloaded" from the free NEMO lane under back-to-back
 # agent load (review->test seconds apart), while single probes, 4-concurrent
 # 252K bursts, and a 640K streaming probe all passed; review (single-shot,
-# lighter prompts) stayed 5/5 on pr-gate and keeps riding it via
+# lighter prompts) stayed 5/5 on pr-gate before its own 6th attempt died on
+# the same error, so it now pins the same opencode-go-gw lane via
 # review_agents.reviewer.model. The route's own ladder remains the fallback
 # story for everything else. Chain history: inkling was removed 2026-09-15
 # (OpenRouter funnel rejects pi-shaped requests, free endpoint logs for TM
