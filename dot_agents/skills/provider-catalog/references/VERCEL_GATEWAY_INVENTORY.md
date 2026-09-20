@@ -13,7 +13,7 @@
 ### BYOK
 - Team-level: dashboard-only (manual UI). No REST API for adding credentials.
 - Request-scoped: programmatic via `providerOptions.gateway.byok` per-request.
-- BYOK has zero markup. Requires credits available on any tier (free or paid).
+- BYOK has zero markup. Available only on the paid tier and requires purchased AI Gateway Credits.
 - Fallback: if BYOK fails, system credentials used (billed against credits).
 - BYOK spend does NOT count toward budgets.
 

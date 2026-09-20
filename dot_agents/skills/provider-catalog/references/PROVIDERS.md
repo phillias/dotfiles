@@ -876,7 +876,7 @@ tiers, compliance, and per-provider options.
 | Provider restriction (`only`) | Restrict to specific providers | Virtual model wins |
 | Model fallbacks (`models`) | Fallback chain | Virtual model wins, replaces request's chain |
 | Sort (`sort`) | `cost`, `ttft`, or `tps` | Virtual model wins |
-| Service tier (`serviceTier`) | `flex` or `priority` | Virtual model wins |
+| Service tier (`serviceTier`) | `flex`, `priority`, or `fast` (aliases `priority`) | Virtual model wins |
 | Prompt caching (`caching`) | `auto` or explicit | Virtual model wins |
 | Provider timeouts | Per-provider timeout in ms | Virtual model wins |
 | Required capabilities | `implicit_caching`, `vision` | Virtual model wins (replaces) |
@@ -906,7 +906,7 @@ All options ride `providerOptions.gateway` in the request body:
 | `models` | `string[]` | Fallback model chain |
 | `byok` | `Record<string, Array>` | Request-scoped BYOK credentials |
 | `providerTimeouts` | `{ byok: Record<string, number> }` | Per-provider timeout in ms |
-| `serviceTier` | `'flex'\|'priority'` | Service tier intent |
+| `serviceTier` | `'flex'\|'priority'\|'fast'` | Service tier intent (`fast` aliases `priority`) |
 | `zeroDataRetention` | `boolean` | Route only to ZDR providers |
 | `tags` | `string[]` | Observability tags for spend tracking |
 | `user` | `string` | End user ID for spend attribution |
@@ -919,9 +919,9 @@ Dedicated Claude Code surface at `https://ai-gateway.vercel.sh/claude-code`.
 The Anthropic SDK appends `/v1/messages` itself, so the base URL has no `/v1`.
 
 16 Anthropic models available (2026-09-20), including:
-- `anthropic/claude-sonnet-5` — 200K ctx, $0.30/$1.50 MTok
-- `anthropic/claude-opus-5` — 200K ctx, $1.50/$7.50 MTok
-- `anthropic/claude-fable-5` — 1M ctx, $0.80/$4.00 MTok
+- `anthropic/claude-sonnet-5` — 1M ctx, $2/$10 MTok
+- `anthropic/claude-opus-5` — 1M ctx, $5/$25 MTok
+- `anthropic/claude-fable-5` — 1M ctx, $10/$50 MTok
 - `anthropic/claude-3-haiku` — 200K ctx, $0.25/$1.25 MTok
 - `anthropic/claude-haiku-4.5` — 200K ctx, $0.10/$0.50 MTok
 
