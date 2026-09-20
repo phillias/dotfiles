@@ -8,11 +8,11 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 - Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Two-path architecture (captain decision 2026-09-19, PRs #327 + #330): utility chains are `dynamic/TUI` (gateway cascading GLM ladder) → `opencode-go/glm-5.1` → `opencode-go/deepseek-v4-flash` (session-gated direct-client tail); specialized agents/categories keep pinned chains.
 - Pi default chain — `~/.pi/fallback-chains.json` → `default` key (added 2026-09-01). Same GLM-5.1 ladder; activates via `fallback/default` model string.
-- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key (unchanged 2026-09-01, gate-chain v4: openrouter `:free` trio first, gemini-2.5-flash demoted, `phoenixgrove/glm-5.3-flash` kept as manual tail; CF `@cf` and opencode-go excluded: no 1M models in either pool).
+- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key. Current shape: `CfAiGw/dynamic/pr-gate` → `opencode-go-gw/deepseek-v4-flash` (see the Gate chain section; the 2026-09-01 gate-chain v4 record was superseded when the openrouter `:free` trio was removed after no-mistakes run deaths — that lane class is documented in the pr-gate entry).
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`): `[--model, "fallback/gate"]` — the 1M-only cost-ordered ladder in `~/.pi/fallback-chains.json` (current order documented in the config's prose; see `dot_no-mistakes/config.yaml`). pi-fallback-provider activates on the `fallback/gate` model string: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
+**no-mistakes reviewer pin (deterministic):** the pi model pin lives in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`) — `agent_config.pi.model` for all steps and `review_agents.reviewer.model` for the reviewer both pin `opencode-go-gw/deepseek-v4-flash` (1M context, session-gated subsidized pool, riding pi via the opencode-go-gw static header). The pin moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which silently nullified the reviewer pin and left review riding `fallback/gate` → dynamic/pr-gate (see the config's prose). The `fallback/gate` 1M ladder string in `~/.pi/fallback-chains.json` remains for manual pi use; pi-fallback-provider semantics there: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
 
 ## Cheapest-qualified-lane dispatch rule (spawn selection)
 
@@ -401,18 +401,28 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   appears) from reliable providers; aihubmix GLM discount lane sits top
   (caution 2026-09-08: aihubmix began 200-wrapped 404s — verify before
   trusting that head lane).
-- `pr-gate` — no-mistakes gate/background ladder, **linear** (conditionals
-  removed 2026-09-14 version `6ed05d99`; **openrouter `:free` lanes removed
-  version `91701376`** after three no-mistakes run deaths): openrouter free
-  lanes 200-wrap Nvidia-pool overload errors ("Service temporarily
-  overloaded") — the route's success edge passes the error body verbatim,
-  killing runs exactly when the pool is loaded (pipeline bursts 429 NIM m0 →
-  the openrouter lane catches it poisoned). Ladder: nemotron-3-super (NIM) →
-  zen nemotron → openrouter luna (paid, non-Nvidia upstream) → GOAT
-  GLM-5.2/Kimi-K3/nemotron-550b/ds-v4-flash → PGS `deepseek-v4-flash-0731`
-  (plan/PAYG tail) → gemini floor. Reviewer phase routing stays on the
-  separate `pr-reviewer` route; re-introduce conditionals only if a client
-  can send `cf-aig-metadata` phase values.
+- `pr-gate` — gate/background ladder, **linear** (conditionals removed
+  2026-09-14 version `6ed05d99`; **openrouter `:free` lanes removed version
+  `91701376`** after three no-mistakes run deaths): openrouter free lanes
+  200-wrap Nvidia-pool overload errors ("Service temporarily overloaded") —
+  the route's success edge passes the error body verbatim, killing runs
+  exactly when the pool is loaded. 2026-09-20 status: **no no-mistakes agent
+  rides this route anymore** — all gate agents pin `opencode-go-gw/deepseek-v4-flash`
+  directly (dotfiles PR #332) after the free NEMO head
+  intermittently 200-wrapped the same overload error for daemon agent bursts
+  (single/252K/640K/burst probes all passed; back-to-back agent first requests
+  died 6/6 nights runs). The route serves external and probe traffic only.
+  Actual active ladder (version `91701376`, verified via versions API
+  2026-09-20 — the earlier "GOAT nodes" wording in this file was a mislabel,
+  those lanes are commandcode): `custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b` →
+  `custom-opencode-zen/nemotron-3-ultra-free` →
+  `openrouter/openai/gpt-5.6-luna` → `custom-commandcode/zai-org/GLM-5.2` →
+  `custom-commandcode/moonshotai/Kimi-K3` →
+  `custom-commandcode/nvidia/nemotron-3-ultra-550b-a55b` →
+  `custom-commandcode/deepseek/deepseek-v4-flash` →
+  `custom-phoenixgrove/deepseek-v4-flash-0731` → `google-ai-studio/gemini-2.5-flash`.
+  Never add opencode-go nodes to any route: the upstream
+  mandates x-opencode-session, which route nodes cannot send.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
@@ -421,7 +431,36 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` →
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
-  `custom-opencode-zen/glm-5.2`.
+  `custom-opencode-zen/glm-5.2`. 2026-09-20: gate review no longer rides this
+  either — see the pr-gate entry; the route stays for external traffic.
+- Harness family routes (2026-09-19 build, captain directive — house models
+  per family across providers, openrouter PAYG + plan lanes). 2026-09-20
+  less-wrong pass (captain order, route versions deployed and probed 200):
+  removed `kimi`'s bare `opencode-go/kimi-k2.6` node (opencode-go can never be
+  a route node — upstream mandates x-opencode-session) plus its bare
+  `opencode-zen` tail, and the bare `opencode-zen` heads on `claude`/`codex`/
+  `grok` (zen no longer serves claude-sonnet-4, gpt-5.1, or grok-build-0.1 —
+  probed 400/503); renamed `high`'s bare `aihubmix` nodes to `custom-aihubmix`
+  (the documented bare-name rule). Live ladders: `claude` =
+  `openrouter/anthropic/claude-sonnet-4`; `codex` =
+  `custom-commandcode/gpt-5.6-luna` → `openrouter/openai/gpt-4o`; `grok` =
+  `custom-commandcode/xai/grok-4.5` → `openrouter/x-ai/grok-4.5`; `kimi` =
+  `custom-commandcode/moonshotai/Kimi-K2.6` →
+  `openrouter/moonshotai/kimi-k2.6`; `high` = `custom-aihubmix/coding-glm-5.3`
+  → `custom-aihubmix/claude-fable-5-1` → `custom-aihubmix/glm-5.3` →
+  `custom-together` → `openrouter` → `custom-phoenixgrove` → `custom-friendli`
+  → `custom-deepinfra` (GLM-5.3 lanes). `muse` =
+  `custom-commandcode/meta/muse-spark-1.2` → `openrouter/meta-llama/llama-3.1-70b-instruct`.
+  `cursor` is deployed **empty** (no model nodes) —
+  blocked on the captain's cursor seat decision.
+- `muse` is KEPT deliberately (captain decision 2026-09-20): the muse HARNESS
+  rides Meta's Model API directly (wire mismatch — see the 2026-09-19 muse
+  learning; dotfiles PR #332), but the `dynamic/muse` route and its pi catalog
+  row stay for OpenAI-compatible consumers — and if a future muse build ships
+  the `provider-openai` feature (compiled out of 1.3.0-R3401.1; the error
+  names the flag and muse's source is not public), muse itself can ride the
+  compat plane via `OPENAI_BASE_URL` + gateway token with zero new machinery.
+  Re-evaluate on every muse release.
 
 Owner defaults (2026-09-04): pi `default` chain = `CfAiGw/dynamic/TUI`
 exactly; pi `gate` chain = `CfAiGw/dynamic/pr-gate` exactly;
@@ -460,7 +499,7 @@ steps, 71min CPU before SIGINT on kali) — runaway `loop step=` growth in
 Empirical facts from rebuilding `dynamic/pr-reviewer` (versions deployed, probed with `cf-aig-skip-cache: true`):
 
 - **NIM end-of-life rows — snapshot was stale:** `deepseek-ai/deepseek-v4-flash` EOL 2026-08-07 and `z-ai/glm-5.2` EOL 2026-08-21 (both 410 Gone on `custom-nvidia-nim`). Live NIM replacements from `/v1/models`: `deepseek-ai/deepseek-v4-flash-0731` (snapshot row now `-0731`, family-band price $0.14/$0.28 carried, not independently verified) and `z-ai/glm-5.3-flash` (price unverified, no snapshot row).
-- **Provider naming in route graphs:** bare custom-provider names are dead — the pr-reviewer head fell through with provider `nvidia-nim`; `custom-nvidia-nim` serves. The custom- prefix rule above is empirically confirmed. **pr-gate m1 still uses bare `nvidia-nim`** (`nvidia/nemotron-3-super-120b-a12b`) — suspected silently-dead node that always falls through; fix = rename to `custom-nvidia-nim`, not yet applied.
+- **Provider naming in route graphs:** bare custom-provider names are dead — the pr-reviewer head fell through with provider `nvidia-nim`; `custom-nvidia-nim` serves. The custom- prefix rule above is empirically confirmed. The rename is now applied: pr-gate's bare `nvidia-nim` head became `custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b` in the 2026-09-20 less-wrong pass, and the ladder was verified via the versions API (see the pr-gate entry above).
 - **END is implicit:** route-version `elements` must NOT include a literal END element (validation fails `elements[n].outputs Required`); the last model node's `outputs.fallback` targets the string `"END"`.
 - **zen `glm-5.2`:** free lane confirmed live ($0/$0 row; probes 200 with real content). Thinking model consumes small `max_tokens` budgets before emitting content — probe with ≥500.
 - **openrouter `nvidia/nemotron-3-ultra-550b-a55b:free`:** real but transiently "Upstream error from Nvidia: Service temporarily overloaded" — the budget-lane flakiness matches historical parse-failure windows.
