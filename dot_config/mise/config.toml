@@ -90,4 +90,9 @@ opencode = "1.18.29"
  cloudflared = "2025.9.0"
  # chezmoi — dotfile manager (mise registry; replaces setup.sh branch)
  chezmoi = "2.70.4"
- go = "1.25"
+  go = "1.25"
+ # vercel — Vercel CLI for AI Gateway management (virtual models, routing
+ # rules, budgets, coding agent setup). Required for vmc/<slug> creation and
+ # CLI-based gateway administration. Inference uses AI_GATEWAY_API_KEY; CLI
+ # management needs `vercel login` or --token (personal access token).
+ "npm:vercel" = "59.23.2"
