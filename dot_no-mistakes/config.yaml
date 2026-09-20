@@ -55,7 +55,15 @@ agent: pi
 # keep the profile pin.
 agent_config:
   pi:
-    model: opencode-go-gw/deepseek-v4-flash
+    # (2026-09-20) Switched back to CfAiGw/dynamic/pr-gate from
+    # opencode-go-gw/deepseek-v4-flash: the opencode-go provider hit its
+    # monthly limit (429 "Account budget exceeded" on all models), while
+    # the dynamic route handles provider failover automatically and is
+    # healthy (probed 200 routing to nemotron/glm-5.1). The 2026-09-19
+    # direct pin bypassed the fallback chain, so when the pinned provider
+    # exhausted, there was no fallthrough. The dynamic route's own ladder
+    # remains the fallback story.
+    model: CfAiGw/dynamic/pr-gate
 
 # (2026-09-19) Review rides the same opencode-go-gw/deepseek-v4-flash lane as
 # the other steps: the free NEMO-backed pr-gate route proved intermittently
@@ -69,7 +77,9 @@ agent_config:
 review_agents:
   reviewer:
     agent: pi
-    model: opencode-go-gw/deepseek-v4-flash
+    # (2026-09-20) Same switch as agent_config above: opencode-go monthly
+    # limit exhausted, dynamic route handles failover and is healthy.
+    model: CfAiGw/dynamic/pr-gate
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
