@@ -18,16 +18,16 @@ fi
 # Route Kimi Code through CF AI Gateway (already configured in ~/.kimi-code/config.toml)
 export KIMI_CODE_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"kimi-code","host":"{{ .chezmoi.hostname }}","agent":"primary"}'
 
-# Route Claude Code through CF AI Gateway
-# NOTE 2026-09-19: Claude Code (Anthropic Messages protocol) cannot ride the
-# dynamic/claude route yet. The /compat endpoint rejects /v1/messages (400
-# code 2019); the REST API /ai/v1/messages accepts the request but the
-# dynamic route answers in OpenAI chat.completion shape, so Claude's SSE
-# parser hangs. Compat URL kept for fast-fail. Lanes that CAN consume
-# dynamic/claude: opencode, pi, codex, grok, kimi, muse (OpenAI protocol).
-export ANTHROPIC_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
-export ANTHROPIC_API_KEY="$CF_AI_GATEWAY_TOKEN"
-export ANTHROPIC_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"claude","host":"{{ .chezmoi.hostname }}","agent":"primary"}'
+# Route Claude Code through Vercel AI Gateway (native Anthropic Messages API)
+# Vercel serves /v1/messages in proper Anthropic format with SSE events
+# (message_start, content_block_delta, message_stop) — CF AI Gateway's
+# dynamic routes return OpenAI chat.completion format which Claude Code
+# cannot parse. Vercel's /claude-code endpoint is Claude Code's own
+# compatibility surface with model discovery support.
+export ANTHROPIC_BASE_URL="https://ai-gateway.vercel.sh"
+export ANTHROPIC_AUTH_TOKEN="$AI_GATEWAY_API_KEY"
+export ANTHROPIC_API_KEY=""
+export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
 
 # Route Codex through CF AI Gateway  
 export OPENAI_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
