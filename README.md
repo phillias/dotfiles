@@ -30,7 +30,7 @@ flowchart TD
             S["Shell<br/>zsh, bash, tmux, screen"]
             SK["Agent Skills<br/>60+ synced skills"]
             SEC["Encrypted Secrets<br/>age-encrypted at rest"]
-            SYSD["Systemd Services<br/>Hermes, telemetry, tunnel"]
+            SYSD["Systemd Services<br/>telemetry, tunnel"]
         end
 
         subgraph VALIDATION["Validation Pipeline"]
@@ -74,7 +74,7 @@ flowchart TD
 | **Agent Runtime** | OpenCode (50+ subagents, themes), Pi, Oh My Posh extensions, Herdr |
 | **Agent Skills** | 60+ synced skills (CE suite, AXI tools, Cloudflare, debugging, design) |
 | **Secrets** | All provider keys age-encrypted (Google, Cloudflare, Composio, Telegram, etc.) |
-| **Systemd** | Hermes, Honcho, catalog drift, self-improvement, telemetry, Cloudflare tunnel |
+| **Systemd** | catalog drift, self-improvement, telemetry, Cloudflare tunnel; hermes-managed units external (honcho scheduler retired) |
 | **SSH** | 6+ key pairs, all age-encrypted |
 
 ## Agent Harness
