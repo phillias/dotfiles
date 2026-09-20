@@ -15,16 +15,30 @@ agent: pi
 # harness that avoids that adapter path entirely.
 #
 # Gate reserves the model's full output budget for structured review output, so
-# a 1M-context model is required for large diffs. The pin is the
-# `fallback/gate` chain (~/.pi/fallback-chains.json), 2026-09-14 shape:
-# cf-aig-dynamic/dynamic/pr-gate (the gateway's linear free-first ladder) →
-# opencode-go/deepseek-v4-flash (1M, subsidized pool — session-gated, so it can
-# only ride pi directly, never a gateway route). That is the tail: inkling was
-# removed 2026-09-15 — OpenRouter's routing funnel rejects pi-shaped requests
-# unreliably (403 non-agentic on production gate traffic) and the free
-# endpoint's terms log all traffic for TM training. The openrouter-direct pi
-# provider entry stays for personal agentic experiments. kimi-k2.6 is
-# excluded: 262K < the gate's 1M bar.
+# a 1M-context model is required for large diffs.
+# (2026-09-19) Non-review steps pin opencode-go-gw/deepseek-v4-flash directly.
+# History: the old `fallback/gate` chain walk false-failed its healthy head
+# (pi-fallback-provider hardcodes a 10s stream timeout vs 12-45s first-byte on
+# 220K-680K-token gate prompts), then hit the opencode-go tail, which
+# opencode.ai/zen now rejects without the mandatory x-opencode-session header
+# (pi is a validated Go client per opencode.ai/docs/go; our pinned pi 0.84.2
+# predates native support, so the renamed opencode-go-gw provider passes
+# pi-fleet-<host> as a static header — verified 200 through the gateway custom
+# provider, including 252K-token requests). With the header fix the tail IS the
+# right lane for these steps: 1M context, reliable paid pool, cache reads at
+# $0.003/M (a full test invocation ~228K fresh + 452K cached + 7.6K out is
+# about four cents). Direct pinning also sidesteps a residual intermittent
+# failure observed 2026-09-19: daemon test/document agents died 4/4 runs on
+# "Service temporarily overloaded" from the free NEMO lane under back-to-back
+# agent load (review->test seconds apart), while single probes, 4-concurrent
+# 252K bursts, and a 640K streaming probe all passed; review (single-shot,
+# lighter prompts) stayed 5/5 on pr-gate and keeps riding it via
+# review_agents.reviewer.model. The route's own ladder remains the fallback
+# story for everything else. Chain history: inkling was removed 2026-09-15
+# (OpenRouter funnel rejects pi-shaped requests, free endpoint logs for TM
+# training); kimi-k2.6 excluded: 262K < the gate's 1M bar. The fallback/gate
+# chain stays in ~/.pi/fallback-chains.json with the renamed, header-fixed
+# tail for manual use.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -38,18 +52,24 @@ agent: pi
 # knob, which silently nullified review_agents.reviewer.model (review steps
 # kept riding fallback/gate head dynamic/pr-gate). Profile-level model lets
 # review_agents.reviewer.model win for review steps only; all other steps
-# keep fallback/gate.
+# keep the profile pin.
 agent_config:
   pi:
-    model: fallback/gate
+    model: opencode-go-gw/deepseek-v4-flash
 
-# (2026-09-19) Review stage rides pr-gate (the only existing gate route).
-# The pr-reviewer route documented in PROVIDERS.md does not exist in CF AI Gateway.
-# Gate route serves GLM-5.x free ladder for deterministic review output.
+# (2026-09-19) Review rides the same opencode-go-gw/deepseek-v4-flash lane as
+# the other steps: the free NEMO-backed pr-gate route proved intermittently
+# unreliable for daemon agent requests tonight (review passed 5/5 then died on
+# the 6th with 'Service temporarily overloaded' - the error follows whichever
+# agent rides the free lane, not the step), while every Go-lane request with
+# the session header succeeded. deepseek-v4-flash is the same model family the
+# pr-reviewer ladder was rebuilt around on 2026-09-14 (NIM
+# deepseek-v4-flash-0731 head), now on the reliable subsidized pool. The
+# pr-gate and pr-reviewer routes stay healthy for external/probe traffic.
 review_agents:
   reviewer:
     agent: pi
-    model: CfAiGw/dynamic/pr-gate
+    model: opencode-go-gw/deepseek-v4-flash
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
