@@ -12,7 +12,7 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** no-mistakes launches its pi reviewer via `agent_args_override` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`): `[--model, "fallback/gate"]` — the 1M-only cost-ordered ladder in `~/.pi/fallback-chains.json` (current order documented in the config's prose; see `dot_no-mistakes/config.yaml`). pi-fallback-provider activates on the `fallback/gate` model string: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
+**no-mistakes reviewer pin (deterministic):** the pi model pin lives in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`) — `agent_config.pi.model` for all steps and `review_agents.reviewer.model` for the reviewer both pin `opencode-go-gw/deepseek-v4-flash` (1M context, session-gated subsidized pool, riding pi via the opencode-go-gw static header). The pin moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which silently nullified the reviewer pin and left review riding `fallback/gate` → dynamic/pr-gate (see the config's prose). The `fallback/gate` 1M ladder string in `~/.pi/fallback-chains.json` remains for manual pi use; pi-fallback-provider semantics there: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
 
 ## Cheapest-qualified-lane dispatch rule (spawn selection)
 
