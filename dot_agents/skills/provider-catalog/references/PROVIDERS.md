@@ -414,9 +414,12 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   died 6/6 nights runs). The route serves external and probe traffic only.
   Actual active ladder (version `91701376`, verified via versions API
   2026-09-20 — the earlier "GOAT nodes" wording in this file was a mislabel,
-  those lanes are commandcode): `custom-nvidia-nim/nemotron-3-super-120b` →
-  `custom-opencode-zen/nemotron-3-ultra-free` → `openrouter/gpt-5.6-luna` →
-  `custom-commandcode/GLM-5.2/Kimi-K3/nemotron-550b/ds-v4-flash` →
+  those lanes are commandcode): `custom-nvidia-nim/nvidia/
+  nemotron-3-super-120b-a12b` → `custom-opencode-zen/nemotron-3-ultra-free` →
+  `openrouter/openai/gpt-5.6-luna` → `custom-commandcode/zai-org/GLM-5.2` →
+  `custom-commandcode/moonshotai/Kimi-K3` →
+  `custom-commandcode/nvidia/nemotron-3-ultra-550b-a55b` →
+  `custom-commandcode/deepseek/deepseek-v4-flash` →
   `custom-phoenixgrove/deepseek-v4-flash-0731` → `google-ai-studio/
   gemini-2.5-flash`. Never add opencode-go nodes to any route: the upstream
   mandates x-opencode-session, which route nodes cannot send.
@@ -496,7 +499,7 @@ steps, 71min CPU before SIGINT on kali) — runaway `loop step=` growth in
 Empirical facts from rebuilding `dynamic/pr-reviewer` (versions deployed, probed with `cf-aig-skip-cache: true`):
 
 - **NIM end-of-life rows — snapshot was stale:** `deepseek-ai/deepseek-v4-flash` EOL 2026-08-07 and `z-ai/glm-5.2` EOL 2026-08-21 (both 410 Gone on `custom-nvidia-nim`). Live NIM replacements from `/v1/models`: `deepseek-ai/deepseek-v4-flash-0731` (snapshot row now `-0731`, family-band price $0.14/$0.28 carried, not independently verified) and `z-ai/glm-5.3-flash` (price unverified, no snapshot row).
-- **Provider naming in route graphs:** bare custom-provider names are dead — the pr-reviewer head fell through with provider `nvidia-nim`; `custom-nvidia-nim` serves. The custom- prefix rule above is empirically confirmed. The rename is now applied: pr-gate's bare `nvidia-nim` head became `custom-nvidia-nim/nemotron-3-super-120b` in the 2026-09-20 less-wrong pass, and the ladder was verified via the versions API (see the pr-gate entry above).
+- **Provider naming in route graphs:** bare custom-provider names are dead — the pr-reviewer head fell through with provider `nvidia-nim`; `custom-nvidia-nim` serves. The custom- prefix rule above is empirically confirmed. The rename is now applied: pr-gate's bare `nvidia-nim` head became `custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b` in the 2026-09-20 less-wrong pass, and the ladder was verified via the versions API (see the pr-gate entry above).
 - **END is implicit:** route-version `elements` must NOT include a literal END element (validation fails `elements[n].outputs Required`); the last model node's `outputs.fallback` targets the string `"END"`.
 - **zen `glm-5.2`:** free lane confirmed live ($0/$0 row; probes 200 with real content). Thinking model consumes small `max_tokens` budgets before emitting content — probe with ≥500.
 - **openrouter `nvidia/nemotron-3-ultra-550b-a55b:free`:** real but transiently "Upstream error from Nvidia: Service temporarily overloaded" — the budget-lane flakiness matches historical parse-failure windows.
