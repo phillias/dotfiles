@@ -1,0 +1,56 @@
+Live validation evidence — fm/pi-0.86-and-route-docs (pin + provider-catalog records)
+=============================================================================
+
+[1] mise pin materializes at 0.84.2 (live)
+    - worktree dot_config/mise/config.toml parses as TOML:
+        tools."npm:@earendil-works/pi-coding-agent" = "0.84.2"
+      re-bump gate recorded in pin comment: "Re-bump only after a full no-mistakes run passes on the candidate."
+      line-56 @oh-my-pi note consistent: "The working `pi` is @earendil-works/pi-coding-agent@0.84.2, pinned in this manifest."
+    - live host `mise which pi` -> /home/phillias/.local/share/mise/installs/npm-earendil-works-pi-coding-agent/0.84.2/bin/pi
+    - live `pi --version` -> 0.84.2
+    - live materialized ~/.config/mise/config.toml pin line = 0.84.2 (diff vs worktree: only the line-56 comment differs, host not yet re-applied)
+
+[2] captain.md.tmpl renders (live, Go text/template with fleet data)
+    Rendered line 13: "Gate agent + node stack: no-mistakes gate agent is pi (upstream #633). Working `pi` bin
+    is @earendil-works/pi-coding-agent@0.84.2, pinned in mise config.toml (PR #216/217; 0.85.1 and 0.86.0 both
+    reverted 2026-09-20 — three gate runs died with \"Stream ended without finish_reason\"; no re-bump without a
+    verified full no-mistakes run). Node via mise (`mise use -g node@22`)..."
+    (template executed with {{ .fleet.dnsDomain }} supplied)
+
+[3] PROVIDERS.md route literals are verbatim single-line code spans (machine parse of the owned reference contract)
+    - scanned all 439 backtick spans; zero route-element spans wrapped across lines (only legit multi-line
+      json/bash/sql code blocks remain)
+    - every documented ladder element present as exact single-line span:
+      pr-gate head custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b, gate pin opencode-go-gw/deepseek-v4-flash,
+      harness claude/codex/grok/kimi/high/muse ladders incl. custom-commandcode/meta/muse-spark-1.2
+    - adversarial: no live ladder contains a bare opencode-go/ node (kimi's removed node appears only in the
+      "removed" sentence; opencode-go/ spans elsewhere are documented direct-client tails, not route nodes)
+    - no stale "bare nvidia-nim head ... not yet applied" note remains (line 502 now records the applied rename)
+    - line-15 reviewer-pin record no longer instructs [--model,"fallback/gate"]; mechanism is now
+      agent_config.pi.model + review_agents.reviewer.model (fallback/gate remains only as manual-pi history)
+
+[4] recorded routes match the live gateway (probe each dynamic/<route>, cf-aig-skip-cache: true, 4-token)
+    -> dynamic/pr-gate     HTTP 200 served nvidia/nemotron-3-super-120b-a12b   (matches recorded head)
+    -> dynamic/TUI         HTTP 200 served glm-5.1                             (control, unchanged)
+    -> dynamic/claude      HTTP 200 served anthropic/claude-sonnet-4           (matches recorded head)
+    -> dynamic/codex       HTTP 200 served gpt-5.6-luna                        (matches recorded head; one transient
+                                                                               500 "Element 'm2' not found" recovered)
+    -> dynamic/grok        HTTP 200 served xai/grok-4.5                        (matches recorded head)
+    -> dynamic/kimi        HTTP 200 served moonshotai/Kimi-K2.6                (matches recorded head; opencode-go
+                                                                               node confirmed gone — route serves)
+    -> dynamic/muse        HTTP 200 served meta/muse-spark-1.2                 (matches recorded head; KEPT)
+    -> dynamic/high        HTTP 200 served claude-fable-5-1                    (recorded element; head coding-glm-5.3
+                                                                               fell through to lane 2 — lane health)
+    -> dynamic/pr-reviewer 2x timeout (50s)                                    (doc makes no 200 claim for it here;
+                                                                               NIM free head rate window, documented
+                                                                               routing evidence, not a change failure)
+
+[5] recorded gate-agent pin matches live no-mistakes config
+    live ~/.no-mistakes/config.yaml:
+      agent_config.pi.model        = opencode-go-gw/deepseek-v4-flash
+      review_agents.reviewer.model = opencode-go-gw/deepseek-v4-flash
+    (matches PROVIDERS.md line-15 record and pr-gate entry "all gate agents pin directly per PR #332")
+
+[6] historical regression basis corroborated (read-only)
+    grep "Stream ended without finish_reason" across ~/.no-mistakes/logs + ~/.local/state finds the recorded
+    pipeline deaths cited by the change; the 0.85.1/0.86.0 installs exist under mise but are not the pin target.

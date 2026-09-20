@@ -1,0 +1,40 @@
+== dynamic/pr-gate -> __HTTP_200__
+  served_model: nvidia/nemotron-3-super-120b-a12b
+  content: The user says:
+== dynamic/TUI -> __HTTP_200__
+  served_model: glm-5.1
+  content: 
+== dynamic/claude -> __HTTP_200__
+  served_model: anthropic/claude-sonnet-4
+  content: ok
+== dynamic/codex -> __HTTP_500__
+  served_model: None
+  content: 
+  error: [{'code': 2025, 'message': "Element 'm2' not found"}]
+== dynamic/grok -> __HTTP_200__
+  served_model: xai/grok-4.5
+  content: ok
+== dynamic/kimi -> __HTTP_200__
+  served_model: moonshotai/Kimi-K2.6
+  content: 
+== dynamic/muse -> __HTTP_200__
+  served_model: meta/muse-spark-1.2
+  content: 
+== dynamic/high -> __HTTP_200__
+  served_model: claude-fable-5-1
+  content: ok
+curl: (28) Operation timed out after 60001 milliseconds with 0 bytes received
+== dynamic/pr-reviewer -> __HTTP_000__
+  raw: 
+== retry dynamic/codex ==
+  try1: __HTTP_200__
+{"id":"gen_01M2ZEBH407YTE8AWJHS4B9XY9","object":"chat.completion","created":1789909124,"model":"gpt-5.6-luna","choices":[{"index":0,"message":{"role":"assistant","content":"ok","phase":"final_answer"},"logprobs":null,"finish_reason":"stop"}],"usage":{"prompt_tokens":13,"completion_tokens":5,"total_t
+  try2: __HTTP_200__
+{"id":"gen_01M2ZEBP0FFY440HK3JTFXRPFC","object":"chat.completion","created":1789909130,"model":"gpt-5.6-luna","choices":[{"index":0,"message":{"role":"assistant","content":"ok","phase":"final_answer"},"logprobs":null,"finish_reason":"stop"}],"usage":{"prompt_tokens":13,"completion_tokens":5,"total_t
+== retry dynamic/pr-reviewer ==
+  try1: __HTTP_000__
+curl: (28) Operation timed out after 50002 milliseconds with 0 bytes received
+
+  try2: __HTTP_000__
+curl: (28) Operation timed out after 50001 milliseconds with 0 bytes received
+
