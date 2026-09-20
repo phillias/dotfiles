@@ -15,16 +15,23 @@ agent: pi
 # harness that avoids that adapter path entirely.
 #
 # Gate reserves the model's full output budget for structured review output, so
-# a 1M-context model is required for large diffs. The pin is the
-# `fallback/gate` chain (~/.pi/fallback-chains.json), 2026-09-14 shape:
-# cf-aig-dynamic/dynamic/pr-gate (the gateway's linear free-first ladder) →
-# opencode-go/deepseek-v4-flash (1M, subsidized pool — session-gated, so it can
-# only ride pi directly, never a gateway route). That is the tail: inkling was
-# removed 2026-09-15 — OpenRouter's routing funnel rejects pi-shaped requests
-# unreliably (403 non-agentic on production gate traffic) and the free
-# endpoint's terms log all traffic for TM training. The openrouter-direct pi
-# provider entry stays for personal agentic experiments. kimi-k2.6 is
-# excluded: 262K < the gate's 1M bar.
+# a 1M-context model is required for large diffs.
+# (2026-09-19) Non-review steps pin CfAiGw/dynamic/pr-gate directly. The old
+# `fallback/gate` chain walk false-failed on real gate prompts: the
+# pi-fallback-provider extension hardcodes a 10s stream timeout while 221K+
+# token prompts take 12-20s to first byte on the healthy NEMO head, so every
+# head attempt aborted and fell to the opencode-go tail, which 400s without
+# the now-mandatory x-opencode-session header (opencode.ai/zen enforcement,
+# 2026-09-19; pi is a validated Go client per opencode.ai/docs/go and current
+# pi builds send it natively — our pinned 0.84.2 predates that, so the renamed
+# opencode-go-gw provider entry passes it as a static header). Direct pin =
+# the route's own ladder handles fallback (NEMO -> zen -> openrouter -> PGS ->
+# gemini); review already rode the direct pin and passed while chain walks
+# died. Chain history: inkling was removed 2026-09-15 (OpenRouter funnel
+# rejects pi-shaped requests unreliably, free endpoint logs for TM training);
+# kimi-k2.6 excluded: 262K < the gate's 1M bar. The fallback/gate chain remains
+# in ~/.pi/fallback-chains.json with the renamed, header-fixed tail for manual
+# use.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -38,10 +45,10 @@ agent: pi
 # knob, which silently nullified review_agents.reviewer.model (review steps
 # kept riding fallback/gate head dynamic/pr-gate). Profile-level model lets
 # review_agents.reviewer.model win for review steps only; all other steps
-# keep fallback/gate.
+# keep the profile pin.
 agent_config:
   pi:
-    model: fallback/gate
+    model: CfAiGw/dynamic/pr-gate
 
 # (2026-09-19) Review stage rides pr-gate (the only existing gate route).
 # The pr-reviewer route documented in PROVIDERS.md does not exist in CF AI Gateway.
