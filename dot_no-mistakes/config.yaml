@@ -57,13 +57,19 @@ agent_config:
   pi:
     model: opencode-go-gw/deepseek-v4-flash
 
-# (2026-09-19) Review stage rides pr-gate (the only existing gate route).
-# The pr-reviewer route documented in PROVIDERS.md does not exist in CF AI Gateway.
-# Gate route serves GLM-5.x free ladder for deterministic review output.
+# (2026-09-19) Review rides the same opencode-go-gw/deepseek-v4-flash lane as
+# the other steps: the free NEMO-backed pr-gate route proved intermittently
+# unreliable for daemon agent requests tonight (review passed 5/5 then died on
+# the 6th with 'Service temporarily overloaded' - the error follows whichever
+# agent rides the free lane, not the step), while every Go-lane request with
+# the session header succeeded. deepseek-v4-flash is the same model family the
+# pr-reviewer ladder was rebuilt around on 2026-09-14 (NIM
+# deepseek-v4-flash-0731 head), now on the reliable subsidized pool. The
+# pr-gate and pr-reviewer routes stay healthy for external/probe traffic.
 review_agents:
   reviewer:
     agent: pi
-    model: CfAiGw/dynamic/pr-gate
+    model: opencode-go-gw/deepseek-v4-flash
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
 # acpx_path: acpx
