@@ -1,0 +1,14 @@
+{
+  "gate_pins": {
+    "agent_config.pi.model": "opencode-go-gw/deepseek-v4-flash",
+    "review_agents.reviewer.model": "opencode-go-gw/deepseek-v4-flash"
+  },
+  "provider_contract": {
+    "provider": "opencode-go-gw",
+    "base_url": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1",
+    "x-opencode-session": "pi-fleet-InspironOne",
+    "model": "deepseek-v4-flash",
+    "context_window": 1048576,
+    "old_opencode-go_provider_present": false
+  }
+}
