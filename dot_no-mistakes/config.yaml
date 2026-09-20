@@ -16,22 +16,29 @@ agent: pi
 #
 # Gate reserves the model's full output budget for structured review output, so
 # a 1M-context model is required for large diffs.
-# (2026-09-19) Non-review steps pin CfAiGw/dynamic/pr-gate directly. The old
-# `fallback/gate` chain walk false-failed on real gate prompts: the
-# pi-fallback-provider extension hardcodes a 10s stream timeout while 221K+
-# token prompts take 12-20s to first byte on the healthy NEMO head, so every
-# head attempt aborted and fell to the opencode-go tail, which 400s without
-# the now-mandatory x-opencode-session header (opencode.ai/zen enforcement,
-# 2026-09-19; pi is a validated Go client per opencode.ai/docs/go and current
-# pi builds send it natively — our pinned 0.84.2 predates that, so the renamed
-# opencode-go-gw provider entry passes it as a static header). Direct pin =
-# the route's own ladder handles fallback (NEMO -> zen -> openrouter -> PGS ->
-# gemini); review already rode the direct pin and passed while chain walks
-# died. Chain history: inkling was removed 2026-09-15 (OpenRouter funnel
-# rejects pi-shaped requests unreliably, free endpoint logs for TM training);
-# kimi-k2.6 excluded: 262K < the gate's 1M bar. The fallback/gate chain remains
-# in ~/.pi/fallback-chains.json with the renamed, header-fixed tail for manual
-# use.
+# (2026-09-19) Non-review steps pin opencode-go-gw/deepseek-v4-flash directly.
+# History: the old `fallback/gate` chain walk false-failed its healthy head
+# (pi-fallback-provider hardcodes a 10s stream timeout vs 12-45s first-byte on
+# 220K-680K-token gate prompts), then hit the opencode-go tail, which
+# opencode.ai/zen now rejects without the mandatory x-opencode-session header
+# (pi is a validated Go client per opencode.ai/docs/go; our pinned pi 0.84.2
+# predates native support, so the renamed opencode-go-gw provider passes
+# pi-fleet-<host> as a static header — verified 200 through the gateway custom
+# provider, including 252K-token requests). With the header fix the tail IS the
+# right lane for these steps: 1M context, reliable paid pool, cache reads at
+# $0.003/M (a full test invocation ~228K fresh + 452K cached + 7.6K out is
+# about four cents). Direct pinning also sidesteps a residual intermittent
+# failure observed 2026-09-19: daemon test/document agents died 4/4 runs on
+# "Service temporarily overloaded" from the free NEMO lane under back-to-back
+# agent load (review->test seconds apart), while single probes, 4-concurrent
+# 252K bursts, and a 640K streaming probe all passed; review (single-shot,
+# lighter prompts) stayed 5/5 on pr-gate and keeps riding it via
+# review_agents.reviewer.model. The route's own ladder remains the fallback
+# story for everything else. Chain history: inkling was removed 2026-09-15
+# (OpenRouter funnel rejects pi-shaped requests, free endpoint logs for TM
+# training); kimi-k2.6 excluded: 262K < the gate's 1M bar. The fallback/gate
+# chain stays in ~/.pi/fallback-chains.json with the renamed, header-fixed
+# tail for manual use.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -48,7 +55,7 @@ agent: pi
 # keep the profile pin.
 agent_config:
   pi:
-    model: CfAiGw/dynamic/pr-gate
+    model: opencode-go-gw/deepseek-v4-flash
 
 # (2026-09-19) Review stage rides pr-gate (the only existing gate route).
 # The pr-reviewer route documented in PROVIDERS.md does not exist in CF AI Gateway.
