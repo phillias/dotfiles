@@ -13,7 +13,7 @@
 ### BYOK
 - Team-level: dashboard-only (manual UI). No REST API for adding credentials.
 - Request-scoped: programmatic via `providerOptions.gateway.byok` per-request.
-- BYOK has zero markup. Requires credits available on any tier (free or paid).
+- BYOK has zero markup. Available only on the paid tier and requires purchased AI Gateway Credits.
 - Fallback: if BYOK fails, system credentials used (billed against credits).
 - BYOK spend does NOT count toward budgets.
 
@@ -115,7 +115,7 @@ Fast, cheap, >=128K context, tool-use:
 - `GET /v1/credits` — balance and total spend
 - `GET /v1/generation?id={id}` — per-request cost, latency, tokens, provider
 - `GET /v1/report?start_date=...&end_date=...&group_by=...` — aggregated spend
-  (group by: day, user, model, tag, provider, credential_type, ZDR, api_key_name)
+  (group by: day, user, model, tag, provider, credential_type, zero_data_retention (ZDR), api_key_name)
 - `GET /v1/models/{creator}/{model}/endpoints` — per-provider pricing, uptime, latency
 
 ## CF AI GW Weaknesses Solved by Vercel

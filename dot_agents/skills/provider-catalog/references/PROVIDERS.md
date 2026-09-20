@@ -918,9 +918,9 @@ Dedicated Claude Code surface at `https://ai-gateway.vercel.sh/claude-code`.
 The Anthropic SDK appends `/v1/messages` itself, so the base URL has no `/v1`.
 
 16 Anthropic models available (2026-09-20), including:
-- `anthropic/claude-sonnet-5` — 200K ctx, $0.30/$1.50 MTok
-- `anthropic/claude-opus-5` — 200K ctx, $1.50/$7.50 MTok
-- `anthropic/claude-fable-5` — 1M ctx, $0.80/$4.00 MTok
+- `anthropic/claude-sonnet-5` — 1M ctx, $2/$10 MTok
+- `anthropic/claude-opus-5` — 1M ctx, $5/$25 MTok
+- `anthropic/claude-fable-5` — 1M ctx, $10/$50 MTok
 - `anthropic/claude-3-haiku` — 200K ctx, $0.25/$1.25 MTok
 - `anthropic/claude-haiku-4.5` — 200K ctx, $0.10/$0.50 MTok
 
