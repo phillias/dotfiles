@@ -804,7 +804,8 @@ Vercel AI Gateway is a **zero-markup** multi-provider gateway with 376+ models
 from 47 providers. It serves as the fallback to Cloudflare AI Gateway, solving
 several CF weaknesses (Anthropic paths, Cursor support, cost-based routing,
 proper error handling). The `AI_GATEWAY_API_KEY` env var authenticates all
-requests; the model catalog endpoint (`GET /v1/models`) requires no auth.
+inference and management requests; the model catalog endpoint (`GET /v1/models`)
+requires no auth.
 
 **Base URLs by API surface:**
 
@@ -1074,9 +1075,10 @@ provider documentation.
 
 ### Cheapest-qualified-lane dispatch (updated 2026-09-20)
 
-The existing cheapest-qualified-lane rule (see above) now considers Vercel as a
-fallback lane when CF AI Gateway lanes are exhausted or degraded. The ranking
-remains by blended tokens-per-dollar from `models.snapshot.json`, with Vercel's
+The existing cheapest-qualified-lane rule (see above) applies to initial dispatch
+only. Vercel does not participate in initial dispatch; it is used only after the
+CF AI Gateway fallback ladder is exhausted or degraded. The ranking remains by
+blended tokens-per-dollar from `models.snapshot.json`, with Vercel's
 zero-markup system credentials as a baseline and BYOK for zero-fee access to
 existing provider credits.
 
