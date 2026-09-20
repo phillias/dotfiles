@@ -98,7 +98,7 @@ Fast, cheap, >=128K context, tool-use:
 |-------|---------|-----------|-------|--------|
 | `anthropic/claude-opus-5` | 200K | Yes | $1.50/MTok | $7.50/MTok |
 | `openai/gpt-5.6-terra` | 1.05M | Yes | $1.00/MTok | $5.00/MTok |
-| `anthropic/claude-fable-5` | 200K | Yes | $0.80/MTok | $4.00/MTok |
+| `anthropic/claude-fable-5` | 1M | Yes | $0.80/MTok | $4.00/MTok |
 | `deepseek/deepseek-v4-pro` | 1M | Yes | $0.66/MTok | $1.98/MTok |
 
 ## Free Tier Models
