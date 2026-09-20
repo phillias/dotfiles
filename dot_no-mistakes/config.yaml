@@ -2,11 +2,13 @@
 
 # Agent to use for code generation. This may also be an ordered fallback list,
 # for example: agent: [codex, claude]
-# Options: auto, claude, codex, rovodev, opencode, pi, copilot, cursor, acp:<target>
+# Options: auto, claude, codex, rovodev, opencode, pi, copilot, cursor,
+# acp:<target>
 # "auto" detects the first available native agent or ACP alias on your system
 # "cursor" is an ACP alias for acp:cursor using cursor-agent acp via acpx
 # "acp:cursor" also uses that Cursor default command
-# Use acp:<target> to run an optional user-installed acpx target, for example acp:gemini
+# Use acp:<target> to run an optional user-installed acpx target, for example
+# acp:gemini
 agent: pi
 
 # opencode review step is broken for thinking-mode models: the adapter sends a
@@ -55,7 +57,15 @@ agent: pi
 # keep the profile pin.
 agent_config:
   pi:
-    model: opencode-go-gw/deepseek-v4-flash
+    # (2026-09-20) Switched back to CfAiGw/dynamic/pr-gate from
+    # opencode-go-gw/deepseek-v4-flash: the opencode-go provider hit its
+    # monthly limit (429 "Account budget exceeded" on all models), while
+    # the dynamic route handles provider failover automatically and is
+    # healthy (probed 200 routing to nemotron/glm-5.1). The 2026-09-19
+    # direct pin bypassed the fallback chain, so when the pinned provider
+    # exhausted, there was no fallthrough. The dynamic route's own ladder
+    # remains the fallback story.
+    model: CfAiGw/dynamic/pr-gate
 
 # (2026-09-19) Review rides the same opencode-go-gw/deepseek-v4-flash lane as
 # the other steps: the free NEMO-backed pr-gate route proved intermittently
@@ -69,9 +79,12 @@ agent_config:
 review_agents:
   reviewer:
     agent: pi
-    model: opencode-go-gw/deepseek-v4-flash
+    # (2026-09-20) Same switch as agent_config above: opencode-go monthly
+    # limit exhausted, dynamic route handles failover and is healthy.
+    model: CfAiGw/dynamic/pr-gate
 
-# Optional path to the user-installed acpx binary for acp:<target> agents and ACP aliases
+# Optional path to the user-installed acpx binary for acp:<target> agents and
+# ACP aliases
 # acpx_path: acpx
 
 # Optional ACP target command overrides for acp:<target> agents and ACP aliases
@@ -81,7 +94,8 @@ review_agents:
 
 # Maximum time the CI monitor babysits an open PR with no base-branch movement
 # before giving up. The monitor watches CI and auto-rebases when the base branch
-# advances; each base advance re-arms this timer, so an actively-updated green PR
+# advances; each base advance re-arms this timer, so an actively-updated green
+# PR
 # keeps its monitor. Set to "unlimited", "none", "off", "never", or any
 # non-positive duration to monitor until the PR is merged, closed, or the run is
 # aborted with: no-mistakes axi abort --run <id>
@@ -101,7 +115,8 @@ step_quiet_warning: "10m"
 daemon_connect_timeout: "3s"
 
 # Reuse one durable fixer session per run across review-fix turns. Review turns
-# always run session-free so a rereview never resumes the session that prescribed
+# always run session-free so a rereview never resumes the session that
+# prescribed
 # its fixes. Supported for claude and codex; other agents run cold. Set false to
 # force every agent invocation cold.
 session_reuse: true
@@ -119,7 +134,8 @@ log_level: info
 #   codex: /opt/codex
 
 # Extra native agent CLI flags (optional, global only)
-# Codex service_tier controls speed/priority; model_reasoning_effort controls reasoning depth.
+# Codex service_tier controls speed/priority; model_reasoning_effort controls
+# reasoning depth.
 # agent_args_override:
 #   codex:
 #     - -m
@@ -129,7 +145,8 @@ log_level: info
 #     - -c
 #     - model_reasoning_effort="low"
 #
-# Maximum follow-up auto-fix attempts per step (0 = disabled after the initial pass)
+# Maximum follow-up auto-fix attempts per step (0 = disabled after the initial
+# pass)
 # Document fixes are attempted during the initial document pass.
 auto_fix:
   rebase: 3
@@ -150,7 +167,8 @@ auto_fix:
 ci:
   rerun_transient: 0
 
-# Auto-fix commit subject template. Available variables: {{.Step}} and {{.Summary}}.
+# Auto-fix commit subject template. Available variables: {{.Step}} and
+# {{.Summary}}.
 # Repo config may override this value.
 # commit:
 #   fix_message: "no-mistakes({{.Step}}): {{.Summary}}"
