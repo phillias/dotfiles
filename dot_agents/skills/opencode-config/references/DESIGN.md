@@ -117,7 +117,7 @@ current.
 
 ```mermaid
 flowchart TB
-    CFG[opencode-fallback.jsonc<br/>single-root OmO shape] --> CORE[Chain engine<br/>lib/opencode-runtime-fallback-core.ts]
+    CFG[opencode-fallback.jsonc<br/>two-path architecture] --> CORE[Chain engine<br/>lib/opencode-runtime-fallback-core.ts]
     EV[event hooks<br/>session.status / session.error] --> CORE
     CORE --> STEP[advance chain<br/>skip cooldown]
     STEP --> UPD[client.session.update<br/>+ title marker]
@@ -174,19 +174,7 @@ stateDiagram-v2
 Classification is retryable on status code, `ProviderAuthError`, or the
 RETRYABLE_PATTERN regex (`rate\s?limit|quota|insufficient_quota|server_error|overloaded|timed?\s?out|timeout|429|5\d\d|529|pool.*exhaust`).
 
-**Global ladder:** **paid-first since 2026-08-12** — big-pickle → OpenCode Go
-→ Command Code GOAT → **Z.AI Coding Plan Lite** (GLM-5.3/5.2/5-Turbo,
-credits-based, 0.5× off-peak) → **Cloudflare AI Gateway** (BYOK, analytics,
-$50/mo spend cap; kimi-k2.7-code, glm-4.7-flash; small-prompts only —
-262K/131K context) → **OpenRouter** (cheapest GLM-5 per-token) → OpenCode Zen
-free → Phoenix Grove Everyday-band free (glm-5.3-flash, DS-V4-Flash) → nvidia NIM (~40 RPM shared,
-max 1-2 per chain) → openrouter free → baseten subsidized →
-google/gemini-2.5-flash (paid last resort). Z.AI added 2026-08-25 (captain
-decision): Lite plan provides exclusive GLM-5.3 and credits-based metering with
-off-peak advantage during ET hours. OpenRouter added 2026-08-25 for cheapest
-GLM-5 overflow. KTD6 constraints: GPT-class models only via `opencode/` prefix;
-Ternary Bonsai never primary; 400 stays in `retry_on_errors`. Full policy and
-rationale in §2.6.
+**Global ladder:** **two-path since 2026-09-19** — CfAiGw/dynamic/TUI (GLM cascade) → vercel/vmc/tui (Vercel AI Gateway, 376 models, BYOK + system creds) → opencode-go/glm-5.1 → opencode-go/deepseek-v4-flash (session-gated subsidized tail). The gateway route owns intra-GLM failover; the fallback config owns the gateway-vs-direct-client hop. Vercel added 2026-09-20 (captain decision, PR #340): CF credits exhausted; Vercel provides zero-markup fallback. KTD6 constraints: GPT-class models only via `opencode/` prefix; Ternary Bonsai never primary; 400 stays in `retry_on_errors`. Full policy and rationale in §2.6.
 
 **Per-entry settings** (`temperature`/`maxOutputTokens`/`options`) are promoted
 **only when that entry is active** — from the agent or category fallback entry —
@@ -216,113 +204,46 @@ unavailable in this API version so the annotation rides system-transform.
   `${OPENCODE_MODEL:-firstmate}@$(hostname -s)` (deliberate, not the opencode.db
   chain).
 
-### 2.6 Paid-first fallback policy (GO → GOAT → Z.AI → Cloudflare → OpenRouter → Zen)
+### 2.6 Two-path fallback architecture (CF → Vercel → opencode-go)
 
-**2026-08-12 (captain decision):** fallback reverses from free-first to
-**paid-first** — prepaid flat-rate pools are spent before throttled free tiers:
-**Command Code GOAT** ($70 pool) → **OpenCode Go** ($60 pool) → **Cloudflare**
-(free tier) → **OpenCode Zen** (free tier) → free providers
-(NVIDIA/OpenRouter/Together/Baseten) → Google (pay last resort). Decision B:
-GOAT leads so its exhaustion rate is observable; ordering may change after
-experience.
+**2026-09-19 (captain decision):** the fallback architecture is now a **two-path system**:
 
-**2026-08-16 (captain decision):** Cloudflare stage inserted between Go and Zen
-free — the chain becomes **GOAT → Go → Cloudflare → Zen**. Rationale:
-Cloudflare's free tier (kimi-k2.7-code 262K, glm-4.7-flash 131K) outclasses
-Zen's free tier (deepseek-v4-flash-free, nemotron-3-ultra-free) in quality and
-throttles at 300 RPM vs Zen free ~200/day, so it is spent first. The
-small-prompts-only constraint carries over (CF context windows are 131-262K;
-prompts must fit before CF is reached, and the 24K llama must still sit at the
-END of chains).
+- **Path 1 — CF AI Gateway dynamic routes**: `CfAiGw/dynamic/TUI` (and `pr-gate`, `high`, etc.) handle their own internal GLM cascades (free → subsidized → PAYG). The gateway route owns intra-GLM failover; the fallback config owns the gateway-vs-direct-client hop.
+- **Path 2 — Runtime fallback chains**: `CfAiGw/dynamic/TUI` first → `vercel/vmc/tui` → `opencode-go/glm-5.1` → `opencode-go/deepseek-v4-flash`. Vercel is the CF-gateway-outage fallback; opencode-go is the session-gated subsidized pool tail.
 
-**2026-08-25 (captain decision):** Two structural changes:
-1. **Z.AI Coding Plan Lite ($18/mo)** inserted between GOAT and Cloudflare.
-   Chain: **Go → GOAT → Z.AI → Cloudflare → OpenRouter → Zen**. Z.AI Lite
-   provides exclusive GLM-5.3 access, plus GLM-5.2 and GLM-5-Turbo at
-   credits-based metering with 0.5× off-peak during ET 7am-11pm operational
-   hours. Base URL: `https://api.z.ai/api/coding/paas/v4`. The Coding Plan
-   endpoint is restricted to supported coding tools (OpenCode is supported).
-2. **Cloudflare Workers AI rerouted through AI Gateway (BYOK)** for analytics,
-   edge caching, and a $50/mo universal spend cap. The provider points at the
-   **AI Gateway REST API**
-   (`https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1`) and
-   carries the `cf-aig-gateway-id: opencode` header, which selects the named
-   gateway — required for Workers AI traffic, and the only thing binding
-   requests to the gateway's analytics/caching/spend-cap controls. OpenCode
-   authenticates with a CF API token (Workers AI Read; the existing
-   token file now `~/.agents/keys/<profile>/.cf-ai-gw`; legacy
-   `.cf-ai-gw-token` verified working live 2026-08-28).
-   **Migrated 2026-08-29 off the deprecated `/compat` endpoint** (deprecated
-   for single-model calls 2026-08-07; still required for dynamic routes).
-   The two schemes differ in model-id shape: `/compat` required the
-   `workers-ai/` namespace prefix on `@cf/` ids (bare `@cf/` returned HTTP
-   400 "Invalid provider", code 2008 — the 2026-08-27 finding), while the
-   REST API wants **bare `@cf/...` ids**. So the Cloudflare provider's
-   model-registry keys are `@cf/...`, and every fallback/doc reference is
-   `cloudflare/@cf/...` — one id scheme shared by opencode, pi, and omp
-   (contract-tested in `lib/opencode-rest-api-provider.test.ts`). Third-party
-   providers (Z.AI, OpenCode, CommandCode) added as custom providers in the
-   AI Gateway dashboard with base URLs.
-3. **OpenRouter added** for cheapest GLM-5 per-token overflow ($0.60/$1.92 via
-   DeepInfra/GMICloud, vs $1.40/$4.40 direct). Sits after Cloudflare in the
-   chain.
+opencode-go can never be a gateway route node (it requires the `x-opencode-session` header that only the Go client provides).
 
-**2026-08-29 (captain decision):** Three changes:
-1. **Six providers routed through gateway `opencode` via BYOK**: `opencode-zen`,
-   `opencode-go`, `commandcode`, `zai-coding`, `openrouter`, `phoenixgrove` all route through
-   `https://gateway.ai.cloudflare.com/v1/{account_id}/opencode/` with the gateway
-   gateway token (`.cf-ai-gw` in the active keys profile) in `Authorization`. No per-provider key files in
-   config — BYOK stored keys (alias `default` on gateway `opencode`, all six
-   present) inject upstream. The `Authorization` header is consumed as gateway
-   auth and not forwarded. URL version-segment rule: the gateway strips a
-   trailing version-like segment from the custom provider's `base_url` before
-   appending the request path, so the version must ride in the URL — custom
-   slugs end `/v1` (zen/go/commandcode/phoenixgrove), zai-coding ends `/v4`; openrouter uses
-   the native passthrough slug `…/opencode/openrouter/v1` (not
-   `custom-openrouter`). The `cloudflare` @cf lane stays on REST `/ai/v1`
-   (unchanged from PR #230) — it does not route through the custom-provider
-   surface.
-2. **Spend-limit rule deleted**: the $50/30d spend-limit rule (provider filter
-   `["universal"]`) returned 403 code 2040 ("Model or provider could not be
-   resolved for spend-limit enforcement") for every custom-provider and
-   openrouter request, including priced models, because it could not price
-   custom-provider traffic. A metadata-scoped replacement (`cf-aig-metadata`
-   application key split-by-value, smoke-tested against one custom-slug request
-   first because custom-provider pricing may be unknown to Cloudflare) is the
-   recommended future shape.
-3. **Registry pruned**: 10 dead OpenRouter models and 4 unsupported Zen models
-   removed (all live-verified as dead/retired; none referenced by fallback
-   chains).
+**Automatic failover (CF → Vercel → opencode-go):**
+- **OpenCode** (`opencode-fallback.jsonc`): global/agent/category ladders insert `vercel/vmc/tui` as stage 1. Provider-qualified IDs (`CfAiGw/dynamic/TUI`, `vercel/vmc/tui`) so the fallback plugin swaps correctly on retryable session errors.
+- **Pi** (`~/.pi/fallback-chains.json`): `fallback/gate` and `fallback/default` chains insert Vercel vmc models as the second rung.
+- **No-mistakes** (`config.yaml`): `agent_config.pi.model` and `review_agents.reviewer.model` ride `fallback/gate` instead of directly pinning `CfAiGw/dynamic/pr-gate`, so automated validation also falls through to Vercel.
 
-**`go-pool-guard.ts` retired 2026-08-12.** The proactive guard (polled
-`https://opencode.ai/zen/go/v1/usage`) was purged along with its
-`go-pool-*.sh` helpers: the usage endpoint now returns 401 (no auth sent → the
-guard silently no-opped) and its redirect-to-free behavior conflicts with
-paid-first. Reactive chain stepping in the runtime-fallback plugin is the single
-owner of exhaustion handling (`classifyError` treats 429/402/403 +
-`pool.*exhaust` as retryable; a windowed pool error advances the chain).
+**Manual profile switching (no automatic failover — tool limitation):**
+- **Codex**: `vercel-aig` provider in `config.toml.tmpl`, Vercel profile in separate `vercel.config.toml.tmpl` (Codex 0.153.4+ deprecated `[profiles.*]` in config.toml). Switch with `codex --profile vercel`. No ordered retry/failover configuration.
+- **Kimi Code**: `vercel-aig` provider and `tui-via-vercel` model registered. Single `default_model` / `-m` selection only; no ordered fallback chain. Switch manually or via `-m tui-via-vercel`.
+- **opencode-go**: Cannot ride Vercel (no opencode.ai provider). Stays CF-only.
 
-**Fleet integration** (the `agents`/`categories`/global blocks map to the live
-fleet, not the retired OmO taxonomy):
+**Not included (by design):**
+- **Muse**: rides Meta's Model API directly, not through any gateway.
+- **Cursor**: needs a dedicated reverse-proxy surface, lower priority.
 
-- **Firstmate session** — the main session has no agent name, so
-  `resolveChain` falls straight to the **global `fallback_models` ladder**,
-  which leads with `opencode-zen/big-pickle`, then GO → GOAT → Z.AI →
-  Cloudflare → OpenRouter → Zen → free.
-- **Crewmates** (`task(subagent_type=...)`) — `agents.<type>` chains. Utility
-  types (`general`, `explore`, ...): big-pickle primary, fallback
-  GO → GOAT → Z.AI → Cloudflare → OpenRouter → Zen → free. Specialized types
-  (oracle, metis, momus, looker, science): models stay pinned, fallback
-  Z.AI → GOAT → Go → Zen **only** — no free downgrade; chain end surfaces as
-  a visible failure for the captain to fix.
-- **Categories** (`task(category=...)`) — `categories.<name>` chains. Utility
-  categories (`quick`, `unspecified-low`): big-pickle + GO → GOAT → Z.AI →
-  Cloudflare → OpenRouter → Zen → free. High-intensity/specialized categories
-  (`ultrabrain`, `deep`, `unspecified-high`, `visual-engineering`, `artistry`,
-  `writing`): models stay pinned, fallback Z.AI → GOAT → Go → Zen only.
-- **Secondmates** — same chezmoi-synced config; their main sessions resolve the
-  global ladder (big-pickle → GO → GOAT → Z.AI → Cloudflare → OpenRouter →
-  Zen → free).
+**Historical evolution** (decision trail):
+
+| Date | Change |
+|---|---|
+| 2026-08-12 | Paid-first: GOAT → Go → Cloudflare → Zen |
+| 2026-08-16 | CF AI Gateway inserted between Go and Zen: GOAT → Go → **CF** → Zen |
+| 2026-08-25 | Z.AI Lite $18/mo inserted between GOAT and CF; OpenRouter added after CF |
+| 2026-08-29 | Six providers routed through CF AI Gateway `opencode` via BYOK; `/compat` deprecated |
+| 2026-09-20 | Vercel AI Gateway added as fallback tier (376 models, 47 providers, $0 markup); dedicated harness surfaces; no-mistakes gates routed through fallback chains |
+| 2026-09-21 | Worker fixes: Codex profile modernized to `vercel.config.toml.tmpl`; no-mistakes gates wired through `fallback/gate`; opencode runtime fallback wired; key path portability fix |
+
+**Fleet integration** (the `agents`/`categories`/global blocks map to the live fleet):
+
+- **Firstmate session** — no agent name, resolves to the **global `fallback_models` ladder**: CfAiGw/dynamic/TUI → vercel/vmc/tui → opencode-go/glm-5.1 → opencode-go/deepseek-v4-flash.
+- **Crewmates** (`task(subagent_type=...)`) — utility types (`general`, `explore`): CfAiGw/dynamic/TUI primary, fallback vercel/vmc/tui → opencode-go tail. Specialized types stay pinned with fallback Z.AI → GOAT → Go → Zen only (no free downgrade; failure surfaces visibly).
+- **Categories** (`task(category=...)`) — utility categories (`quick`, `unspecified-low`): CfAiGw/dynamic/TUI + Vercel → opencode-go tail. High-intensity/specialized categories stay pinned with fallback Z.AI → GOAT → Go → Zen only.
+- **Secondmates** — same chezmoi-synced config; their main sessions resolve the global ladder.
 
 The LLM determines a subagent's model by choosing the task shape at the intent
 gate (dispatch-rules.json → `task(category=...)` / `task(subagent_type=...)`);
