@@ -9,6 +9,8 @@
 # cron, zsh -lc) never see tools like pi/node without this.
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
+export FLEET_DNS_DOMAIN="{{ .fleet.dnsDomain }}"
+
 # Load keys from the default profile (~/.agents/keys/default symlink).
 # This makes all provider keys available to non-interactive shells.
 if [ -r "$HOME/.agents/keys/load-keys.sh" ]; then
