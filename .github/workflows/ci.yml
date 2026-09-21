@@ -64,6 +64,8 @@ jobs:
         run: |
           mkdir -p ~/.local/share/chezmoi
           ln -s $GITHUB_WORKSPACE/* ~/.local/share/chezmoi/ 2>/dev/null || true
+          ln -s $GITHUB_WORKSPACE/.chezmoidata ~/.local/share/chezmoi/ 2>/dev/null || true
+          ln -s $GITHUB_WORKSPACE/.chezmoi* ~/.local/share/chezmoi/ 2>/dev/null || true
           ln -s $GITHUB_WORKSPACE/.git ~/.local/share/chezmoi/ 2>/dev/null || true
           chezmoi dump --format=json > /dev/null
 
