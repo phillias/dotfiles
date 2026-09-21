@@ -32,7 +32,7 @@
       "name": "vercel",
       "options": {
         "baseURL": "https://ai-gateway.vercel.sh/v1",
-        "apiKey": "{file:~/.agents/keys/default/.vercel-gateway-key}"
+        "apiKey": "{file:{env:HOME}/.agents/keys/default/.vercel-gateway-key}"
       },
       "models": {
         "vmc/tui": { "name": "TUI (Vercel AI GW fallback)" },
