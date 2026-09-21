@@ -5,7 +5,7 @@ Live agent/category chain design. **Authoritative source: `~/.config/opencode/op
 ## Fleet taxonomy
 
 - **global ladder** = firstmate + secondmates (session model)
-- **agents** = crewmates + ce-* wildcard
+- **agents** = crewmates
 - **categories** = dispatch profiles (dispatch-rules.json)
 
 **Resolution order:** session model → agent (exact match, then longest `*` wildcard) → category → global ladder. `no_global_tail` entries fail visibly at chain end (no free downgrade).
@@ -32,9 +32,6 @@ Two-path architecture (captain decision 2026-09-19):
 | explore | (same as general) | same | global tail |
 | self-improve | opencode-zen/glm-5.1 | Z.AI GLM-5.2 → GOAT GLM-5.1 → Go glm-5.1 → Zen kimi-k2.6 | no_global_tail |
 | solutions-research | opencode-zen/nematron-3-ultra-free | GOAT kimi-k2.6 → Go kimi-k2.6 → Zen kimi-k2.6 | no_global_tail |
-| ce-* (wildcard) | — | Z.AI GLM-5.2 → GOAT Kimi-K2.6 → GOAT GLM-5.1 → GOAT ds-v4-flash → Zen kimi-k2.6 | no_global_tail |
-
-ce-* deliberately omits the Go stage — 35/51 personas are Go-pinned as primary.
 
 ## Categories map
 

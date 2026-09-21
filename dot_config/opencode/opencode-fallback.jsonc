@@ -9,7 +9,7 @@
   //
   // Fleet taxonomy: the global ladder is firstmate's + every secondmate's
   // session chain (no agent name → resolves here). `agents` covers crewmate
-  // subagent types + the ce-* persona swarm. `categories` covers firstmate's
+  // subagent types. `categories` covers firstmate's
   // dispatch categories. Resolution order: session model → agent (exact,
   // then longest `*` wildcard) → category → global ladder.
   "enabled": true,
@@ -75,21 +75,6 @@
       "fallback_models": [
         "commandcode/moonshotai/Kimi-K2.6",
         "opencode-go/kimi-k2.6",
-        "opencode-zen/kimi-k2.6"
-      ],
-      "no_global_tail": true
-    },
-    // ce-* review/research personas: models stay pinned in their agent .md
-    // files. On error fall back Z.AI → GOAT → Zen only (no free downgrade; chain end
-    // surfaces as a visible failure). Go stage omitted deliberately — 35 of 51
-    // personas are already Go-pinned as their primary, so listing Go models
-    // here would let a pinned Go primary's failure skip the GOAT stage.
-    "ce-*": {
-      "fallback_models": [
-        "zai-coding/glm-5.2",
-        "commandcode/moonshotai/Kimi-K2.6",
-        "commandcode/zai-org/GLM-5.1",
-        "commandcode/deepseek/deepseek-v4-flash",
         "opencode-zen/kimi-k2.6"
       ],
       "no_global_tail": true

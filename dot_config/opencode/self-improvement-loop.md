@@ -97,8 +97,7 @@ technical-not-personal, caveat staleness, anchor to evidence.
 
 ### 4. COMPOUND — the compound skill
 
-`~/.agents/skills/compound/` — the consolidated, self-contained replacement for
-`ce-compound` + `ce-compound-refresh` (zero `ce-*` dependencies).
+`~/.agents/skills/compound/` — the consolidated, self-contained compound skill.
 
 - **capture** (default): document a solved problem into `docs/solutions/`
   (YAML frontmatter, bug track vs knowledge track, overlap check before write —
