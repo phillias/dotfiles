@@ -2,7 +2,7 @@
   // TWO-PATH ARCHITECTURE (captain decision 2026-09-19):
   // Path 1 - CF AI Gateway dynamic/TUI route: cascading GLM ladder
   //   (free → subsidized → PAYG, NO opencode-go - session-gated).
-  // Path 2 - This fallback config: dynamic/TUI first → opencode-go tail.
+  // Path 2 - This fallback config: CfAiGw/dynamic/TUI first → Vercel → opencode-go tail.
   // The gateway route owns intra-GLM cascade; this chain owns the
   // gateway-vs-direct-client hop. opencode-go can never be a gateway
   // route node (x-opencode-session header requirement).
@@ -22,15 +22,19 @@
   // GLOBAL LADDER — firstmate & secondmate main sessions (agent=undefined),
   // and the deduped tail of every non-no_global_tail chain.
   // Two-stage architecture:
-  // - Stage 0: CF AI Gateway dynamic/TUI route (free → subsidized → PAYG ladder)
-  // - Stage 1: opencode-go subsidized pool (session-gated, direct client only)
+  // - Stage 0: CF AI Gateway CfAiGw/dynamic/TUI route (free → subsidized → PAYG ladder)
+  // - Stage 1: Vercel AI Gateway fallback route
+  // - Stage 2: opencode-go subsidized pool (session-gated, direct client only)
   "fallback_models": [
     // STAGE 0: Gateway dynamic route (cascading GLM ladder)
     // Route handles free → subsidized → PAYG internally
     // Budget: GLM 5.1 → 5.2 → 5.3 preference
-    "dynamic/TUI",
+    "CfAiGw/dynamic/TUI",
     
-    // STAGE 1: opencode-go subsidized pool (session-gated fallback)
+    // STAGE 1: Vercel AI Gateway fallback route
+    "vercel/vmc/tui",
+
+    // STAGE 2: opencode-go subsidized pool (session-gated fallback)
     // GLM first (matches TUI route budget preference), deepseek tail
     "opencode-go/glm-5.1",
     "opencode-go/deepseek-v4-flash"
@@ -38,17 +42,19 @@
 
   // CREWMATES — subagent types firstmate dispatches via task(subagent_type=...).
   "agents": {
-    // Utility crewmates: Gateway route first → opencode-go fallback
+    // Utility crewmates: Gateway route first → Vercel → opencode-go fallback
     "general": {
-      "model": "dynamic/TUI",
+      "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
+        "vercel/vmc/tui",
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash"
       ]
     },
     "explore": {
-      "model": "dynamic/TUI",
+      "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
+        "vercel/vmc/tui",
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash"
       ]
@@ -93,17 +99,19 @@
   // DISPATCH CATEGORIES — firstmate picks at the intent gate via
   // dispatch-rules.json → task(category=...).
   "categories": {
-    // UTILITY (decision A): Gateway route first → opencode-go fallback.
+    // UTILITY (decision A): Gateway route first → Vercel → opencode-go fallback.
     "quick": {
-      "model": "dynamic/TUI",
+      "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
+        "vercel/vmc/tui",
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash"
       ]
     },
     "unspecified-low": {
-      "model": "dynamic/TUI",
+      "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
+        "vercel/vmc/tui",
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash"
       ]
