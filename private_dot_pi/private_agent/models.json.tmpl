@@ -379,6 +379,27 @@
         { "id": "dynamic/cursor", "name": "Cursor house models" },
         { "id": "dynamic/muse", "name": "Muse house models" }
       ]
+    },
+    "vercel": {
+      "baseUrl": "https://ai-gateway.vercel.sh/v1",
+      "api": "openai-completions",
+      "apiKey": "$AI_GATEWAY_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        { "id": "vmc/pr-gate", "name": "pr-gate (Vercel AI GW fallback, 1M)", "contextWindow": 1048576, "maxTokens": 32768 },
+        { "id": "vmc/pr-reviewer", "name": "pr-reviewer (Vercel AI GW fallback, 1M)", "contextWindow": 1048576, "maxTokens": 32768 },
+        { "id": "vmc/tui", "name": "TUI (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/high", "name": "high (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/claude", "name": "Claude house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/codex", "name": "Codex house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/grok", "name": "Grok house models (Vercel AI GW fallback, 2M)", "contextWindow": 2000000, "maxTokens": 32768 },
+        { "id": "vmc/kimi", "name": "Kimi house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/muse", "name": "Muse house models (Vercel AI GW fallback, 128k)", "contextWindow": 131072, "maxTokens": 32768 },
+        { "id": "vmc/cursor", "name": "Cursor house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 }
+      ]
     }
   }
 }

@@ -27,6 +27,18 @@
         "dynamic/vision": { "name": "vision (GLM-4.5V + gemini-2.5-flash)" }
       }
     },
+    "vercel": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "vercel",
+      "options": {
+        "baseURL": "https://ai-gateway.vercel.sh/v1",
+        "apiKey": "{file:{env:HOME}/.agents/keys/default/.vercel-gateway-key}"
+      },
+      "models": {
+        "vmc/tui": { "name": "TUI (Vercel AI GW fallback)" },
+        "vmc/high": { "name": "high (Vercel AI GW fallback)" }
+      }
+    },
     "opencode-go": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "OpenCode Go (AI Gateway)",

@@ -11,3 +11,14 @@ provider = "cf-aig"
 model = "dynamic/kimi"
 max_context_size = 200000
 protocol = "openai"
+
+[providers.vercel-aig]
+type = "openai_legacy"
+base_url = "https://ai-gateway.vercel.sh/v1"
+api_key_env = "AI_GATEWAY_API_KEY"
+
+[models.tui-via-vercel]
+provider = "vercel-aig"
+model = "vmc/kimi"
+max_context_size = 1000000
+protocol = "openai"

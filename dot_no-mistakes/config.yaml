@@ -18,29 +18,10 @@ agent: pi
 #
 # Gate reserves the model's full output budget for structured review output, so
 # a 1M-context model is required for large diffs.
-# (2026-09-19) Non-review steps pin opencode-go-gw/deepseek-v4-flash directly.
-# History: the old `fallback/gate` chain walk false-failed its healthy head
-# (pi-fallback-provider hardcodes a 10s stream timeout vs 12-45s first-byte on
-# 220K-680K-token gate prompts), then hit the opencode-go tail, which
-# opencode.ai/zen now rejects without the mandatory x-opencode-session header
-# (pi is a validated Go client per opencode.ai/docs/go; our pinned pi 0.84.2
-# predates native support, so the renamed opencode-go-gw provider passes
-# pi-fleet-<host> as a static header — verified 200 through the gateway custom
-# provider, including 252K-token requests). With the header fix the tail IS the
-# right lane for these steps: 1M context, reliable paid pool, cache reads at
-# $0.003/M (a full test invocation ~228K fresh + 452K cached + 7.6K out is
-# about four cents). Direct pinning also sidesteps a residual intermittent
-# failure observed 2026-09-19: daemon test/document agents died 4/4 runs on
-# "Service temporarily overloaded" from the free NEMO lane under back-to-back
-# agent load (review->test seconds apart), while single probes, 4-concurrent
-# 252K bursts, and a 640K streaming probe all passed; review (single-shot,
-# lighter prompts) stayed 5/5 on pr-gate and keeps riding it via
-# review_agents.reviewer.model. The route's own ladder remains the fallback
-# story for everything else. Chain history: inkling was removed 2026-09-15
-# (OpenRouter funnel rejects pi-shaped requests, free endpoint logs for TM
-# training); kimi-k2.6 excluded: 262K < the gate's 1M bar. The fallback/gate
-# chain stays in ~/.pi/fallback-chains.json with the renamed, header-fixed
-# tail for manual use.
+# (2026-09-21) Gate and review steps ride pi's `fallback/gate` chain in
+# ~/.pi/fallback-chains.json: CfAiGw/dynamic/pr-gate, then
+# vercel/vmc/pr-gate, then the opencode-go 1M tail. This keeps the CF dynamic
+# route as the head while preserving Vercel fallthrough for CF gateway outages.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -57,31 +38,19 @@ agent: pi
 # keep the profile pin.
 agent_config:
   pi:
-    # (2026-09-20) Switched back to CfAiGw/dynamic/pr-gate from
-    # opencode-go-gw/deepseek-v4-flash: the opencode-go provider hit its
-    # monthly limit (429 "Account budget exceeded" on all models), while
-    # the dynamic route handles provider failover automatically and is
-    # healthy (probed 200 routing to nemotron/glm-5.1). The 2026-09-19
-    # direct pin bypassed the fallback chain, so when the pinned provider
-    # exhausted, there was no fallthrough. The dynamic route's own ladder
-    # remains the fallback story.
-    model: CfAiGw/dynamic/pr-gate
+    # (2026-09-21) Ride pi's fallback/gate chain instead of directly
+    # pinning CfAiGw/dynamic/pr-gate, so a CF gateway outage can fall through
+    # to vercel/vmc/pr-gate before the opencode-go tail.
+    model: fallback/gate
 
-# (2026-09-19) Review rides the same opencode-go-gw/deepseek-v4-flash lane as
-# the other steps: the free NEMO-backed pr-gate route proved intermittently
-# unreliable for daemon agent requests tonight (review passed 5/5 then died on
-# the 6th with 'Service temporarily overloaded' - the error follows whichever
-# agent rides the free lane, not the step), while every Go-lane request with
-# the session header succeeded. deepseek-v4-flash is the same model family the
-# pr-reviewer ladder was rebuilt around on 2026-09-14 (NIM
-# deepseek-v4-flash-0731 head), now on the reliable subsidized pool. The
-# pr-gate and pr-reviewer routes stay healthy for external/probe traffic.
+# Review rides the same fallback/gate chain as the other steps so the
+# automated reviewer exercises the same CF → Vercel → opencode-go ladder.
 review_agents:
   reviewer:
     agent: pi
-    # (2026-09-20) Same switch as agent_config above: opencode-go monthly
-    # limit exhausted, dynamic route handles failover and is healthy.
-    model: CfAiGw/dynamic/pr-gate
+    # Same chain as agent_config above; review still needs the 1M gate route
+    # but must not bypass the Vercel fallback rung.
+    model: fallback/gate
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and
 # ACP aliases
