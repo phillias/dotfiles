@@ -10,12 +10,18 @@
 #
 # Requires: FLEET_DNS_DOMAIN (set in ~/.zshenv from chezmoi fleet.dnsDomain)
 
-set -euo pipefail
+# Detect if sourced (bash: BASH_SOURCE differs from $0; zsh: ZSH_VERSION set)
+if [ -n "${ZSH_VERSION:-}" ] || [ "${BASH_SOURCE[0]:-$0}" != "$0" ]; then
+  _LAVISH_SOURCED=1
+else
+  _LAVISH_SOURCED=0
+  set -euo pipefail
+fi
 
 if [ -z "${FLEET_DNS_DOMAIN:-}" ]; then
   echo "error: FLEET_DNS_DOMAIN is not set" >&2
   echo "help: ensure ~/.zshenv sourced (chezmoi fleet.dnsDomain)" >&2
-  exit 1
+  [ "$_LAVISH_SOURCED" = 1 ] && return 1 2>/dev/null || exit 1
 fi
 
 # Binds 0.0.0.0 so the Docker proxy container can reach the host via
@@ -25,16 +31,14 @@ LAVISH_HOST="${LAVISH_AXI_HOST:-0.0.0.0}"
 LAVISH_PORT="${LAVISH_AXI_PORT:-4387}"
 LAVISH_DOMAIN="lavish.${FLEET_DNS_DOMAIN}"
 
-# When sourced, export directly.
-# In bash: BASH_SOURCE[0] differs from $0 when sourced.
-# In zsh: the script only runs in the current shell when sourced (shebang
-# ignored), so ZSH_VERSION being set implies sourced.
-if [ -n "${ZSH_VERSION:-}" ] || [ "${BASH_SOURCE[0]:-$0}" != "$0" ]; then
+# When sourced, export directly and do not pollute caller shell options.
+if [ "$_LAVISH_SOURCED" = 1 ]; then
   export LAVISH_AXI_HOST="$LAVISH_HOST"
   export LAVISH_AXI_PORT="$LAVISH_PORT"
   export LAVISH_AXI_ALLOWED_HOSTS="$LAVISH_DOMAIN"
   export LAVISH_AXI_LINK_HOST="$LAVISH_DOMAIN"
   export LAVISH_AXI_NO_OPEN=1
+  unset _LAVISH_SOURCED
   return 0 2>/dev/null || exit 0
 fi
 
