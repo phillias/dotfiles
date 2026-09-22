@@ -183,6 +183,31 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key" ]; then
     AI_GATEWAY_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key")" && export AI_GATEWAY_API_KEY
 fi
 
+# Agnes
+if [ -r "$HOME/.agents/keys/$_default_profile/.agnes-key" ]; then
+    AGNES_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.agnes-key")" && export AGNES_API_KEY
+fi
+
+# OpenCode (direct API key for opencode.ai)
+if [ -r "$HOME/.agents/keys/$_default_profile/.opencode-key" ]; then
+    OPENCODE_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.opencode-key")" && export OPENCODE_API_KEY
+fi
+
+# Phoenixgrove (main API key; coding-plan key is separate)
+if [ -r "$HOME/.agents/keys/$_default_profile/.phoenixgrove-key" ]; then
+    PHOENIXGROVE_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.phoenixgrove-key")" && export PHOENIXGROVE_API_KEY
+fi
+
+# Telegram bot token
+if [ -r "$HOME/.agents/keys/$_default_profile/.telegram-key" ]; then
+    TELEGRAM_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.telegram-key")" && export TELEGRAM_API_KEY
+fi
+
+# GitHub Models
+if [ -r "$HOME/.agents/keys/$_default_profile/.github-models-key" ]; then
+    GITHUB_MODELS_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.github-models-key")" && export GITHUB_MODELS_API_KEY
+fi
+
 # Meta Model API (muse harness native provider)
 if [ -r "$HOME/.agents/keys/$_default_profile/.meta-key" ]; then
     META_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.meta-key")" && export META_API_KEY
