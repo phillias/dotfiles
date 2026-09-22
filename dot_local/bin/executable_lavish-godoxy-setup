@@ -51,17 +51,21 @@ route_exists() {
   grep -qE '^lavish:' "$HOSTAPPS_FILE"
 }
 
+# Extract the lavish route block (from 'lavish:' to the next top-level key)
+route_block() {
+  awk 'BEGIN{f=0} /^lavish:/{f=1} f&&/^[^[:space:]]/&&!/^lavish:/{f=0} f' "$HOSTAPPS_FILE"
+}
+
 route_has_port() {
-  grep -qA1 '^lavish:' "$HOSTAPPS_FILE" | grep -q ':4387'
+  route_block | grep -q ':4387'
 }
 
 route_has_csp() {
-  # Check for CSP with frame-ancestors 'self'
-  grep -q "frame-ancestors" "$HOSTAPPS_FILE"
+  route_block | grep -q "frame-ancestors"
 }
 
 route_hides_xfo() {
-  grep -q "X-Frame-Options" "$HOSTAPPS_FILE"
+  route_block | grep -q "X-Frame-Options"
 }
 
 if route_exists; then
