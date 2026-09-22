@@ -95,4 +95,8 @@ opencode = "1.18.29"
  # rules, budgets, coding agent setup). Required for vmc/<slug> creation and
  # CLI-based gateway administration. Inference uses AI_GATEWAY_API_KEY; CLI
  # management needs `vercel login` or --token (personal access token).
- "npm:vercel" = "59.23.2"
+  "npm:vercel" = "59.23.2"
+ # treg — unified tool catalog CLI (3,600+ endpoints, 89 providers). PyPI package
+ # tools-registry[proxy]; pipx backend (uv tool under the hood). AXI-compliant
+ # TOON output: catalog search, call, balance. $1.00 free credit, pay-per-call.
+ "pipx:tools-registry" = "0.20.0"
