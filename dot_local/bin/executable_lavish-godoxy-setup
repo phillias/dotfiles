@@ -1,0 +1,100 @@
+#!/bin/bash
+# ~/.local/bin/lavish-godoxy-setup — chezmoi-managed, executable, in $PATH
+# Verifies or creates the lavish route in the godoxy reverse proxy config.
+#
+# The lavish route proxies lavish.phillias.us → 127.0.0.1:4387, where
+# lavish-axi listens (started with lavish-proxy-env). It sets a CSP that
+# allows framing from the same origin and hides the X-Frame-Options header
+# so the artifact can be embedded in iframes.
+#
+# Usage:
+#   lavish-godoxy-setup              # verify/create route, report status
+#   lavish-godoxy-setup --check      # read-only verification (exit 0/1)
+#   lavish-godoxy-setup --restart    # restart godoxy after changes
+#
+# Requires: FLEET_DNS_DOMAIN (set in ~/.zshenv from chezmoi fleet.dnsDomain)
+
+set -euo pipefail
+
+GODOXY_DIR="${GODOXY_DIR:-$HOME/docker/selfhost/godoxy}"
+HOSTAPPS_FILE="${GODOXY_DIR}/config/hostapps.yml"
+
+LAVISH_ROUTE_BLOCK='lavish:
+  host: 127.0.0.1
+  port: :4387
+  middlewares:
+    response:
+      set_headers:
+        Content-Security-Policy: "object-src '"'"'self'"'"'; frame-ancestors '"'"'self'"'"'"
+      hide_headers:
+        - X-Frame-Options'
+
+CHECK_ONLY=0
+RESTART=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --check)  CHECK_ONLY=1 ;;
+    --restart) RESTART=1 ;;
+    *) echo "usage: lavish-godoxy-setup [--check] [--restart]" >&2; exit 2 ;;
+  esac
+done
+
+if [ ! -f "$HOSTAPPS_FILE" ]; then
+  echo "error: godoxy hostapps.yml not found at $HOSTAPPS_FILE" >&2
+  echo "help: ensure godoxy is deployed at $GODOXY_DIR" >&2
+  exit 1
+fi
+
+route_exists() {
+  # Match "lavish:" as a top-level key (no leading whitespace)
+  grep -qE '^lavish:' "$HOSTAPPS_FILE"
+}
+
+route_has_port() {
+  grep -qA1 '^lavish:' "$HOSTAPPS_FILE" | grep -q ':4387'
+}
+
+route_has_csp() {
+  # Check for CSP with frame-ancestors 'self'
+  grep -q "frame-ancestors" "$HOSTAPPS_FILE"
+}
+
+route_hides_xfo() {
+  grep -q "X-Frame-Options" "$HOSTAPPS_FILE"
+}
+
+if route_exists; then
+  ISSUES=0
+  echo "lavish route: present"
+  route_has_port   || { echo "  MISSING: port :4387"; ISSUES=1; }
+  route_has_csp    || { echo "  MISSING: CSP frame-ancestors"; ISSUES=1; }
+  route_hides_xfo  || { echo "  MISSING: hide X-Frame-Options"; ISSUES=1; }
+
+  if [ "$ISSUES" -eq 1 ] && [ "$CHECK_ONLY" -eq 0 ]; then
+    echo "  route exists but incomplete — manual review needed" >&2
+    echo "  expected config:" >&2
+    echo "$LAVISH_ROUTE_BLOCK" >&2
+    exit 1
+  elif [ "$ISSUES" -eq 1 ]; then
+    exit 1
+  fi
+  echo "  all fields verified"
+else
+  if [ "$CHECK_ONLY" -eq 1 ]; then
+    echo "lavish route: MISSING"
+    exit 1
+  fi
+
+  # Append the route block to hostapps.yml
+  printf '\n%s\n' "$LAVISH_ROUTE_BLOCK" >> "$HOSTAPPS_FILE"
+  echo "lavish route: created"
+
+  if [ "$RESTART" -eq 1 ]; then
+    echo "restarting godoxy..."
+    cd "$GODOXY_DIR" && docker compose restart godoxy
+    echo "godoxy restarted"
+  else
+    echo "help: run with --restart to apply (or restart godoxy manually)"
+  fi
+fi
