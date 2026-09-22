@@ -183,6 +183,11 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key" ]; then
     AI_GATEWAY_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key")" && export AI_GATEWAY_API_KEY
 fi
 
+# Vercel platform token (team-scoped, for virtual-model management)
+if [ -r "$HOME/.agents/keys/$_default_profile/.vercel-token" ]; then
+    VERCEL_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.vercel-token")" && export VERCEL_TOKEN
+fi
+
 # Agnes
 if [ -r "$HOME/.agents/keys/$_default_profile/.agnes-key" ]; then
     AGNES_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.agnes-key")" && export AGNES_API_KEY
