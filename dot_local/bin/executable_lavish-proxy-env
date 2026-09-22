@@ -1,0 +1,62 @@
+#!/bin/bash
+# ~/.local/bin/lavish-proxy-env — chezmoi-managed, executable, in $PATH
+# Exports environment variables for running lavish-axi behind the godoxy
+# reverse proxy (lavish.<fleet-dns-domain>).
+#
+# Usage:
+#   source lavish-proxy-env          # export vars in current shell
+#   eval "$(lavish-proxy-env)"       # same, via eval
+#   lavish-proxy-env lavish-axi server   # run a command with the env set
+#
+# Requires: FLEET_DNS_DOMAIN (set in ~/.zshenv from chezmoi fleet.dnsDomain)
+
+# Detect if sourced (bash: BASH_SOURCE differs from $0; zsh: ZSH_VERSION set)
+if [ -n "${ZSH_VERSION:-}" ] || [ "${BASH_SOURCE[0]:-$0}" != "$0" ]; then
+  _LAVISH_SOURCED=1
+else
+  _LAVISH_SOURCED=0
+  set -euo pipefail
+fi
+
+if [ -z "${FLEET_DNS_DOMAIN:-}" ]; then
+  echo "error: FLEET_DNS_DOMAIN is not set" >&2
+  echo "help: ensure ~/.zshenv sourced (chezmoi fleet.dnsDomain)" >&2
+  [ "$_LAVISH_SOURCED" = 1 ] && return 1 2>/dev/null || exit 1
+fi
+
+# Binds 0.0.0.0 so the Docker proxy container can reach the host via
+# host.docker.internal. Ensure port 4387 is firewalled to local access —
+# external traffic should go through godoxy (ACL, CrowdSec, CSP).
+LAVISH_HOST="${LAVISH_AXI_HOST:-0.0.0.0}"
+LAVISH_PORT="${LAVISH_AXI_PORT:-4387}"
+LAVISH_DOMAIN="lavish.${FLEET_DNS_DOMAIN}"
+
+# When sourced, export directly and do not pollute caller shell options.
+if [ "$_LAVISH_SOURCED" = 1 ]; then
+  export LAVISH_AXI_HOST="$LAVISH_HOST"
+  export LAVISH_AXI_PORT="$LAVISH_PORT"
+  export LAVISH_AXI_ALLOWED_HOSTS="$LAVISH_DOMAIN"
+  export LAVISH_AXI_LINK_HOST="$LAVISH_DOMAIN"
+  export LAVISH_AXI_NO_OPEN=1
+  unset _LAVISH_SOURCED
+  return 0 2>/dev/null || exit 0
+fi
+
+# When run directly, print export lines (for eval) or exec a command.
+if [ $# -gt 0 ]; then
+  exec env \
+    LAVISH_AXI_HOST="$LAVISH_HOST" \
+    LAVISH_AXI_PORT="$LAVISH_PORT" \
+    LAVISH_AXI_ALLOWED_HOSTS="$LAVISH_DOMAIN" \
+    LAVISH_AXI_LINK_HOST="$LAVISH_DOMAIN" \
+    LAVISH_AXI_NO_OPEN=1 \
+    "$@"
+fi
+
+cat <<EOF
+export LAVISH_AXI_HOST="$LAVISH_HOST"
+export LAVISH_AXI_PORT="$LAVISH_PORT"
+export LAVISH_AXI_ALLOWED_HOSTS="$LAVISH_DOMAIN"
+export LAVISH_AXI_LINK_HOST="$LAVISH_DOMAIN"
+export LAVISH_AXI_NO_OPEN=1
+EOF
