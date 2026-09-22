@@ -21,6 +21,11 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.treg-token" ]; then
     TREG_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.treg-token")" && export TREG_TOKEN
 fi
 
+# Treg key
+if [ -r "$HOME/.agents/keys/$_default_profile/.treg-key" ]; then
+    TREG_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.treg-key")" && export TREG_KEY
+fi
+
 # Abliteration API
 if [ -r "$HOME/.agents/keys/$_default_profile/.abliteration-key" ]; then
     ABLITERATION_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.abliteration-key")" && export ABLITERATION_API_KEY
@@ -181,6 +186,11 @@ fi
 # Vercel AI Gateway
 if [ -r "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key" ]; then
     AI_GATEWAY_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.vercel-gateway-key")" && export AI_GATEWAY_API_KEY
+fi
+
+# Vercel platform token (team-scoped, for virtual-model management)
+if [ -r "$HOME/.agents/keys/$_default_profile/.vercel-token" ]; then
+    VERCEL_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.vercel-token")" && export VERCEL_TOKEN
 fi
 
 # Agnes
