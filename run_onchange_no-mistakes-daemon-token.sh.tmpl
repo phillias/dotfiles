@@ -22,7 +22,7 @@
 # If captain prefers an alternative mechanism, this script should be removed and
 # the daemon configured to read the token via a different path.
 #
-# Fingerprint (token): {{ output "bash" "-c" "sha256sum ~/.agents/keys/default/.cf-ai-gw 2>/dev/null | cut -d' ' -f1" }}
+# Fingerprint (tokens): {{ output "bash" "-c" "sha256sum ~/.agents/keys/default/.cf-ai-gw ~/.agents/keys/default/.vercel-gateway-key 2>/dev/null | sha256sum | cut -d' ' -f1" }}
 set -euo pipefail
 
 TOKEN_FILE="$HOME/.agents/keys/default/.cf-ai-gw"
@@ -60,7 +60,7 @@ ENV_FILE="$RUNTIME_DIR/no-mistakes-daemon.env"
 
 cat >"$OVERRIDE_CONF" <<'SYSTEMD_EOF'
 [Service]
-ExecStartPre=/bin/bash -c 'set -e; umask 077; [ -f "$ENV_FILE" ] && chmod 0600 "$ENV_FILE"; printf "CF_AI_GATEWAY_TOKEN=%%s\n" "$(cat ~/.agents/keys/default/.cf-ai-gw)" > "$ENV_FILE"; chmod 0600 "$ENV_FILE"'
+ExecStartPre=/bin/bash -c 'set -e; umask 077; [ -f "$ENV_FILE" ] && chmod 0600 "$ENV_FILE"; printf "CF_AI_GATEWAY_TOKEN=%%s\n" "$(cat ~/.agents/keys/default/.cf-ai-gw)" > "$ENV_FILE"; printf "AI_GATEWAY_API_KEY=%%s\n" "$(cat ~/.agents/keys/default/.vercel-gateway-key 2>/dev/null)" >> "$ENV_FILE"; chmod 0600 "$ENV_FILE"'
 EnvironmentFile=-$ENV_FILE
 SYSTEMD_EOF
 
