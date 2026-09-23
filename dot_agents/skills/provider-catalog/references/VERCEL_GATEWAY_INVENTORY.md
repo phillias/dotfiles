@@ -138,25 +138,25 @@ Fast, cheap, >=128K context, tool-use:
 
 ## Implementation plan (for ship task)
 
-1. Install Vercel CLI: `mise install` (pinned at vercel@59.23.2 in mise config)
-2. Authenticate CLI: `vercel login` or pass `--token` for CI/automation
-3. Refresh API key (current `vck_` key returns auth errors)
-4. Create virtual models mirroring CF dynamic routes:
-   - `vmc/tui` — daily driver GLM ladder
-   - `vmc/high` — high reasoning
-   - `vmc/pr-gate` — gate/background
-   - `vmc/pr-reviewer` — review second-set-of-eyes
-   - `vmc/claude` — Claude family
-   - `vmc/codex` — Codex family
-   - `vmc/grok` — Grok family
-   - `vmc/kimi` — Kimi family
-   - `vmc/muse` — Muse family
-   - `vmc/cursor` — Cursor family
+1. ~~Install Vercel CLI: `mise install` (pinned at vercel@59.23.2 in mise config)~~ ✓
+2. ~~Authenticate CLI: `vercel login` or pass `--token` for CI/automation~~ ✓ (platform token via dotfiles PR #343)
+3. ~~Refresh API key (current `vck_` key returns auth errors)~~ ✓ (key works for inference; platform token `vcp_` for management)
+4. ~~Create virtual models mirroring CF dynamic routes~~ ✓ (9 created 2026-09-20 as kind=router with multi-model fallback ladders):
+   - `vmc/pr-gate` — economy background CI (deepseek-v4-flash → nemotron-super → kimi-k3 → glm-5.2 → gpt-5.6-luna → gemini-flash)
+   - `vmc/pr-reviewer` — review second-set-of-eyes (deepseek-v4-flash → gpt-5.6-luna → nemotron-ultra → glm-5.2)
+   - `vmc/tui` — daily driver (qwen3.7-flash → deepseek-v4-flash → glm-5.3-flash → gpt-5-nano → gemini-flash-lite → gpt-4o-mini)
+   - `vmc/high` — high reasoning (glm-5.3 → gpt-5.6-terra → claude-fable-5 → deepseek-v4-pro → qwen3.7-plus → gpt-6-astra)
+   - `vmc/claude` — Claude family (claude-sonnet-5 → claude-sonnet-4 → claude-haiku-4.5)
+   - `vmc/codex` — Codex family (gpt-5.6-luna → gpt-5-codex → gpt-4o)
+   - `vmc/grok` — Grok family (grok-4.1-fast-reasoning → grok-4.20-reasoning)
+   - `vmc/kimi` — Kimi family (kimi-k3 → kimi-k2.6)
+   - `vmc/muse` — Muse family (muse-spark-1.2 → llama-3.1-70b)
 5. Wire Vercel as fallback in all harness configs:
-   - opencode: `vercel` provider entry in opencode.json
-   - pi: `vercel` provider in models.json
-   - codex: `vercel` provider in config.toml
-    - claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` (map from `AI_GATEWAY_API_KEY`), `ANTHROPIC_API_KEY` set empty to avoid direct-key preference
-   - kimi: `vercel` provider in config.toml
-   - muse: (rides Meta directly, not through gateway)
-6. Ship via dotfiles PR
+   - ~~opencode: `vercel` provider entry in opencode.json~~ (supervisor rides CF; not a worker)
+   - ~~pi: `vercel` provider in models.json~~ ✓ (10 vmc models declared)
+   - ~~codex: `vercel` provider in config.toml~~ ✓ (Vercel-primary, CF as `profiles.cf`)
+   - ~~claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`~~ ✓ (Vercel-primary)
+   - ~~kimi: `vercel` provider in config.toml~~ ✓ (provider declared, default switched to `tui-via-vercel`)
+   - grok: Vercel model added, default switched to `vmc/grok` (dotfiles PR #344)
+   - muse: rides Meta directly (not through gateway)
+6. ~~Ship via dotfiles PR~~ ✓ (#343 token/key, #344 harness config + review chain)
