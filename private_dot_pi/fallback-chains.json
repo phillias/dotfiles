@@ -5,6 +5,7 @@
     "opencode-go-gw/deepseek-v4-flash"
   ],
   "default": [
+    "opencode-zen/mimo-v2.5-free",
     "CfAiGw/dynamic/TUI",
     "vercel/vmc/tui"
   ]
