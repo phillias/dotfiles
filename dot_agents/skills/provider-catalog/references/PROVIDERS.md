@@ -455,13 +455,9 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `custom-commandcode/meta/muse-spark-1.2` → `openrouter/meta-llama/llama-3.1-70b-instruct`.
   `cursor` is deployed **empty** (no model nodes) —
   blocked on the captain's cursor seat decision.
-- `muse` is KEPT deliberately (captain decision 2026-09-20): the muse HARNESS
-  rides Meta's Model API directly (wire mismatch — see the 2026-09-19 muse
-  learning; dotfiles PR #332), but the `dynamic/muse` route and its pi catalog
-  row stay for OpenAI-compatible consumers — and if a future muse build ships
-  the `provider-openai` feature (compiled out of 1.3.0-R3401.1; the error
-  names the flag and muse's source is not public), muse itself can ride the
-  compat plane via `OPENAI_BASE_URL` + gateway token with zero new machinery.
+- `muse` rides Meta's Model API directly (api.meta.ai) as of muse 1.3.0:
+  The orphaned `dynamic/muse` route and its pi catalog row were removed
+  because they only served a Bedrock fallback tail, not actual muse traffic.
   Re-evaluate on every muse release.
 
 Owner defaults (2026-09-04): pi `default` chain = `CfAiGw/dynamic/TUI`
