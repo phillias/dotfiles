@@ -406,12 +406,13 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `91701376`** after three no-mistakes run deaths): openrouter free lanes
   200-wrap Nvidia-pool overload errors ("Service temporarily overloaded") —
   the route's success edge passes the error body verbatim, killing runs
-  exactly when the pool is loaded. 2026-09-20 status: **no no-mistakes agent
-  rides this route anymore** — all gate agents pin `opencode-go-gw/deepseek-v4-flash`
-  directly (dotfiles PR #332) after the free NEMO head
-  intermittently 200-wrapped the same overload error for daemon agent bursts
-  (single/252K/640K/burst probes all passed; back-to-back agent first requests
-  died 6/6 nights runs). The route serves external and probe traffic only.
+  exactly when the pool is loaded.   2026-09-20 status: **no-mistakes gate agent rides this route via pi
+  `fallback/gate` chain** (dotfiles PR #343 restored the chain, previously
+  pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
+  200-wrapped overload errors 6/6 nights runs). Review agent rides the
+  separate `fallback/review` chain (CfAiGw/dynamic/pr-reviewer →
+  vercel/vmc/pr-reviewer → opencode-go-gw/deepseek-v4-flash). The route
+  serves gate, probe, and external traffic.
   Actual active ladder (version `91701376`, verified via versions API
   2026-09-20 — the earlier "GOAT nodes" wording in this file was a mislabel,
   those lanes are commandcode): `custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b` →
@@ -431,8 +432,9 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` →
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
-  `custom-opencode-zen/glm-5.2`. 2026-09-20: gate review no longer rides this
-  either — see the pr-gate entry; the route stays for external traffic.
+  `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
+  the separate `fallback/review` chain (pi fallback-chains.json), with Vercel
+  `vmc/pr-reviewer` as second rung and opencode-go as tail.
 - Harness family routes (2026-09-19 build, captain directive — house models
   per family across providers, openrouter PAYG + plan lanes). 2026-09-20
   less-wrong pass (captain order, route versions deployed and probed 200):

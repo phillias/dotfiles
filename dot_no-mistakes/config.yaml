@@ -18,7 +18,7 @@ agent: pi
 #
 # Gate reserves the model's full output budget for structured review output, so
 # a 1M-context model is required for large diffs.
-# (2026-09-21) Gate and review steps ride pi's `fallback/gate` chain in
+# (2026-09-21) Gate rides pi's `fallback/gate` chain in
 # ~/.pi/fallback-chains.json: CfAiGw/dynamic/pr-gate, then
 # vercel/vmc/pr-gate, then the opencode-go 1M tail. This keeps the CF dynamic
 # route as the head while preserving Vercel fallthrough for CF gateway outages.
@@ -43,14 +43,16 @@ agent_config:
     # to vercel/vmc/pr-gate before the opencode-go tail.
     model: fallback/gate
 
-# Review rides the same fallback/gate chain as the other steps so the
-# automated reviewer exercises the same CF → Vercel → opencode-go ladder.
+# Review rides the separate `fallback/review` chain so the second-set-of-eyes
+# exercises the pr-reviewer ladder (CF dynamic/pr-reviewer → Vercel vmc/pr-reviewer
+# → opencode-go tail) rather than the cheaper gate ladder. Budget-ranked, JSON
+# discipline first, stronger model pool than gate.
 review_agents:
   reviewer:
     agent: pi
-    # Same chain as agent_config above; review still needs the 1M gate route
+    # Separate chain from gate; review needs the stronger pr-reviewer ladder
     # but must not bypass the Vercel fallback rung.
-    model: fallback/gate
+    model: fallback/review
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and
 # ACP aliases
