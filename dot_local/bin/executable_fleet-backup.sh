@@ -3,16 +3,18 @@ set -euo pipefail
 
 # ─────────────────────────────────────────────────────────────
 # Fleet agent-state restic backup — distributed via chezmoi.
-# Host-agnostic: all machine-specific values (repo URL, restic
-# password, OCI S3 HMAC keys, ntfy token, BACKUP_PATHS, EXCLUDES)
-# come from ~/.config/fleet-backup/restic-env (age-encrypted in
-# the dotfiles source — chezmoi add --encrypt). The target OCI
-# bucket is fleet-shared; each host uses its own repo subpath and
-# password so snapshots never collide.
+# Host-agnostic: all machine-specific values come from
+# ~/.config/fleet-backup/restic-env, which is a chezmoi template
+# (restic-env.tmpl) that sources two age-encrypted files:
+#   - restic-shared-secrets  (AWS keys, ntfy token, OCI bucket base URL)
+#   - restic-password-<node> (unique RESTIC_PASSWORD per fleet node)
+# The template sets per-host RESTIC_REPOSITORY (bucket_base/<node>),
+# BACKUP_PATHS, HOST_TAG, and EXCLUDES. Each host gets its own
+# repo subpath and password so snapshots never collide.
 #
 # One-time bootstrap per host (NOT done by this script):
 #   mkdir -p ~/.config/fleet-backup ~/.local/state/fleet-backup
-#   # author restic-env (keys from vault/bws, unique RESTIC_PASSWORD)
+#   chezmoi apply   # deploys restic-env + shared-secrets + per-host password
 #   source "$HOME/.config/fleet-backup/restic-env" && restic init
 # Then enable: systemctl --user enable --now fleet-backup.timer fleet-backup-watchdog.timer
 #

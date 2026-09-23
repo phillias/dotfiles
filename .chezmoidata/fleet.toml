@@ -5,3 +5,12 @@
 [fleet]
     # This server's Cloudflare DNS zone; referenced by firstmate/data/captain.md.tmpl
     dnsDomain = "phillias.org"
+
+    # Fleet node registry — maps chezmoi hostname to fleet node identity.
+    # Each node gets its own RESTIC_PASSWORD (age-encrypted) and S3 bucket subpath.
+    [fleet.nodes.kali]
+        hostname = "CabinInspiron22Kali"
+    [fleet.nodes.phillias]
+        hostname = "phillias-dev"
+    [fleet.nodes.primary55522]
+        hostname = "primary"
