@@ -1,0 +1,2 @@
+        { "id": "dynamic/muse", "name": "Muse house models" }
+        { "id": "vmc/muse", "name": "Muse house models (Vercel AI GW fallback, 128k)", "contextWindow": 131072, "maxTokens": 32768 },

@@ -1,0 +1,405 @@
+{
+  "providers": {
+    "opencode-zen": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-zen/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "big-pickle",
+          "name": "Big Pickle (OpenCode Zen \u00b7 CF GW)",
+          "contextWindow": 256000,
+          "maxTokens": 32768
+        },
+        {
+          "id": "kimi-k2.6",
+          "name": "Kimi K2.6 (OpenCode Zen \u00b7 CF GW)",
+          "reasoning": true,
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "deepseek-v4-flash-free",
+          "name": "DeepSeek V4 Flash Free (OpenCode Zen \u00b7 CF GW)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nemotron-3-ultra-free",
+          "name": "Nemotron 3 Ultra Free (OpenCode Zen \u00b7 CF GW)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "gemini-3.5-flash",
+          "name": "Gemini 3.5 Flash (zen paid, 1M)",
+          "contextWindow": 1048576,
+          "maxTokens": 65536
+        },
+        {
+          "id": "glm-5.1",
+          "name": "GLM-5.1 (zen, 128k)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "opencode-go-gw": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}",
+        "x-opencode-session": "pi-fleet-InspironOne"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "kimi-k2.6",
+          "name": "Kimi K2.6 (OpenCode Go \u00b7 CF GW)",
+          "reasoning": true,
+          "contextWindow": 202752,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (OpenCode Go \u00b7 CF GW, 1M)",
+          "contextWindow": 1048576,
+          "maxTokens": 32768,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "maxTokensField": "max_tokens"
+          }
+        },
+        {
+          "id": "glm-5.1",
+          "name": "GLM-5.1 (OpenCode Go)",
+          "contextWindow": 204800,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "commandcode": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-commandcode/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "moonshotai/Kimi-K2.6",
+          "name": "Kimi K2.6 (GOAT \u00b7 CF GW)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "deepseek/deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (GOAT \u00b7 CF GW)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "gpt-5.6-luna",
+          "name": "GPT-5.6 Luna (GOAT pool, 1.05M)",
+          "contextWindow": 1050000,
+          "maxTokens": 65536
+        },
+        {
+          "id": "zai-org/GLM-5.2",
+          "name": "GLM-5.2 (GOAT pool, 1M)",
+          "contextWindow": 1000000,
+          "maxTokens": 65536
+        },
+        {
+          "id": "nvidia/nemotron-3-ultra-550b-a55b",
+          "name": "Nemotron-3 Ultra 550B (GOAT pool, 1M)",
+          "contextWindow": 1000000,
+          "maxTokens": 65536
+        },
+        {
+          "id": "moonshotai/Kimi-K3",
+          "name": "Kimi-K3 (GOAT pool, 1M)",
+          "contextWindow": 1000000,
+          "maxTokens": 65536
+        }
+      ]
+    },
+    "zai-coding": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-zai-coding/v4",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "glm-5.2",
+          "name": "GLM 5.2 (Z.AI Coding Plan Lite \u00b7 CF GW)",
+          "reasoning": true,
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "cloudflare": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/ai/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "@cf/moonshotai/kimi-k2.7-code",
+          "name": "Kimi K2.7 Code (Cloudflare \u00b7 CF GW)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "@cf/zai-org/glm-4.7-flash",
+          "name": "GLM 4.7 Flash (Cloudflare \u00b7 CF GW)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "openrouter": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/openrouter/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "z-ai/glm-5",
+          "name": "GLM 5 (OpenRouter paid \u00b7 CF GW)",
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nvidia/nemotron-3-super-120b-a12b:free",
+          "name": "Nemotron 3 Super 120B (OpenRouter free \u00b7 CF GW)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "openrouter/free",
+          "name": "Free Models Router (OpenRouter \u00b7 CF GW)",
+          "contextWindow": 262144,
+          "maxTokens": 32768
+        },
+        {
+          "id": "nvidia/nemotron-3.5-lightning:free",
+          "name": "Nemotron 3.5 Lightning (openrouter free, 1M)",
+          "contextWindow": 1000000,
+          "maxTokens": 65536
+        },
+        {
+          "id": "minimax/minimax-m3:free",
+          "name": "MiniMax M3 (openrouter free, 1M)",
+          "contextWindow": 1048576,
+          "maxTokens": 65536
+        },
+        {
+          "id": "thinkingmachines/inkling:free",
+          "name": "Inkling (openrouter free, 1M)",
+          "contextWindow": 1048576,
+          "maxTokens": 65536
+        },
+        {
+          "id": "openai/gpt-5.6-luna",
+          "name": "GPT-5.6 Luna (openrouter paid, 1.05M)",
+          "contextWindow": 1050000,
+          "maxTokens": 65536
+        }
+      ]
+    },
+    "openrouter-direct": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "api": "openai-completions",
+      "apiKey": "$OPENROUTER_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "thinkingmachines/inkling:free",
+          "name": "Inkling (openrouter direct, 1M \u2014 harness-gated upstream; must bypass the gateway hop)",
+          "contextWindow": 1048576,
+          "maxTokens": 65536
+        }
+      ]
+    },
+    "phoenixgrove": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-phoenixgrove/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "glm-5.3-flash",
+          "name": "GLM 5.3 Flash (Phoenix Grove free \u00b7 CF GW)",
+          "contextWindow": 1000000,
+          "maxTokens": 8192
+        },
+        {
+          "id": "deepseek-v4-flash",
+          "name": "DeepSeek V4 Flash (Phoenix Grove free \u00b7 CF GW)",
+          "contextWindow": 131072,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    "gemini": {
+      "baseUrl": "http://127.0.0.1:18903/v1beta",
+      "api": "google-generative-ai",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "models": [
+        {
+          "id": "gemini-2.5-flash",
+          "name": "Gemini 2.5 Flash (AI Studio via CF GW BYOK)",
+          "contextWindow": 1048576,
+          "maxTokens": 65536
+        }
+      ]
+    },
+    "cerebras": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/cerebras/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "gpt-oss-120b",
+          "name": "GPT-OSS 120B (Cerebras \u00b7 CF GW)",
+          "reasoning": true,
+          "contextWindow": 131072,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "nvidia": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-nvidia-nim/v1",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "nvidia/nemotron-3-super-120b-a12b",
+          "name": "Nemotron 3 Super 120B A12B (NIM \u00b7 CF GW)",
+          "reasoning": true,
+          "contextWindow": 1000000,
+          "maxTokens": 32768
+        }
+      ]
+    },
+    "CfAiGw": {
+      "baseUrl": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
+      "api": "openai-completions",
+      "apiKey": "$CF_AI_GATEWAY_TOKEN",
+      "headers": {
+        "cf-aig-gateway-id": "opencode",
+        "cf-aig-metadata": "{\"harness\":\"pi\",\"host\":\"InspironOne\",\"agent\":\"primary\"}"
+      },
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        { "id": "dynamic/TUI", "name": "TUI (subsidized low-tier daily driver)" },
+        { "id": "dynamic/high", "name": "high (GLM-5.3-class + fable)" },
+        { "id": "dynamic/pr-gate", "name": "pr-gate (free 1M background CI)" },
+        { "id": "dynamic/vision", "name": "vision (GLM-4.5V + gemini-2.5-flash)" },
+        { "id": "dynamic/claude", "name": "Claude house models" },
+        { "id": "dynamic/codex", "name": "Codex house models" },
+        { "id": "dynamic/grok", "name": "Grok house models" },
+        { "id": "dynamic/kimi", "name": "Kimi house models" },
+        { "id": "dynamic/cursor", "name": "Cursor house models" },
+        { "id": "dynamic/muse", "name": "Muse house models" }
+      ]
+    },
+    "vercel": {
+      "baseUrl": "https://ai-gateway.vercel.sh/v1",
+      "api": "openai-completions",
+      "apiKey": "$AI_GATEWAY_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        { "id": "vmc/pr-gate", "name": "pr-gate (Vercel AI GW fallback, 1M)", "contextWindow": 1048576, "maxTokens": 32768 },
+        { "id": "vmc/pr-reviewer", "name": "pr-reviewer (Vercel AI GW fallback, 1M)", "contextWindow": 1048576, "maxTokens": 32768 },
+        { "id": "vmc/tui", "name": "TUI (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/high", "name": "high (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/claude", "name": "Claude house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/codex", "name": "Codex house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/grok", "name": "Grok house models (Vercel AI GW fallback, 2M)", "contextWindow": 2000000, "maxTokens": 32768 },
+        { "id": "vmc/kimi", "name": "Kimi house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
+        { "id": "vmc/muse", "name": "Muse house models (Vercel AI GW fallback, 128k)", "contextWindow": 131072, "maxTokens": 32768 },
+        { "id": "vmc/cursor", "name": "Cursor house models (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 }
+      ]
+    }
+  }
+}
