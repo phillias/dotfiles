@@ -1,0 +1,12 @@
+BACKUP_PATHS=(
+  "$HOME/firstmate"
+  "$HOME/.agents"
+  "$HOME/.config/opencode"
+  "$HOME/.local/share/opencode"
+  "$HOME/.config/systemd/user"
+  "$HOME/.config/herdr"
+  "$HOME/.config/mise"
+  "$HOME/.local/share/chezmoi"
+  "$HOME/memories"
+  "$HOME/.no-mistakes"
+)

@@ -1,0 +1,22 @@
+export RESTIC_REPOSITORY='s3:https://axh7zpa5qpqc.compat.objectstorage.us-chicago-1.oraclecloud.com/fleet-agent-backups'
+export RESTIC_PASSWORD='<REDACTED>'
+export AWS_ACCESS_KEY_ID="<REDACTED>"
+export AWS_SECRET_ACCESS_KEY="VQ5CCp+z+JnMy3O1ElnRNLu7UIYxNuQWWb32qMlqHaE="
+export NTFY_TOKEN=tk_rjw1wkubryjf2cvl0r4mj0z1gv1to
+
+# Per-host backup paths (kali defaults; adapt per host on other boxes)
+BACKUP_PATHS=(
+  "$HOME/firstmate"
+  "$HOME/.agents"
+  "$HOME/.config/opencode"
+  "$HOME/.local/share/opencode"
+  "$HOME/memories"
+  "$HOME/.no-mistakes"
+  "$HOME/docker/selfhost"
+)
+EXCLUDES=(
+  --exclude="$HOME/.config/opencode/node_modules"
+  --exclude="$HOME/.local/share/opencode/log"
+  --exclude="$HOME/.local/share/opencode/tool-output"
+  --exclude="*.log"
+)

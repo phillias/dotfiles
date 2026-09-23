@@ -1,0 +1,9 @@
+BACKUP_PATHS=(
+  "$HOME/firstmate"
+  "$HOME/.agents"
+  "$HOME/.config/opencode"
+  "$HOME/.local/share/opencode"
+  "$HOME/memories"
+  "$HOME/.no-mistakes"
+  "$HOME/docker/selfhost"
+)
