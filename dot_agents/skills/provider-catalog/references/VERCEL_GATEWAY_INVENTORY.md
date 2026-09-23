@@ -150,10 +150,10 @@ Fast, cheap, >=128K context, tool-use:
    - `vmc/codex` — Codex family (gpt-5.6-luna → gpt-5-codex → gpt-4o)
    - `vmc/grok` — Grok family (grok-4.1-fast-reasoning → grok-4.20-reasoning)
    - `vmc/kimi` — Kimi family (kimi-k3 → kimi-k2.6)
-   - `vmc/muse` — Muse family (muse-spark-1.2 → llama-3.1-70b)
+   - ~~vmc/muse~~ — Muse family (muse-spark-1.2 → llama-3.1-70b) [removed: muse rides Meta directly]
 5. Wire Vercel as fallback in all harness configs:
    - ~~opencode: `vercel` provider entry in opencode.json~~ (supervisor rides CF; not a worker)
-   - ~~pi: `vercel` provider in models.json~~ ✓ (10 vmc models declared)
+   - ~~pi: `vercel` provider in models.json~~ ✓ (9 vmc models declared)
    - ~~codex: `vercel` provider in config.toml~~ ✓ (Vercel-primary, CF as `profiles.cf`)
    - ~~claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`~~ ✓ (Vercel-primary)
    - ~~kimi: `vercel` provider in config.toml~~ ✓ (provider declared, default switched to `tui-via-vercel`)
