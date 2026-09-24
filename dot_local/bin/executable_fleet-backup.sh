@@ -114,7 +114,7 @@ fi
 
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%S")
 
-python3 -c "
+if python3 -c "
 import json
 data = {
     'last_backup': '${NOW}',
@@ -127,8 +127,7 @@ data = {
 }
 with open('${STATUS_FILE}', 'w') as f:
     json.dump(data, f, indent=2)
-" 2>>"${LOG_FILE}"
-if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+" 2>>"${LOG_FILE}"; then
   log "  status written"
 else
   log "  status write failed"
