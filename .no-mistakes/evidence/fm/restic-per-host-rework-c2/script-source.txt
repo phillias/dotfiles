@@ -1,0 +1,1 @@
+25:RESTIC_ENV="${RESTIC_ENV:-$HOME/.config/fleet-backup/restic-env}"

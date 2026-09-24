@@ -1,0 +1,3 @@
+.config/fleet-backup/restic-env-old
+.config/fleet-backup/restic-password-phillias
+.config/fleet-backup/restic-password-primary55522

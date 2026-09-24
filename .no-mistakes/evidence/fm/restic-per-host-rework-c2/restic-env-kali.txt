@@ -1,0 +1,35 @@
+# Fleet restic environment — per-host config (chezmoi template).
+# Shared secrets and per-host password are sourced from separate age-encrypted files.
+
+# Source shared secrets (AWS keys, ntfy token, OCI bucket base URL)
+# shellcheck source=/dev/null
+source "$HOME/.config/fleet-backup/restic-shared-secrets"
+
+# Source per-host RESTIC_PASSWORD (selected by .chezmoiignore — only one deploys)
+# shellcheck source=/dev/null
+source "$HOME/.config/fleet-backup/restic-password-kali"
+
+# Per-host repository subpath under the shared OCI bucket
+export RESTIC_REPOSITORY="${RESTIC_BUCKET_BASE}/kali"
+
+# Host tag for restic snapshots
+export HOST_TAG="kali"
+
+# Universal backup paths (configs and essential state — no cache)
+BACKUP_PATHS=(
+  "$HOME/firstmate"
+  "$HOME/.agents"
+  "$HOME/.config/opencode"
+  "$HOME/.local/share/opencode"
+  "$HOME/memories"
+  "$HOME/.no-mistakes"
+  "$HOME/docker/selfhost"
+)
+
+# Excludes — applied to all hosts
+EXCLUDES=(
+  --exclude="$HOME/.config/opencode/node_modules"
+  --exclude="$HOME/.local/share/opencode/log"
+  --exclude="$HOME/.local/share/opencode/tool-output"
+  --exclude="*.log"
+)
