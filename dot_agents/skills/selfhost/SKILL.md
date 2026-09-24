@@ -1,10 +1,11 @@
 ---
 name: selfhost
 description: >
-  Selfhost infrastructure management at ~/docker/ — Godoxy reverse proxy,
+  Selfhost infrastructure management — Godoxy reverse proxy,
   CrowdSec WAF with AppSec, Pocket ID OIDC provider, Tinyauth forward-auth, databases
   (MariaDB, PostgreSQL, MSSQL, Redis, libSQL/Turso), CloudBeaver, Dockhand, CrowdSec Manager,
   ntfy/apprise notifications, and restic backup to OCI Object Storage.
+  Runtime checkout: ~/docker/selfhost. Firstmate project worktree: ~/firstmate/projects/selfhost.
 compatibility: opencode
 metadata:
   stacks: selfhost,pocketid,tinyauth
@@ -14,7 +15,9 @@ metadata:
 
 # Selfhost Infrastructure Management
 
-Authoritative guide for the selfhost Docker Compose stack at `~/docker/`.
+Authoritative guide for the selfhost Docker Compose stack.
+Runtime checkout: `~/docker/selfhost` (the live checkout that Docker Compose runs from).
+Firstmate project worktree: `~/firstmate/projects/selfhost` (tracked by the firstmate fleet; code changes happen here and in crewmate worktrees, not in the runtime checkout).
 This covers the selfhost directory plus tightly coupled auth services (pocketid, tinyauth)
 that live in their own directories. This is one stack among several — it does not cover
 custom Go applications (llpoa, miaction, myastrology) or media/pirate services.
@@ -39,9 +42,9 @@ Cloudflare (Tunnel/Proxy, SSL Full/Strict)
         ├── CloudBeaver (DB web UI, :8978)
         ├── Dockhand (Docker management, :7299)
         ├── CrowdSec Manager (UI, :8287)
-        ├── ntfy (push notifications, :3930)
-        ├── apprise (notifications, :5832)
-        └── netdata (host monitoring, via hostapps.yml, :19999)
+        ├── ntfy (push notifications, :3930) [primary55522 only]
+        ├── apprise (notifications, :5832) [primary55522 only]
+        └── netdata (host monitoring, via hostapps.yml, :19999) [removed from compose, hostapps-only]
 ```
 
 ### All Services
@@ -61,8 +64,8 @@ Cloudflare (Tunnel/Proxy, SSL Full/Strict)
 | `selfhost/` | cloudbeaver | cloudbeaver | 8978 | Database web UI |
 | `selfhost/` | dockhand | dockhand | 7299 | Docker management UI |
 | `selfhost/` | tinyauth | tinyauth | — | Forward auth provider |
-| `selfhost/` | ntfy | ntfy | 3930 | Push notifications |
-| `selfhost/` | apprise | apprise | 5832 | Notification service |
+| `selfhost/` | ntfy | ntfy | 3930 | Push notifications [primary55522 only] |
+| `selfhost/` | apprise | apprise | 5832 | Notification service [primary55522 only] |
 | `pocketid/` | pocketid | pocketid | 1411 | OIDC provider |
 | `tinyauth/` | tinyauth | tinyauth | — | Auth service (config) |
 
@@ -176,14 +179,20 @@ Key config.yml features:
 - **OIDC**: Global OIDC config (`GODOXY_OIDC_ISSUER_URL`) enables per-route middleware via Docker labels
 - **Cloudflare**: `cloudflare_real_ip` middleware for correct visitor IP detection
 - **Security headers**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy
-- **Notifications**: ntfy on `ntfy.phillias.cc` topic `SelfHostNetSec`
+- **Notifications**: ntfy on `ntfy.phillias.cc`, per-server topics (e.g. `Kali1` on kalione, `SelfHostNetSec` on primary55522)
 - **MaxMind**: GeoIP for ACL (account_id + license_key)
 - **Homepage**: Godoxy dashboard enabled with default categories
 
 ### Godoxy Hostapps
 
 Defined in `~/docker/selfhost/godoxy/config/hostapps.yml` for services not managed via Docker labels. Currently:
-- **netdata**: Host `172.17.0.1:19999`, HTTP scheme, `forward_auth: {}` placeholder (not yet configured)
+- **codeburn**: Port :4747, HTTP, with header middleware
+- **netdata**: Host `127.0.0.1`, port 19999, HTTP, plain host/port/scheme (OIDC middleware removed; netdata runs as systemd service, not Docker)
+- **tokentelemetry**: Host `127.0.0.1`, port :13000, with path rules
+- **hermes**: Port :9119
+- **lavish**: Host `127.0.0.1`, port :4387, with security headers
+
+Server-specific entries appended after setup.sh render (bench-studio on primary55522, ntfy on primary55522+kali).
 
 ### Godoxy Web UI / Management UIs
 
@@ -621,13 +630,13 @@ This JDBC URL is used by applications connecting to MariaDB. For other databases
 ### ntfy
 - Port: 3930
 - **Auth**: `NTFY_AUTH_DEFAULT_ACCESS=deny-all` — must authenticate with user tokens
-- Godoxy uses ntfy for security notifications on `SelfHostNetSec` topic
+- Godoxy uses ntfy for security notifications on per-server topics (e.g. `Kali1` on kalione, `SelfHostNetSec` on primary55522)
 - Godoxy config has ntfy configured as notification provider (token redacted — live copies in `~/docker/backup-watchdog.sh`, `~/docker/restic-backup.sh`, `~/docker/backup-health-weekly.sh`; rotate if previously leaked):
   ```yaml
   - name: ntfy.phillias.cc
     provider: ntfy
     token: <redacted>
-    topic: SelfHostNetSec
+    topic: Kali1  # per-server: Kali1 on kalione, SelfHostNetSec on primary55522
     url: https://ntfy.phillias.cc
     format: plain
   ```
@@ -873,8 +882,8 @@ The AppSec acquis config must listen on `0.0.0.0:7422` (all interfaces), not `12
 ### Godoxy Depends on CrowdSec Health
 The godoxy service in compose.yml has `depends_on: crowdsec: condition: service_healthy`. Godoxy won't start until CrowdSec's LAPI healthcheck (`cscli lapi status`) passes. If CrowdSec is unhealthy, godoxy will wait indefinitely — check CrowdSec logs first if godoxy won't start.
 
-### netdata `forward_auth: {}` Placeholder
-The `hostapps.yml` has `forward_auth: {}` (empty object) on the netdata entry. This is a placeholder — no auth is actually configured or active on netdata. It's a YAML structure reserved for future auth integration.
+### netdata OIDC Middleware Removed
+The `hostapps.yml` previously had OIDC middleware on the netdata entry. This has been removed — netdata is now a plain host/port/scheme entry. Netdata runs as a systemd service (installed via kickstart script, not Docker), accessible at `127.0.0.1:19999`. If auth is needed in the future, add it via godoxy per-route middleware labels instead.
 
 ### CrowdSec Socket Access vs Godoxy Socket Proxy
 CrowdSec mounts the Docker socket directly (`/run/docker.sock:/var/run/docker.sock:ro`) for log acquisition. Godoxy accesses Docker API through `socket-proxy` (restricted to CONTAINERS/INFO/PING/POST/VERSION/ALLOW_START/STOP/RESTARTS). This is intentional — CrowdSec needs broad Docker access for log analysis, while godoxy only needs container discovery.
@@ -1104,7 +1113,7 @@ docker exec crowdsec cscli hub list              # Hub items
 
 **CrowdSec simulation mode**: Available at `~/docker/selfhost/crowdsec/config/simulation.yaml` but currently **disabled** (commented out). When enabled, triggered alerts do NOT result in decisions — useful for testing new rules without affecting traffic.
 
-**CrowdSec notifications**: The ntfy notification plugin at `~/docker/selfhost/crowdsec/config/notifications/ntfy.yaml` sends alerts to `https://ntfy.phillias.cc/SelfHostNetSec` with `log_level: info`.
+**CrowdSec notifications**: The ntfy notification plugin at `~/docker/selfhost/crowdsec/config/notifications/ntfy.yaml` sends alerts to `https://ntfy.phillias.cc/` with per-server topics (e.g. `SelfHostNetSec` on primary55522, `Kali1` on kalione) with `log_level: info`.
 
 **Decision profiles**: Default profile at `~/docker/selfhost/crowdsec/config/profiles.yaml` — ban for 4h when `Alert.Remediation == true`.
 
