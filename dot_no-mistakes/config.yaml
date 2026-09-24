@@ -116,6 +116,18 @@ log_level: info
 #     - -c
 #     - model_reasoning_effort="low"
 #
+# (2026-09-24) Pi minimal profile: strip harness overhead that no pipeline step
+# uses. Skills, extensions, prompt templates, and themes are never needed by
+# gate/review/test/lint/document/CI steps. Tools stay enabled because fixer,
+# test, document, lint, and CI-repair steps need file access. Project context
+# suppression is handled separately per-repo via disable_project_settings.
+agent_args_override:
+  pi:
+    - "--no-skills"
+    - "--no-extensions"
+    - "--no-prompt-templates"
+    - "--no-themes"
+#
 # Maximum follow-up auto-fix attempts per step (0 = disabled after the initial
 # pass)
 # Document fixes are attempted during the initial document pass.
