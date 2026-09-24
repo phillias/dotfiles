@@ -58,3 +58,19 @@ age-key.txt.age
 # pi-provider fallback: machine-local key snapshot for the no-mistakes gate
 # daemon (sourced from the .config/opencode/*-key files; secrets, never committed)
 .config/opencode/.pi-env
+
+# ── Fleet restic per-host architecture ──────────────────────
+# Old monolithic restic-env (replaced by per-host template — kept for reference)
+.config/fleet-backup/restic-env-old
+
+# Per-host restic password files — only deploy the one matching this host.
+# Template resolves hostname → node name; non-matching files are ignored.
+{{- if ne .chezmoi.hostname "CabinInspiron22Kali" }}
+.config/fleet-backup/restic-password-kali
+{{- end }}
+{{- if ne .chezmoi.hostname "phillias-dev" }}
+.config/fleet-backup/restic-password-phillias
+{{- end }}
+{{- if ne .chezmoi.hostname "primary" }}
+.config/fleet-backup/restic-password-primary55522
+{{- end }}
