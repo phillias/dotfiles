@@ -127,7 +127,12 @@ data = {
 }
 with open('${STATUS_FILE}', 'w') as f:
     json.dump(data, f, indent=2)
-" 2>>"${LOG_FILE}" && log "  status written" || log "  status write failed"
+" 2>>"${LOG_FILE}"
+if [ "${PIPESTATUS[0]}" -eq 0 ]; then
+  log "  status written"
+else
+  log "  status write failed"
+fi
 
 # ── Step 4: ntfy notification ──────────────────────────────
 log "--- Step 4: ntfy notification ---"
