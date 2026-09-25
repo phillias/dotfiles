@@ -1,6 +1,6 @@
 # Vercel AI Gateway Model Inventory
 
-**Updated:** 2026-09-20
+**Updated:** 2026-09-25
 **Base URL:** `https://ai-gateway.vercel.sh/v1` (OpenAI-compat) / `https://ai-gateway.vercel.sh` (Anthropic Messages)
 **Authentication:** `Authorization: Bearer $AI_GATEWAY_API_KEY` or `x-api-key` header
 **Key file:** `~/.agents/keys/default/.vercel-gateway-key` (loaded by `load-keys.sh`)
@@ -144,7 +144,7 @@ Fast, cheap, >=128K context, tool-use:
 4. ~~Create virtual models mirroring CF dynamic routes~~ ✓ (9 created 2026-09-20 as kind=router with multi-model fallback ladders):
    - `vmc/pr-gate` — economy background CI (deepseek-v4-flash → nemotron-super → kimi-k3 → glm-5.2 → gpt-5.6-luna → gemini-flash)
    - `vmc/pr-reviewer` — review second-set-of-eyes (deepseek-v4-flash → gpt-5.6-luna → nemotron-ultra → glm-5.2)
-   - `vmc/tui` — daily driver (qwen3.7-flash → deepseek-v4-flash → glm-5.3-flash → gpt-5-nano → gemini-flash-lite → gpt-4o-mini)
+   - `vmc/tui` — daily driver (qwen3.7-flash → deepseek-v4-flash → glm-5.3-flash → gpt-5-nano → gemini-flash-lite → gpt-4o-mini) [2026-09-25: removed the live `stealth/space-bunny-alpha` head by captain order after unusable interactive behavior; list above is authoritative]
    - `vmc/high` — high reasoning (glm-5.3 → gpt-5.6-terra → claude-fable-5 → deepseek-v4-pro → qwen3.7-plus → gpt-6-astra)
    - `vmc/claude` — Claude family (claude-sonnet-5 → claude-sonnet-4 → claude-haiku-4.5)
    - `vmc/codex` — Codex family (gpt-5.6-luna → gpt-5-codex → gpt-4o)
