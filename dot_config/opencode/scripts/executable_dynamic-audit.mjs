@@ -9,24 +9,31 @@
  *
  * Tests (per run):
  *   1. config-drift — CfAiGw routes declared in opencode.json, pi
- *      models.json, and pi fallback-chains.json match each other and the
- *      catalog's purpose list (TUI, high, pr-gate, vision).
+ *      models.json, and pi fallback-chains.json include the catalog's
+ *      purpose routes (TUI, high, pr-gate, vision); harness-specific
+ *      extras are allowed.
  *   2. route-probe  — one fixed 4-token completion per route; records HTTP
  *      code, latency, upstream model id served, and retry-after/rate headers
  *      on 429/5xx. These are routing evidence for route rebuilds.
  *
  * Output: one JSON line per event appended to
  *   ~/.local/state/opencode-fleet/dynamic-audit.jsonl
+ * Route probes, provider windows, config drift, and audit errors are also
+ * mirrored as rows in the shared provider-catalog D1 database (default
+ * `provider-catalog`; set PROVIDER_CATALOG_D1=off to disable). A D1 mirror
+ * failure is an audit machinery failure (exit 2) because the shared catalog
+ * is the durable sink for these observations.
  *
  * Exit codes: 0 healthy · 1 drift detected · 2 audit machinery failure.
  * Transient upstream conditions (429/5xx/timeout) are logged, never an exit
  * code, because the skill reads them as routing evidence rather than tool
  * failure.
  */
-import { readFileSync, appendFileSync, mkdirSync, existsSync } from "fs";
-import { homedir } from "os";
+import { readFileSync, appendFileSync, mkdirSync, existsSync, writeFileSync, unlinkSync, copyFileSync } from "fs";
+import { homedir, tmpdir } from "os";
 import { join } from "path";
 import { EOL } from "os";
+import { spawnSync } from "child_process";
 
 const HOME = homedir();
 const STATE_DIR = join(HOME, ".local", "state", "opencode-fleet");
@@ -49,11 +56,97 @@ const PROBE_GAP_MS = 2_000;
  *  provider-catalog; the audit folds its 24h aggregate into the same log. */
 const AVAILABILITY_CSV = "/tmp/big-pickle-availability.csv";
 const AVAILABILITY_WINDOW_H = 24;
+const D1_DATABASE = (process.env.PROVIDER_CATALOG_D1 ?? "provider-catalog").trim();
+const D1_ENABLED = D1_DATABASE !== "" && D1_DATABASE.toLowerCase() !== "off";
 
 mkdirSync(STATE_DIR, { recursive: true });
 
-const logEvent = (test, fields) =>
-  appendFileSync(LOG, JSON.stringify({ ts: new Date().toISOString(), test, ...fields }) + EOL);
+/** D1 observation rows queued during this run; flushed once at the end. */
+const d1Rows = [];
+
+const logEvent = (test, fields) => {
+  const ts = new Date().toISOString();
+  appendFileSync(LOG, JSON.stringify({ ts, test, ...fields }) + EOL);
+  queueD1(ts, test, fields);
+};
+
+const sqlStr = (v) => `'${String(v ?? "").replace(/'/g, "''")}'`;
+const sqlNum = (v) => (Number.isFinite(v) ? String(v) : "NULL");
+
+/** Map one audit event onto the provider-catalog D1 observations table. */
+function queueD1(ts, test, fields) {
+  if (!D1_ENABLED) return;
+  const push = (subject, metric, valueNum, valueText, details) =>
+    d1Rows.push({ ts, subject, metric, valueNum, valueText, details });
+  if (test === "route_probe") {
+    const subject = `route:cloudflare-ai-gateway/${fields.route}`;
+    const ok = fields.status === "ok" ? 1 : 0;
+    const detail = [
+      fields.http ? `http=${fields.http}` : null,
+      fields.served_model ? `served=${fields.served_model}` : null,
+      fields.retry_after_s ? `retry_after_s=${fields.retry_after_s}` : null,
+      fields.cf_aig_status ? `cf_aig_status=${fields.cf_aig_status}` : null,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    push(subject, "availability", ok, fields.status, detail);
+    if (Number.isFinite(fields.latency_ms))
+      push(subject, "latency_ms", fields.latency_ms, null, fields.served_model ?? null);
+  } else if (test === "provider_window" && fields.status === "summary") {
+    const total =
+      Number(fields.ok ?? 0) + Number(fields.limited ?? 0) + Number(fields.error ?? 0) + Number(fields.timeout ?? 0);
+    const subject = ["direct", "gateway"].includes(fields.route)
+      ? `provider:big-pickle/${fields.route}`
+      : `route:cloudflare-ai-gateway/${fields.route}`;
+    push(
+      subject,
+      `availability_window_${fields.window_hours}h`,
+      total > 0 ? Number(fields.ok ?? 0) / total : null,
+      `ok=${fields.ok ?? 0} limited=${fields.limited ?? 0} error=${fields.error ?? 0} timeout=${fields.timeout ?? 0}`,
+      "big-pickle-watch.sh CSV aggregate"
+    );
+  } else if (test === "config_drift") {
+    push(
+      "catalog:provider-catalog",
+      "config_drift",
+      fields.status === "clean" ? 0 : 1,
+      fields.status,
+      fields.detail ?? null
+    );
+  } else if (test === "audit_error") {
+    push("audit:dynamic-audit", "audit_error", null, "error", String(fields.detail ?? "").slice(0, 300));
+  }
+}
+
+/** Write queued observations to D1 with one wrangler invocation. */
+function flushD1() {
+  if (!D1_ENABLED || d1Rows.length === 0) return { ok: true, skipped: true };
+  const file = join(tmpdir(), `dynamic-audit-d1-${process.pid}.sql`);
+  const values = d1Rows
+    .map(
+      (r) =>
+        `(${sqlStr(r.ts)},'${r.metric === "latency_ms" ? "latency" : r.metric.startsWith("availability") ? "availability" : r.metric === "config_drift" ? "drift" : "error"}',${sqlStr(r.subject)},${sqlStr(r.metric)},${sqlNum(r.valueNum)},${sqlStr(r.valueText)},'dynamic-audit',${sqlStr(r.details)})`
+    )
+    .join(",\n");
+  try {
+    writeFileSync(file, `INSERT INTO observations(ts, kind, subject, metric, value_num, value_text, source, details) VALUES\n${values};\n`);
+    const res = spawnSync("wrangler", ["d1", "execute", D1_DATABASE, "--remote", "--file", file], {
+      encoding: "utf8",
+    });
+    if (res.error) throw res.error;
+    if (res.status !== 0) throw new Error(`wrangler exit ${res.status}: ${String(res.stderr ?? "").slice(0, 200)}`);
+    return { ok: true, rows: d1Rows.length };
+  } catch (e) {
+    try {
+      copyFileSync(file, join(HOME, ".local", "state", "opencode-fleet", "dynamic-audit-d1-failed.sql"));
+    } catch {}
+    return { ok: false, error: String(e?.message ?? e).slice(0, 300) };
+  } finally {
+    try {
+      unlinkSync(file);
+    } catch {}
+  }
+}
 
 const die = (detail) => {
   logEvent("audit_error", { detail });
@@ -72,6 +165,8 @@ const stripJsonc = (src) =>
 function routesFromProviderModels(src) {
   const doc = JSON.parse(stripJsonc(src));
   const block = doc?.providers?.["CfAiGw"] ?? doc?.provider?.["CfAiGw"];
+  if (Array.isArray(block?.models))
+    return block.models.map((m) => m?.id).filter((id) => typeof id === "string");
   return block?.models ? Object.keys(block.models) : null;
 }
 
@@ -102,8 +197,11 @@ function configDrift() {
   const pi = readRoutesFromPi();
   if (!oc) details.push("opencode.json CfAiGw routes unreadable");
   if (!pi) details.push("pi agent/models.json CfAiGw routes unreadable");
-  if (oc && pi && oc !== pi)
-    details.push("opencode.json and pi agent/models.json list different routes");
+  for (const r of EXPECTED_ROUTES) {
+    const id = `dynamic/${r}`;
+    if (oc && !oc.includes(id)) details.push(`opencode.json missing CfAiGw route ${id}`);
+    if (pi && !pi.includes(id)) details.push(`pi agent/models.json missing CfAiGw route ${id}`);
+  }
   let catalog = "";
   try {
     catalog = dynamicSection(readFileSync(SKILL_PROVIDERS_MD, "utf8"));
@@ -135,7 +233,7 @@ function readRoutesFromOpencode() {
   try {
     const doc = JSON.parse(readFileSync(OPENCODE_JSON, "utf8"));
     const models = doc?.provider?.["CfAiGw"]?.models;
-    return models ? Object.keys(models).sort().join("|") : null;
+    return models ? Object.keys(models).sort() : null;
   } catch {
     return null;
   }
@@ -145,7 +243,7 @@ function readRoutesFromPi() {
   try {
     const src = readFileSync(PI_MODELS_JSON, "utf8");
     const routes = routesFromProviderModels(src);
-    return routes ? routes.sort().join("|") : null;
+    return routes ? routes.sort() : null;
   } catch {
     return null;
   }
@@ -259,8 +357,14 @@ function main() {
     }
     const healthy = probes.filter((p) => p.status === "ok").length;
     providerWindow();
+    const mirror = flushD1();
+    if (!mirror.ok) {
+      appendFileSync(LOG, JSON.stringify({ ts: new Date().toISOString(), test: "d1_mirror", status: "error", detail: mirror.error }) + EOL);
+      console.error(`dynamic-audit: D1 mirror failed: ${mirror.error}`);
+      process.exit(2);
+    }
     const line = `drift=${driftExit === 0 ? "clean" : "DRIFT"} routes_healthy=${healthy}/${probes.length}`;
-    console.log(`dynamic-audit: ${line} log=${LOG}`);
+    console.log(`dynamic-audit: ${line} log=${LOG}${mirror.skipped ? "" : ` d1_rows=${mirror.rows}`}`);
     if (driftExit !== 0) process.exit(1);
     process.exit(0);
   })();
