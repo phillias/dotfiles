@@ -780,7 +780,7 @@ When diagnosing step failures with unknown model attribution:
    model_id="<model-id-from-step-1>"
    earliest="<earliest-failure-ts>"
    latest="<latest-failure-ts>"
-   
+
     # Pass 1: Model-correlated — exact model match
     jq -c --arg model "$model_id" --arg earliest "$earliest" --arg latest "$latest" '
       select(.test == "route_probe") |
@@ -788,7 +788,7 @@ When diagnosing step failures with unknown model attribution:
       select(.served_model == $model) |
       {ts, route, served_model, status, http, cf_aig_status, retry_after_s, evidence: "model_correlated"}
     ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
-   
+
    # Pass 2: Unattributed — non-ok status with no served_model, labeled as such
    jq -c --arg earliest "$earliest" --arg latest "$latest" '
      select(.test == "route_probe") |
