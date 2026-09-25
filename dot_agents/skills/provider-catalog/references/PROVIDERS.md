@@ -498,7 +498,7 @@ Empirical facts from rebuilding `dynamic/pr-reviewer` (versions deployed, probed
 
 - **NIM end-of-life rows — snapshot was stale:** `deepseek-ai/deepseek-v4-flash` EOL 2026-08-07 and `z-ai/glm-5.2` EOL 2026-08-21 (both 410 Gone on `custom-nvidia-nim`). Live NIM replacements from `/v1/models`: `deepseek-ai/deepseek-v4-flash-0731` (snapshot row now `-0731`, family-band price $0.14/$0.28 carried, not independently verified) and `z-ai/glm-5.3-flash` (price unverified, no snapshot row).
 - **Provider naming in route graphs:** bare custom-provider names are dead — the pr-reviewer head fell through with provider `nvidia-nim`; `custom-nvidia-nim` serves. The custom- prefix rule above is empirically confirmed. The rename is now applied: pr-gate's bare `nvidia-nim` head became `custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b` in the 2026-09-20 less-wrong pass, and the ladder was verified via the versions API (see the pr-gate entry above).
-- **END is implicit:** route-version `elements` must NOT include a literal END element (validation fails `elements[n].outputs Required`); the last model node's `outputs.fallback` targets the string `"END"`.
+- **END shape (updated 2026-09-25):** the API accepted and deployed a route version carrying a literal `{"id":"END","type":"end","outputs":{}}` element (TUI space-bunny removal), so a literal END is valid today; the older 2026-09-14 rebuild instead chain-s the last model node's `outputs.fallback` to the string `"END"`. Both shapes are viable — when deleting or renumbering nodes, repoint every inbound edge first or validation/deployment fails.
 - **zen `glm-5.2`:** free lane confirmed live ($0/$0 row; probes 200 with real content). Thinking model consumes small `max_tokens` budgets before emitting content — probe with ≥500.
 - **openrouter `nvidia/nemotron-3-ultra-550b-a55b:free`:** real but transiently "Upstream error from Nvidia: Service temporarily overloaded" — the budget-lane flakiness matches historical parse-failure windows.
 - **Conditional conditions match `metadata.*` only (empirical 2026-09-14):** body-referencing condition paths (`body.*`, `messages.*`) VALIDATE cleanly but never evaluate — unresolvable paths are truthy (both branches saw the true-node serve regardless of content), and `$regex` on them errors the request outright (null response, no fallback). Only `metadata.*` conditions dispatch reliably; pi/no-mistakes send static `cf-aig-metadata`, so per-phase body-content branching has no working zero-patch path. Keep route conditions metadata-only until CF ships body matching.
@@ -532,6 +532,18 @@ DYNAMIC-route caveat: model nodes naming bare custom-provider names
   excluded from all gateway dynamic routes (kept in pi's local chain).
 - together: `$10` credit added; catalog confirmed cheap (glm-5.3 $1.4/$4.4,
   glm-5.3-Flash $0.15/$0.50, FP8/FP4 rate $0) — lane usable once credits clear.
+
+### OpenRouter stealth models — routing quarantine (2026-09-25)
+
+- **`stealth/space-bunny-alpha` is quarantined from all routing (captain order 2026-09-25).**
+  Free OpenRouter stealth preview (released 2026-09-23): 1M context, 524K max
+  output, multimodal input, mandatory reasoning, tool calls, $0 preview pricing.
+  The captain judged it unusable for interactive agent work — tangents,
+  unrelated topics, and incorrect tool use — so it was removed from the CF
+  `dynamic/TUI` head (active version `cce0c37c-48dd-44a3-aa7e-e0739abcd85c`,
+  START now routes to `custom-opencode-zen/mimo-v2.5-free`) and from the live
+  Vercel `vmc/tui` ladder. Do not re-add it to any route without explicit
+  captain approval. Source: https://openrouter.ai/stealth/space-bunny-alpha
 
 ## pi + opencode wiring for dynamic routes
 
