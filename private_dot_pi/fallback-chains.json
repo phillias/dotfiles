@@ -1,16 +1,16 @@
 {
   "gate": [
     "CfAiGw/dynamic/pr-gate",
-    "vercel/router/pr-gate",
+    "vercel/vmc/pr-gate",
     "opencode-go-gw/deepseek-v4-flash"
   ],
   "review": [
     "CfAiGw/dynamic/pr-reviewer",
-    "vercel/router/pr-reviewer",
+    "vercel/vmc/pr-reviewer",
     "opencode-go-gw/deepseek-v4-flash"
   ],
   "default": [
     "CfAiGw/dynamic/TUI",
-    "vercel/router/tui"
+    "vercel/vmc/tui"
   ]
 }
