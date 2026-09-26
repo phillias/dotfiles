@@ -664,10 +664,11 @@ config-free).
 ## Deterministic dynamic-route audit (updated 2026-09-25)
 
 `~/.config/opencode/scripts/dynamic-audit.mjs` (source: dotfiles
-`dot_config/opencode/scripts/executable_dynamic-audit.mjs`) is the scheduled,
+`dot_config/opencode/scripts/executable_dynamic-audit.mjs`) is the
 fully deterministic audit of the `CfAiGw` routes — no LLM step exists;
 LLM interpretation happens only when the captain interrogates it, reading the
-audit log rather than re-probing the gateway.
+audit log rather than re-probing the gateway. (Its hourly scheduler is
+currently absent — see Usage below.)
 
 **Why the tests exist:**
 
@@ -711,7 +712,7 @@ policy. Read it with e.g.
 `wrangler d1 execute provider-catalog --remote --command "SELECT subject,metric,value_text,ts FROM observations ORDER BY id DESC LIMIT 20"`.
 
 **Usage:**
-- Scheduled: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads.
+- Intended schedule: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads. **Scheduler status (2026-09-26): not installed** — no crontab entry, no systemd user timer; last run 2026-09-19. Run manually or reinstall the cron entry to resume.
 - `tail -F ~/.local/state/opencode-fleet/dynamic-audit.jsonl` to follow.
 - Interrogation (captain-triggered, interactive): aggregate `route_probe` events per route — `served_model` counts, latency percentiles, 429/limited frequency/retry-after rate — and check the ladder against the purpose definitions in "Dynamic routes" above.
 - **LLM proposals are interactive-only:** the captain triggers them on request ("interrogate the audit"); there is no scheduled LLM step. Any LLM run reads
@@ -753,6 +754,72 @@ Design principles (applies to both):
   `test` (`route_probe` / `config_drift` / `provider_window`); the CSV has a
   fixed 10-column header (see script header), published as a stable format
   others can parse.
+
+## TUI route credit check — which ladder provider to top up (added 2026-09-26)
+
+One question — "which of the TUI dynamic-route providers is out of credits
+that I need to top up?" — has a one-command answer for three of the four
+ladder providers, plus a curl fallback for the fourth:
+
+```
+quota-axi
+```
+
+### Ladder node → provider → quota-axi id
+
+The `CfAiGw/dynamic` TUI ladder (nodes 1–9) draws from four quota-bearing
+providers. Map every node to its quota source before reading any status:
+
+| Ladder nodes (models) | Provider | quota-axi id | Fallback when quota-axi is blind |
+|---|---|---|---|
+| 1–3 `glm-5.1`/`glm-5.2`/`glm-5.3-flash` (custom-opencode-zen) | opencode (CF AI Gateway) | `opencode` | — quota-axi authoritative (monthly + 5h + weekly windows) |
+| 4, 6, 7 `zai-org/GLM-5.1`, `GLM-5.2`, `z-ai/glm-5.3-flash` (custom-commandcode) | commandcode GOAT | `commandcode` | — quota-axi authoritative (weekly + monthly windows) |
+| 5, 8 `glm-5.2`/`glm-5.3-flash` (custom-phoenixgrove) | Phoenix Grove plan | **broken in quota-axi** | curl `/v1/usage` (below) |
+| 9 `z-ai/glm-5.1` (openrouter) | openrouter | `openrouter` | — quota-axi reports remaining balance % |
+
+Read per-provider `exhausted_now` flags and reset timestamps. A lane failing
+429 "Account budget exceeded" while quota-axi shows 0% on that provider is a
+**top-up need, not a route fault** — do not rebuild routes over it.
+
+### Phoenix Grove fallback (quota-axi cannot parse the plan window)
+
+quota-axi v0.1.30 reads `PHOENIXGROVE_API_KEY` (PAYG) or `PGS_API_KEY`; the
+active **plan** key is exposed as `PHOENIXGROVE_CODING_PLAN_API_KEY`
+(`pgsk_plan_…`), which quota-axi never reads, and the PAYG key in
+`PHOENIXGROVE_API_KEY` is dead (rejected). Until the upstream tool learns the
+plan `/v1/usage` shape, check directly:
+
+```
+curl -s https://api.pgsgrove.com/v1/usage \
+  -H "Authorization: Bearer $PHOENIXGROVE_CODING_PLAN_API_KEY"
+# → {"weekly_used_percent":0,"daily_used_percent":0,"weekly_resets_at":"…","daily_resets_at":"…"}
+```
+
+`weekly_used_percent`/`daily_used_percent` at ~100 means top up (or wait for
+the named reset). The `*_resets_at` timestamps can lag; trust the percents.
+
+### D1 mirror of quota facts — inquire and update
+
+The `provider_window` audit events (24h lane-health aggregates) land in the
+D1 `provider-catalog` observations table — the history half of the credit
+picture (quota-axi = now, D1 = trend). Query recent lane health:
+
+```
+CLOUDFLARE_API_TOKEN=<D1-capable token> \
+wrangler d1 execute provider-catalog --remote \
+  --command "SELECT subject,metric,value_num,ts FROM observations WHERE kind='provider_window' ORDER BY id DESC LIMIT 18"
+```
+
+Writes happen only through `dynamic-audit.mjs` (append-only observations);
+there is no manual UPDATE path by design — rerun the audit to refresh.
+
+Known gaps as of 2026-09-26 (fix before relying on the D1 half):
+- The hourly audit scheduler is **not installed** (no crontab entry, no
+  systemd user timer; last JSONL entry 2026-09-19). Run
+  `node ~/.config/opencode/scripts/dynamic-audit.mjs` manually or reinstall
+  the cron entry to resume mirroring.
+- The `.cloudflare-key` token lacks D1 permissions (API error 10000) — a
+  D1-capable token must be minted for `wrangler d1 execute` to work at all.
 
 ## Failure signatures & diagnostic queries (2026-09-19)
 
