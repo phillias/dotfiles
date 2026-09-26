@@ -1,0 +1,10 @@
+CfAiGw                 dynamic/pr-reviewer                                       128K     16.4K    no        no    
+vercel                 vmc/claude                                                1M       32.8K    no        no    
+vercel                 vmc/codex                                                 1M       32.8K    no        no    
+vercel                 vmc/cursor                                                1M       32.8K    no        no    
+vercel                 vmc/grok                                                  2M       32.8K    no        no    
+vercel                 vmc/high                                                  1M       32.8K    no        no    
+vercel                 vmc/kimi                                                  1M       32.8K    no        no    
+vercel                 vmc/pr-gate                                               1.0M     32.8K    no        no    
+vercel                 vmc/pr-reviewer                                           1.0M     32.8K    no        no    
+vercel                 vmc/tui                                                   1M       32.8K    no        no    

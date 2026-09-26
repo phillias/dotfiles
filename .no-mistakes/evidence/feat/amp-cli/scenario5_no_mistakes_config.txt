@@ -1,0 +1,7 @@
+# agent_args_override:
+agent_args_override:
+  pi:
+    - "--no-skills"
+    - "--no-prompt-templates"
+    - "--no-themes"
+#

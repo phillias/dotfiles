@@ -1,0 +1,1 @@
+npm:@ampcode/cli                                       0.0.1790452833-gea4e33  ~/.config/mise/config.toml                                                   0.0.1790452833-gea4e33

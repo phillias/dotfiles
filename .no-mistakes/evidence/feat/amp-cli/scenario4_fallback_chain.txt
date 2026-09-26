@@ -1,0 +1,5 @@
+[Fallback DEBUG] fallbackStream invoked for model: gate
+[Fallback] Processing request for chain: gate
+[Fallback] Chain: CfAiGw/dynamic/pr-gate -> vercel/vmc/pr-gate -> opencode-go-gw/deepseek-v4-flash
+[Fallback] Selecting by priority, starting from beginning
+[Fallback] Model order: CfAiGw/dynamic/pr-gate -> vercel/vmc/pr-gate -> opencode-go-gw/deepseek-v4-flash
