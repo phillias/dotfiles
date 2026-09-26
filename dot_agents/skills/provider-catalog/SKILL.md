@@ -15,6 +15,10 @@ Read `references/PROVIDERS.md` for the provider table, gateway URL segments, BYO
 
 Route health prefers `~/.config/opencode/scripts/dynamic-audit.mjs` (scheduled; hourly cron), never a live LLM probe: transcript at `~/.local/state/opencode-fleet/dynamic-audit.jsonl` ("dynamic-audit.jsonl"). See `references/PROVIDERS.md` §"Deterministic dynamic-route audit" for the test list, log schema, and the interactive-LLM interrogation procedure. Ask the captain before mutating any gateway route — `served_model` counts in the audit log are the evidence base.
 
+## Shared D1 catalog (2026-09-25)
+
+Routinely updated performance, availability, and route-inventory facts live in Cloudflare D1 database `provider-catalog` (id `9979fd5f-4b7a-483f-96cf-976f846000c6`), not in skill-file updates. The audit mirrors every probe/window/drift/error event there automatically (`PROVIDER_CATALOG_D1=off` disables; a mirror failure is audit exit 2). This skill keeps only the stable contract — schema, seed, policy, and pinned bootstrap facts — in `references/d1/`. Query read-only with `wrangler d1 execute provider-catalog --remote --command 'SELECT ...'`. Ladder and status rows remain observations: route mutations still follow the ask-first rule above.
+
 ## Catalog maintenance pre-approval (captain, 2026-09-14)
 
 Whenever a review effort touches this catalog — route rebuilds, model swaps, pricing or staleness findings — the reviewing agent is pre-approved to, without asking per instance:
@@ -22,4 +26,4 @@ Whenever a review effort touches this catalog — route rebuilds, model swaps, p
 1. Update `references/PROVIDERS.md` and `models.snapshot.json` in place, in both the installed copy and the dotfiles source (`~/.local/share/chezmoi/dot_agents/skills/provider-catalog/`).
 2. Commit, push a branch, and open a PR to the dotfiles repo.
 
-Verify facts against live lanes before recording; record a price only when verified upstream or explicitly marked as a family-band carry. This pre-approval covers catalog files and dotfiles PRs only — gateway route mutation still follows the ask-first rule above unless the captain ordered that exact route change.
+Routinely updated observations, statuses, and availability facts go to the shared D1 catalog above rather than skill-file edits; this pre-approval is for structural catalog changes (route shape, policy, provider roles) that belong in the tracked contract. Verify facts against live lanes before recording; record a price only when verified upstream or explicitly marked as a family-band carry. This pre-approval covers catalog files and dotfiles PRs only — gateway route mutation still follows the ask-first rule above unless the captain ordered that exact route change.

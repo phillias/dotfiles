@@ -661,7 +661,7 @@ upgrades plus trust-dialog acceptance on fresh worktrees; no recurring
 provider-edit work is added per harness (all harnesses point at the same
 `CfAiGw` provider entry, so dynamic-route lane changes stay
 config-free).
-## Deterministic dynamic-route audit (2026-09-06)
+## Deterministic dynamic-route audit (updated 2026-09-25)
 
 `~/.config/opencode/scripts/dynamic-audit.mjs` (source: dotfiles
 `dot_config/opencode/scripts/executable_dynamic-audit.mjs`) is the scheduled,
@@ -671,12 +671,14 @@ audit log rather than re-probing the gateway.
 
 **Why the tests exist:**
 
-1. `config-drift` compares the route keys declared in
-   `dot_config/opencode/opencode.json`, `~/.pi/agent/models.json`, and the
-   `default`/`gate` chain entries in `~/.pi/fallback-chains.json` against the
-   purpose list in "Dynamic routes" above. Catches route renames made
-   dashboard-side, stale agent configs, unresolved merges in the chains file,
-   and purpose entries dropped from the catalog without a code change.
+1. `config-drift` checks that the catalog's purpose routes are present in
+   `dot_config/opencode/opencode.json` and `~/.pi/agent/models.json` (the pi
+   file stores CfAiGw models as an array of `{id,name}`; harness-specific extra
+   routes are allowed), and that the `default`/`gate` chain entries in
+   `~/.pi/fallback-chains.json` still reference the purpose list. Catches
+   route renames made dashboard-side, stale agent configs, unresolved merges
+   in the chains file, and purpose entries dropped from the catalog without a
+   code change.
 2. `route-probe` sends one fixed 4-token completion (`dynamic/<route>`) per
    route and logs HTTP code, latency, the upstream model id each route served,
    and `retry-after` / `cf-aig-status` headers on 429/5xx. 429/5xx/timeout is
@@ -694,6 +696,19 @@ audit log rather than re-probing the gateway.
 maps to; diff it against the "Dynamic routes" purpose definitions when
 rebuilding routes. `config_drift` events name the exact file and key so a
 rebuild starts from the diff.
+
+**Shared D1 mirror (2026-09-25):** every `route_probe`, `provider_window`
+summary, `config_drift`, and `audit_error` event is also appended to the
+Cloudflare D1 `provider-catalog` database (id
+`9979fd5f-4b7a-483f-96cf-976f846000c6`) in the append-only `observations`
+table; route inventory and model status live in `routes`, `route_models`, and
+`models` (schema and seed: `references/d1/schema.sql`, `references/d1/seed.sql`).
+Set `PROVIDER_CATALOG_D1=off` to disable the mirror for one run; a mirror
+failure is audit exit 2 because the shared catalog is the durable sink.
+Routinely updated availability/performance facts are read from D1, not
+re-shipped as skill edits; the skill keeps only the stable schema, seed, and
+policy. Read it with e.g.
+`wrangler d1 execute provider-catalog --remote --command "SELECT subject,metric,value_text,ts FROM observations ORDER BY id DESC LIMIT 20"`.
 
 **Usage:**
 - Scheduled: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads.
