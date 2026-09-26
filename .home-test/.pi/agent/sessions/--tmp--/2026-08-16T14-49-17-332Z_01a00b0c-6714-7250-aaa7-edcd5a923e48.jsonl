@@ -1,0 +1,5 @@
+{"type":"session","version":3,"id":"01a00b0c-6714-7250-aaa7-edcd5a923e48","timestamp":"2026-08-16T14:49:17.332Z","cwd":"/tmp"}
+{"type":"model_change","id":"df8dfd73","parentId":null,"timestamp":"2026-08-16T14:49:17.467Z","provider":"mistral","modelId":"mistral-large-2512"}
+{"type":"thinking_level_change","id":"aca89bb5","parentId":"df8dfd73","timestamp":"2026-08-16T14:49:17.468Z","thinkingLevel":"off"}
+{"type":"message","id":"55e9049f","parentId":"aca89bb5","timestamp":"2026-08-16T14:49:17.478Z","message":{"role":"user","content":[{"type":"text","text":"reply with exactly: OK"}],"timestamp":1786891757476}}
+{"type":"message","id":"4a2b93cc","parentId":"55e9049f","timestamp":"2026-08-16T14:49:18.724Z","message":{"role":"assistant","content":[],"api":"mistral-conversations","provider":"mistral","model":"mistral-large-2512","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"error","timestamp":1786891758700,"errorMessage":"Unexpected HTTP client error: TypeError: Failed to parse URL from [object Request]"}}

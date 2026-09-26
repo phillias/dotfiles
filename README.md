@@ -60,22 +60,22 @@ flowchart TD
 
 ## Recommended Stack
 
-| Tool | Why |
-|------|-----|
-| **iTerm2** | Best TUI rendering for agent interfaces, proper Unicode support, split panes for parallel agent work |
+| Tool                 | Why                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **iTerm2**           | Best TUI rendering for agent interfaces, proper Unicode support, split panes for parallel agent work               |
 | **Eternal Terminal** | Survives network drops and server reboots without losing your session — essential for long-running agent workflows |
-| **Moshi** | Access agent sessions from your phone; web-based, no server-side app install needed |
+| **Moshi**            | Access agent sessions from your phone; web-based, no server-side app install needed                                |
 
 ## What's Managed
 
-| Category | Components |
-|----------|-----------|
-| **Shell** | zsh, bash, tmux, screen, git |
-| **Agent Runtime** | OpenCode (50+ subagents, themes), Pi, Oh My Posh extensions, Herdr, Amp |
-| **Agent Skills** | 60+ synced skills (CE suite, AXI tools, Cloudflare, debugging, design) |
-| **Secrets** | All provider keys age-encrypted (Google, Cloudflare, Composio, Telegram, etc.) |
-| **Systemd** | catalog drift, self-improvement, telemetry, Cloudflare tunnel; hermes-managed units external (honcho scheduler retired) |
-| **SSH** | 6+ key pairs, all age-encrypted |
+| Category          | Components                                                                                                              |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Shell**         | zsh, bash, tmux, screen, git                                                                                            |
+| **Agent Runtime** | OpenCode (50+ subagents, themes), Pi, Oh My Posh extensions, Herdr, Amp                                                 |
+| **Agent Skills**  | 60+ synced skills (CE suite, AXI tools, Cloudflare, debugging, design)                                                  |
+| **Secrets**       | All provider keys age-encrypted (Google, Cloudflare, Composio, Telegram, etc.)                                          |
+| **Systemd**       | catalog drift, self-improvement, telemetry, Cloudflare tunnel; hermes-managed units external (honcho scheduler retired) |
+| **SSH**           | 6+ key pairs, all age-encrypted                                                                                         |
 
 ## Agent Harness
 

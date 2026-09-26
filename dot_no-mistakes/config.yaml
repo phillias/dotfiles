@@ -44,8 +44,9 @@ agent_config:
     model: fallback/gate
 
 # Review rides the separate `fallback/review` chain so the second-set-of-eyes
-# exercises the pr-reviewer ladder (CF dynamic/pr-reviewer → Vercel vmc/pr-reviewer
-# → opencode-go tail) rather than the cheaper gate ladder. Budget-ranked, JSON
+# exercises the pr-reviewer ladder:
+# (CF dynamic/pr-reviewer → Vercel vmc/pr-reviewer → opencode-go tail)
+# rather than the cheaper gate ladder. Budget-ranked, JSON
 # discipline first, stronger model pool than gate.
 review_agents:
   reviewer:

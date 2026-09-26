@@ -1,0 +1,7 @@
+{
+  "defaultProvider": "opencode-zen",
+  "defaultModel": "fallback/default",
+  "packages": [
+    "npm:pi-fallback-provider"
+  ]
+}

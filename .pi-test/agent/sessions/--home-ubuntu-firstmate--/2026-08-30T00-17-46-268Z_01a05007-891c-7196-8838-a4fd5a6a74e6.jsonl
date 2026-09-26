@@ -1,0 +1,5 @@
+{"type":"session","version":3,"id":"01a05007-891c-7196-8838-a4fd5a6a74e6","timestamp":"2026-08-30T00:17:46.268Z","cwd":"/home/ubuntu/firstmate"}
+{"type":"model_change","id":"8e438a85","parentId":null,"timestamp":"2026-08-30T00:17:46.531Z","provider":"fallback","modelId":"gate"}
+{"type":"thinking_level_change","id":"c4d5ab8c","parentId":"8e438a85","timestamp":"2026-08-30T00:17:46.531Z","thinkingLevel":"off"}
+{"type":"message","id":"8e5bc6a1","parentId":"c4d5ab8c","timestamp":"2026-08-30T00:17:46.541Z","message":{"role":"user","content":[{"type":"text","text":"Reply with the single word: pong"}],"timestamp":1788049066540}}
+{"type":"message","id":"88e138ea","parentId":"8e5bc6a1","timestamp":"2026-08-30T00:17:49.172Z","message":{"role":"assistant","content":[{"type":"text","text":"pong"}],"api":"openai-completions","provider":"phoenixgrove","model":"glm-5.3","usage":{"input":23675,"output":3,"cacheRead":1344,"cacheWrite":0,"reasoning":0,"totalTokens":25022,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":1788049066611,"responseId":"chatcmpl-pgs_587de191a69b96c6f72161fe7c39f184","rawStopReason":"stop"}}

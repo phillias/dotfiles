@@ -1,0 +1,5 @@
+{"type":"session","version":3,"id":"01a0250b-e29b-7c11-906d-855542b1c073","timestamp":"2026-08-21T15:58:51.035Z","cwd":"/tmp"}
+{"type":"model_change","id":"b92277a2","parentId":null,"timestamp":"2026-08-21T15:58:51.237Z","provider":"cloudflare","modelId":"@cf/zai-org/glm-5.2"}
+{"type":"thinking_level_change","id":"faca9e6c","parentId":"b92277a2","timestamp":"2026-08-21T15:58:51.237Z","thinkingLevel":"off"}
+{"type":"message","id":"07f38bbf","parentId":"faca9e6c","timestamp":"2026-08-21T15:58:51.249Z","message":{"role":"user","content":[{"type":"text","text":"Reply with exactly: CUSTOM_OK"}],"timestamp":1787327931247}}
+{"type":"message","id":"27bb5b28","parentId":"07f38bbf","timestamp":"2026-08-21T15:58:52.928Z","message":{"role":"assistant","content":[{"type":"text","text":"CUSTOM_OK"}],"api":"openai-completions","provider":"cloudflare","model":"@cf/zai-org/glm-5.2","usage":{"input":14536,"output":4,"cacheRead":704,"cacheWrite":0,"reasoning":0,"totalTokens":15244,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":1787327931357,"responseId":"id-1787327932872","rawStopReason":"stop"}}

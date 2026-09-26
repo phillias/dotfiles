@@ -1,0 +1,5 @@
+{"type":"session","version":3,"id":"01a09073-be51-73da-b532-c44b56ac4d8a","timestamp":"2026-09-11T12:31:39.601Z","cwd":"/home/ubuntu/.treehouse/dotfiles-df35d1/4/dotfiles"}
+{"type":"model_change","id":"01439e5c","parentId":null,"timestamp":"2026-09-11T12:31:39.966Z","provider":"fallback","modelId":"gate"}
+{"type":"thinking_level_change","id":"6adae5d3","parentId":"01439e5c","timestamp":"2026-09-11T12:31:39.966Z","thinkingLevel":"off"}
+{"type":"message","id":"13080f7e","parentId":"6adae5d3","timestamp":"2026-09-11T12:31:39.992Z","message":{"role":"user","content":[{"type":"text","text":"say exactly: gate-ok"}],"timestamp":1789129899988}}
+{"type":"message","id":"440c2d49","parentId":"13080f7e","timestamp":"2026-09-11T12:33:29.032Z","message":{"role":"assistant","content":[],"api":"fallback-router","provider":"fallback","model":"gate","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"error","errorMessage":"Request aborted","timestamp":1789130009031}}
