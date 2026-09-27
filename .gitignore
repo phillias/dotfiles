@@ -2,3 +2,5 @@
 .chezmoi-sync.log.old
 .opencode/
 .no-mistakes/
+.home-test/
+.pi-test/
