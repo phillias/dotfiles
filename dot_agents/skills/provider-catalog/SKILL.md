@@ -10,6 +10,7 @@ Chat and completion providers route through Cloudflare AI Gateway `opencode` (BY
 **Live quota and headroom come from `quota-axi`, never from this catalog** — cost/limit rows here are reference facts, not usage state.
 
 Read `references/PROVIDERS.md` for the provider table, gateway URL segments, BYOK mechanics, and known live statuses.
+Read `references/ROUTING_TOPOLOGY.md` for the D1-generated routing snapshot (firstmate→harnesses→providers→models, no-mistakes→pi→chains, free lanes + quota).
 
 ## Deterministic dynamic-route audit
 
@@ -18,8 +19,6 @@ Route health prefers `~/.config/opencode/scripts/dynamic-audit.mjs` (scheduled; 
 ## Shared D1 catalog (2026-09-25)
 
 Routinely updated performance, availability, and route-inventory facts live in Cloudflare D1 database `provider-catalog` (id `9979fd5f-4b7a-483f-96cf-976f846000c6`), not in skill-file updates. The audit mirrors every probe/window/drift/error event there automatically (`PROVIDER_CATALOG_D1=off` disables; a mirror failure is audit exit 2). This skill keeps only the stable contract — schema, seed, policy, and pinned bootstrap facts — in `references/d1/`. Query read-only with `wrangler d1 execute provider-catalog --remote --command 'SELECT ...'`. Ladder and status rows remain observations: route mutations still follow the ask-first rule above.
-
-D1 auth (2026-09-26): every D1 call — creation, schema/seed, mirror writes, read queries — rides the local wrangler OAuth login (`wrangler login`, `d1 (write)` scope, credentials `~/.config/.wrangler/config/default.toml`). No API token is used or stored for D1; `CF_AI_GATEWAY_TOKEN` covers AI Gateway route mutation only. Fleet nodes running this audit need wrangler authenticated with d1 scope, or `PROVIDER_CATALOG_D1=off`, else the hourly audit exits 2 on the mirror.
 
 ## Catalog maintenance pre-approval (captain, 2026-09-14)
 
