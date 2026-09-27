@@ -121,7 +121,7 @@ log_level: info
 # gate/review/test/lint/document/CI steps. Tools stay enabled because fixer,
 # test, document, lint, and CI-repair steps need file access. Project context
 # suppression is handled separately per-repo via disable_project_settings.
-# (2026-09-26) This caused major issues with pipeline thrashing and 
+# (2026-09-26) This caused major issues with pipeline thrashing and
 # hallucinations.
 # agent_args_override:
 #   pi:
