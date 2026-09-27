@@ -1,0 +1,7 @@
+[Unit]
+Description=Provider-catalog D1 registry refresh — pull live CF/Vercel route ladders into D1
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/share/mise/shims/node %h/.config/opencode/scripts/d1-registry-refresh.mjs
