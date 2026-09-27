@@ -11,7 +11,7 @@ Chezmoi source repo. `chezmoi apply` renders everything here onto `$HOME`; edits
 ## Never commit sandbox debris
 
 - `.home-test/` and `.pi-test/` are pi test-suite sandboxes written inside this repo during validation runs; they hold conversation logs, binaries, extensions, and credentials (`auth.json`). They are gitignored; never stage, commit, or ship them.
-- Any file under those directories that appears in a diff is test debris, not source; delete it from the branch instead of reviewing it. Bot findings that scan `.home-test/.pi/agent/sessions/*.jsonl` (for example "SQL injection risk") are scanning logs, not code.
+- Any file under those directories appearing in a diff is test debris, not source code. Authors must remove it from the branch before review. Bot findings that scan `.home-test/.pi/agent/sessions/*.jsonl` (for example "SQL injection risk") are scanning logs, not code.
 
 ## Validation contracts
 

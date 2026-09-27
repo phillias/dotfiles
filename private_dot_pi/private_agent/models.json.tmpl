@@ -389,6 +389,7 @@
         "supportsReasoningEffort": false
       },
       "models": [
+        {{/* Vercel AI Gateway router-kind virtual models must use the router/ prefix, not vmc/ - the API rejects vmc/ for routers with a 400 error. Do not "fix" these ids back to vmc/ (see AGENTS.md). */}}
         { "id": "router/pr-gate", "name": "pr-gate (Vercel AI GW fallback, 1M)", "contextWindow": 1048576, "maxTokens": 32768 },
         { "id": "router/pr-reviewer", "name": "pr-reviewer (Vercel AI GW fallback, 1M)", "contextWindow": 1048576, "maxTokens": 32768 },
         { "id": "router/tui", "name": "TUI (Vercel AI GW fallback, 1M)", "contextWindow": 1000000, "maxTokens": 32768 },
