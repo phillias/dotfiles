@@ -1,0 +1,79 @@
+== chezmoi doctor (informational; hardlink check is environmental on tmpfs boxes)
+RESULT    CHECK                       MESSAGE
+ok        version                     v2.70.4, commit 64583685c5eb36e10670bad076d5406a08baf751, built at 2026-05-19T22:47:23Z, built by goreleaser
+warning   latest-version              v2.72.2
+ok        os-arch                     linux/amd64 (Kali GNU/Linux 2025.3)
+ok        build-info                  CGO_ENABLED=1, GOAMD64=v1
+ok        uname                       Linux CabinInspiron22Kali 6.12.38+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.12.38-1kali1 (2025-08-12) x86_64 GNU/Linux
+ok        go-version                  go1.26.3 (gc)
+ok        executable                  ~/.local/share/mise/installs/chezmoi/2.70.4/chezmoi
+ok        upgrade-method              replace-executable
+ok        config-file                 found ~/.config/chezmoi/chezmoi.toml, last modified 2026-09-02T12:22:58-04:00
+ok        source-dir                  ~/.local/share/chezmoi is a git working tree (clean)
+warning   suspicious-entries          ~/.local/share/chezmoi/.chezmoi-hooks, ~/.local/share/chezmoi/.chezmoi-inventory.json, ~/.local/share/chezmoi/.chezmoi-sync.log, and ~/.local/share/chezmoi/.chezmoi.toml
+ok        working-tree                ~/.local/share/chezmoi is a git working tree (clean)
+ok        dest-dir                    ~ is a directory
+error     hardlink                    failed creating hardlink from ~/.local/share/chezmoi to /tmp: link ~/.local/share/chezmoi/.chezmoi-doctor-hardlink-test /tmp/chezmoi-doctor2509943748/.chezmoi-doctor-hardlink-test: invalid cross-device link
+ok        symlink                     created symlink from .new-name to .old-name
+ok        umask                       002
+ok        cd-command                  found /usr/bin/zsh
+ok        cd-args                     /usr/bin/zsh
+info      diff-command                not set
+ok        edit-command                found /usr/bin/vi
+ok        edit-args                   /usr/bin/vi
+ok        git-command                 found /usr/bin/git, version 2.53.0
+ok        merge-command               found /usr/bin/vimdiff
+ok        shell-command               found /usr/bin/zsh
+ok        shell-args                  /usr/bin/zsh
+info      age-command                 age not found in $PATH
+ok        gpg-command                 found /usr/bin/gpg, version 2.4.9
+info      pinentry-command            not set
+info      1password-command           op not found in $PATH
+ok        bitwarden-command           found ~/.local/share/mise/installs/npm-bitwarden-cli/2026.5.0/bin/bw, version 2026.5.0
+info      bitwarden-secrets-command   bws not found in $PATH
+info      dashlane-command            dcli not found in $PATH
+info      doppler-command             doppler not found in $PATH
+info      gopass-command              gopass not found in $PATH
+info      keepassxc-command           keepassxc-cli not found in $PATH
+info      keepassxc-db                not set
+info      keeper-command              keeper not found in $PATH
+info      lastpass-command            lpass not found in $PATH
+ok        pass-command                found /usr/bin/pass, version 1.7.4
+info      passhole-command            ph not found in $PATH
+info      protonpass-command          pass-cli not found in $PATH
+info      rbw-command                 rbw not found in $PATH
+info      vault-command               vault not found in $PATH
+info      secret-command              not set
+note: chezmoi doctor reported issues above — review, not gating
+== render all .tmpl (syntax + data check)
+== JSON parse
+== semgrep (deterministic security gate; SonarQube-class without Sonar)
+               
+               
+┌─────────────┐
+│ Scan Status │
+└─────────────┘
+  Scanning 1 file tracked by git with 1074 Code rules:
+  Scanning 1 file with 49 <multilang> rules.
+                
+                
+┌──────────────┐
+│ Scan Summary │
+└──────────────┘
+✅ Scan completed successfully.
+ • Findings: 0 (0 blocking)
+ • Rules run: 49
+ • Targets scanned: 1
+ • Parsed lines: ~100.0%
+ • No ignore information available
+Ran 49 rules on 1 file: 0 findings.
+(need more rules? `semgrep login` for additional free Semgrep Registry rules)
+
+
+A new version of Semgrep is available. See https://semgrep.dev/docs/upgrading
+If Semgrep missed a finding, please send us feedback to let us know!
+See https://semgrep.dev/docs/reporting-false-negatives/
+== gitleaks (secret-leak gate, default config)
+[90m5:58PM[0m [32mINF[0m [1mscanned ~47501 bytes (47.50 KB) in 82.6ms[0m
+[90m5:58PM[0m [32mINF[0m [1mno leaks found[0m
+validate: all checks passed
