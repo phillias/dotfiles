@@ -363,6 +363,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 - `opencode-zen/gemini-3-flash`: 500 via `custom-opencode-zen/v1` (opencode-zen passthrough slug = 400 Invalid provider).
 - `custom-cloudflare` @cf lane: 502 code 2006 for both `@cf/zai-org/glm-4.7-flash` and `@cf/deepseek-ai/deepseek-v4-flash` (broken that day; recheck).
 - phoenixgrove custom lane serves ~38 models (glm-4.7-flash, qwen-3.8-27b, gemma-4-31b respond); PGS bills per-token on the old key — treat PGS as paid except on the coding plan above.
+- `opencode-zen` claude family (2026-09-14 probe): paid-only on zen — no `-free` slugs exist for claude-sonnet/opus/fable variants; free claude-class access stays on openrouter `:free` lanes or CF route fallbacks (zen stopped serving claude-sonnet-4 entirely, see the `claude` route entry).
 
 
 ## Free-lane probe results (2026-09-01, via gateway)
@@ -818,17 +819,6 @@ Routinely updated availability/performance facts are read from D1, not
 re-shipped as skill edits; the skill keeps only the stable schema, seed, and
 policy. Read it with e.g.
 `wrangler d1 execute provider-catalog --remote --command "SELECT subject,metric,value_text,ts FROM observations ORDER BY id DESC LIMIT 20"`.
-
-**D1 auth (2026-09-26):** all D1 operations — database creation, schema/seed
-execution, audit-mirror writes, and read queries — go through the local
-`wrangler` CLI authenticated with the interactive OAuth login (`wrangler
-login`; account `a7fa198dd5b359a187c671064fe6b36e`, scope `d1 (write)`;
-credentials stored at `~/.config/.wrangler/config/default.toml`). No API
-token is created, stored, or used for D1. `CF_AI_GATEWAY_TOKEN` is a separate
-scoped API token for AI Gateway route mutation only and cannot serve D1.
-Fleet nodes that run this audit must either run `wrangler login` with d1
-scope or set `PROVIDER_CATALOG_D1=off` in the audit environment; otherwise
-every hourly audit run exits 2 on the mirror failure.
 
 **Usage:**
 - Intended schedule: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads. **Scheduler status (2026-09-26): not installed** — no crontab entry, no systemd user timer; last run 2026-09-19. Run manually or reinstall the cron entry to resume.

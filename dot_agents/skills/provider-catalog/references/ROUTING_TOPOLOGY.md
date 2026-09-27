@@ -61,8 +61,10 @@ flowchart TD
 | Route | Ladder |
 |---|---|
 | vmc/tui | alibaba/qwen3.7-flash → deepseek/deepseek-v4-flash-0731 → zai/glm-5.3-flash → openai/gpt-5-nano → google/gemini-2.5-flash-lite → openai/gpt-4o-mini |
+| vmc/pr-gate | deepseek/deepseek-v4-flash-0731 → nvidia/nemotron-3-super-120b-a12b → moonshotai/kimi-k3 → zai/glm-5.2 → openai/gpt-5.6-luna → google/gemini-2.5-flash |
+| vmc/pr-reviewer | deepseek/deepseek-v4-flash-0731 → openai/gpt-5.6-luna → nvidia/nemotron-3-ultra-550b-a55b → zai/glm-5.2 |
 
-**Data gap (open question):** pi fallback chains reference `vercel/vmc/pr-gate` and `vercel/vmc/pr-reviewer`, but only `vmc/tui` is registered in D1 — Vercel's list API returns empty (upstream quirk 2026-09-27), so new virtual models need a one-time manual `routes` seed before the daily refresh discovers them.
+**List-API workaround (resolved 2026-09-27):** Vercel's virtual-model list API returns empty (upstream quirk), so `vmc/pr-gate` and `vmc/pr-reviewer` were registered by one-time manual `routes` seed; the daily refresh walks their ladders from those rows. Any NEW Vercel virtual model needs the same one-time seed before the daily refresh discovers it.
 
 ## Flow 2 — no-mistakes → pi harness → (virtual) providers → models
 
