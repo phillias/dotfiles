@@ -9,7 +9,7 @@ const CACHE_DIR = join(HOME, ".cache", "opencode-models");
 const SNAP = join(HOME, ".agents", "skills", "opencode-config", "models.snapshot.json");
 const OUT_JSON = join(STATE_DIR, "catalog-drift.json");
 const OUT_TXT = join(STATE_DIR, "catalog-drift.txt");
-const ZEN_KEY = join(HOME, ".config", "opencode", ".zen-key");
+const ZEN_KEY = join(HOME, ".agents", "keys", "default", ".zen-key");
 const CONFIG = join(HOME, ".config", "opencode", "opencode-fallback.jsonc");
 
 const MODELS_DEV = "https://models.dev/api.json";
