@@ -1,13 +1,14 @@
 {
   "gate": [
+    "opencode-go-gw/longcat-2.5-preview-free",
+    "opencode-go-gw/deepseek-v4-flash",
     "CfAiGw/dynamic/pr-gate",
-    "vercel/router/pr-gate",
-    "opencode-go-gw/deepseek-v4-flash"
+    "vercel/router/pr-gate"
   ],
   "review": [
+    "opencode-go-gw/deepseek-v4-flash",
     "CfAiGw/dynamic/pr-reviewer",
-    "vercel/router/pr-reviewer",
-    "opencode-go-gw/deepseek-v4-flash"
+    "vercel/router/pr-reviewer"
   ],
   "default": [
     "CfAiGw/dynamic/TUI",
