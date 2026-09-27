@@ -71,7 +71,7 @@ flowchart TD
 | Category | Components |
 |----------|-----------|
 | **Shell** | zsh, bash, tmux, screen, git |
-| **Agent Runtime** | OpenCode (50+ subagents, themes), Pi, Oh My Posh extensions, Herdr |
+| **Agent Runtime** | OpenCode (50+ subagents, themes), Pi, Oh My Posh extensions, Herdr, Amp |
 | **Agent Skills** | 60+ synced skills (CE suite, AXI tools, Cloudflare, debugging, design) |
 | **Secrets** | All provider keys age-encrypted (Google, Cloudflare, Composio, Telegram, etc.) |
 | **Systemd** | catalog drift, self-improvement, telemetry, Cloudflare tunnel; hermes-managed units external (honcho scheduler retired) |
