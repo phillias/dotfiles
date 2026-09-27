@@ -608,6 +608,80 @@ without the $100+/mo native-subscription seats:
   workstation-scoped identity, machine-locked; wire it at most as a paid TUI
   lane, never a model lane.
 
+## LongCat-2.5-Preview on opencode-zen (added 2026-09-27)
+
+Meituan's LongCat-2.5-Preview launched September 25, 2026 — sparse MoE
+(~1.6T total / ~48B active), 1M context, 128K max output, multimodal (text +
+image), reasoning toggle, tool calling. Open weights: no (2.0 was MIT;
+2.5-Preview is closed). API at `api.longcat.chat` (OpenAI + Anthropic
+compatible).
+
+### On opencode-zen (free tier)
+
+- Model ID: `longcat-2.5-preview-free`
+- **Free for "limited time"** — no published end date; aggregator reports
+  suggest ~2 weeks from Sep 25 (so ~Oct 9). Treat as time-bombed.
+- **Unlimited** monthly + 5-hour request limits (same treatment as Space
+  Bunny Free).
+- **Zero data retention** (0 days, not used for training).
+- Exposed under both `opencode/` (Zen) and `opencode-go/` (Go subscription,
+  does not consume Go dollar allowance).
+- **Audit blind spot:** `dynamic-audit.mjs` cannot probe it — curl gets
+  `FreeTierError 403: "OpenCode's free tier can only be used from within
+  OpenCode"`. The free tier is locked to the opencode app identity; gateway
+  token + cf-aig headers don't bypass it. Lane health for this model is
+  invisible to the scheduled audit.
+
+### PAYG pricing (direct LongCat API, not through opencode)
+
+Promotional "limited-time discounted rate":
+
+| Token type | $/M tokens | ¥/M tokens |
+|---|---|---|
+| Uncached input | 0.30 | 2 |
+| Cached input | 0.006 | 0.04 |
+| Output | 1.20 | 8 |
+
+For comparison, LongCat-2.0 PAYG was $2/$8 (5–7× higher). The promotional
+rate is not yet wired for PAYG through opencode.
+
+### Benchmarks (LongCat-2.0 — 2.5-Preview has no published benchmarks yet)
+
+| Benchmark | LongCat-2.0 | Gemini 3.1 Pro | GPT-5.5 | Claude Opus 4.8 |
+|---|---|---|---|---|
+| Terminal-Bench 2.1 | 70.8 | 70.7 | 73.8 | 78.9 |
+| SWE-bench Pro | 59.5 | 54.2 | 58.6 | 64.3 |
+| SWE-bench Multilingual | 77.3 | — | — | 80.5 |
+| IFEval | 90.0 | — | — | — |
+| GPQA-diamond | 88.9 | — | — | — |
+
+Competitive with frontier models on coding/agentic tasks, slightly below top
+tier (Claude Opus 4.8). Strong agentic: FORTE 73.2, BrowseComp 79.9.
+
+### TUI chain head advisory
+
+**As TUI head (opencode-zen route):** Good **while free** — strong
+coding/agentic model, 1M context, 128K output, unlimited quota, zero
+retention (privacy-safe for private repos). Already on the opencode-zen
+provider the TUI uses.
+
+**Caveats:**
+1. Free window is ~2 weeks with NO published end date — could end without
+   warning. When it ends, the PAYG promotional rate ($0.30/$1.20) is not
+   wired through opencode, so the lane would simply vanish.
+2. Audit-blind — `dynamic-audit.mjs` gets 403; lane health is invisible to
+   the scheduled audit. Only a live completion from inside opencode can
+   confirm it's serving.
+3. No fallback chain path — CF AI Gateway BYOK gets 403 (same free-tier
+   lock), Vercel AI Gateway doesn't list it. PAYG direct from
+   `api.longcat.chat` would need its own provider config + BYOK key (opencode
+   has a built-in `longcat` provider type; separate effort to wire).
+
+**Recommendation:** Use as an interim head on the opencode-zen route for
+evaluation while free. Do not make it a load-bearing chain node until either
+the free window is confirmed permanent or the PAYG path is wired through
+opencode with a LongCat API key.
+
 ## Auth-shape clarifications (2026-09-05)
 
 - **pi-signed** is not a different harness: it is the signed wrapper identity
