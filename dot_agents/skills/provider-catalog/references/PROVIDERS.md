@@ -363,6 +363,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 - `opencode-zen/gemini-3-flash`: 500 via `custom-opencode-zen/v1` (opencode-zen passthrough slug = 400 Invalid provider).
 - `custom-cloudflare` @cf lane: 502 code 2006 for both `@cf/zai-org/glm-4.7-flash` and `@cf/deepseek-ai/deepseek-v4-flash` (broken that day; recheck).
 - phoenixgrove custom lane serves ~38 models (glm-4.7-flash, qwen-3.8-27b, gemma-4-31b respond); PGS bills per-token on the old key — treat PGS as paid except on the coding plan above.
+- `opencode-zen` claude family (2026-09-14 probe): paid-only on zen — no `-free` slugs exist for claude-sonnet/opus/fable variants; free claude-class access stays on openrouter `:free` lanes or CF route fallbacks (zen stopped serving claude-sonnet-4 entirely, see the `claude` route entry).
 
 
 ## Free-lane probe results (2026-09-01, via gateway)
@@ -775,8 +776,8 @@ config-free).
 `dot_config/opencode/scripts/executable_dynamic-audit.mjs`) is the
 fully deterministic audit of the `CfAiGw` routes — no LLM step exists;
 LLM interpretation happens only when the captain interrogates it, reading the
-audit log rather than re-probing the gateway. (Its hourly scheduler is
-currently absent — see Usage below.)
+audit log rather than re-probing the gateway. (Scheduled hourly via the
+shipped `dynamic-audit.timer` systemd user timer — see Usage below.)
 
 **Why the tests exist:**
 
@@ -819,8 +820,23 @@ re-shipped as skill edits; the skill keeps only the stable schema, seed, and
 policy. Read it with e.g.
 `wrangler d1 execute provider-catalog --remote --command "SELECT subject,metric,value_text,ts FROM observations ORDER BY id DESC LIMIT 20"`.
 
+**D1 auth (2026-09-26):** all D1 operations — database creation, schema/seed
+execution, audit-mirror writes, and read queries — go through the local
+`wrangler` CLI authenticated with the interactive OAuth login (`wrangler
+login`; account `a7fa198dd5b359a187c671064fe6b36e`, scope `d1 (write)`;
+credentials stored at `~/.config/.wrangler/config/default.toml`). No API
+token is created, stored, or used for D1. `CF_AI_GATEWAY_TOKEN` is a separate
+scoped API token for AI Gateway route mutation only and cannot serve D1.
+Fleet nodes that run this audit must either run `wrangler login` with d1
+scope or set `PROVIDER_CATALOG_D1=off` in the audit environment; otherwise
+every hourly audit run exits 2 on the mirror failure. The audit's scheduled
+systemd units also need `CF_AI_GATEWAY_TOKEN` and `VERCEL_TOKEN`; for
+timer-driven runs set them in `~/.config/opencode/provider-catalog.env`
+(KEY=VALUE lines, no export, user-readable only), which the units load via
+`EnvironmentFile=`.
+
 **Usage:**
-- Intended schedule: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads. **Scheduler status (2026-09-26): not installed** — no crontab entry, no systemd user timer; last run 2026-09-19. Run manually or reinstall the cron entry to resume.
+- Intended schedule: hourly via the shipped `dynamic-audit.timer` systemd user timer (runs `node ~/.config/opencode/scripts/dynamic-audit.mjs`, `Persistent=true`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads.
 - `tail -F ~/.local/state/opencode-fleet/dynamic-audit.jsonl` to follow.
 - Interrogation (captain-triggered, interactive): aggregate `route_probe` events per route — `served_model` counts, latency percentiles, 429/limited frequency/retry-after rate — and check the ladder against the purpose definitions in "Dynamic routes" above.
 - **LLM proposals are interactive-only:** the captain triggers them on request ("interrogate the audit"); there is no scheduled LLM step. Any LLM run reads
@@ -913,21 +929,14 @@ D1 `provider-catalog` observations table — the history half of the credit
 picture (quota-axi = now, D1 = trend). Query recent lane health:
 
 ```
-CLOUDFLARE_API_TOKEN=<D1-capable token> \
 wrangler d1 execute provider-catalog --remote \
   --command "SELECT subject,metric,value_num,ts FROM observations WHERE kind='provider_window' ORDER BY id DESC LIMIT 18"
 ```
 
-Writes happen only through `dynamic-audit.mjs` (append-only observations);
-there is no manual UPDATE path by design — rerun the audit to refresh.
-
-Known gaps as of 2026-09-26 (fix before relying on the D1 half):
-- The hourly audit scheduler is **not installed** (no crontab entry, no
-  systemd user timer; last JSONL entry 2026-09-19). Run
-  `node ~/.config/opencode/scripts/dynamic-audit.mjs` manually or reinstall
-  the cron entry to resume mirroring.
-- The `.cloudflare-key` token lacks D1 permissions (API error 10000) — a
-  D1-capable token must be minted for `wrangler d1 execute` to work at all.
+D1 access uses the interactive `wrangler login` OAuth — no `CLOUDFLARE_API_TOKEN`
+or D1-capable token is needed or minted (see "D1 auth" above). Writes happen
+only through `dynamic-audit.mjs` (append-only observations); there is no
+manual UPDATE path by design — rerun the audit to refresh.
 
 ## Failure signatures & diagnostic queries (2026-09-19)
 

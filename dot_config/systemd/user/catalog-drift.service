@@ -1,6 +1,0 @@
-[Unit]
-Description=Catalog drift check — detect model cost/catalog changes vs opencode-config snapshot
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/node %h/.config/opencode/scripts/catalog-drift.mjs

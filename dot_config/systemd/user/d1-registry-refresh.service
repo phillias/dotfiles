@@ -1,0 +1,12 @@
+[Unit]
+# Requires CF_AI_GATEWAY_TOKEN and VERCEL_TOKEN. For interactive shells these
+# live in ~/.zshenv; for timer-driven runs copy them once into
+# ~/.config/opencode/provider-catalog.env (KEY=VALUE lines, no export, file
+# user-readable only) on each fleet node.
+Description=Provider-catalog D1 registry refresh — pull live CF/Vercel route ladders into D1
+
+[Service]
+Type=oneshot
+EnvironmentFile=-%h/.config/opencode/provider-catalog.env
+Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/share/mise/shims/node %h/.config/opencode/scripts/d1-registry-refresh.mjs
