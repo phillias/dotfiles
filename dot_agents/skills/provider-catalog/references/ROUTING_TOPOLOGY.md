@@ -84,8 +84,8 @@ flowchart TD
     GATEC --> cfroute[CF dynamic/pr-gate ladder ×9]
     REV2 --> cfroute2[CF dynamic/pr-reviewer ladder ×4]
     DEF --> cfroute3[CF dynamic/TUI ladder ×10]
-    GATEC -.->|vercel unseeded| gap["vmc/pr-gate — needs D1 seed"]
-    REV2 -.->|vercel unseeded| gap
+    GATEC -->|vercel seed| vg[vercel/vmc/pr-gate]
+    REV2 -->|vercel seed| vr[vercel/vmc/pr-reviewer]
     GATEC -->|terminal| ogw[opencode-go-gw/deepseek-v4-flash]
     REV2 -->|terminal| ogw
 ```

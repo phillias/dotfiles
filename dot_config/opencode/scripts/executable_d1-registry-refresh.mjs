@@ -182,7 +182,7 @@ function readSnapshot() {
   return { routesSet, ladders };
 }
 
-function buildSql(cfRoutes, vcRoutes, drift) {
+function buildSql(cfRoutes, vcRoutes, drift, removedKeys) {
   const lines = ["PRAGMA foreign_keys=ON;"];
   const all = [
     ...cfRoutes.map((r) => ({ ...r, gateway: GW_CF })),
@@ -193,6 +193,10 @@ function buildSql(cfRoutes, vcRoutes, drift) {
       `INSERT INTO routes (gateway, route, active_version, deployed_at, updated_at, notes) VALUES (${q(r.gateway)}, ${q(r.route)}, ${r.active_version ? q(r.active_version) : "NULL"}, ${r.deployed_at ? q(r.deployed_at) : "NULL"}, ${q(ts)}, NULL) ` +
       `ON CONFLICT(gateway, route) DO UPDATE SET active_version=excluded.active_version, deployed_at=excluded.deployed_at, updated_at=excluded.updated_at;`
     );
+  }
+  for (const key of removedKeys ?? []) {
+    const [gw, route] = key.split("|");
+    lines.push(`DELETE FROM routes WHERE gateway=${q(gw)} AND route=${q(route)};`);
   }
   for (const gw of [GW_CF, GW_VC]) {
     lines.push(`DELETE FROM route_models WHERE gateway=${q(gw)};`);
@@ -226,17 +230,18 @@ function main() {
   try { vcRoutes = fetchVercel(); } catch (e) { fail(`vercel fetch: ${e.message}`); }
 
   let drift = null;
+  let removedKeys = [];
   try {
     const snap = readSnapshot();
-    drift = describeDrift(
-      [...cfRoutes.map((r) => ({ ...r, gateway: GW_CF })), ...vcRoutes.map((r) => ({ ...r, gateway: GW_VC }))],
-      snap.routesSet, snap.ladders
-    );
+    const computed = [...cfRoutes.map((r) => ({ ...r, gateway: GW_CF })), ...vcRoutes.map((r) => ({ ...r, gateway: GW_VC }))];
+    drift = describeDrift(computed, snap.routesSet, snap.ladders);
+    const currentKeys = new Set(computed.map((r) => `${r.gateway}|${r.route}`));
+    removedKeys = [...snap.routesSet].filter((k) => !currentKeys.has(k));
   } catch (e) {
     console.error(`d1-registry-refresh: snapshot read failed, drift unknown (${e.message})`);
   }
 
-  const statements = buildSql(cfRoutes, vcRoutes, drift).split("\n").filter((l) => l.trim() && !l.startsWith("PRAGMA"));
+  const statements = buildSql(cfRoutes, vcRoutes, drift, removedKeys).split("\n").filter((l) => l.trim() && !l.startsWith("PRAGMA"));
   const CHUNK = 40; // remote D1 file batches fail above ~this size (D1_RESET_DO, observed 2026-09-27)
   const RETRIES = 3; // consecutive remote batches also fail transiently; retry with backoff
   const failed = `${process.env.HOME}/.local/state/opencode-fleet/d1-registry-refresh-failed.sql`;
