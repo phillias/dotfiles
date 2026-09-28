@@ -90,7 +90,7 @@ function fetchCloudflare() {
       ladder: ladderFromElements(v.data ?? []),
     });
   }
-  return out;
+  return { routes: out, healthy: true };
 }
 
 function vcGet(path) {
@@ -127,7 +127,9 @@ function fetchVercel() {
   const team = teams.find((t) => t.slug === VERCEL_SCOPE);
   if (!team) throw new Error(`vercel team slug ${VERCEL_SCOPE} not found in ${teams.length} teams`);
   const tid = team.id;
-  let configs = vcGet(`/ai-gateway/virtual-model-configs?teamId=${tid}&limit=100`).virtualModelConfigs ?? [];
+  const listConfigs = vcGet(`/ai-gateway/virtual-model-configs?teamId=${tid}&limit=100`).virtualModelConfigs ?? [];
+  let configs = listConfigs;
+  let healthy = listConfigs.length > 0;
   if (configs.length === 0) {
     const res = spawnSync("wrangler", ["d1", "execute", D1_DATABASE, "--remote", "--command",
       "SELECT route FROM routes WHERE gateway='vercel-ai-gateway';", "--json"], { timeout: 120000 });
@@ -144,7 +146,10 @@ function fetchVercel() {
     }
     if (configs.length > 0) console.error("d1-registry-refresh: vercel list empty, refreshed from D1-seeded slugs");
   }
-  return configs.filter((vm) => !vm.deleted).map(vcRouteFromConfig).filter((r) => r.route && r.ladder.length > 0);
+  return {
+    routes: configs.filter((vm) => !vm.deleted).map(vcRouteFromConfig).filter((r) => r.route && r.ladder.length > 0),
+    healthy,
+  };
 }
 
 function q(v) { return `'${String(v).replace(/'/g, "''")}'`; }
@@ -225,9 +230,12 @@ function buildSql(cfRoutes, vcRoutes, drift, removedKeys) {
 }
 
 function main() {
-  let cfRoutes, vcRoutes;
-  try { cfRoutes = fetchCloudflare(); } catch (e) { fail(`cloudflare fetch: ${e.message}`); }
-  try { vcRoutes = fetchVercel(); } catch (e) { fail(`vercel fetch: ${e.message}`); }
+  let cfFetch, vcFetch;
+  try { cfFetch = fetchCloudflare(); } catch (e) { fail(`cloudflare fetch: ${e.message}`); }
+  try { vcFetch = fetchVercel(); } catch (e) { fail(`vercel fetch: ${e.message}`); }
+  const cfRoutes = cfFetch.routes;
+  const vcRoutes = vcFetch.routes;
+  const gwOk = { [GW_CF]: cfFetch.healthy, [GW_VC]: vcFetch.healthy };
 
   let drift = null;
   let removedKeys = [];
@@ -236,7 +244,10 @@ function main() {
     const computed = [...cfRoutes.map((r) => ({ ...r, gateway: GW_CF })), ...vcRoutes.map((r) => ({ ...r, gateway: GW_VC }))];
     drift = describeDrift(computed, snap.routesSet, snap.ladders);
     const currentKeys = new Set(computed.map((r) => `${r.gateway}|${r.route}`));
-    removedKeys = [...snap.routesSet].filter((k) => !currentKeys.has(k));
+    removedKeys = [...snap.routesSet].filter((k) => {
+      const gw = k.split("|")[0];
+      return !currentKeys.has(k) && gwOk[gw];
+    });
   } catch (e) {
     console.error(`d1-registry-refresh: snapshot read failed, drift unknown (${e.message})`);
   }
