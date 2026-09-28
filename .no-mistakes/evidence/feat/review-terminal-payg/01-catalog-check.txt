@@ -1,0 +1,6 @@
+=== OpenRouter catalog check: z-ai/glm-5.2 ===
+HTTP 200
+total models in catalog: 460
+z-ai/glm-5.2 in catalog: True
+pricing: {"prompt": "0.0000006496", "completion": "0.0000020416", "input_cache_read": "0.00000012064"}
+context: 1048576 max_completion: 131072

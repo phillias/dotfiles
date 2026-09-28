@@ -1,0 +1,7 @@
+=== Direct lane probe: POST https://openrouter.ai/api/v1/chat/completions model=z-ai/glm-5.2 ===
+HTTP 200
+HTTP/2 200 
+served model: z-ai/glm-5.2
+finish_reason: length
+reply: None
+usage: {'prompt_tokens': 22, 'completion_tokens': 16}

@@ -1,0 +1,6 @@
+=== Direct lane probe (v2, enough budget for answer): model=z-ai/glm-5.2 ===
+
+HTTP 200
+served model: z-ai/glm-5.2
+finish_reason: stop
+final answer: 'PAYG_GLM52_OK'
