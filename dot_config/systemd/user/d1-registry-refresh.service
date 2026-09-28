@@ -9,4 +9,5 @@ Description=Provider-catalog D1 registry refresh — pull live CF/Vercel route l
 Type=oneshot
 EnvironmentFile=-%h/.config/opencode/provider-catalog.env
 Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+SuccessExitStatus=1
 ExecStart=%h/.local/share/mise/shims/node %h/.config/opencode/scripts/d1-registry-refresh.mjs

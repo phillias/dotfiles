@@ -2,7 +2,7 @@
 Description=Daily 05:00 Eastern refresh of provider-catalog D1 registry
 
 [Timer]
-OnCalendar=*-*-* 05:00:00
+OnCalendar=*-*-* 05:00:00 America/New_York
 Persistent=true
 
 [Install]

@@ -11,11 +11,13 @@
 // Env: CF_AI_GATEWAY_TOKEN (required, AI Gateway route scope), VERCEL_TOKEN (required for Vercel),
 //      PROVIDER_CATALOG_D1=off disables the whole run (exit 0).
 // Auth for D1: local wrangler OAuth login (d1 write scope) — no API token; see provider-catalog skill.
+// Security: Authorization headers are passed to curl via private 0600 files in a 0700
+//           mkdtemp dir (-H @file), never in argv; SQL batch chunks share the same private dir.
 //
 // Exit codes: 0 = refreshed, no drift; 1 = refreshed, drift detected (informational);
 //             2 = error (missing env, upstream failure, or D1 write failure).
 
-import { writeFileSync, unlinkSync, copyFileSync } from "node:fs";
+import { writeFileSync, unlinkSync, copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 
@@ -30,7 +32,14 @@ const GW_VC = "vercel-ai-gateway";
 const now = new Date();
 const ts = now.toISOString();
 
+let tmpDir = null;
+
+function cleanup() {
+  try { if (tmpDir) rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+}
+
 function fail(msg) {
+  cleanup();
   console.error(`d1-registry-refresh: ${msg}`);
   process.exit(2);
 }
@@ -43,17 +52,28 @@ if (process.env.PROVIDER_CATALOG_D1 === "off") {
 const cfToken = process.env.CF_AI_GATEWAY_TOKEN;
 const vercelToken = process.env.VERCEL_TOKEN;
 if (!cfToken) fail("CF_AI_GATEWAY_TOKEN not set");
+if (!vercelToken) fail("VERCEL_TOKEN not set");
 const acct = process.env.CLOUDFLARE_ACCOUNT_ID || "a7fa198dd5b359a187c671064fe6b36e";
+
+// Private scratch dir for Authorization header files and SQL batch chunks.
+// Tokens never appear in curl argv (visible via /proc/*/cmdline otherwise).
+tmpDir = mkdtempSync(`${tmpdir()}/d1-registry-refresh-`);
+const cfAuth = `${tmpDir}/cf-auth.txt`;
+const vcAuth = `${tmpDir}/vc-auth.txt`;
+writeFileSync(cfAuth, `Authorization: Bearer ${cfToken}\n`, { mode: 0o600 });
+writeFileSync(vcAuth, `Authorization: Bearer ${vercelToken}\n`, { mode: 0o600 });
 
 function cfGet(path) {
   const res = spawnSync("curl", [
     "-sS", "--max-time", "30",
     `${CF_BASE}/accounts/${acct}/ai-gateway/gateways/${CF_GATEWAY}/${path}`,
-    "-H", `Authorization: Bearer ${cfToken}`,
+    "-H", `@${cfAuth}`,
     "-H", "cf-aig-skip-cache: true",
   ]);
   if (res.status !== 0) throw new Error(`cf curl ${path} exit ${res.status}`);
-  const body = JSON.parse(String(res.stdout));
+  let body;
+  try { body = JSON.parse(String(res.stdout)); }
+  catch (e) { throw new Error(`cf api ${path}: malformed JSON: ${e.message}`); }
   if (body.success !== true) throw new Error(`cf api ${path}: ${JSON.stringify(body.errors ?? body).slice(0, 200)}`);
   return body;
 }
@@ -73,12 +93,24 @@ function ladderFromElements(elements) {
     if (p.provider && p.model) ladder.push([p.provider, p.model]);
     cur = node.outputs?.fallback?.elementId;
   }
+  if (cur && cur !== "END" && seen.has(cur)) {
+    console.error(`d1-registry-refresh: ladder cycle detected at element ${cur}; stopping walk`);
+  }
   return ladder;
 }
 
 function fetchCloudflare() {
-  const list = cfGet("routes");
-  const routes = list.data?.routes ?? [];
+  // Paginate until a short page; a malformed page means unhealthy discovery
+  // (never treated as an empty route list), while a valid empty list stays healthy.
+  const routes = [];
+  const PER_PAGE = 25;
+  for (let page = 1; ; page++) {
+    const body = cfGet(`routes?page=${page}&per_page=${PER_PAGE}`);
+    const batch = body.data?.routes;
+    if (!Array.isArray(batch)) return { routes: [], healthy: false };
+    routes.push(...batch);
+    if (batch.length < (body.data?.per_page ?? PER_PAGE)) break;
+  }
   const out = [];
   for (const r of routes) {
     const detail = cfGet(`routes/${r.id}`);
@@ -96,10 +128,11 @@ function fetchCloudflare() {
 function vcGet(path) {
   const res = spawnSync("curl", [
     "-sS", "--max-time", "30", `${VERCEL_API}${path}`,
-    "-H", `Authorization: Bearer ${process.env.VERCEL_TOKEN}`,
+    "-H", `@${vcAuth}`,
   ]);
   if (res.status !== 0) throw new Error(`vercel curl ${path} exit ${res.status}`);
-  return JSON.parse(String(res.stdout));
+  try { return JSON.parse(String(res.stdout)); }
+  catch (e) { throw new Error(`vercel api ${path}: malformed JSON: ${e.message}`); }
 }
 
 function vcRouteFromConfig(vm) {
@@ -137,14 +170,19 @@ function fetchVercel() {
     const parsed = JSON.parse(String(res.stdout));
     const rows = parsed?.result?.[0]?.results ?? parsed?.[0]?.results ?? [];
     configs = [];
+    let slugFailures = 0;
     for (const row of rows) {
       const slug = String(row.route).replace(/^vmc\//, "");
       try {
         const vm = vcGet(`/ai-gateway/virtual-model-configs/${slug}?teamId=${tid}`);
         if (vm && !vm.deleted && (vm.virtualModelSlug || vm.slug)) configs.push(vm);
-      } catch { /* retired or renamed slug: skip */ }
+      } catch (e) {
+        slugFailures++;
+        console.error(`d1-registry-refresh: vercel slug fetch failed: ${slug} (${e.message})`);
+      }
     }
     if (configs.length > 0) console.error("d1-registry-refresh: vercel list empty, refreshed from D1-seeded slugs");
+    healthy = configs.length > 0 && slugFailures === 0;
   }
   return {
     routes: configs.filter((vm) => !vm.deleted).map(vcRouteFromConfig).filter((r) => r.route && r.ladder.length > 0),
@@ -188,11 +226,13 @@ function readSnapshot() {
 }
 
 function buildSql(cfRoutes, vcRoutes, drift, removedKeys) {
+  // A null route list means that gateway's discovery was unhealthy this run:
+  // skip ALL writes for it (routes upserts, route_models reconcile, models) so
+  // stored data survives partial discovery; the next healthy run reconciles.
   const lines = ["PRAGMA foreign_keys=ON;"];
-  const all = [
-    ...cfRoutes.map((r) => ({ ...r, gateway: GW_CF })),
-    ...vcRoutes.map((r) => ({ ...r, gateway: GW_VC })),
-  ];
+  const all = [];
+  if (cfRoutes) all.push(...cfRoutes.map((r) => ({ ...r, gateway: GW_CF })));
+  if (vcRoutes) all.push(...vcRoutes.map((r) => ({ ...r, gateway: GW_VC })));
   for (const r of all) {
     lines.push(
       `INSERT INTO routes (gateway, route, active_version, deployed_at, updated_at, notes) VALUES (${q(r.gateway)}, ${q(r.route)}, ${r.active_version ? q(r.active_version) : "NULL"}, ${r.deployed_at ? q(r.deployed_at) : "NULL"}, ${q(ts)}, NULL) ` +
@@ -204,6 +244,7 @@ function buildSql(cfRoutes, vcRoutes, drift, removedKeys) {
     lines.push(`DELETE FROM routes WHERE gateway=${q(gw)} AND route=${q(route)};`);
   }
   for (const gw of [GW_CF, GW_VC]) {
+    if ((gw === GW_CF && !cfRoutes) || (gw === GW_VC && !vcRoutes)) continue;
     lines.push(`DELETE FROM route_models WHERE gateway=${q(gw)};`);
     for (const r of all.filter((x) => x.gateway === gw)) {
       r.ladder.forEach(([p, m], i) => {
@@ -220,7 +261,7 @@ function buildSql(cfRoutes, vcRoutes, drift, removedKeys) {
   }
   lines.push(
     `INSERT INTO observations (ts, kind, subject, metric, value_num, value_text, source, details) VALUES ` +
-    `(${q(ts)}, 'registry_refresh', 'catalog:provider-catalog', 'routes_refreshed', ${all.length}, '${all.length} routes', 'd1-registry-refresh', ${q(`cf=${cfRoutes.length} vercel=${vcRoutes.length}`)});`
+    `(${q(ts)}, 'registry_refresh', 'catalog:provider-catalog', 'routes_refreshed', ${all.length}, '${all.length} routes', 'd1-registry-refresh', ${q(`cf=${cfRoutes?.length ?? 0} vercel=${vcRoutes?.length ?? 0} skipped=${[!cfRoutes && "cf", !vcRoutes && "vercel"].filter(Boolean).join(",") || "none"}`)});`
   );
   lines.push(
     `INSERT INTO observations (ts, kind, subject, metric, value_num, value_text, source, details) VALUES ` +
@@ -233,18 +274,27 @@ function main() {
   let cfFetch, vcFetch;
   try { cfFetch = fetchCloudflare(); } catch (e) { fail(`cloudflare fetch: ${e.message}`); }
   try { vcFetch = fetchVercel(); } catch (e) { fail(`vercel fetch: ${e.message}`); }
-  const cfRoutes = cfFetch.routes;
-  const vcRoutes = vcFetch.routes;
-  const gwOk = { [GW_CF]: cfFetch.healthy, [GW_VC]: vcFetch.healthy };
+  const writeCf = cfFetch.healthy;
+  const writeVc = vcFetch.healthy;
+  if (!writeCf && !writeVc) fail("both gateways reported unhealthy discovery; refusing all writes");
+  const cfRoutes = writeCf ? cfFetch.routes : null; // null = skip writes for this gateway
+  const vcRoutes = writeVc ? vcFetch.routes : null;
+  const gwOk = { [GW_CF]: writeCf, [GW_VC]: writeVc };
 
   let drift = null;
   let removedKeys = [];
   try {
     const snap = readSnapshot();
-    const computed = [...cfRoutes.map((r) => ({ ...r, gateway: GW_CF })), ...vcRoutes.map((r) => ({ ...r, gateway: GW_VC }))];
-    drift = describeDrift(computed, snap.routesSet, snap.ladders);
+    const computed = [
+      ...(cfRoutes ?? []).map((r) => ({ ...r, gateway: GW_CF })),
+      ...(vcRoutes ?? []).map((r) => ({ ...r, gateway: GW_VC })),
+    ];
+    // Drift is judged only for gateways being written; a skipped gateway's
+    // stored rows would otherwise be misreported as route-removed.
+    const snapKeys = new Set([...snap.routesSet].filter((k) => gwOk[k.split("|")[0]]));
+    drift = describeDrift(computed, snapKeys, snap.ladders);
     const currentKeys = new Set(computed.map((r) => `${r.gateway}|${r.route}`));
-    removedKeys = [...snap.routesSet].filter((k) => {
+    removedKeys = [...snapKeys].filter((k) => {
       const gw = k.split("|")[0];
       return !currentKeys.has(k) && gwOk[gw];
     });
@@ -259,7 +309,7 @@ function main() {
   const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
   for (let i = 0; i < statements.length; i += CHUNK) {
     const chunk = statements.slice(i, i + CHUNK);
-    const tmp = `${tmpdir()}/d1-registry-refresh-${now.getTime()}-${i}.sql`;
+    const tmp = `${tmpDir}/chunk-${i}.sql`;
     writeFileSync(tmp, chunk.join("\n"));
     let ok = false;
     let lastErr = "";
@@ -277,7 +327,8 @@ function main() {
     unlinkSync(tmp);
     if (i + CHUNK < statements.length) sleep(2000); // spacing between consecutive remote batches
   }
-  console.log(`d1-registry-refresh: cf=${cfRoutes.length} vercel=${vcRoutes.length} statements=${statements.length} drift=${drift ? "DRIFT" : "clean"}${drift ? ` (${drift})` : ""}`);
+  console.log(`d1-registry-refresh: cf=${cfRoutes?.length ?? 0} vercel=${vcRoutes?.length ?? 0} statements=${statements.length} drift=${drift ? "DRIFT" : "clean"}${drift ? ` (${drift})` : ""}`);
+  cleanup();
   process.exit(drift ? 1 : 0);
 }
 

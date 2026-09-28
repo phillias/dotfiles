@@ -77,18 +77,20 @@ flowchart TD
     pi["pi — configured gate-validation agent<br/>~/.no-mistakes/config.yaml agent: pi"]
     nm -->|pipeline steps invoke| pi
     subgraph chains[pi fallback chains ~/.pi/fallback-chains.json]
-        DEF["default<br/>CfAiGw/dynamic/TUI → vercel/vmc/tui"]
-        GATEC["gate<br/>CfAiGw/dynamic/pr-gate → vercel/vmc/pr-gate → opencode-go-gw/deepseek-v4-flash"]
-        REV2["review<br/>CfAiGw/dynamic/pr-reviewer → vercel/vmc/pr-reviewer → opencode-go-gw/deepseek-v4-flash"]
+        DEF["default<br/>CfAiGw/dynamic/TUI → vercel/router/tui"]
+        GATEC["gate<br/>opencode-go-gw/longcat-2.5-preview-free → opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-gate → vercel/router/pr-gate"]
+        REV2["review<br/>opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer"]
     end
     pi --> chains
+    GATEC -->|head| lcat[opencode-go-gw/longcat-2.5-preview-free]
     GATEC --> cfroute[CF dynamic/pr-gate ladder ×9]
     REV2 --> cfroute2[CF dynamic/pr-reviewer ladder ×4]
     DEF --> cfroute3[CF dynamic/TUI ladder ×10]
     GATEC -->|vercel seed| vg[vercel/vmc/pr-gate]
     REV2 -->|vercel seed| vr[vercel/vmc/pr-reviewer]
     GATEC -->|terminal| ogw[opencode-go-gw/deepseek-v4-flash]
-    REV2 -->|terminal| ogw
+    REV2 -->|head| ogw
+    DEF --> vtui[vercel/router/tui = D1 vmc/tui]
 ```
 
 ## Free lanes, quota and limits
