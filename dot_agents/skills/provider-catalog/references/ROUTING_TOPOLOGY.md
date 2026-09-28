@@ -1,7 +1,7 @@
 # Routing topology (D1-generated snapshot)
 
-Snapshot generated 2026-09-28 from the shared D1 `provider-catalog` registry: 15 routes, 61 ladder steps, 53 model rows.
-The underlying tables refresh daily at 05:00 ET via `d1-registry-refresh.mjs`; this document is a manual snapshot — regenerate after structural route changes.
+Snapshot generated 2026-09-28 from the shared D1 `provider-catalog` registry: 15 routes, 64 ladder steps, 53 model rows.
+The underlying tables refresh daily at 05:00 ET via `d1-registry-refresh.mjs`; this document is a manual snapshot — regenerate after structural route changes. Regenerated 2026-09-28 after the NIM free-access fit (pr-reviewer head swap, high NIM head, pr-gate Kimi-K3 rung); D1 rows catch up on the first post-`wrangler login` registry refresh.
 Live quota truth is always `quota-axi`, never this file. Ladder truth is the gateway; D1 mirrors it.
 
 ## Flow 1 — firstmate → harnesses → (virtual) providers → models
@@ -19,9 +19,9 @@ flowchart TD
     fm --> crew
     subgraph cf[Cloudflare AI Gateway `opencode` — 12 dynamic routes]
         TUI["dynamic/TUI<br/>mimo-v2.5-free → glm ladder ×10"]
-        HIGH["dynamic/high<br/>glm-5.3 ×8 providers"]
-        GATE["dynamic/pr-gate<br/>nemotron-super ×9"]
-        REV["dynamic/pr-reviewer<br/>deepseek-v4-flash ×4"]
+        HIGH["dynamic/high<br/>nvidia-nim glm-5.3 head + glm-5.3 ×8"]
+        GATE["dynamic/pr-gate<br/>nemotron-super head, kimi-k3 rung ×10"]
+        REV["dynamic/pr-reviewer<br/>nvidia-nim glm-5.3 head ×5"]
         VIS["dynamic/vision<br/>gemini-2.5-flash ×4"]
         PERH["claude · codex · cursor · grok · kimi · muse · test<br/>single-purpose 1–2 model ladders"]
     end
@@ -45,9 +45,9 @@ flowchart TD
 | Route | Ladder (provider/model, fallback order) |
 |---|---|
 | dynamic/TUI | opencode-zen/mimo-v2.5-free → glm-5.1 → glm-5.2 → glm-5.3-flash → commandcode/GLM-5.1 → phoenixgrove/glm-5.2 → commandcode/GLM-5.2 → commandcode/glm-5.3-flash → phoenixgrove/glm-5.3-flash → openrouter/z-ai/glm-5.1 |
-| dynamic/high | aihubmix/coding-glm-5.3 → aihubmix/claude-fable-5-1 → aihubmix/glm-5.3 → together/GLM-5.3 → openrouter/glm-5.3 → phoenixgrove/glm-5.3 → friendli/GLM-5.3 → deepinfra/GLM-5.3 |
-| dynamic/pr-gate | nvidia-nim/nemotron-3-super-120b → zen/nemotron-3-ultra-free → openrouter/gpt-5.6-luna → commandcode/GLM-5.2 → commandcode/Kimi-K3 → commandcode/nemotron-3-ultra-550b → commandcode/deepseek-v4-flash → phoenixgrove/deepseek-v4-flash-0731 → google-ai-studio/gemini-2.5-flash |
-| dynamic/pr-reviewer | nvidia-nim/deepseek-v4-flash-0731 → openrouter/gpt-5.6-luna → openrouter/nemotron-3-ultra-550b:free → zen/glm-5.2 |
+| dynamic/high | nvidia-nim/glm-5.3 → aihubmix/coding-glm-5.3 → aihubmix/claude-fable-5-1 → aihubmix/glm-5.3 → together/GLM-5.3 → openrouter/glm-5.3 → phoenixgrove/glm-5.3 → friendli/GLM-5.3 → deepinfra/GLM-5.3 |
+| dynamic/pr-gate | nvidia-nim/nemotron-3-super-120b → zen/nemotron-3-ultra-free → openrouter/gpt-5.6-luna → commandcode/GLM-5.2 → commandcode/Kimi-K3 → nvidia-nim/kimi-k3 → commandcode/nemotron-3-ultra-550b → commandcode/deepseek-v4-flash → phoenixgrove/deepseek-v4-flash-0731 → google-ai-studio/gemini-2.5-flash |
+| dynamic/pr-reviewer | nvidia-nim/glm-5.3 → nvidia-nim/deepseek-v4.1-flash → openrouter/gpt-5.6-luna → openrouter/nemotron-3-ultra-550b:free → zen/glm-5.2 |
 | dynamic/vision | google-ai-studio/gemini-2.5-flash → together/GLM-4.5V → zen/gemini-3.5-flash → openrouter/gemini-2.5-flash |
 | dynamic/claude | openrouter/anthropic/claude-sonnet-4 |
 | dynamic/codex | commandcode/gpt-5.6-luna → openrouter/gpt-4o |
