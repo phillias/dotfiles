@@ -11,8 +11,5 @@
     "vercel/router/pr-reviewer",
     "openrouter-direct/z-ai/glm-5.2"
   ],
-  "default": [
-    "CfAiGw/dynamic/TUI",
-    "vercel/router/tui"
-  ]
+  "default": ["CfAiGw/dynamic/TUI", "vercel/router/tui"]
 }
