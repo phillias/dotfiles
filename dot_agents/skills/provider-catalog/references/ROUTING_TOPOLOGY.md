@@ -1,6 +1,6 @@
 # Routing topology (D1-generated snapshot)
 
-Snapshot generated 2026-09-27 from the shared D1 `provider-catalog` registry: 13 routes, 51 ladder steps, 47 model rows.
+Snapshot generated 2026-09-28 from the shared D1 `provider-catalog` registry: 15 routes, 61 ladder steps, 53 model rows.
 The underlying tables refresh daily at 05:00 ET via `d1-registry-refresh.mjs`; this document is a manual snapshot — regenerate after structural route changes.
 Live quota truth is always `quota-axi`, never this file. Ladder truth is the gateway; D1 mirrors it.
 
@@ -51,6 +51,7 @@ flowchart TD
 | dynamic/vision | google-ai-studio/gemini-2.5-flash → together/GLM-4.5V → zen/gemini-3.5-flash → openrouter/gemini-2.5-flash |
 | dynamic/claude | openrouter/anthropic/claude-sonnet-4 |
 | dynamic/codex | commandcode/gpt-5.6-luna → openrouter/gpt-4o |
+| dynamic/cursor | _registered in D1; empty ladder — no models discovered yet_ |
 | dynamic/grok | commandcode/xai/grok-4.5 → openrouter/x-ai/grok-4.5 |
 | dynamic/kimi | commandcode/Kimi-K2.6 → openrouter/kimi-k2.6 |
 | dynamic/muse | commandcode/meta/muse-spark-1.2 → openrouter/llama-3.1-70b |
@@ -102,6 +103,6 @@ Provider-level headroom snapshot (quota-axi, 2026-09-27, kalione). Live values: 
 | kilocode | free relay | kilo-auto/free, nemotron-3-nano-30b:free, grok-code-fast-1:free, trinity-large:free | not metered on this host |
 | claude / codex / cursor / grok / kimi | per-harness auth | harness free tiers | unresolved on kalione (auth sources absent) |
 
-Model status counts in D1: 44 unknown · 1 degraded (mimo) · 1 quarantined (space-bunny) · 1 ok. Per-model pricing/context: `models.snapshot.json`; D1 `models` table carries status + free_tier.
+Model status counts in D1: 50 unknown · 1 degraded (mimo) · 1 quarantined (space-bunny) · 1 ok. Per-model pricing/context: `models.snapshot.json`; D1 `models` table carries status + free_tier.
 
 Quarantine reminder: `openrouter/stealth/space-bunny-alpha` stays out of every interactive-TUI chain (captain decision 2026-09-25); do not re-add without explicit captain approval.
