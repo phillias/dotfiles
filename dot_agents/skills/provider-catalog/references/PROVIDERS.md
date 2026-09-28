@@ -407,6 +407,16 @@ node competes for the same account-wide pool — add nodes selectively.
 
 Snapshot updated 2026-09-28: 4 rows added, 3 dead rows removed.
 
+**Deployed 2026-09-28 (captain-ordered fit):** `pr-reviewer` head swapped
+EOL-deepseek → `z-ai/glm-5.3` + `deepseek-v4.1-flash` second rung (version
+`469aa66c`); `high` gained the free NIM GLM-5.3 head (version `a066dc4b`);
+`pr-gate` gained the free NIM Kimi-K3 redundancy rung after the commandcode
+node (version `778615d1`). All three probe 200 via `cf-aig-skip-cache` and
+the hourly audit; TUI intentionally kept NIM-free (40 RPM account-wide pool).
+NIM nodes now on live routes: 4 (pr-gate head nemotron, pr-gate kimi-k3,
+pr-reviewer glm-5.3 + deepseek-v4.1-flash, high glm-5.3) — the shared pool
+is the binding constraint; do not add more without retiring one.
+
 ## Gate chain (pi-fallback-provider)
 
 Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
@@ -431,9 +441,11 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   phoenixgrove-head order and the aihubmix tail (bare-name nodes were
   dead anyway).
 - `high` — latest-version models (`GLM-5.3` class, fable, astra when a lane
-  appears) from reliable providers; aihubmix GLM discount lane sits top
-  (caution 2026-09-08: aihubmix began 200-wrapped 404s — verify before
-  trusting that head lane).
+  appears) from reliable providers. Free NIM GLM-5.3 head added 2026-09-28
+  (version `a066dc4b`, probe 200): `custom-nvidia-nim/z-ai/glm-5.3` →
+  aihubmix GLM discount lane next (caution 2026-09-08: aihubmix began
+  200-wrapped 404s — verify before trusting that lane) → together → openrouter
+  → phoenixgrove → friendli → deepinfra (GLM-5.3 lanes).
 - `pr-gate` — gate/background ladder, **linear** (conditionals removed
   2026-09-14 version `6ed05d99`; **openrouter `:free` lanes removed version
   `91701376`** after three no-mistakes run deaths): openrouter free lanes
@@ -446,12 +458,15 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   separate `fallback/review` chain (CfAiGw/dynamic/pr-reviewer →
   vercel/vmc/pr-reviewer → opencode-go-gw/deepseek-v4-flash). The route
   serves gate, probe, and external traffic.
-  Actual active ladder (version `91701376`, verified via versions API
+  Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
+  free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
+  plus the insert — verified via versions API
   2026-09-20 — the earlier "GOAT nodes" wording in this file was a mislabel,
   those lanes are commandcode): `custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b` →
   `custom-opencode-zen/nemotron-3-ultra-free` →
   `openrouter/openai/gpt-5.6-luna` → `custom-commandcode/zai-org/GLM-5.2` →
   `custom-commandcode/moonshotai/Kimi-K3` →
+  `custom-nvidia-nim/moonshotai/kimi-k3` →
   `custom-commandcode/nvidia/nemotron-3-ultra-550b-a55b` →
   `custom-commandcode/deepseek/deepseek-v4-flash` →
   `custom-phoenixgrove/deepseek-v4-flash-0731` → `google-ai-studio/gemini-2.5-flash`.
@@ -461,10 +476,12 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   via google-ai-studio, zen/openrouter gemini variants).
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
   rides `CfAiGw/dynamic/pr-reviewer` via `review_agents.reviewer`
-  (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14):
-  `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` (**EOL: gone from
-  the live NIM catalog 2026-09-28 — dead head, see the NIM free-access wave
-  section; swap candidate `z-ai/glm-5.3` or `deepseek-v4.1-flash`**) →
+  (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14;
+  head swapped 2026-09-28 version `469aa66c` after the NIM EOL of
+  `deepseek-v4-flash-0731`, captain-ordered):
+  `custom-nvidia-nim/z-ai/glm-5.3` (free head, probe 200/5s) →
+  `custom-nvidia-nim/deepseek-ai/deepseek-v4.1-flash` (successor lane,
+  overloaded at deploy time) →
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
   `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
