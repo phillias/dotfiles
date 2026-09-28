@@ -79,7 +79,7 @@ flowchart TD
     subgraph chains[pi fallback chains ~/.pi/fallback-chains.json]
         DEF["default<br/>CfAiGw/dynamic/TUI → vercel/router/tui"]
         GATEC["gate<br/>opencode-go-gw/longcat-2.5-preview-free → opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-gate → vercel/router/pr-gate"]
-        REV2["review<br/>opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer"]
+        REV2["review<br/>opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer → openrouter-direct/z-ai/glm-5.2"]
     end
     pi --> chains
     GATEC -->|head| lcat[opencode-go-gw/longcat-2.5-preview-free]

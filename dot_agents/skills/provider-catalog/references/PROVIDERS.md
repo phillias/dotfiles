@@ -419,7 +419,7 @@ is the binding constraint; do not add more without retiring one.
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider's free inkling lane remains for personal agentic experiments only (the provider's PAYG `z-ai/glm-5.2` lane, added 2026-09-28, rides the pi review chain's terminal rung). Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
 
 ## Dynamic routes on the `opencode` gateway (2026-09-04)
 
@@ -455,9 +455,10 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `fallback/gate` chain** (dotfiles PR #343 restored the chain, previously
   pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
   200-wrapped overload errors 6/6 nights runs). Review agent rides the
-  separate `fallback/review` chain (CfAiGw/dynamic/pr-reviewer →
-  vercel/vmc/pr-reviewer → opencode-go-gw/deepseek-v4-flash). The route
-  serves gate, probe, and external traffic.
+  separate `fallback/review` chain (opencode-go-gw/deepseek-v4-flash →
+  CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer →
+  openrouter-direct/z-ai/glm-5.2 terminal PAYG rung). The route serves
+  gate, probe, and external traffic.
   Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
   free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
   plus the insert — verified via versions API
@@ -485,8 +486,10 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
   `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
-  the separate `fallback/review` chain (pi fallback-chains.json), with Vercel
-  `vmc/pr-reviewer` as second rung and opencode-go as tail.
+  the separate `fallback/review` chain (pi fallback-chains.json), with
+  `opencode-go-gw/deepseek-v4-flash` as first rung, `CfAiGw/dynamic/pr-reviewer`
+  second, `vercel/router/pr-reviewer` third, and `openrouter-direct/z-ai/glm-5.2`
+  as terminal PAYG tail (account-independent of CF/zen budget walls).
 - Harness family routes (2026-09-19 build, captain directive — house models
   per family across providers, openrouter PAYG + plan lanes). 2026-09-20
   less-wrong pass (captain order, route versions deployed and probed 200):
@@ -648,8 +651,7 @@ without the $100+/mo native-subscription seats:
   API): per-token, no platform fee, no subscription. Right choice above
   ~$50/mo per provider.
 - **Plan/subsidized lanes already in the chains**: z.ai Coding Lite ($18/mo),
-  opencode-zen console free (~200/day), PGS coding-tester plan (glm-5.3-flash
-  + deepseek-v4-flash-0731 plan-subsidized — verified 2026-09-01), GOAT
+  opencode-zen console free (~200/day), PGS coding-tester plan (glm-5.3-flash + deepseek-v4-flash-0731 plan-subsidized — verified 2026-09-01), GOAT
   monthly pool (resets Sept 12), aihubmix glm-5.3 discount (TUI lane 1),
   together `$0` FP8/FP4 quantized GLM items, nvidia-nim nemotron (free, 40
   RPM account-wide), cerebras paygo ($5 + card, big TPM small RPM).
