@@ -214,7 +214,7 @@ opencode-go can never be a gateway route node (it requires the `x-opencode-sessi
 
 **Automatic failover (CF → Vercel → opencode-go):**
 - **OpenCode** (`opencode-fallback.jsonc`): global/agent/category ladders insert `vercel/vmc/tui` as stage 1. Provider-qualified IDs (`CfAiGw/dynamic/TUI`, `vercel/vmc/tui`) so the fallback plugin swaps correctly on retryable session errors.
-- **Pi** (`~/.pi/fallback-chains.json`): `fallback/gate` and `fallback/default` chains insert Vercel vmc models as the second rung.
+- **Pi** (`~/.pi/fallback-chains.json`): `fallback/gate` and `fallback/default` chains carry Vercel `router/*` rungs so CF-gateway outage falls through to Vercel. Current ladders live in that file; they are drawn in provider-catalog `references/ROUTING_TOPOLOGY.md` flow-2 (regenerated from the file 2026-09-28).
 - **No-mistakes** (`config.yaml`): `agent_config.pi.model` and `review_agents.reviewer.model` ride `fallback/gate` instead of directly pinning `CfAiGw/dynamic/pr-gate`, so automated validation also falls through to Vercel.
 
 **Manual profile switching (no automatic failover — tool limitation):**

@@ -18,10 +18,12 @@ agent: pi
 #
 # Gate reserves the model's full output budget for structured review output, so
 # a 1M-context model is required for large diffs.
-# (2026-09-21) Gate rides pi's `fallback/gate` chain in
-# ~/.pi/fallback-chains.json: CfAiGw/dynamic/pr-gate, then
-# vercel/vmc/pr-gate, then the opencode-go 1M tail. This keeps the CF dynamic
-# route as the head while preserving Vercel fallthrough for CF gateway outages.
+# (2026-09-21; rung names refreshed 2026-09-28) Gate rides pi's
+# `fallback/gate` chain in ~/.pi/fallback-chains.json: opencode-go-gw
+# longcat head → deepseek → CfAiGw/dynamic/pr-gate → vercel/router/pr-gate
+# (exact ladder: provider-catalog references/ROUTING_TOPOLOGY.md flow-2).
+# The CF dynamic route stays mid-chain while Vercel remains the outage
+# fallthrough.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -38,15 +40,17 @@ agent: pi
 # keep the profile pin.
 agent_config:
   pi:
-    # (2026-09-21) Ride pi's fallback/gate chain instead of directly
-    # pinning CfAiGw/dynamic/pr-gate, so a CF gateway outage can fall through
-    # to vercel/vmc/pr-gate before the opencode-go tail.
+    # (2026-09-21; rung names refreshed 2026-09-28) Ride pi's fallback/gate
+    # chain instead of directly pinning CfAiGw/dynamic/pr-gate; its
+    # vercel/router/pr-gate rung is the CF-gateway-outage fallthrough.
     model: fallback/gate
 
 # Review rides the separate `fallback/review` chain so the second-set-of-eyes
-# exercises the pr-reviewer ladder (CF dynamic/pr-reviewer → Vercel vmc/pr-reviewer
-# → opencode-go tail) rather than the cheaper gate ladder. Budget-ranked, JSON
-# discipline first, stronger model pool than gate.
+# exercises the pr-reviewer ladder (opencode-go-gw deepseek head → CF
+# dynamic/pr-reviewer → vercel/router/pr-reviewer; exact ladder:
+# provider-catalog references/ROUTING_TOPOLOGY.md flow-2) rather than the
+# cheaper gate ladder. Budget-ranked, JSON discipline first, stronger model
+# pool than gate.
 review_agents:
   reviewer:
     agent: pi

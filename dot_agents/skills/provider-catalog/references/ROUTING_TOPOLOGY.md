@@ -88,7 +88,7 @@ flowchart TD
     DEF --> cfroute3[CF dynamic/TUI ladder ×10]
     GATEC -->|vercel seed| vg[vercel/vmc/pr-gate]
     REV2 -->|vercel seed| vr[vercel/vmc/pr-reviewer]
-    GATEC -->|terminal| ogw[opencode-go-gw/deepseek-v4-flash]
+    GATEC --> ogw[opencode-go-gw/deepseek-v4-flash]
     REV2 -->|head| ogw
     DEF --> vtui[vercel/router/tui = D1 vmc/tui]
 ```
