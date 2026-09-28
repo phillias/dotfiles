@@ -8,7 +8,7 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 - Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Two-path architecture (captain decision 2026-09-19, PRs #327 + #330): utility chains are `dynamic/TUI` (gateway cascading GLM ladder) → `opencode-go/glm-5.1` → `opencode-go/deepseek-v4-flash` (session-gated direct-client tail); specialized agents/categories keep pinned chains.
 - Pi default chain — `~/.pi/fallback-chains.json` → `default` key (added 2026-09-01). Same GLM-5.1 ladder; activates via `fallback/default` model string.
-- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key. Current shape: `CfAiGw/dynamic/pr-gate` → `opencode-go-gw/deepseek-v4-flash` (see the Gate chain section; the 2026-09-01 gate-chain v4 record was superseded when the openrouter `:free` trio was removed after no-mistakes run deaths — that lane class is documented in the pr-gate entry).
+- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key. Live chain order is that file itself (current ladders are drawn in `references/ROUTING_TOPOLOGY.md` flow-2, regenerated from it 2026-09-28: longcat gate head, `vercel/router/*` rungs). Chain semantics/history live in the Gate chain section; the 2026-09-01 gate-chain v4 record was superseded when the openrouter `:free` trio was removed after no-mistakes run deaths — that lane class is documented in the pr-gate entry.
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
@@ -934,9 +934,11 @@ wrangler d1 execute provider-catalog --remote \
 ```
 
 D1 access uses the interactive `wrangler login` OAuth — no `CLOUDFLARE_API_TOKEN`
-or D1-capable token is needed or minted (see "D1 auth" above). Writes happen
-only through `dynamic-audit.mjs` (append-only observations); there is no
-manual UPDATE path by design — rerun the audit to refresh.
+or D1-capable token is needed or minted (see "D1 auth" above). Scheduled
+writes happen only through the two scripts: `dynamic-audit.mjs` (append-only
+observations) and `d1-registry-refresh.mjs` (route inventory + one
+`registry_refresh` observation recording ladder drift). There is no manual
+UPDATE path by design — rerun the scheduled scripts to refresh.
 
 ## Failure signatures & diagnostic queries (2026-09-19)
 
