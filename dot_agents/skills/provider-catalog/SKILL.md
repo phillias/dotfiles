@@ -14,7 +14,7 @@ Read `references/ROUTING_TOPOLOGY.md` for the D1-generated routing snapshot (fir
 
 ## Deterministic dynamic-route audit
 
-Route health prefers `~/.config/opencode/scripts/dynamic-audit.mjs` (scheduled; hourly cron), never a live LLM probe: transcript at `~/.local/state/opencode-fleet/dynamic-audit.jsonl` ("dynamic-audit.jsonl"). See `references/PROVIDERS.md` §"Deterministic dynamic-route audit" for the test list, log schema, and the interactive-LLM interrogation procedure. Ask the captain before mutating any gateway route — `served_model` counts in the audit log are the evidence base.
+Route health prefers `~/.config/opencode/scripts/dynamic-audit.mjs` (scheduled hourly via the `dynamic-audit.timer` systemd user timer), never a live LLM probe: transcript at `~/.local/state/opencode-fleet/dynamic-audit.jsonl` ("dynamic-audit.jsonl"). See `references/PROVIDERS.md` §"Deterministic dynamic-route audit" for the test list, log schema, and the interactive-LLM interrogation procedure. Ask the captain before mutating any gateway route — `served_model` counts in the audit log are the evidence base.
 
 ## Shared D1 catalog (2026-09-25)
 

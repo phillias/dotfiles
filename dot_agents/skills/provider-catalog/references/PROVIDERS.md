@@ -836,7 +836,7 @@ timer-driven runs set them in `~/.config/opencode/provider-catalog.env`
 `EnvironmentFile=`.
 
 **Usage:**
-- Intended schedule: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads. **Scheduler status (2026-09-26): not installed** — no crontab entry, no systemd user timer; last run 2026-09-19. Run manually or reinstall the cron entry to resume.
+- Intended schedule: hourly via the shipped `dynamic-audit.timer` systemd user timer (runs `node ~/.config/opencode/scripts/dynamic-audit.mjs`, `Persistent=true`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads.
 - `tail -F ~/.local/state/opencode-fleet/dynamic-audit.jsonl` to follow.
 - Interrogation (captain-triggered, interactive): aggregate `route_probe` events per route — `served_model` counts, latency percentiles, 429/limited frequency/retry-after rate — and check the ladder against the purpose definitions in "Dynamic routes" above.
 - **LLM proposals are interactive-only:** the captain triggers them on request ("interrogate the audit"); there is no scheduled LLM step. Any LLM run reads
@@ -929,21 +929,14 @@ D1 `provider-catalog` observations table — the history half of the credit
 picture (quota-axi = now, D1 = trend). Query recent lane health:
 
 ```
-CLOUDFLARE_API_TOKEN=<D1-capable token> \
 wrangler d1 execute provider-catalog --remote \
   --command "SELECT subject,metric,value_num,ts FROM observations WHERE kind='provider_window' ORDER BY id DESC LIMIT 18"
 ```
 
-Writes happen only through `dynamic-audit.mjs` (append-only observations);
-there is no manual UPDATE path by design — rerun the audit to refresh.
-
-Known gaps as of 2026-09-26 (fix before relying on the D1 half):
-- The hourly audit scheduler is **not installed** (no crontab entry, no
-  systemd user timer; last JSONL entry 2026-09-19). Run
-  `node ~/.config/opencode/scripts/dynamic-audit.mjs` manually or reinstall
-  the cron entry to resume mirroring.
-- The `.cloudflare-key` token lacks D1 permissions (API error 10000) — a
-  D1-capable token must be minted for `wrangler d1 execute` to work at all.
+D1 access uses the interactive `wrangler login` OAuth — no `CLOUDFLARE_API_TOKEN`
+or D1-capable token is needed or minted (see "D1 auth" above). Writes happen
+only through `dynamic-audit.mjs` (append-only observations); there is no
+manual UPDATE path by design — rerun the audit to refresh.
 
 ## Failure signatures & diagnostic queries (2026-09-19)
 
