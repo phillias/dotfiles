@@ -1,0 +1,4 @@
+served model: z-ai/glm-5.2
+finish_reason: stop
+final answer: 'PAYG_GLM52_OK'
+reasoning content present: True

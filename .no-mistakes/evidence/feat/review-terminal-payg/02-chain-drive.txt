@@ -1,0 +1,19 @@
+[Fallback] Loading Fallback Router Extension...
+[Fallback] Found chains: gate, review, default
+[Fallback] Cache TTL: 60min, Failed cooldown: 300s
+[Fallback] Extension loaded successfully.
+[Fallback] Available: fallback/gate, fallback/review, fallback/default
+[Fallback DEBUG] fallbackStream invoked for model: review
+[Fallback] Processing request for chain: review
+[Fallback] Chain: opencode-go-gw/deepseek-v4-flash -> CfAiGw/dynamic/pr-reviewer -> vercel/router/pr-reviewer -> openrouter-direct/z-ai/glm-5.2
+[Fallback] Selecting by priority, starting from beginning
+[Fallback] Model order: opencode-go-gw/deepseek-v4-flash -> CfAiGw/dynamic/pr-reviewer -> vercel/router/pr-reviewer -> openrouter-direct/z-ai/glm-5.2
+[Fallback] No API key for opencode-go-gw/deepseek-v4-flash: Failed to resolve API key for provider "opencode-go-gw" from environment variable: CF_AI_GATEWAY_TOKEN
+[Fallback] No API key for CfAiGw/dynamic/pr-reviewer: Failed to resolve API key for provider "CfAiGw" from environment variable: CF_AI_GATEWAY_TOKEN
+[Fallback] No API key for vercel/router/pr-reviewer: Failed to resolve API key for provider "vercel" from environment variable: AI_GATEWAY_API_KEY
+[Fallback] Attempting: openrouter-direct/z-ai/glm-5.2 (4/4)
+[Fallback DEBUG] Target Base URL: https://openrouter.ai/api/v1
+[Fallback DEBUG] Context Messages: 1
+[Fallback] openrouter-direct/z-ai/glm-5.2 succeeded (streaming started)
+[Fallback] Cached working model: openrouter-direct/z-ai/glm-5.2 (chain: review)
+CHAIN_TERMINAL_RUNG_OK
