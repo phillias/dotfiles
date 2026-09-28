@@ -820,6 +820,21 @@ re-shipped as skill edits; the skill keeps only the stable schema, seed, and
 policy. Read it with e.g.
 `wrangler d1 execute provider-catalog --remote --command "SELECT subject,metric,value_text,ts FROM observations ORDER BY id DESC LIMIT 20"`.
 
+**D1 auth (2026-09-26):** all D1 operations — database creation, schema/seed
+execution, audit-mirror writes, and read queries — go through the local
+`wrangler` CLI authenticated with the interactive OAuth login (`wrangler
+login`; account `a7fa198dd5b359a187c671064fe6b36e`, scope `d1 (write)`;
+credentials stored at `~/.config/.wrangler/config/default.toml`). No API
+token is created, stored, or used for D1. `CF_AI_GATEWAY_TOKEN` is a separate
+scoped API token for AI Gateway route mutation only and cannot serve D1.
+Fleet nodes that run this audit must either run `wrangler login` with d1
+scope or set `PROVIDER_CATALOG_D1=off` in the audit environment; otherwise
+every hourly audit run exits 2 on the mirror failure. The audit's scheduled
+systemd units also need `CF_AI_GATEWAY_TOKEN` and `VERCEL_TOKEN`; for
+timer-driven runs set them in `~/.config/opencode/provider-catalog.env`
+(KEY=VALUE lines, no export, user-readable only), which the units load via
+`EnvironmentFile=`.
+
 **Usage:**
 - Intended schedule: hourly cron (`node ~/.config/opencode/scripts/dynamic-audit.mjs`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads. **Scheduler status (2026-09-26): not installed** — no crontab entry, no systemd user timer; last run 2026-09-19. Run manually or reinstall the cron entry to resume.
 - `tail -F ~/.local/state/opencode-fleet/dynamic-audit.jsonl` to follow.
