@@ -776,8 +776,8 @@ config-free).
 `dot_config/opencode/scripts/executable_dynamic-audit.mjs`) is the
 fully deterministic audit of the `CfAiGw` routes — no LLM step exists;
 LLM interpretation happens only when the captain interrogates it, reading the
-audit log rather than re-probing the gateway. (Its hourly scheduler is
-currently absent — see Usage below.)
+audit log rather than re-probing the gateway. (Scheduled hourly via the
+shipped `dynamic-audit.timer` systemd user timer — see Usage below.)
 
 **Why the tests exist:**
 

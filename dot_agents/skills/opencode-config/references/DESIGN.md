@@ -189,13 +189,12 @@ unavailable in this API version so the annotation rides system-transform.
 
 ### 2.5 Catalog drift + promotion gate
 
-- **`catalog-drift.mjs`** fetches models.dev + opencode-zen catalogs, builds a
-  snapshot (config-referenced OR free models only) against
-  `~/.agents/skills/provider-catalog/models.snapshot.json`, diffs on added/removed/price (≥25% blended
-  tokens-per-dollar, two-sided) / context-window change, and writes
-  `catalog-drift.{json,txt}`. Exit 1 on drift, 2 on failure; `--seed` (re)writes
-  the snapshot. Runs via `catalog-drift.service/timer`
-  (OnBootSec=10min + daily).
+- **`catalog-drift.mjs` retired (2026-09-28):** the standalone models.dev/
+  opencode-zen drift detector and its `catalog-drift.{service,timer}` units were
+  removed — their ExecStart pointed at a nonexistent binary. The scheduled
+  catalog duties are superseded by `d1-registry-refresh.mjs` (daily 05:00
+  registry refresh) and `dynamic-audit.mjs` (hourly D1 mirror / config-drift
+  audit) against the shared provider-catalog D1 database.
 - **`fm-drift-pr.sh`** is the promotion gate's final step: chezmoi re-adds the
   drift-affected files (fallback config, snapshot, SKILL.md), branches
   `fm/catalog-drift-<ts>` from dotfiles master, pushes, and opens a PR with the
@@ -262,7 +261,7 @@ selection moved to the provider-catalog skill (2026-09-01): see
 | Fallback config (chains, agents, categories) | `opencode-fallback.jsonc` |
 | Chain engine (pure functions, unit-tested) | `lib/opencode-runtime-fallback-core.ts` |
 | Plugin wiring & state file | `plugins/opencode-runtime-fallback.ts` |
-| Drift + promotion scripts | `scripts/catalog-drift.mjs`, `scripts/fm-drift-pr.sh` |
+| Promotion scripts | `scripts/fm-drift-pr.sh` (drift detector retired 2026-09-28) |
 | Prior art consciously NOT adopted | `SKILL.md` (Layer D: Hermes `model_switch`, deepagents `switch_model`) |
 
 ---
@@ -583,8 +582,10 @@ never reaches downstream handlers. All three must be isolation-safe.
 
 ## 6. Maintenance & Evolution
 
-**systemd units (user):** `catalog-drift.{service,timer}` (drift detection),
-`selfimprove-drain.{service,timer}` (cue drain, 6h). Neither currently writes a
+**systemd units (user):** `d1-registry-refresh.{service,timer}` (daily 05:00
+D1 registry refresh), `dynamic-audit.{service,timer}` (hourly dynamic-route
+audit / D1 mirror), `selfimprove-drain.{service,timer}` (cue drain, 6h; the
+retired `catalog-drift.{service,timer}` was removed 2026-09-28). Neither currently writes a
 design doc — if a future `opencode-design` unit is added, its contract is to
 regenerate *this* file (or the skill's docs) from the live config, never to
 invent structure.
@@ -612,7 +613,7 @@ no symlinks. OmO-era material is archived in `ARCHIVE-OMO.md`.
 - `dispatch-rules.json` — 30 crew-dispatch rules
 - `plugins/` — fleet-state-writer.ts, self-learning-autocapture.ts, axi-memory-bridge.ts, tps-status.tsx, opencode-runtime-fallback.ts (retired: better-compaction.ts, tmux-subagent-activator.ts, go-pool-guard.ts)
 - `lib/` — opencode-runtime-fallback-core.ts
-- `scripts/` — fleet-digest.sh, fleet-note.sh, catalog-drift.mjs, fm-drift-pr.sh
+- `scripts/` — fleet-digest.sh, fleet-note.sh, fm-drift-pr.sh, d1-registry-refresh.mjs, dynamic-audit.mjs
 - `AGENTS.md`, `docs/plans/`, `skills/`, `.*-key` files
 
 Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.txt, decisions.tsv, fallback.json).

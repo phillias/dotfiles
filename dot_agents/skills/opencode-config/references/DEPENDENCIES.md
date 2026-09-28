@@ -13,7 +13,7 @@ The OpenCode config and the firstmate distro rely on a set of host tools. All pa
 | wrangler | Cloudflare Workers CLI (deploy/dev) | mise-managed (`npm:wrangler`) |
 | sqlite3 | local DB reads + opencode.db session queries (commit identity resolution) | /usr/bin/sqlite3 |
 | no-mistakes | delivery-pipeline gate (PR/review/CI; dotfiles runs `no_ci: true` — empty forge checks pass) | ~/.local/bin/no-mistakes |
-| node | JSONC validation, drift scripts (catalog-drift.mjs) | system |
+| node | JSONC validation, scripts (d1-registry-refresh.mjs, dynamic-audit.mjs) | system |
 | jq | JSON parsing (Zen model catalog checks) | system |
 | **mise** | declarative manifest (global manifest owns gh, bw, wrangler + npm-global CLI fleet; per-project pins activated in zshrc) | ~/.config/mise/config.toml · binary ~/.local/bin/mise |
 
@@ -37,7 +37,7 @@ Documented but NOT created: `.cheapestinference-key`, `.cheaperinference-key`, `
 - **lavish-axi** — structured decision/report surface.
 - **chrome-devtools-axi** — browser work.
 - **mem / axi-memory** — durable cross-session memory (`.local/bin/mem`).
-- **systemd** — `catalog-drift.service`+timer, `selfimprove-drain` unit.
+- **systemd** — `d1-registry-refresh`/`dynamic-audit` units+timer, `selfimprove-drain` unit (catalog-drift units retired 2026-09-28).
 - **age** — chezmoi secret encryption (age-key.txt.age).
 - **SQLite** — `~/.local/share/opencode/opencode.db` (session records; commit identity via `sqlite3 ... SELECT model FROM session ORDER BY time_updated DESC LIMIT 1`).
 
