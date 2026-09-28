@@ -507,8 +507,10 @@ Route contents will churn — this catalog records _purpose_, not lane lists:
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
   `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
-  the separate `fallback/review` chain (pi fallback-chains.json), with Vercel
-  `vmc/pr-reviewer` as second rung, opencode-go as third rung, and openrouter-direct/z-ai/glm-5.2 as terminal PAYG tail (account-independent of CF/zen budget walls).
+  the separate `fallback/review` chain (pi fallback-chains.json), with
+  `opencode-go-gw/deepseek-v4-flash` as first rung, `CfAiGw/dynamic/pr-reviewer`
+  second, `vercel/router/pr-reviewer` third, and `openrouter-direct/z-ai/glm-5.2`
+  as terminal PAYG tail (account-independent of CF/zen budget walls).
 - Harness family routes (2026-09-19 build, captain directive — house models
   per family across providers, openrouter PAYG + plan lanes). 2026-09-20
   less-wrong pass (captain order, route versions deployed and probed 200):
