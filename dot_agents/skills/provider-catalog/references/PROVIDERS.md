@@ -16,7 +16,7 @@ Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes 
 
 ## Cheapest-qualified-lane dispatch rule (spawn selection)
 
-- **Rule:** when a dispatch resolves to multiple _qualified_ lanes — lanes that
+- **Rule:** when a dispatch resolves to multiple *qualified* lanes — lanes that
   meet the task's reasoning-class, capability, and runway gates — prefer the
   cheapest qualified lane, ranked by blended tokens-per-dollar from the current
   catalog snapshot (`models.snapshot.json` in this skill; per-provider rates in
@@ -24,7 +24,7 @@ Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes 
 - **Scope:** applies to dispatch-time selection among eligible lanes
   (unbound sessions and utility classes). Pinned classes keep their pins;
   cheapest-qualified never downgrades a reasoning-class requirement.
-- **Relationship to the fallback ladder:** this rule picks the lane _before_
+- **Relationship to the fallback ladder:** this rule picks the lane *before*
   work starts; the fallback ladder is reactive, stepping only after the active
   lane fails or exhausts. A cheapest-lane choice does not reorder the ladder.
 
@@ -34,33 +34,33 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 
 **Token:** `$CF_AI_GATEWAY_TOKEN` (exported from `~/.zshenv`, reading `.cf-ai-gw` from the default keys profile — `~/.agents/keys/$(readlink ~/.agents/keys/default)/.cf-ai-gw`). The token covers both the `/ai/*` (Workers AI REST) and `/ai-gateway/*` planes. BYOK upstream keys live in the gateway dashboard (alias `default`); clients authenticate with the gateway token only, which the gateway does not forward upstream.
 
-| Provider        | URL segment                 | Notes                                                                                                                                                                                                                                                                                                                                                                                       |
-| --------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| opencode-zen    | `custom-opencode-zen/v1`    | primary quality (big-pickle) + free tier                                                                                                                                                                                                                                                                                                                                                    |
-| opencode-go     | `custom-opencode-go/v1`     | subsidized pool (kimi-k2.6, deepseek-v4-flash). **Session-gated 2026-09-08**: requests require a per-conversation `x-opencode-session` header; a static config header cannot satisfy it. Direct-client use only (opencode/pi send it natively) — EXCLUDES opencode-go models from gateway dynamic routes and any static-header custom-provider hop. Clean 400 `MissingSessionID` otherwise. |
-| commandcode     | `custom-commandcode/v1`     | GOAT paid pool (Kimi-K2.6, DS-V4-Flash)                                                                                                                                                                                                                                                                                                                                                     |
-| zai-coding      | `custom-zai-coding/v4`      | Z.AI Coding Plan Lite; **`/v4`, not `/v1`**                                                                                                                                                                                                                                                                                                                                                 |
-| phoenixgrove    | `custom-phoenixgrove/v1`    | GLM-5.3-flash, deepseek-v4-flash                                                                                                                                                                                                                                                                                                                                                            |
-| openrouter      | `openrouter/v1`             | native passthrough slug, **NOT `custom-`**                                                                                                                                                                                                                                                                                                                                                  |
-| cloudflare      | `custom-cloudflare/v1`      | @cf lane (Workers AI, free tier)                                                                                                                                                                                                                                                                                                                                                            |
-| abliteration-ai | `custom-abliteration-ai/v1` | unrestricted reasoning models (abliterated-model, abliterated-model-large)                                                                                                                                                                                                                                                                                                                  |
+| Provider | URL segment | Notes |
+|---|---|---|
+| opencode-zen | `custom-opencode-zen/v1` | primary quality (big-pickle) + free tier |
+| opencode-go | `custom-opencode-go/v1` | subsidized pool (kimi-k2.6, deepseek-v4-flash). **Session-gated 2026-09-08**: requests require a per-conversation `x-opencode-session` header; a static config header cannot satisfy it. Direct-client use only (opencode/pi send it natively) — EXCLUDES opencode-go models from gateway dynamic routes and any static-header custom-provider hop. Clean 400 `MissingSessionID` otherwise. |
+| commandcode | `custom-commandcode/v1` | GOAT paid pool (Kimi-K2.6, DS-V4-Flash) |
+| zai-coding | `custom-zai-coding/v4` | Z.AI Coding Plan Lite; **`/v4`, not `/v1`** |
+| phoenixgrove | `custom-phoenixgrove/v1` | GLM-5.3-flash, deepseek-v4-flash |
+| openrouter | `openrouter/v1` | native passthrough slug, **NOT `custom-`** |
+| cloudflare | `custom-cloudflare/v1` | @cf lane (Workers AI, free tier) |
+| abliteration-ai | `custom-abliteration-ai/v1` | unrestricted reasoning models (abliterated-model, abliterated-model-large) |
 
 **URL version-segment rule:** the gateway strips a trailing version-like segment from the custom provider's `base_url` before appending the request path; carrying the version in the request URL restores correctness.
 
 ## Provider roles
 
-| Provider           | Role                                                                                | Cost                                |
-| ------------------ | ----------------------------------------------------------------------------------- | ----------------------------------- |
-| opencode-zen       | primary quality (big-pickle) + free tier                                            | free ~200/day / paid                |
-| opencode-go        | subsidized pool                                                                     | $5 first mo → $10/mo                |
-| commandcode (GOAT) | paid pool                                                                           | $10/mo → usage                      |
-| zai-coding         | Z.AI Coding Plan Lite, credits-based                                                | $18/mo                              |
-| phoenixgrove       | GLM-5.3 exclusive band, free + paid tiers                                           | $4–$195/mo / $5+ per-token          |
-| cloudflare         | Workers AI @cf lane, free tier                                                      | $0                                  |
-| openrouter         | GLM-5 overflow + free ladder                                                        | $0 / pay                            |
-| typesafe-ai        | System One evaluation (Jev) — fast structured decisions                             | $0.042/MTok input, output free      |
-| abliteration-ai    | unrestricted reasoning models                                                       | $1–$3/MTok input, $3–$5/MTok output |
-| tsfm-ai            | Hosted time-series foundation models (54 models, 16 families) — not a chat provider | $0.00025/forecast (flat)            |
+| Provider | Role | Cost |
+|---|---|---|
+| opencode-zen | primary quality (big-pickle) + free tier | free ~200/day / paid |
+| opencode-go | subsidized pool | $5 first mo → $10/mo |
+| commandcode (GOAT) | paid pool | $10/mo → usage |
+| zai-coding | Z.AI Coding Plan Lite, credits-based | $18/mo |
+| phoenixgrove | GLM-5.3 exclusive band, free + paid tiers | $4–$195/mo / $5+ per-token |
+| cloudflare | Workers AI @cf lane, free tier | $0 |
+| openrouter | GLM-5 overflow + free ladder | $0 / pay |
+| typesafe-ai | System One evaluation (Jev) — fast structured decisions | $0.042/MTok input, output free |
+| abliteration-ai | unrestricted reasoning models | $1–$3/MTok input, $3–$5/MTok output |
+| tsfm-ai | Hosted time-series foundation models (54 models, 16 families) — not a chat provider | $0.00025/forecast (flat) |
 
 ## Model ids
 
@@ -71,7 +71,6 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 **Provider:** `typesafe-ai` — native provider for Jev evaluation model
 
 **Access:**
-
 - Direct API: `POST https://api.typesafe.ai/v1/systemone` with `TYPESAFE_API_KEY` (waitlist)
 - Vercel AI Gateway: Model ID `typesafe-ai/jev` with `AI_GATEWAY_API_KEY` (immediate, no waitlist)
 - CF AI Gateway: Custom provider (dashboard BYOK setup, base URL `api.typesafe.ai/v1`)
@@ -79,7 +78,6 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 **Pricing:** $0.042/MTok input, output free (too cheap to meter)
 
 **Model IDs:**
-
 - `jev-latest` — stable alias (SDK default)
 - `jev-preview` — preview builds
 - `jev-1.13.0` — pin for production (response includes versioned ID)
@@ -87,7 +85,6 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 **Status (2026-09-18):** Vercel AI Gateway provides immediate access. Direct TypeSafe API requires waitlist acceptance.
 
 **Capabilities:**
-
 - Question types: Choice (pick from list), Score (rubric), Boolean (probability)
 - Parallel evaluation: all questions in single call
 - Calibrated confidence: probability distributions match outcomes (RLCD training)
@@ -95,14 +92,12 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 - Context: 32K input budget (documented 32,768 tokens)
 
 **Limitations:**
-
 - Cannot generate prose, code, or explanations
 - Output is strictly structured (cannot invent values outside schema)
 - No image input
 - No chat interface
 
 **Use cases:**
-
 - Task routing and classification
 - Finding triage (severity, auto-fixable, needs-human)
 - Mention classification (spam, mention_type, safe_to_reply)
@@ -111,7 +106,6 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 - Model selection routing (reasoning needed, profile fit)
 
 **Integration pattern (cascade):**
-
 ```
 Jev (fast, cheap) → Classify/route
    ↓ (low confidence cases)
@@ -121,7 +115,6 @@ LLM (text generation) → Write output
 ```
 
 **Example request (direct API):**
-
 ```bash
 curl -X POST https://api.typesafe.ai/v1/systemone \
   -H "Authorization: Bearer $TYPESAFE_API_KEY" \
@@ -139,7 +132,6 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 ```
 
 **Response structure:**
-
 ```json
 {
   "model": "jev-1.13.0",
@@ -156,33 +148,28 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 **Provider:** `abliteration-ai` — native provider for unrestricted reasoning models
 
 **Access:**
-
 - Direct API: `POST https://api.abliteration.ai/v1/chat/completions` with `ABLITERATION_API_KEY` (starts with `ak_`)
 - CF AI Gateway: Custom provider (dashboard BYOK setup, base URL `api.abliteration.ai/v1`)
 - OpenAI SDK compatible: Set `baseURL: "https://api.abliteration.ai/v1"`
 
 **Model IDs:**
-
 - `abliterated-model` — general-purpose, multimodal (text + image), 256K context, bf16 quantization
 - `abliterated-model-large` — frontier-scale reasoning, text-only, 1M context, fp8 quantization
 - `abliterated-model-large-v2` — updated large variant (2026-09-18), same specs as large
 
 **Pricing:**
-
 - `abliterated-model`: $1/MTok input, $3/MTok output, $0.10/MTok cached read
 - `abliterated-model-large`: $3/MTok input, $5/MTok output, $0.30/MTok cached read
 - Same pricing for `abliterated-model-large-v2`
 
 **Context & Limits:**
-
-| Model                        | Context   | Max Output | Modalities  |
-| ---------------------------- | --------- | ---------- | ----------- |
-| `abliterated-model`          | 262,144   | 262,134    | text, image |
-| `abliterated-model-large`    | 1,000,000 | 999,990    | text        |
-| `abliterated-model-large-v2` | 1,000,000 | 999,990    | text        |
+| Model | Context | Max Output | Modalities |
+|---|---|---|---|
+| `abliterated-model` | 262,144 | 262,134 | text, image |
+| `abliterated-model-large` | 1,000,000 | 999,990 | text |
+| `abliterated-model-large-v2` | 1,000,000 | 999,990 | text |
 
 **Supported Features:**
-
 - Tools (function calling)
 - JSON mode & structured outputs
 - Logprobs
@@ -192,7 +179,6 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 - Prompt caching
 
 **Sampling Parameters:**
-
 - `temperature`: 0–2 (large: 0–1)
 - `top_p`: 0–1
 - `top_k`, `min_p`: supported
@@ -202,14 +188,12 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 **Status (2026-09-18):** Live API with immediate access via API key. Credit-based billing with remaining_credits field in response.
 
 **Use Cases:**
-
 - Hard reasoning workloads requiring frontier-scale compute
 - Evaluation tasks needing 1M context
 - Multimodal inference (abliterated-model only)
 - Scenarios requiring unrestricted model behavior
 
 **Example request:**
-
 ```bash
 curl https://api.abliteration.ai/v1/chat/completions \
   -H "Authorization: Bearer $ABLITERATION_API_KEY" \
@@ -223,23 +207,20 @@ curl https://api.abliteration.ai/v1/chat/completions \
 ```
 
 **Response structure:**
-
 ```json
 {
   "id": "chatcmpl-abc123",
   "object": "chat.completion",
   "created": 1781324687,
   "model": "abliterated-model",
-  "choices": [
-    {
-      "index": 0,
-      "message": {
-        "role": "assistant",
-        "content": "Quantum computing leverages superposition and entanglement..."
-      },
-      "finish_reason": "stop"
-    }
-  ],
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "Quantum computing leverages superposition and entanglement..."
+    },
+    "finish_reason": "stop"
+  }],
   "usage": {
     "prompt_tokens": 12,
     "completion_tokens": 28,
@@ -258,7 +239,6 @@ curl https://api.abliteration.ai/v1/chat/completions \
 **Not a chat/completions provider** — TSFM.ai serves a dedicated `/v1/forecast` endpoint for zero-shot time-series forecasting. It does NOT route through the CF AI Gateway (different API shape). Use directly.
 
 **Access:**
-
 - Endpoint: `POST https://api.tsfm.ai/v1/forecast`
 - Auth: `Bearer $TSFM_API_KEY` (key at `~/.agents/keys/default/.tsfm-key`, loaded in both `.bashrc` and `.zshrc`)
 - Model catalog: `GET https://api.tsfm.ai/api/models` (54 models, all $0.00025/forecast)
@@ -270,7 +250,6 @@ curl https://api.abliteration.ai/v1/chat/completions \
 **Pricing:** Flat $0.00025 per forecast request, regardless of model. No per-token billing. Free tier included (no credit card required for signup).
 
 **Request format (canonical):**
-
 ```json
 {
   "model": "google/timesfm-2.5-200m-pytorch",
@@ -290,7 +269,6 @@ curl https://api.abliteration.ai/v1/chat/completions \
 Key format detail: `target` is **always 2D** — `[[val], [val], ...]` (outer=time, inner=channels). Univariate uses length-1 inner arrays. Passing 1D arrays returns 422.
 
 **Response format:**
-
 ```json
 {
   "id": "...", "object": "forecast", "model": "google/timesfm-2.5-200m-pytorch",
@@ -314,24 +292,24 @@ Key format detail: `target` is **always 2D** — `[[val], [val], ...]` (outer=ti
 
 **TimesFM model availability (2026-09-18):**
 
-| Model ID                          | Params | Context | Max Context | GPU | Status         |
-| --------------------------------- | ------ | ------- | ----------- | --- | -------------- |
-| `google/timesfm-2.0-500m-pytorch` | 500M   | 2,048   | 2,048       | T4  | available      |
-| `google/timesfm-2.5-200m-pytorch` | 200M   | 16,384  | 16,384      | T4  | available      |
-| `google/timesfm-3.0-pytorch`      | 330M   | 16,384  | 16,384      | —   | **NOT hosted** |
+| Model ID | Params | Context | Max Context | GPU | Status |
+|---|---|---|---|---|---|
+| `google/timesfm-2.0-500m-pytorch` | 500M | 2,048 | 2,048 | T4 | available |
+| `google/timesfm-2.5-200m-pytorch` | 200M | 16,384 | 16,384 | T4 | available |
+| `google/timesfm-3.0-pytorch` | 330M | 16,384 | 16,384 | — | **NOT hosted** |
 
 TimesFM-3 is NOT available on any hosted inference provider. The weights are non-commercial license (`timesfm-non-commercial-license-v1.0`), which blocks commercial hosting. TSFM.ai has a blog post analyzing TimesFM-3 but confirmed via live API query: zero TimesFM-3 models in catalog. Google's BigQuery integration for TimesFM-3 is announced "in coming weeks" — that may provide a commercial path.
 
 **Best models for financial time-series (Gambit use case):**
 
-| Model ID                          | Family  | Params | Context | Why                                                 |
-| --------------------------------- | ------- | ------ | ------- | --------------------------------------------------- |
-| `google/timesfm-2.5-200m-pytorch` | TimesFM | 200M   | 16,384  | Longest context, quantile support, covariates       |
-| `google/timesfm-2.0-500m-pytorch` | TimesFM | 500M   | 2,048   | Higher capacity, shorter context                    |
-| `Salesforce/moirai-1.1-R-large`   | Moirai  | 311M   | 8,192   | Native multivariate (Any-Variate Attention)         |
-| `Salesforce/moirai-1.1-R-base`    | Moirai  | 91M    | 8,192   | Balanced multivariate quality/cost                  |
-| `amazon/chronos-2`                | Chronos | —      | 8,192   | Strong zero-shot, Apache-2.0 licensed               |
-| `NX-AI/TiRex-2`                   | TiRex   | —      | 8,192   | Multivariate xLSTM with covariates, streaming state |
+| Model ID | Family | Params | Context | Why |
+|---|---|---|---|---|
+| `google/timesfm-2.5-200m-pytorch` | TimesFM | 200M | 16,384 | Longest context, quantile support, covariates |
+| `google/timesfm-2.0-500m-pytorch` | TimesFM | 500M | 2,048 | Higher capacity, shorter context |
+| `Salesforce/moirai-1.1-R-large` | Moirai | 311M | 8,192 | Native multivariate (Any-Variate Attention) |
+| `Salesforce/moirai-1.1-R-base` | Moirai | 91M | 8,192 | Balanced multivariate quality/cost |
+| `amazon/chronos-2` | Chronos | — | 8,192 | Strong zero-shot, Apache-2.0 licensed |
+| `NX-AI/TiRex-2` | TiRex | — | 8,192 | Multivariate xLSTM with covariates, streaming state |
 
 For Gambit's multivariate alpha forecasting: `Salesforce/moirai-1.1-R-large` is the best commercially-licensed, natively multivariate option. Use `google/timesfm-2.5-200m-pytorch` for long-context univariate forecasting (16K points = ~64 trading days of minute data or ~65 years of daily data).
 
@@ -348,10 +326,9 @@ Chronos (6), Cisco TSM (1), Granite FlowState (2), Granite PatchTST (2), Granite
 
 **Surfaced limit (hard wall):** free tier is `GenerateRequestsPerDayPerProjectPerModel-FreeTier = 20 requests/day/model/project`. A no-mistakes run costs ~10–30 model calls across review/test/document/lint/PR agents → **one busy run exhausts the daily budget**. Gemini free tier cannot be a pipeline primary; use as light fallback, or move the Google key to AI Studio paid tier (removes the 20/day wall).
 
-**Reliability quirk:** gemini-2.5-flash intermittently wraps its structured JSON in markdown code fences (`json …`), which pi's output parser rejects → step-level parse failures, nondeterministic (retries usually pass). Treat as a tax when it drives structured-output steps.
+**Reliability quirk:** gemini-2.5-flash intermittently wraps its structured JSON in markdown code fences (```json …```), which pi's output parser rejects → step-level parse failures, nondeterministic (retries usually pass). Treat as a tax when it drives structured-output steps.
 
 **Long-term free 1M-context candidates (ranked):**
-
 1. **`opencode/gemini-3-flash`** via the opencode (zen Console) provider — 1M context, standing free tier (not a promo window), and Console free-tier limits are per-model, so it has its own window separate from big-pickle.
 2. **Google AI Studio free** (native key, above) — 20/day wall.
 3. **OpenRouter `:free` models with 1M ctx** (e.g. gemini-2.5-flash:free) — 1000/day shared free-tier bucket only while the account holds a $10+ credits balance ("high-balance" tier; our key is exhausted, so currently 50/day).
@@ -388,6 +365,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 - phoenixgrove custom lane serves ~38 models (glm-4.7-flash, qwen-3.8-27b, gemma-4-31b respond); PGS bills per-token on the old key — treat PGS as paid except on the coding plan above.
 - `opencode-zen` claude family (2026-09-14 probe): paid-only on zen — no `-free` slugs exist for claude-sonnet/opus/fable variants; free claude-class access stays on openrouter `:free` lanes or CF route fallbacks (zen stopped serving claude-sonnet-4 entirely, see the `claude` route entry).
 
+
 ## Free-lane probe results (2026-09-01, via gateway)
 
 - `custom-nvidia-nim` (`https://integrate.api.nvidia.com/v1` upstream): `nvidia/nemotron-3-super-120b-a12b` 200 OK, 1M ctx. Whole nemotron-3 family on one free `nvapi-` key, BUT ~40 RPM is **account-wide** across all NIM models (shared pool, no SLA, increases never granted) — gate/aux lane, not workhorse. Catalog churns: `nemotron-3-nano-30b-a3b` hit end-of-life 2026-09-01; verify slugs at call time.
@@ -405,12 +383,12 @@ wired as gateway `custom-nvidia-nim`, key `~/.agents/keys/default/.nvidia-key`).
 Live `/v1/models` (82 ids, 2026-09-28) confirms all four. Probe results with the
 captain's key (same day):
 
-| Model                             | Catalog | Probe                        | Notes                                                                                                                                                                      |
-| --------------------------------- | ------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `z-ai/glm-5.3`                    | yes     | **200, 5.2s**                | Full GLM-5.3, 1M ctx / 128K out, reasoning always-on (low/high/max), function calling. First _free_ full-GLM-5.3 lane (previous GLM-5.3 lanes all paid).                   |
-| `moonshotai/kimi-k3`              | yes     | **200, 23.6s**               | 2.8T MoE / 104B active, 1M ctx, text+image input, tool calling, structured output, reasoning effort low/high/max, Modified MIT. Slow but serving.                          |
-| `deepseek-ai/deepseek-v4.1-flash` | yes     | timeout ×3 (0 bytes, 25–60s) | 552B MoE / 8B active, 1M ctx, multimodal, adjustable reasoning (1–100), recommended `max_tokens` ≥256K. Added to NIM 2026-09-18. Likely pool overload from the viral wave. |
-| `z-ai/glm-5.3-flash`              | yes     | timeout ×3 (0 bytes, 25–45s) | Specs not published. Flash lanes are the hammered ones; treat as unreliable until probed healthy.                                                                          |
+| Model | Catalog | Probe | Notes |
+|---|---|---|---|
+| `z-ai/glm-5.3` | yes | **200, 5.2s** | Full GLM-5.3, 1M ctx / 128K out, reasoning always-on (low/high/max), function calling. First *free* full-GLM-5.3 lane (previous GLM-5.3 lanes all paid). |
+| `moonshotai/kimi-k3` | yes | **200, 23.6s** | 2.8T MoE / 104B active, 1M ctx, text+image input, tool calling, structured output, reasoning effort low/high/max, Modified MIT. Slow but serving. |
+| `deepseek-ai/deepseek-v4.1-flash` | yes | timeout ×3 (0 bytes, 25–60s) | 552B MoE / 8B active, 1M ctx, multimodal, adjustable reasoning (1–100), recommended `max_tokens` ≥256K. Added to NIM 2026-09-18. Likely pool overload from the viral wave. |
+| `z-ai/glm-5.3-flash` | yes | timeout ×3 (0 bytes, 25–45s) | Specs not published. Flash lanes are the hammered ones; treat as unreliable until probed healthy. |
 
 Also live on NIM: `moonshotai/kimi-k2.6` and `nvidia/nemotron-3-super-120b-a12b`
 (pr-gate head, healthy). Gone from the live catalog (EOL churn this wave):
@@ -447,7 +425,7 @@ Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in 
 
 The gateway runs named dynamic routes (CF "dynamic routing", OpenAI-compatible
 endpoint `…/opencode/compat/chat/completions`, model string `dynamic/<name>`).
-Route contents will churn — this catalog records _purpose_, not lane lists:
+Route contents will churn — this catalog records *purpose*, not lane lists:
 
 - `TUI` — daily-driver, budget GLM ladder (captain directive 2026-09-19):
   **Free → Subsidized → PAYG**, GLM 5.1 → 5.2 → 5.3-flash within tiers,
@@ -473,13 +451,14 @@ Route contents will churn — this catalog records _purpose_, not lane lists:
   `91701376`** after three no-mistakes run deaths): openrouter free lanes
   200-wrap Nvidia-pool overload errors ("Service temporarily overloaded") —
   the route's success edge passes the error body verbatim, killing runs
-  exactly when the pool is loaded. 2026-09-20 status: **no-mistakes gate agent rides this route via pi
+  exactly when the pool is loaded.   2026-09-20 status: **no-mistakes gate agent rides this route via pi
   `fallback/gate` chain** (dotfiles PR #343 restored the chain, previously
   pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
   200-wrapped overload errors 6/6 nights runs). Review agent rides the
-  separate `fallback/review` chain (CfAiGw/dynamic/pr-reviewer →
-  vercel/vmc/pr-reviewer → opencode-go-gw/deepseek-v4-flash). The route
-  serves gate, probe, and external traffic.
+  separate `fallback/review` chain (opencode-go-gw/deepseek-v4-flash →
+  CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer →
+  openrouter-direct/z-ai/glm-5.2 terminal PAYG rung). The route serves
+  gate, probe, and external traffic.
   Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
   free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
   plus the insert — verified via versions API
@@ -543,7 +522,7 @@ ladder remaining as the fallback tail.
 
 ### Route management via REST — dynamic routes ARE token-manageable (2026-09-09)
 
-Contrary to the earlier "dashboard-only" note for _custom providers_, dynamic
+Contrary to the earlier "dashboard-only" note for *custom providers*, dynamic
 ROUTE graphs are fully token-manageable:
 
 - `POST /accounts/{acc}/ai-gateway/gateways/{gw}/versions`
@@ -559,7 +538,7 @@ ROUTE graphs are fully token-manageable:
 
 **Head-node poisoning failure mode (observed 2026-09-08):** an upstream that
 returns HTTP 200 wrapping an error JSON (aihubmix style, `{"code":500,"msg":"404
-NOT_FOUND"}`) is treated by the route as a _successful stream_. The node's
+NOT_FOUND"}`) is treated by the route as a *successful stream*. The node's
 `success` edge fires, fallback never runs, and `END` passes the error body
 verbatim. A single 200-wrapped-error head node kills the whole ladder. Fix:
 broken or suspicious providers go LAST in the chain, healthy named first; the
@@ -703,7 +682,7 @@ compatible).
   does not consume Go dollar allowance).
 - **Audit blind spot:** `dynamic-audit.mjs` cannot probe it — curl gets
   `FreeTierError 403: "OpenCode's free tier can only be used from within
-OpenCode"`. The free tier is locked to the opencode app identity; gateway
+  OpenCode"`. The free tier is locked to the opencode app identity; gateway
   token + cf-aig headers don't bypass it. Lane health for this model is
   invisible to the scheduled audit.
 
@@ -711,24 +690,24 @@ OpenCode"`. The free tier is locked to the opencode app identity; gateway
 
 Promotional "limited-time discounted rate":
 
-| Token type     | $/M tokens | ¥/M tokens |
-| -------------- | ---------- | ---------- |
-| Uncached input | 0.30       | 2          |
-| Cached input   | 0.006      | 0.04       |
-| Output         | 1.20       | 8          |
+| Token type | $/M tokens | ¥/M tokens |
+|---|---|---|
+| Uncached input | 0.30 | 2 |
+| Cached input | 0.006 | 0.04 |
+| Output | 1.20 | 8 |
 
 For comparison, LongCat-2.0 PAYG was $2/$8 (5–7× higher). The promotional
 rate is not yet wired for PAYG through opencode.
 
 ### Benchmarks (LongCat-2.0 — 2.5-Preview has no published benchmarks yet)
 
-| Benchmark              | LongCat-2.0 | Gemini 3.1 Pro | GPT-5.5 | Claude Opus 4.8 |
-| ---------------------- | ----------- | -------------- | ------- | --------------- |
-| Terminal-Bench 2.1     | 70.8        | 70.7           | 73.8    | 78.9            |
-| SWE-bench Pro          | 59.5        | 54.2           | 58.6    | 64.3            |
-| SWE-bench Multilingual | 77.3        | —              | —       | 80.5            |
-| IFEval                 | 90.0        | —              | —       | —               |
-| GPQA-diamond           | 88.9        | —              | —       | —               |
+| Benchmark | LongCat-2.0 | Gemini 3.1 Pro | GPT-5.5 | Claude Opus 4.8 |
+|---|---|---|---|---|
+| Terminal-Bench 2.1 | 70.8 | 70.7 | 73.8 | 78.9 |
+| SWE-bench Pro | 59.5 | 54.2 | 58.6 | 64.3 |
+| SWE-bench Multilingual | 77.3 | — | — | 80.5 |
+| IFEval | 90.0 | — | — | — |
+| GPQA-diamond | 88.9 | — | — | — |
 
 Competitive with frontier models on coding/agentic tasks, slightly below top
 tier (Claude Opus 4.8). Strong agentic: FORTE 73.2, BrowseComp 79.9.
@@ -741,7 +720,6 @@ retention (privacy-safe for private repos). Already on the opencode-zen
 provider the TUI uses.
 
 **Caveats:**
-
 1. Free window is ~2 weeks with NO published end date — could end without
    warning. When it ends, the PAYG promotional rate ($0.30/$1.20) is not
    wired through opencode, so the lane would simply vanish.
@@ -763,16 +741,16 @@ opencode with a LongCat API key.
 - **pi-signed** is not a different harness: it is the signed wrapper identity
   of the pi coding agent (exact `pi-signed` wrapper parent around the Pi
   binary, foreground name `pi-launcher`). Firstmate records the identity as
-  -is and refuses rather than silently falling back when the wrapper is
+ -is and refuses rather than silently falling back when the wrapper is
   missing. The signed wrapper is what keeps the launch provenance legitimate;
   there is no separate provider behind it.
-- **OpenRouter PAYG vs subscriptions**: OpenRouter gives _API-key pass-through
-  list pricing_, which is NOT the same as a harness subscription rate — you
+- **OpenRouter PAYG vs subscriptions**: OpenRouter gives *API-key pass-through
+  list pricing*, which is NOT the same as a harness subscription rate — you
   pay the provider's listed per-token price (their $186/mo-example is
   identical either way) plus OpenRouter's 5.5%. Harness/OAuth subscriptions
   (Claude Code 5-hour windows, Codex/Cursor seats) are different accounting
-  systems with their own subsidized lanes and can be _cheaper per hour of
-  agent use_ than PAYG when the model is subscription-exclusive. They are a
+  systems with their own subsidized lanes and can be *cheaper per hour of
+  agent use* than PAYG when the model is subscription-exclusive. They are a
   per-seat recurring fixed cost; our budget goal is to stay per-token and let
   `TUI`'s plan-subsidized lanes absorb interactive volume.
 - **Harness-recognition gates** are a real auth-shape class to watch:
@@ -788,8 +766,8 @@ opencode with a LongCat API key.
   requests it classifies as agentic harnesses (TM's announcement names Claude
   Code, Codex, Hermes Agent, Ori — criteria undocumented; pi passed a live
   one-shot smoke but no-mistakes' shaped gate request got `403: inkling:free
-is only available on agentic harnesses — OpenRouter's routing funnel
-rejects pi as non-agentic`, so the verdict is not reliably controllable
+  is only available on agentic harnesses — OpenRouter's routing funnel
+  rejects pi as non-agentic`, so the verdict is not reliably controllable
   from client signature alone). The free endpoint's terms also log all
   prompts/outputs (disassociated) for TM model improvement and forbid
   confidential/personal data — repository diffs and review content must
@@ -811,7 +789,6 @@ upgrades plus trust-dialog acceptance on fresh worktrees; no recurring
 provider-edit work is added per harness (all harnesses point at the same
 `CfAiGw` provider entry, so dynamic-route lane changes stay
 config-free).
-
 ## Deterministic dynamic-route audit (updated 2026-09-25)
 
 `~/.config/opencode/scripts/dynamic-audit.mjs` (source: dotfiles
@@ -834,7 +811,7 @@ shipped `dynamic-audit.timer` systemd user timer — see Usage below.)
 2. `route-probe` sends one fixed 4-token completion (`dynamic/<route>`) per
    route and logs HTTP code, latency, the upstream model id each route served,
    and `retry-after` / `cf-aig-status` headers on 429/5xx. 429/5xx/timeout is
-   recorded as _routing evidence_, never a tool failure — repeated
+   recorded as *routing evidence*, never a tool failure — repeated
    `status":"limited"` on a route is a lane-health fact, not a broken audit.
 
 **Log (the interrogation substrate):** append-only JSONL at
@@ -878,7 +855,6 @@ timer-driven runs set them in `~/.config/opencode/provider-catalog.env`
 `EnvironmentFile=`.
 
 **Usage:**
-
 - Intended schedule: hourly via the shipped `dynamic-audit.timer` systemd user timer (runs `node ~/.config/opencode/scripts/dynamic-audit.mjs`, `Persistent=true`), exits 0 clean / 1 drift / 2 machinery failure — transient 429/5xx/timeout never fails the tool, they're evidence the skill reads.
 - `tail -F ~/.local/state/opencode-fleet/dynamic-audit.jsonl` to follow.
 - Interrogation (captain-triggered, interactive): aggregate `route_probe` events per route — `served_model` counts, latency percentiles, 429/limited frequency/retry-after rate — and check the ladder against the purpose definitions in "Dynamic routes" above.
@@ -887,22 +863,22 @@ timer-driven runs set them in `~/.config/opencode/provider-catalog.env`
 
 ### Why the tests exist (design rationale)
 
-The catalog reacts to invisible churn: dynamic-route contents change dashboard-side only, provider windows exhaust silently, and the last human-visible signal is often a failed chain somewhere. Recording each route's served_model per test run plus the provider availability aggregate gives every lane a _replayable history_ of when the route healthy and who served it — the same ground truth `quota-axi` provides for quota, here for route/availability identity.
+The catalog reacts to invisible churn: dynamic-route contents change dashboard-side only, provider windows exhaust silently, and the last human-visible signal is often a failed chain somewhere. Recording each route's served_model per test run plus the provider availability aggregate gives every lane a *replayable history* of when the route healthy and who served it — the same ground truth `quota-axi` provides for quota, here for route/availability identity.
 
 ### Test 3: `provider_window` — the availability probe
 
 `dot_local/bin/big-pickle-watch.sh` (source: `~/.local/bin/big-pickle-watch.sh`, cron-entry: * per-minute, both direct zen route + gateway BYOK lane, CSV). It is the design template the audit extends:
 
-| Column        | Curl response dependency                                                                                 |
-| ------------- | -------------------------------------------------------------------------------------------------------- |
-| ts            | wall-clock test start (ISO-8601)                                                                         |
-| route         | direct                                                                                                   | gateway which of two parallel lanes |
-| http_code     | probe return code (000 = never connected)                                                                |
-| result        | ok                                                                                                       | limited                             | error | timeout (the four cardinal outcomes, categorizing every curl exit) |
-| latency_ms    | curl `%{time_total}`                                                                                     |
-| err_type      | upstream's own error.type field — the direct route's canonical exhaustion signal (`FreeUsageLimitError`) |
-| retry_after_s | the strongest server-side signal, `Retry-After` from 429s                                                |
-| rate_headers  | ratelimit/exhaustion headers preserved for trend reading                                                 |
+| Column | Curl response dependency |
+|---|---|
+| ts | wall-clock test start (ISO-8601) |
+| route | direct | gateway which of two parallel lanes |
+| http_code | probe return code (000 = never connected) |
+| result | ok | limited | error | timeout (the four cardinal outcomes, categorizing every curl exit) |
+| latency_ms | curl `%{time_total}` |
+| err_type | upstream's own error.type field — the direct route's canonical exhaustion signal (`FreeUsageLimitError`) |
+| retry_after_s | the strongest server-side signal, `Retry-After` from 429s |
+| rate_headers | ratelimit/exhaustion headers preserved for trend reading |
 
 The audit (`executable_dynamic-audit.mjs`, Test 3) folds this CSV into a
 `provider_window` log event per route every hour with 24h ok/limited/timeout
@@ -910,7 +886,6 @@ aggregates: a single JSONL record per route telling a reviewing agent what the
 last day of lane health actually looked like without reading the raw minutes.
 
 Design principles (applies to both):
-
 - **Write everything down, decide nothing.** The scheduled layer never mutates
   the gateway, routes, or provider config; scheduled logs are committed to disk
   for later review.
@@ -938,12 +913,12 @@ quota-axi
 The `CfAiGw/dynamic` TUI ladder (nodes 1–9) draws from four quota-bearing
 providers. Map every node to its quota source before reading any status:
 
-| Ladder nodes (models)                                                           | Provider                 | quota-axi id            | Fallback when quota-axi is blind                          |
-| ------------------------------------------------------------------------------- | ------------------------ | ----------------------- | --------------------------------------------------------- |
-| 1–3 `glm-5.1`/`glm-5.2`/`glm-5.3-flash` (custom-opencode-zen)                   | opencode (CF AI Gateway) | `opencode`              | — quota-axi authoritative (monthly + 5h + weekly windows) |
-| 4, 6, 7 `zai-org/GLM-5.1`, `GLM-5.2`, `z-ai/glm-5.3-flash` (custom-commandcode) | commandcode GOAT         | `commandcode`           | — quota-axi authoritative (weekly + monthly windows)      |
-| 5, 8 `glm-5.2`/`glm-5.3-flash` (custom-phoenixgrove)                            | Phoenix Grove plan       | **broken in quota-axi** | curl `/v1/usage` (below)                                  |
-| 9 `z-ai/glm-5.1` (openrouter)                                                   | openrouter               | `openrouter`            | — quota-axi reports remaining balance %                   |
+| Ladder nodes (models) | Provider | quota-axi id | Fallback when quota-axi is blind |
+|---|---|---|---|
+| 1–3 `glm-5.1`/`glm-5.2`/`glm-5.3-flash` (custom-opencode-zen) | opencode (CF AI Gateway) | `opencode` | — quota-axi authoritative (monthly + 5h + weekly windows) |
+| 4, 6, 7 `zai-org/GLM-5.1`, `GLM-5.2`, `z-ai/glm-5.3-flash` (custom-commandcode) | commandcode GOAT | `commandcode` | — quota-axi authoritative (weekly + monthly windows) |
+| 5, 8 `glm-5.2`/`glm-5.3-flash` (custom-phoenixgrove) | Phoenix Grove plan | **broken in quota-axi** | curl `/v1/usage` (below) |
+| 9 `z-ai/glm-5.1` (openrouter) | openrouter | `openrouter` | — quota-axi reports remaining balance % |
 
 Read per-provider `exhausted_now` flags and reset timestamps. A lane failing
 429 "Account budget exceeded" while quota-axi shows 0% on that provider is a
@@ -990,18 +965,17 @@ When investigating provider/gateway failures, recognize these signatures:
 
 ### Known failure patterns
 
-| Signature                                    | Meaning                                     | Action                                                                                      |
-| -------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Fixed-duration ~274s timeout**             | Gateway/edge cutoff (CF AI Gateway limit)   | Route failed upstream; check provider window                                                |
-| **Prose output before JSON fence**           | Model contract fragility (gemini-2.5-flash) | Retry; documented quirk, not a lane change                                                  |
-| **`model` column NULL in agent_invocations** | Historical gap (pre-no-mistakes v1.72)      | Model attribution unavailable; step, provider, error_type, and failure counts remain usable |
+| Signature | Meaning | Action |
+|---|---|---|
+| **Fixed-duration ~274s timeout** | Gateway/edge cutoff (CF AI Gateway limit) | Route failed upstream; check provider window |
+| **Prose output before JSON fence** | Model contract fragility (gemini-2.5-flash) | Retry; documented quirk, not a lane change |
+| **`model` column NULL in agent_invocations** | Historical gap (pre-no-mistakes v1.72) | Model attribution unavailable; step, provider, error_type, and failure counts remain usable |
 
 ### Diagnostic query process (pull-based)
 
 When diagnosing step failures with unknown model attribution:
 
 1. **Query no-mistakes state for failed invocations with timestamp window:**
-
    ```sql
    SELECT
        step,
@@ -1017,11 +991,9 @@ When diagnosing step failures with unknown model attribution:
    GROUP BY step, model, provider, error_type
    ORDER BY failures DESC;
    ```
-
    Use the `earliest_failure` and `latest_failure` timestamps in Step 2.
 
 2. **Cross-reference with dynamic-audit for route attribution:**
-
    ```bash
    # Two-pass query: attributed (exact model match) + unattributed (non-ok, no model)
    # Labeled separately so unattributed failures are not falsely attributed to the model
@@ -1045,7 +1017,6 @@ When diagnosing step failures with unknown model attribution:
      {ts, route, served_model, status, http, cf_aig_status, retry_after_s, evidence: "unattributed"}
    ' ~/.local/state/opencode-fleet/dynamic-audit.jsonl
    ```
-
    Note: Unattributed records (null `served_model`, non-ok status) may include failures from unrelated routes. Do not interpret them as model-specific evidence. Use them only as ancillary signals after consulting `provider_window` aggregates and correlating with route-to-model mappings if available.
 
 3. **Interpret:**
@@ -1068,24 +1039,24 @@ requires no auth.
 
 **Base URLs by API surface:**
 
-| API                     | Base URL                          | Use case                |
-| ----------------------- | --------------------------------- | ----------------------- |
-| OpenAI Chat Completions | `https://ai-gateway.vercel.sh/v1` | General OpenAI-compat   |
-| OpenAI Responses        | `https://ai-gateway.vercel.sh/v1` | Responses API           |
-| Anthropic Messages      | `https://ai-gateway.vercel.sh`    | Claude/Anthropic native |
-| OpenResponses           | `https://ai-gateway.vercel.sh/v1` | Provider-agnostic REST  |
+| API | Base URL | Use case |
+|---|---|---|
+| OpenAI Chat Completions | `https://ai-gateway.vercel.sh/v1` | General OpenAI-compat |
+| OpenAI Responses | `https://ai-gateway.vercel.sh/v1` | Responses API |
+| Anthropic Messages | `https://ai-gateway.vercel.sh` | Claude/Anthropic native |
+| OpenResponses | `https://ai-gateway.vercel.sh/v1` | Provider-agnostic REST |
 
 **Dedicated harness surfaces** (set up via `vercel ai-gateway` CLI one-command
 config — each gets its own endpoint shape):
 
-| Harness                | URL                                                | Why                                             |
-| ---------------------- | -------------------------------------------------- | ----------------------------------------------- |
-| Claude Code            | `https://ai-gateway.vercel.sh/claude-code`         | Anthropic-compat with Claude Code model catalog |
-| Codex                  | `https://ai-gateway.vercel.sh/codex/v1`            | OpenAI-compat + `/codex/v1/models` shape        |
-| Cursor                 | `https://ai-gateway.vercel.sh/cursor/v1`           | Normalizes non-spec Cursor bodies               |
-| OpenCode               | `https://ai-gateway.vercel.sh/v1` (provider entry) | OpenAI-compat                                   |
-| Kimi CLI               | `https://ai-gateway.vercel.sh/v1` (provider entry) | OpenAI-compat                                   |
-| Coding agent (generic) | `https://ai-gateway.vercel.sh/coding-agent/v1`     | Aider, Continue, gptme, Grok Build, etc.        |
+| Harness | URL | Why |
+|---|---|---|
+| Claude Code | `https://ai-gateway.vercel.sh/claude-code` | Anthropic-compat with Claude Code model catalog |
+| Codex | `https://ai-gateway.vercel.sh/codex/v1` | OpenAI-compat + `/codex/v1/models` shape |
+| Cursor | `https://ai-gateway.vercel.sh/cursor/v1` | Normalizes non-spec Cursor bodies |
+| OpenCode | `https://ai-gateway.vercel.sh/v1` (provider entry) | OpenAI-compat |
+| Kimi CLI | `https://ai-gateway.vercel.sh/v1` (provider entry) | OpenAI-compat |
+| Coding agent (generic) | `https://ai-gateway.vercel.sh/coding-agent/v1` | Aider, Continue, gptme, Grok Build, etc. |
 
 **Token:** `$AI_GATEWAY_API_KEY` (from `~/.agents/keys/default/.vercel-gateway-key`,
 loaded by `load-keys.sh`). Auth via `Authorization: Bearer <key>` or `x-api-key`
@@ -1129,19 +1100,19 @@ tiers, compliance, and per-provider options.
 
 **Per-virtual-model settings:**
 
-| Setting                       | Description                                        | Request override                             |
-| ----------------------------- | -------------------------------------------------- | -------------------------------------------- |
-| Provider order (`order`)      | Ordered provider list to try                       | Virtual model wins                           |
-| Provider restriction (`only`) | Restrict to specific providers                     | Virtual model wins                           |
-| Model fallbacks (`models`)    | Fallback chain                                     | Virtual model wins, replaces request's chain |
-| Sort (`sort`)                 | `cost`, `ttft`, or `tps`                           | Virtual model wins                           |
-| Service tier (`serviceTier`)  | `flex`, `priority`, or `fast` (aliases `priority`) | Virtual model wins                           |
-| Prompt caching (`caching`)    | `auto` or explicit                                 | Virtual model wins                           |
-| Provider timeouts             | Per-provider timeout in ms                         | Virtual model wins                           |
-| Required capabilities         | `implicit_caching`, `vision`                       | Virtual model wins (replaces)                |
-| Compliance (ZDR, HIPAA)       | Restrict to compliant providers                    | Tightens (either side on → on)               |
-| Provider options              | Per-provider AI SDK options                        | Merges per option                            |
-| Observability tags            | Tags for spend attribution                         | Virtual model wins                           |
+| Setting | Description | Request override |
+|---|---|---|
+| Provider order (`order`) | Ordered provider list to try | Virtual model wins |
+| Provider restriction (`only`) | Restrict to specific providers | Virtual model wins |
+| Model fallbacks (`models`) | Fallback chain | Virtual model wins, replaces request's chain |
+| Sort (`sort`) | `cost`, `ttft`, or `tps` | Virtual model wins |
+| Service tier (`serviceTier`) | `flex`, `priority`, or `fast` (aliases `priority`) | Virtual model wins |
+| Prompt caching (`caching`) | `auto` or explicit | Virtual model wins |
+| Provider timeouts | Per-provider timeout in ms | Virtual model wins |
+| Required capabilities | `implicit_caching`, `vision` | Virtual model wins (replaces) |
+| Compliance (ZDR, HIPAA) | Restrict to compliant providers | Tightens (either side on → on) |
+| Provider options | Per-provider AI SDK options | Merges per option |
+| Observability tags | Tags for spend attribution | Virtual model wins |
 
 **Usage:** Call `vmc/<slug>` as the model string in any API surface (AI SDK,
 Chat Completions, Responses, Anthropic Messages). Example: `"model": "vmc/tui"`
@@ -1157,19 +1128,19 @@ virtual models.
 
 All options ride `providerOptions.gateway` in the request body:
 
-| Option              | Type                               | Description                                          |
-| ------------------- | ---------------------------------- | ---------------------------------------------------- |
-| `order`             | `string[]`                         | Provider try order (e.g. `['bedrock', 'anthropic']`) |
-| `only`              | `string[]`                         | Restrict to these providers only                     |
-| `sort`              | `'cost'\|'ttft'\|'tps'`            | Rank providers by cost, latency, or throughput       |
-| `models`            | `string[]`                         | Fallback model chain                                 |
-| `byok`              | `Record<string, Array>`            | Request-scoped BYOK credentials                      |
-| `providerTimeouts`  | `{ byok: Record<string, number> }` | Per-provider timeout in ms                           |
-| `serviceTier`       | `'flex'\|'priority'\|'fast'`       | Service tier intent (`fast` aliases `priority`)      |
-| `zeroDataRetention` | `boolean`                          | Route only to ZDR providers                          |
-| `tags`              | `string[]`                         | Observability tags for spend tracking                |
-| `user`              | `string`                           | End user ID for spend attribution                    |
-| `caching`           | `'auto'`                           | Automatic prompt caching                             |
+| Option | Type | Description |
+|---|---|---|
+| `order` | `string[]` | Provider try order (e.g. `['bedrock', 'anthropic']`) |
+| `only` | `string[]` | Restrict to these providers only |
+| `sort` | `'cost'\|'ttft'\|'tps'` | Rank providers by cost, latency, or throughput |
+| `models` | `string[]` | Fallback model chain |
+| `byok` | `Record<string, Array>` | Request-scoped BYOK credentials |
+| `providerTimeouts` | `{ byok: Record<string, number> }` | Per-provider timeout in ms |
+| `serviceTier` | `'flex'\|'priority'\|'fast'` | Service tier intent (`fast` aliases `priority`) |
+| `zeroDataRetention` | `boolean` | Route only to ZDR providers |
+| `tags` | `string[]` | Observability tags for spend tracking |
+| `user` | `string` | End user ID for spend attribution |
+| `caching` | `'auto'` | Automatic prompt caching |
 
 ### Anthropic on Vercel (solves CF weakness)
 
@@ -1178,7 +1149,6 @@ Dedicated Claude Code surface at `https://ai-gateway.vercel.sh/claude-code`.
 The Anthropic SDK appends `/v1/messages` itself, so the base URL has no `/v1`.
 
 16 Anthropic models available (2026-09-20), including:
-
 - `anthropic/claude-sonnet-5` — 1M ctx, $2/$10 MTok
 - `anthropic/claude-opus-5` — 1M ctx, $5/$25 MTok
 - `anthropic/claude-fable-5` — 1M ctx, $10/$50 MTok
@@ -1198,7 +1168,6 @@ Cursor-specific surface. The `vercel ai-gateway` CLI can set up Cursor
 natively with one command.
 
 20 Grok/xAI models available (2026-09-20), including:
-
 - `spacexai/grok-4.1-fast-reasoning` — 1M ctx, $0.20/$0.50 MTok
 - `spacexai/grok-4.20-multi-agent` — 2M ctx
 
@@ -1222,33 +1191,33 @@ OpenCode CLI itself can point at Vercel via a `vercel` provider entry in
 
 ### Free tier models (2026-09-20)
 
-| Model                                   | Context | Notes            |
-| --------------------------------------- | ------- | ---------------- |
-| `inclusionai/ling-3.0-flash-fin-free`   | 256K    | Financial domain |
-| `inclusionai/ling-3.0-flash-sante-free` | 256K    | Health domain    |
-| `inclusionai/ling-3.0-flash-vl-free`    | 256K    | Vision-language  |
-| `poolside/laguna-s-2.1-free`            | 256K    | Coding model     |
+| Model | Context | Notes |
+|---|---|---|
+| `inclusionai/ling-3.0-flash-fin-free` | 256K | Financial domain |
+| `inclusionai/ling-3.0-flash-sante-free` | 256K | Health domain |
+| `inclusionai/ling-3.0-flash-vl-free` | 256K | Vision-language |
+| `poolside/laguna-s-2.1-free` | 256K | Coding model |
 
 ### Key differences from CF AI Gateway
 
-| Capability            | CF AI Gateway                                               | Vercel AI Gateway                                       |
-| --------------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
-| Dynamic routes        | Route graphs (REST API for routes, dashboard for providers) | Virtual models (CLI-managed) + routing rules (REST API) |
-| Custom providers      | Dashboard-only BYOK                                         | Dashboard BYOK + request-scoped BYOK                    |
-| Anthropic             | Compat layer (breaks on some models)                        | Native Anthropic Messages API + Claude Code surface     |
-| Cursor                | No dedicated surface                                        | Dedicated Cursor surface (normalizes non-spec bodies)   |
-| Cost-based routing    | Not available                                               | `sort: 'cost'` auto-picks cheapest provider             |
-| Per-request fallbacks | Route-level only                                            | Per-request `models` array                              |
-| Budget management     | Failed on custom-provider traffic (403 code 2040)           | Team/project/key/member level, separate from BYOK       |
-| Error handling        | 200-wrapped errors treated as success                       | Proper provider failover with timeouts                  |
-| Spend tracking        | No per-request cost API                                     | `GET /v1/generation` + `GET /v1/report`                 |
-| Markup                | Zero (BYOK)                                                 | Zero (all, including system credentials)                |
-| Body conditions       | metadata.* only (body paths never match)                    | Not needed (per-request options)                        |
-| Cache TTL             | Serves cached failed responses (1800s)                      | Proper caching with invalidation                        |
-| opencode-go           | BYOK works (with header workaround)                         | Not available (no opencode provider)                    |
-| Service tiers         | Not available                                               | `flex` (cheaper) and `priority` (faster)                |
-| ZDR                   | Not available                                               | Per-request and team-wide ZDR                           |
-| CLI management        | None                                                        | `vercel ai-gateway` CLI for all resources               |
+| Capability | CF AI Gateway | Vercel AI Gateway |
+|---|---|---|
+| Dynamic routes | Route graphs (REST API for routes, dashboard for providers) | Virtual models (CLI-managed) + routing rules (REST API) |
+| Custom providers | Dashboard-only BYOK | Dashboard BYOK + request-scoped BYOK |
+| Anthropic | Compat layer (breaks on some models) | Native Anthropic Messages API + Claude Code surface |
+| Cursor | No dedicated surface | Dedicated Cursor surface (normalizes non-spec bodies) |
+| Cost-based routing | Not available | `sort: 'cost'` auto-picks cheapest provider |
+| Per-request fallbacks | Route-level only | Per-request `models` array |
+| Budget management | Failed on custom-provider traffic (403 code 2040) | Team/project/key/member level, separate from BYOK |
+| Error handling | 200-wrapped errors treated as success | Proper provider failover with timeouts |
+| Spend tracking | No per-request cost API | `GET /v1/generation` + `GET /v1/report` |
+| Markup | Zero (BYOK) | Zero (all, including system credentials) |
+| Body conditions | metadata.* only (body paths never match) | Not needed (per-request options) |
+| Cache TTL | Serves cached failed responses (1800s) | Proper caching with invalidation |
+| opencode-go | BYOK works (with header workaround) | Not available (no opencode provider) |
+| Service tiers | Not available | `flex` (cheaper) and `priority` (faster) |
+| ZDR | Not available | Per-request and team-wide ZDR |
+| CLI management | None | `vercel ai-gateway` CLI for all resources |
 
 ### Known limitations
 
@@ -1270,69 +1239,69 @@ provider documentation.
 
 ### Gateway markup comparison
 
-| Gateway               | Markup          | Platform fee       | BYOK fee | Notes                                                                   |
-| --------------------- | --------------- | ------------------ | -------- | ----------------------------------------------------------------------- |
-| **CF AI Gateway**     | Zero (BYOK)     | None               | Zero     | Custom providers dashboard-only; budget limits failed on custom traffic |
-| **Vercel AI Gateway** | **Zero (all)**  | None               | Zero     | System credentials also zero-markup; credits-based                      |
-| **OpenRouter**        | 5.5% on credits | $0.80 min/purchase | N/A      | List-rate passthrough; free-tier 50/day (1000/day after $10 deposit)    |
+| Gateway | Markup | Platform fee | BYOK fee | Notes |
+|---|---|---|---|---|
+| **CF AI Gateway** | Zero (BYOK) | None | Zero | Custom providers dashboard-only; budget limits failed on custom traffic |
+| **Vercel AI Gateway** | **Zero (all)** | None | Zero | System credentials also zero-markup; credits-based |
+| **OpenRouter** | 5.5% on credits | $0.80 min/purchase | N/A | List-rate passthrough; free-tier 50/day (1000/day after $10 deposit) |
 
 ### Per-token pricing access
 
-| Source            | Method                                                                                    | Auth required                          |
-| ----------------- | ----------------------------------------------------------------------------------------- | -------------------------------------- |
-| CF AI Gateway     | Dashboard or probe                                                                        | Gateway token                          |
+| Source | Method | Auth required |
+|---|---|---|
+| CF AI Gateway | Dashboard or probe | Gateway token |
 | Vercel AI Gateway | `GET /v1/models` (catalog) or `GET /v1/models/{creator}/{model}/endpoints` (per-provider) | No auth for catalog; key for endpoints |
-| OpenRouter        | `GET /v1/models`                                                                          | API key                                |
+| OpenRouter | `GET /v1/models` | API key |
 
 ### Cost-based routing
 
-| Gateway               | Capability         | How                                                                      |
-| --------------------- | ------------------ | ------------------------------------------------------------------------ |
-| CF AI Gateway         | Not available      | Must manually order route nodes by cost                                  |
+| Gateway | Capability | How |
+|---|---|---|
+| CF AI Gateway | Not available | Must manually order route nodes by cost |
 | **Vercel AI Gateway** | **`sort: 'cost'`** | Auto-picks cheapest provider per model, per-request or per-virtual-model |
-| OpenRouter            | `:floor` suffix    | Routes to cheapest provider for a chosen model                           |
+| OpenRouter | `:floor` suffix | Routes to cheapest provider for a chosen model |
 
 ### Budget management
 
-| Gateway               | Scope                               | Behavior                                                                       |
-| --------------------- | ----------------------------------- | ------------------------------------------------------------------------------ |
-| CF AI Gateway         | Per-key spend limit                 | **Failed** on custom-provider traffic (403 code 2040 for unpriceable requests) |
-| **Vercel AI Gateway** | Team, project, API key, team member | BYOK spend excluded; system-credential spend capped                            |
-| OpenRouter            | Per-key                             | $10 deposit raises free tier from 50 to 1000/day                               |
+| Gateway | Scope | Behavior |
+|---|---|---|
+| CF AI Gateway | Per-key spend limit | **Failed** on custom-provider traffic (403 code 2040 for unpriceable requests) |
+| **Vercel AI Gateway** | Team, project, API key, team member | BYOK spend excluded; system-credential spend capped |
+| OpenRouter | Per-key | $10 deposit raises free tier from 50 to 1000/day |
 
 ### Service tiers
 
-| Gateway               | Tiers                                 | Savings                                   |
-| --------------------- | ------------------------------------- | ----------------------------------------- |
-| CF AI Gateway         | None                                  | N/A                                       |
+| Gateway | Tiers | Savings |
+|---|---|---|
+| CF AI Gateway | None | N/A |
 | **Vercel AI Gateway** | `flex` (cheaper), `priority` (faster) | Flex tier reduces cost at latency expense |
-| OpenRouter            | None                                  | N/A                                       |
+| OpenRouter | None | N/A |
 
 ### Free tier comparison
 
-| Gateway               | Free models                                         | Rate limits                 | Notes                                      |
-| --------------------- | --------------------------------------------------- | --------------------------- | ------------------------------------------ |
-| CF AI Gateway         | @cf Workers AI (metered, not truly free)            | 10K Neurons/day             | Evaporates on 120B-class traffic           |
-| **Vercel AI Gateway** | 4 models (ling-3.0-flash-*-free, laguna-s-2.1-free) | Per-model rate limits       | Credits-based; free tier subset of catalog |
-| OpenRouter            | `:free` models                                      | 50/day (1000/day after $10) | Shared free-tier bucket                    |
+| Gateway | Free models | Rate limits | Notes |
+|---|---|---|---|
+| CF AI Gateway | @cf Workers AI (metered, not truly free) | 10K Neurons/day | Evaporates on 120B-class traffic |
+| **Vercel AI Gateway** | 4 models (ling-3.0-flash-*-free, laguna-s-2.1-free) | Per-model rate limits | Credits-based; free tier subset of catalog |
+| OpenRouter | `:free` models | 50/day (1000/day after $10) | Shared free-tier bucket |
 
 ### Spend tracking
 
-| Gateway               | Method                                  | Granularity                                                                                |
-| --------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------ |
-| CF AI Gateway         | Gateway logs (dashboard)                | Per-request, no API                                                                        |
+| Gateway | Method | Granularity |
+|---|---|---|
+| CF AI Gateway | Gateway logs (dashboard) | Per-request, no API |
 | **Vercel AI Gateway** | `GET /v1/generation` + `GET /v1/report` | Per-request cost/latency/tokens; aggregated by day/user/model/tag/provider/credential_type |
-| OpenRouter            | Dashboard                               | Per-request, limited API                                                                   |
+| OpenRouter | Dashboard | Per-request, limited API |
 
 ### BYOK economics
 
-| Factor                            | CF AI Gateway        | Vercel AI Gateway                          | OpenRouter    |
-| --------------------------------- | -------------------- | ------------------------------------------ | ------------- |
-| Markup on BYOK                    | Zero                 | Zero                                       | N/A (no BYOK) |
-| Request-scoped BYOK               | Not available        | **Available** (per-request credentials)    | N/A           |
-| Fallback on BYOK failure          | Route-level fallback | System credentials (billed)                | N/A           |
-| Multiple credentials per provider | Not available        | **Available** (tried in order)             | N/A           |
-| Provider timeout control          | Gateway-level        | **Per-provider** (`providerTimeouts.byok`) | N/A           |
+| Factor | CF AI Gateway | Vercel AI Gateway | OpenRouter |
+|---|---|---|---|
+| Markup on BYOK | Zero | Zero | N/A (no BYOK) |
+| Request-scoped BYOK | Not available | **Available** (per-request credentials) | N/A |
+| Fallback on BYOK failure | Route-level fallback | System credentials (billed) | N/A |
+| Multiple credentials per provider | Not available | **Available** (tried in order) | N/A |
+| Provider timeout control | Gateway-level | **Per-provider** (`providerTimeouts.byok`) | N/A |
 
 ### Cheapest-qualified-lane dispatch (updated 2026-09-20)
 

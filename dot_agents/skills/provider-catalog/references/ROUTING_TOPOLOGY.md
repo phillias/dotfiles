@@ -59,11 +59,11 @@ flowchart TD
 
 ### Vercel virtual models
 
-| Route           | Ladder                                                                                                                                                 |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| vmc/tui         | alibaba/qwen3.7-flash → deepseek/deepseek-v4-flash-0731 → zai/glm-5.3-flash → openai/gpt-5-nano → google/gemini-2.5-flash-lite → openai/gpt-4o-mini    |
-| vmc/pr-gate     | deepseek/deepseek-v4-flash-0731 → nvidia/nemotron-3-super-120b-a12b → moonshotai/kimi-k3 → zai/glm-5.2 → openai/gpt-5.6-luna → google/gemini-2.5-flash |
-| vmc/pr-reviewer | deepseek/deepseek-v4-flash-0731 → openai/gpt-5.6-luna → nvidia/nemotron-3-ultra-550b-a55b → zai/glm-5.2                                                |
+| Route | Ladder |
+|---|---|
+| vmc/tui | alibaba/qwen3.7-flash → deepseek/deepseek-v4-flash-0731 → zai/glm-5.3-flash → openai/gpt-5-nano → google/gemini-2.5-flash-lite → openai/gpt-4o-mini |
+| vmc/pr-gate | deepseek/deepseek-v4-flash-0731 → nvidia/nemotron-3-super-120b-a12b → moonshotai/kimi-k3 → zai/glm-5.2 → openai/gpt-5.6-luna → google/gemini-2.5-flash |
+| vmc/pr-reviewer | deepseek/deepseek-v4-flash-0731 → openai/gpt-5.6-luna → nvidia/nemotron-3-ultra-550b-a55b → zai/glm-5.2 |
 
 **List-API workaround (resolved 2026-09-27):** Vercel's virtual-model list API returns empty (upstream quirk), so `vmc/pr-gate` and `vmc/pr-reviewer` were registered by one-time manual `routes` seed; the daily refresh walks their ladders from those rows. Any NEW Vercel virtual model needs the same one-time seed before the daily refresh discovers it.
 
@@ -97,13 +97,13 @@ flowchart TD
 
 Provider-level headroom snapshot (quota-axi, 2026-09-27, kalione). Live values: run `quota-axi`.
 
-| Provider / plane                      | Plan or auth     | Free lane models                                                                       | Headroom snapshot 2026-09-27                             |
-| ------------------------------------- | ---------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| opencode (zen + go)                   | OpenCode account | mimo-v2.5-free (client-gated, degraded), nemotron-3-ultra-free, deepseek-v4-flash-free | monthly 0% → resets 2026-09-30 21:14 UTC; 5h/weekly 100% |
-| commandcode                           | individual-goat  | poolside/laguna-s-2.1-free                                                             | weekly + monthly 0% → reset 2026-09-28 / 2026-10-12      |
-| openrouter                            | credit balance   | nemotron-3-super-120b-a12b:free, laguna-s-2.1:free, space-bunny-alpha (QUARANTINED)    | balance ~6%                                              |
-| kilocode                              | free relay       | kilo-auto/free, nemotron-3-nano-30b:free, grok-code-fast-1:free, trinity-large:free    | not metered on this host                                 |
-| claude / codex / cursor / grok / kimi | per-harness auth | harness free tiers                                                                     | unresolved on kalione (auth sources absent)              |
+| Provider / plane | Plan or auth | Free lane models | Headroom snapshot 2026-09-27 |
+|---|---|---|---|
+| opencode (zen + go) | OpenCode account | mimo-v2.5-free (client-gated, degraded), nemotron-3-ultra-free, deepseek-v4-flash-free | monthly 0% → resets 2026-09-30 21:14 UTC; 5h/weekly 100% |
+| commandcode | individual-goat | poolside/laguna-s-2.1-free | weekly + monthly 0% → reset 2026-09-28 / 2026-10-12 |
+| openrouter | credit balance | nemotron-3-super-120b-a12b:free, laguna-s-2.1:free, space-bunny-alpha (QUARANTINED) | balance ~6% |
+| kilocode | free relay | kilo-auto/free, nemotron-3-nano-30b:free, grok-code-fast-1:free, trinity-large:free | not metered on this host |
+| claude / codex / cursor / grok / kimi | per-harness auth | harness free tiers | unresolved on kalione (auth sources absent) |
 
 Model status counts in D1: 50 unknown · 1 degraded (mimo) · 1 quarantined (space-bunny) · 1 ok. Per-model pricing/context: `models.snapshot.json`; D1 `models` table carries status + free_tier.
 
