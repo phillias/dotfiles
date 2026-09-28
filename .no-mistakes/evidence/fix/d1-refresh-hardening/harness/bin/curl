@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Stub curl for d1-registry-refresh.mjs harness runs.
+# Logs argv verbatim (proves -H @file usage / token never in argv), then serves
+# canned JSON responses from $CASE_DIR per URL pattern. Simulates upstream
+# failures by exiting non-zero for flagged URLs.
+set -u
+# Each call logs to its own slot file (no single log file may trip a size cap).
+PART="${CURL_LOG:-/dev/null}.part.$$"
+echo "CURL-ARGV: $*" > "$PART"
+
+URL=""
+for a in "$@"; do
+  case "$a" in
+    http*) URL="$a" ;;
+  esac
+done
+
+fail_url() { # fail_url <url> checks if this URL is flagged to fail
+  case "|${FAIL_URLS:-}|" in
+    *"|${1}|"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+case "$URL" in
+  *"routes?page="*)
+    if fail_url "$URL"; then exit 7; fi
+    page=$(printf '%s' "$URL" | sed -n 's/.*[?&]page=\([0-9]*\).*/\1/p')
+    f="${CASE_DIR}/pages/page-${page}.json"
+    if [ -f "$f" ]; then cat "$f"; else echo '{"success":true,"data":{"routes":[],"per_page":25}}'; fi
+    exit 0 ;;
+  *"ai-gateway/gateways/opencode/routes/"*)
+    id=$(printf '%s' "$URL" | sed -n 's#.*/routes/\([^?]*\).*#\1#p')
+    if fail_url "$id"; then exit 7; fi
+    f="${CASE_DIR}/details/${id}.json"
+    if [ -f "$f" ]; then cat "$f"; else echo '{"success":true,"result":{"name":"unknown","version":{"version_id":"v-x","active":true,"data":[]}}}'; fi
+    exit 0 ;;
+  */v1/teams*)
+    cat "${CASE_DIR}/vc-teams.json"; exit 0 ;;
+  *"virtual-model-configs?teamId="*)
+    cat "${CASE_DIR}/vc-list.json"; exit 0 ;;
+  *"virtual-model-configs/"*)
+    slug=$(printf '%s' "$URL" | sed -n 's#.*virtual-model-configs/\([^?]*\).*#\1#p')
+    if fail_url "$slug"; then exit 7; fi
+    f="${CASE_DIR}/vc-slug-${slug}.json"
+    if [ -f "$f" ]; then cat "$f"; else echo '{"deleted":true}'; fi
+    exit 0 ;;
+  *)
+    echo '{}'; exit 0 ;;
+esac

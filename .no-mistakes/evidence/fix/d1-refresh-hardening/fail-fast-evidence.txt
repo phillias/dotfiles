@@ -1,0 +1,8 @@
+=== CR-4933: missing VERCEL_TOKEN (fail fast before any network fetch) ===
+d1-registry-refresh: VERCEL_TOKEN not set
+exit=2
+tmp scratch dirs created: 0 (fails before mkdtemp)
+
+=== missing CF_AI_GATEWAY_TOKEN (pre-existing guard): exits 2 with message ===
+d1-registry-refresh: CF_AI_GATEWAY_TOKEN not set
+exit=2

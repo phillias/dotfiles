@@ -1,0 +1,18 @@
+d1-registry-refresh: vercel list empty, refreshed from D1-seeded slugs
+node:fs:2430
+    return binding.writeFileUtf8(
+                   ^
+
+Error: EFBIG: file too large, write
+    at writeFileSync (node:fs:2430:20)
+    at main (file:///home/phillias/.no-mistakes/worktrees/79da17cc01eb/01M3K7XF9GW3PKQGEM9CCVJBBF/dot_config/opencode/scripts/executable_d1-registry-refresh.mjs:316:5)
+    at file:///home/phillias/.no-mistakes/worktrees/79da17cc01eb/01M3K7XF9GW3PKQGEM9CCVJBBF/dot_config/opencode/scripts/executable_d1-registry-refresh.mjs:338:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  errno: -27,
+  code: 'EFBIG',
+  syscall: 'write'
+}
+
+Node.js v22.23.2

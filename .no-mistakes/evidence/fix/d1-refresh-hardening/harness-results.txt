@@ -1,0 +1,48 @@
+PASS: exit 0 on clean healthy run — status=0
+PASS: summary reports cf=30 vercel=2 — d1-registry-refresh: cf=30 vercel=2 statements=164 drift=clean
+PASS: pagination: pages 1 and 2 fetched
+PASS: tokens never appear in curl argv
+PASS: auth via -H @file (cf)
+PASS: auth via -H @file (vercel)
+PASS: route table holds 32 routes — got 32
+PASS: observation records skipped=none — cf=30 vercel=2 skipped=none
+PASS: ladder_drift observation = 0 (clean)
+PASS: tmp scratch dir removed after run — left=[]
+PASS: no predictable tmp path (mkdtemp random per run) — /home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt vs /home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1b-random/tmp/d1-registry-refresh-74sZAk/cf-auth.txt
+PASS: exit 0 with one unhealthy gateway — status=0
+PASS: summary cf=0 vercel=2 (cf skipped) — d1-registry-refresh: cf=0 vercel=2 statements=13 drift=clean
+PASS: no cloudflare rows written when discovery unhealthy — cf rows=0
+PASS: observation records skipped=cf — cf=0 vercel=2 skipped=cf
+PASS: exit 0 (cf unhealthy, vercel written) — status=0
+PASS: stored CF rows survive unhealthy discovery (no clobber, no delete) — [{"route":"dynamic/stale"}]
+PASS: exit 2 on malformed API JSON — status=2
+PASS: stderr names malformed JSON — d1-registry-refresh: cloudflare fetch: cf api routes?page=1&per_page=25: malformed JSON: Unexpected token '>', ">>>> not json <<<<" is not valid JSON
+PASS: stderr identifies failing endpoint
+PASS: no writes persisted (D1 untouched)
+PASS: tmp scratch dir removed on fail() path
+PASS: exit 2 on malformed vercel JSON — status=2
+PASS: vercel endpoint named in structured error — d1-registry-refresh: vercel fetch: vercel api /v1/teams?limit=100: malformed JSON: Unexpected token '>', ">>>> verce"... is not valid JSON
+PASS: exit 0 with per_page=0 empty list — status=0
+PASS: terminates quickly (no page loop hang) — 2970ms
+PASS: summary cf=0 vercel=2 — d1-registry-refresh: cf=0 vercel=2 statements=14 drift=clean
+PASS: valid empty list stays healthy (not marked unhealthy) — cf=0 vercel=2 skipped=none
+PASS: exit 0 (cap -> unhealthy cf, vercel still written) — status=0
+PASS: summary cf=0 vercel=2 — d1-registry-refresh: cf=0 vercel=2 statements=13 drift=clean
+PASS: loop reached page 100
+PASS: loop stopped at cap (no page 101)
+PASS: cap marks cf unhealthy in observation — cf=0 vercel=2 skipped=cf
+PASS: no spurious cycle log when walk breaks on non-model sink
+PASS: route ladder still captured through model nodes — [{"provider":"openai","model":"gpt-4o"},{"provider":"anthropic","model":"claude-3-5-sonnet"}]
+PASS: real cycle IS logged — d1-registry-refresh: ladder cycle detected at element m0; stopping walk
+PASS: walk terminated (ladder trimmed, no hang) — [{"provider":"openai","model":"gpt-4o"},{"provider":"anthropic","model":"claude-3-5-sonnet"}]
+PASS: no false positive on dangling elementId
+PASS: slug failure counted and logged — d1-registry-refresh: vercel slug fetch failed: bad (vercel curl /ai-gateway/virtual-model-configs/bad?teamId=tid-1 exit 7)
+d1-registry-refresh: vercel list empty, refreshed from D1-seeded slugs
+PASS: summary cf=1 vercel=0 — d1-registry-refresh: cf=1 vercel=0 statements=8 drift=clean
+PASS: stored vercel routes untouched (no clobber) — [{"route":"vmc/bad"},{"route":"vmc/good"}]
+PASS: observation records skipped=vercel — cf=1 vercel=0 skipped=vercel
+PASS: exit 2 when both gateways unhealthy — status=2
+PASS: stderr refuses writes
+PASS: D1 untouched when both unhealthy
+
+==== 45/45 harness assertions passed ====

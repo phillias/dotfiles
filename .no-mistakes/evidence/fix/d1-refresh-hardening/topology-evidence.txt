@@ -1,0 +1,21 @@
+=== CR-4889: ROUTING_TOPOLOGY.md flow-2 vs live ~/.pi/fallback-chains.json ===
+live chains:
+  gate opencode-go-gw/longcat-2.5-preview-free->opencode-go-gw/deepseek-v4-flash->CfAiGw/dynamic/pr-gate->vercel/router/pr-gate
+  review opencode-go-gw/deepseek-v4-flash->CfAiGw/dynamic/pr-reviewer->vercel/router/pr-reviewer
+  default CfAiGw/dynamic/TUI->vercel/router/tui
+
+doc claims (dot_agents/skills/provider-catalog/references/ROUTING_TOPOLOGY.md lines 80-90):
+        DEF["default<br/>CfAiGw/dynamic/TUI → vercel/router/tui"]
+        GATEC["gate<br/>opencode-go-gw/longcat-2.5-preview-free → opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-gate → vercel/router/pr-gate"]
+        REV2["review<br/>opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer"]
+    end
+    pi --> chains
+    GATEC -->|head| lcat[opencode-go-gw/longcat-2.5-preview-free]
+    GATEC --> cfroute[CF dynamic/pr-gate ladder ×9]
+    REV2 --> cfroute2[CF dynamic/pr-reviewer ladder ×4]
+    DEF --> cfroute3[CF dynamic/TUI ladder ×10]
+    GATEC -->|vercel seed| vg[vercel/vmc/pr-gate]
+    REV2 -->|vercel seed| vr[vercel/vmc/pr-reviewer]
+
+match: DEF=default chain, GATEC=gate chain (longcat head), REV2=review chain (deepseek head) — all exact.
+D1 mapping check: vercel/router/tui -> vercel-ai-gateway vmc/tui exists; vmc/pr-gate, vmc/pr-reviewer exist; CF dynamic/cursor (the pagination-recovered route) present.

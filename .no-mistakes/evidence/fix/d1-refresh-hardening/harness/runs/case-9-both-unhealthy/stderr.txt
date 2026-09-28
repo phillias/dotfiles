@@ -1,0 +1,1 @@
+d1-registry-refresh: both gateways reported unhealthy discovery; refusing all writes

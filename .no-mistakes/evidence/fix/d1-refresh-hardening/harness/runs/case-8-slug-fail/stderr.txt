@@ -1,0 +1,2 @@
+d1-registry-refresh: vercel slug fetch failed: bad (vercel curl /ai-gateway/virtual-model-configs/bad?teamId=tid-1 exit 7)
+d1-registry-refresh: vercel list empty, refreshed from D1-seeded slugs

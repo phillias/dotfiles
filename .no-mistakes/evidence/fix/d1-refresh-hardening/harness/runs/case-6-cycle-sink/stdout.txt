@@ -1,0 +1,1 @@
+d1-registry-refresh: cf=1 vercel=1 statements=14 drift=DRIFT (route-added:cloudflare-ai-gateway|dynamic/foo)

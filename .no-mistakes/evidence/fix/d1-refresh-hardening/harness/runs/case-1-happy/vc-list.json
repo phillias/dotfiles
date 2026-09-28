@@ -1,0 +1,1 @@
+{"virtualModelConfigs":[{"virtualModelSlug":"vm1","models":["anthropic/claude-3.5-sonnet","openai/gpt-4o"],"updatedAt":"2026-09-27T00:00:00Z"},{"virtualModelSlug":"vm2","models":["anthropic/claude-3.5-sonnet","openai/gpt-4o"],"updatedAt":"2026-09-27T00:00:00Z"}]}

@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+// Stub wrangler for d1-registry-refresh.mjs harness runs.
+// Applies d1 execute --file batches to a local sqlite DB (the "D1"), and answers
+// --command SELECTs in wrangler's --json array-of-statement-results shape.
+import { DatabaseSync } from "node:sqlite";
+import { readFileSync, appendFileSync } from "node:fs";
+
+const dbPath = process.env.WRANGLER_DB;
+const logPath = process.env.WRANGLER_LOG || "/dev/null";
+const log = (s) => { try { appendFileSync(logPath, s + "\n"); } catch {} };
+
+const args = process.argv.slice(2); // d1 execute <db> --remote --command <sql> --json | --file <path>
+const db = new DatabaseSync(dbPath);
+
+if (args.includes("--file")) {
+  const i = args.indexOf("--file");
+  const file = args[i + 1];
+  const sql = readFileSync(file, "utf8");
+  try {
+    db.exec(sql);
+    log(`APPLIED ${file} (${sql.split("\n").length} lines)`);
+    process.stdout.write(JSON.stringify([{ success: true }]));
+    process.exit(0);
+  } catch (e) {
+    log(`FAILED ${file}: ${e.message}`);
+    process.stderr.write(String(e.message));
+    process.exit(1);
+  }
+}
+if (args.includes("--command")) {
+  const i = args.indexOf("--command");
+  const sql = args[i + 1];
+  const results = sql
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((stmt) => {
+      try { return { results: db.prepare(stmt).all() }; }
+      catch (e) { return { results: [], error: e.message }; }
+    });
+  process.stdout.write(JSON.stringify(results));
+  process.exit(0);
+}
+process.stdout.write("[]");
+process.exit(0);

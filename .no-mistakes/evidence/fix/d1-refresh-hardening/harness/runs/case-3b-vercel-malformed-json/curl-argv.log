@@ -1,0 +1,4 @@
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes?page=1&per_page=25 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-3b-vercel-malformed-json/tmp/d1-registry-refresh-pFUmqW/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.vercel.com/v1/teams?limit=100 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-3b-vercel-malformed-json/tmp/d1-registry-refresh-pFUmqW/vc-auth.txt
+

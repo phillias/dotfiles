@@ -1,0 +1,25 @@
+OBSERVATIONS (d1-registry-refresh):
+  2026-09-28T06:13:09.945Z routes_refreshed 15 cf=12 vercel=3 skipped=none
+  2026-09-28T06:13:09.945Z ladder_drift 0 no change
+  2026-09-28T06:07:29.566Z routes_refreshed 15 cf=12 vercel=3 skipped=none
+  2026-09-28T06:07:29.566Z ladder_drift 0 no change
+  2026-09-28T05:51:02.639Z routes_refreshed 15 cf=12 vercel=3 skipped=none
+  2026-09-28T05:51:02.639Z ladder_drift 0 no change
+  2026-09-28T05:49:14.637Z routes_refreshed 15 cf=12 vercel=3 skipped=none
+  2026-09-28T05:49:14.637Z ladder_drift 0 no change
+ROUTES IN D1 NOW:
+  cloudflare-ai-gateway dynamic/TUI
+  cloudflare-ai-gateway dynamic/claude
+  cloudflare-ai-gateway dynamic/codex
+  cloudflare-ai-gateway dynamic/cursor
+  cloudflare-ai-gateway dynamic/grok
+  cloudflare-ai-gateway dynamic/high
+  cloudflare-ai-gateway dynamic/kimi
+  cloudflare-ai-gateway dynamic/muse
+  cloudflare-ai-gateway dynamic/pr-gate
+  cloudflare-ai-gateway dynamic/pr-reviewer
+  cloudflare-ai-gateway dynamic/test
+  cloudflare-ai-gateway dynamic/vision
+  vercel-ai-gateway vmc/pr-gate
+  vercel-ai-gateway vmc/pr-reviewer
+  vercel-ai-gateway vmc/tui

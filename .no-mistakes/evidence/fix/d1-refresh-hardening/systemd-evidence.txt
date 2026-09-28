@@ -1,0 +1,21 @@
+=== systemd-analyze verify (real consumer parses the changed units) ===
+--- d1-registry-refresh.service ---
+OK
+--- d1-registry-refresh.timer ---
+OK
+--- dynamic-audit.service ---
+OK
+
+=== OnCalendar pin (CR-5000) ===
+OnCalendar=*-*-* 05:00:00 America/New_York
+Normalized form: *-*-* 05:00:00 America/New_York
+    Next elapse: Mon 2026-09-28 05:00:00 EDT
+       (in UTC): Mon 2026-09-28 09:00:00 UTC
+       From now: 2h 46min left
+
+=== SuccessExitStatus=1 semantics (CR-4979) ===
+with directive, exit 1: Result=success (success)
+without directive, exit 1: Result=exit-code (exit-code/failed)
+
+=== real script through systemd-run with the service's own properties ===
+script-via-systemd Result=success ExecMainStatus=0

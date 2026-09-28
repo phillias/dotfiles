@@ -1,0 +1,4 @@
+REAL LIVE run #3 (real upstreams, ulimit -f 4 filesystem write limit):
+exit=1 (uncaught EFBIG at executable_d1-registry-refresh.mjs:316 while writing SQL chunk)
+Leftover /tmp/d1-registry-refresh-* dirs before=0 after=0 -> token scratch dir removed by process.exit handler despite crash.
+No failed.sql written this run; no D1 writes.

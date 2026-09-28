@@ -1,0 +1,15 @@
+started=2026-09-28T05:51:02Z ended=2026-09-28T05:51:39Z exit=0
+--- stdout ---
+d1-registry-refresh: cf=12 vercel=3 statements=147 drift=clean
+--- stderr ---
+d1-registry-refresh: vercel list empty, refreshed from D1-seeded slugs
+--- curl cmdline samples: 72 ---
+curl -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes?page=1&per_page=25 -H @/tmp/d1-registry-refresh-fnWF1b/cf-auth.txt -H cf-aig-skip-cache: true 
+curl -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes?page=1&per_page=25 -H @/tmp/d1-registry-refresh-fnWF1b/cf-auth.txt -H cf-aig-skip-cache: true 
+curl -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes?page=1&per_page=25 -H @/tmp/d1-registry-refresh-fnWF1b/cf-auth.txt -H cf-aig-skip-cache: true 
+--- perms ---
+700 /tmp/d1-registry-refresh-fnWF1b
+600 /tmp/d1-registry-refresh-fnWF1b/cf-auth.txt
+600 /tmp/d1-registry-refresh-fnWF1b/vc-auth.txt
+--- tmp leftovers ---
+none

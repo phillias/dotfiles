@@ -1,0 +1,68 @@
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes?page=1&per_page=25 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes?page=2&per_page=25 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r1 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r2 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r3 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r4 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r5 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r6 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r7 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r8 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r9 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r10 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r11 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r12 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r13 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r14 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r15 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r16 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r17 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r18 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r19 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r20 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r21 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r22 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r23 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r24 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r25 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r26 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r27 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r28 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r29 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.cloudflare.com/client/v4/accounts/a7fa198dd5b359a187c671064fe6b36e/ai-gateway/gateways/opencode/routes/r30 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/cf-auth.txt -H cf-aig-skip-cache: true
+
+CURL-ARGV: -sS --max-time 30 https://api.vercel.com/v1/teams?limit=100 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/vc-auth.txt
+
+CURL-ARGV: -sS --max-time 30 https://api.vercel.com/ai-gateway/virtual-model-configs?teamId=tid-1&limit=100 -H @/home/phillias/.no-mistakes/evidence/01M3K7XF9GW3PKQGEM9CCVJBBF/harness/runs/case-1-happy/tmp/d1-registry-refresh-g99zbM/vc-auth.txt
+

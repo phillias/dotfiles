@@ -1,0 +1,1 @@
+d1-registry-refresh: cloudflare fetch: cf api routes?page=1&per_page=25: malformed JSON: Unexpected token '>', ">>>> not json <<<<" is not valid JSON
