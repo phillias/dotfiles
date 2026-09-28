@@ -374,6 +374,38 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 - Workers AI GLM is **metered**, not free: `@cf/zai-org/glm-5.3` $1.40/$4.40 per M in/out, `glm-5.3-flash` $0.15/$0.50 (REST models/search pricing, verified 2026-09-01). The 10K Neurons/day free allowance evaporates instantly on 120B-class agent traffic — avoid GLM on Workers AI for free lanes.
 - **GitHub Models: fully retired 2026-07-30** (changelog; live brownout 410 `github_models_retirement_brownout` confirmed 2026-09-01). Do not wire it anywhere.
 
+## NVIDIA NIM free-access wave (2026-09-27, verified 2026-09-28)
+
+Viral announcement (late Sep 2026): NVIDIA's API catalog serves DeepSeek V4.1
+Flash, GLM-5.3, GLM-5.3-Flash, and Kimi K3 free on one `nvapi-` key (already
+wired as gateway `custom-nvidia-nim`, key `~/.agents/keys/default/.nvidia-key`).
+Live `/v1/models` (82 ids, 2026-09-28) confirms all four. Probe results with the
+captain's key (same day):
+
+| Model | Catalog | Probe | Notes |
+|---|---|---|---|
+| `z-ai/glm-5.3` | yes | **200, 5.2s** | Full GLM-5.3, 1M ctx / 128K out, reasoning always-on (low/high/max), function calling. First *free* full-GLM-5.3 lane (previous GLM-5.3 lanes all paid). |
+| `moonshotai/kimi-k3` | yes | **200, 23.6s** | 2.8T MoE / 104B active, 1M ctx, text+image input, tool calling, structured output, reasoning effort low/high/max, Modified MIT. Slow but serving. |
+| `deepseek-ai/deepseek-v4.1-flash` | yes | timeout ×3 (0 bytes, 25–60s) | 552B MoE / 8B active, 1M ctx, multimodal, adjustable reasoning (1–100), recommended `max_tokens` ≥256K. Added to NIM 2026-09-18. Likely pool overload from the viral wave. |
+| `z-ai/glm-5.3-flash` | yes | timeout ×3 (0 bytes, 25–45s) | Specs not published. Flash lanes are the hammered ones; treat as unreliable until probed healthy. |
+
+Also live on NIM: `moonshotai/kimi-k2.6` and `nvidia/nemotron-3-super-120b-a12b`
+(pr-gate head, healthy). Gone from the live catalog (EOL churn this wave):
+`deepseek-v4-flash-0731`, `deepseek-v4-pro`, `kimi-k2-instruct-0905` — the
+`custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` pr-reviewer head is now
+a dead lane.
+
+**Terms and limits (the catch):** NVIDIA API Trial ToS restricts free use to
+"internal testing and evaluation purposes, not in production" (personal/fleet
+agent tooling fits; nothing customer-facing). No fixed published rate limit;
+nominally ~40 RPM **account-wide across all NIM models** (shared pool, per-model
+variance observed — GLM lanes have historically degraded to ~60 req/6h for some
+accounts under load; increases are never granted). The standing classification
+holds: NIM stays a **gate/aux lane, never a TUI workhorse**, and every NIM route
+node competes for the same account-wide pool — add nodes selectively.
+
+Snapshot updated 2026-09-28: 4 rows added, 3 dead rows removed.
+
 ## Gate chain (pi-fallback-provider)
 
 Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider entry remains for personal agentic experiments only. Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
@@ -429,7 +461,9 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
   rides `CfAiGw/dynamic/pr-reviewer` via `review_agents.reviewer`
   (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14):
-  `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` →
+  `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` (**EOL: gone from
+  the live NIM catalog 2026-09-28 — dead head, see the NIM free-access wave
+  section; swap candidate `z-ai/glm-5.3` or `deepseek-v4.1-flash`**) →
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
   `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
@@ -496,7 +530,7 @@ steps, 71min CPU before SIGINT on kali) — runaway `loop step=` growth in
 
 Empirical facts from rebuilding `dynamic/pr-reviewer` (versions deployed, probed with `cf-aig-skip-cache: true`):
 
-- **NIM end-of-life rows — snapshot was stale:** `deepseek-ai/deepseek-v4-flash` EOL 2026-08-07 and `z-ai/glm-5.2` EOL 2026-08-21 (both 410 Gone on `custom-nvidia-nim`). Live NIM replacements from `/v1/models`: `deepseek-ai/deepseek-v4-flash-0731` (snapshot row now `-0731`, family-band price $0.14/$0.28 carried, not independently verified) and `z-ai/glm-5.3-flash` (price unverified, no snapshot row).
+- **NIM end-of-life rows — snapshot was stale:** `deepseek-ai/deepseek-v4-flash` EOL 2026-08-07 and `z-ai/glm-5.2` EOL 2026-08-21 (both 410 Gone on `custom-nvidia-nim`). Live NIM replacements from `/v1/models`: `deepseek-ai/deepseek-v4-flash-0731` (snapshot row now `-0731`, family-band price $0.14/$0.28 carried, not independently verified) and `z-ai/glm-5.3-flash` (price unverified, no snapshot row). **Superseded 2026-09-28:** `deepseek-v4-flash-0731`, `deepseek-v4-pro`, and `kimi-k2-instruct-0905` are themselves gone from the live NIM catalog — the successor is `deepseek-ai/deepseek-v4.1-flash` (see the NIM free-access wave section).
 - **Provider naming in route graphs:** bare custom-provider names are dead — the pr-reviewer head fell through with provider `nvidia-nim`; `custom-nvidia-nim` serves. The custom- prefix rule above is empirically confirmed. The rename is now applied: pr-gate's bare `nvidia-nim` head became `custom-nvidia-nim/nvidia/nemotron-3-super-120b-a12b` in the 2026-09-20 less-wrong pass, and the ladder was verified via the versions API (see the pr-gate entry above).
 - **END shape (updated 2026-09-25):** the API accepted and deployed a route version carrying a literal `{"id":"END","type":"end","outputs":{}}` element (TUI space-bunny removal), so a literal END is valid today; the older 2026-09-14 rebuild instead chain-s the last model node's `outputs.fallback` to the string `"END"`. Both shapes are viable — when deleting or renumbering nodes, repoint every inbound edge first or validation/deployment fails.
 - **zen `glm-5.2`:** free lane confirmed live ($0/$0 row; probes 200 with real content). Thinking model consumes small `max_tokens` budgets before emitting content — probe with ≥500.

@@ -915,18 +915,6 @@
       "out": 0,
       "free": true
     },
-    "nvidia/deepseek-ai/deepseek-v4-flash-0731": {
-      "context": 1048576,
-      "in": 0.14,
-      "out": 0.28,
-      "free": false
-    },
-    "nvidia/deepseek-ai/deepseek-v4-pro": {
-      "context": 1048576,
-      "in": 0.435,
-      "out": 0.87,
-      "free": false
-    },
     "nvidia/stepfun-ai/step-3.5-flash": {
       "context": 256000,
       "in": 0,
@@ -940,12 +928,6 @@
       "free": true
     },
     "nvidia/moonshotai/kimi-k2.6": {
-      "context": 262144,
-      "in": 0,
-      "out": 0,
-      "free": true
-    },
-    "nvidia/moonshotai/kimi-k2-instruct-0905": {
       "context": 262144,
       "in": 0,
       "out": 0,
@@ -1167,7 +1149,31 @@
       "in": 3,
       "out": 5,
       "free": false
+    },
+    "nvidia/deepseek-ai/deepseek-v4.1-flash": {
+      "context": 1048576,
+      "in": 0,
+      "out": 0,
+      "free": true
+    },
+    "nvidia/z-ai/glm-5.3": {
+      "context": 1048576,
+      "in": 0,
+      "out": 0,
+      "free": true
+    },
+    "nvidia/z-ai/glm-5.3-flash": {
+      "context": null,
+      "in": 0,
+      "out": 0,
+      "free": true
+    },
+    "nvidia/moonshotai/kimi-k3": {
+      "context": 1048576,
+      "in": 0,
+      "out": 0,
+      "free": true
     }
   },
-  "updated_at": "2026-09-27T00:00:00.000Z"
+  "updated_at": "2026-09-28T00:00:00.000Z"
 }
