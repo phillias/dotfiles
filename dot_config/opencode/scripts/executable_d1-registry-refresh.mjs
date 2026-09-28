@@ -37,6 +37,7 @@ let tmpDir = null;
 function cleanup() {
   try { if (tmpDir) rmSync(tmpDir, { recursive: true, force: true }); } catch {}
 }
+process.on("exit", cleanup);
 
 function fail(msg) {
   cleanup();
@@ -93,7 +94,7 @@ function ladderFromElements(elements) {
     if (p.provider && p.model) ladder.push([p.provider, p.model]);
     cur = node.outputs?.fallback?.elementId;
   }
-  if (cur && cur !== "END" && seen.has(cur)) {
+  if (cur && cur !== "END" && seen.has(cur) && byId.get(cur)?.type === "model") {
     console.error(`d1-registry-refresh: ladder cycle detected at element ${cur}; stopping walk`);
   }
   return ladder;
@@ -104,13 +105,15 @@ function fetchCloudflare() {
   // (never treated as an empty route list), while a valid empty list stays healthy.
   const routes = [];
   const PER_PAGE = 25;
-  for (let page = 1; ; page++) {
+  let done = false;
+  for (let page = 1; page <= 100; page++) {
     const body = cfGet(`routes?page=${page}&per_page=${PER_PAGE}`);
     const batch = body.data?.routes;
     if (!Array.isArray(batch)) return { routes: [], healthy: false };
     routes.push(...batch);
-    if (batch.length < (body.data?.per_page ?? PER_PAGE)) break;
+    if (batch.length === 0 || batch.length < (body.data?.per_page ?? PER_PAGE)) { done = true; break; }
   }
+  if (!done) return { routes: [], healthy: false }; // 100 consecutive full pages: suspicious, don't truncate
   const out = [];
   for (const r of routes) {
     const detail = cfGet(`routes/${r.id}`);
