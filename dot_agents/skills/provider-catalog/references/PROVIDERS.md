@@ -672,11 +672,10 @@ without the $100+/mo native-subscription seats:
   API): per-token, no platform fee, no subscription. Right choice above
   ~$50/mo per provider.
 - **Plan/subsidized lanes already in the chains**: z.ai Coding Lite ($18/mo),
-  opencode-zen console free (~200/day), PGS coding-tester plan (glm-5.3-flash
-  - deepseek-v4-flash-0731 plan-subsidized — verified 2026-09-01), GOAT
-    monthly pool (resets Sept 12), aihubmix glm-5.3 discount (TUI lane 1),
-    together `$0` FP8/FP4 quantized GLM items, nvidia-nim nemotron (free, 40
-    RPM account-wide), cerebras paygo ($5 + card, big TPM small RPM).
+  opencode-zen console free (~200/day), PGS coding-tester plan (glm-5.3-flash + deepseek-v4-flash-0731 plan-subsidized — verified 2026-09-01), GOAT
+  monthly pool (resets Sept 12), aihubmix glm-5.3 discount (TUI lane 1),
+  together `$0` FP8/FP4 quantized GLM items, nvidia-nim nemotron (free, 40
+  RPM account-wide), cerebras paygo ($5 + card, big TPM small RPM).
 - **Google AI Studio**: $5 min via AI Studio, then $0.15/$0.50 MTok flash —
   strongest budget agentic lane (1M ctx), reachable natively through pi's
   `google-generative-ai` api type.
