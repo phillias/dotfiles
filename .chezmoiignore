@@ -74,3 +74,9 @@ age-key.txt.age
 {{- if ne .chezmoi.hostname "primary" }}
 .config/fleet-backup/restic-password-primary55522
 {{- end }}
+
+# Primary selfhost per-server env files — only deploy on primary (2026-09-27).
+{{- if ne .chezmoi.hostname "primary" }}
+firstmate/projects/selfhost/.env.primary
+firstmate/projects/selfhost/.env.tinyauth
+{{- end }}
