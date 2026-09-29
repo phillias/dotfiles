@@ -186,7 +186,7 @@ describe("gateway-routed provider contract (BYOK through gateway 'opencode')", (
     "zai-coding",
     "openrouter",
   ];
-  const gatewayTokenFile = "{file:~/.config/opencode/.cf-ai-gw-token}";
+  const gatewayTokenFile = "{file:~/.agents/keys/default/.cf-ai-gw}";
   const perProviderKeyFiles = [
     ".zen-key",
     ".opencode-key",

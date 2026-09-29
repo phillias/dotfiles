@@ -29,7 +29,7 @@ import {
 const PI_DIR = "../../../private_dot_pi";
 
 const GATEWAY_HOST = "gateway.ai.cloudflare.com";
-const GATEWAY_TOKEN_FILE = "{file:~/.config/opencode/.cf-ai-gw-token}";
+const GATEWAY_TOKEN_FILE = "{file:~/.agents/keys/default/.cf-ai-gw}";
 const GATEWAY_TOKEN_ENV = "$CF_AI_GATEWAY_TOKEN";
 const FREE_EVERYDAY_MODELS = [
   "glm-5.3-flash",
