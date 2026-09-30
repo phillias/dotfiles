@@ -69,6 +69,11 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.google-key" ]; then
     GOOGLE_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.google-key")" && export GOOGLE_API_KEY
 fi
 
+# Google Vision API (Cloud console key; requires billing on its project)
+if [ -r "$HOME/.agents/keys/$_default_profile/.google-vision-key" ]; then
+    GOOGLE_VISION_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.google-vision-key")" && export GOOGLE_VISION_API_KEY
+fi
+
 # Together
 if [ -r "$HOME/.agents/keys/$_default_profile/.together-key" ]; then
     TOGETHER_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.together-key")" && export TOGETHER_API_KEY
