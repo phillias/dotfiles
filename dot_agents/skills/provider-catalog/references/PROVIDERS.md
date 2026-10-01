@@ -396,6 +396,12 @@ Also live on NIM: `moonshotai/kimi-k2.6` and `nvidia/nemotron-3-super-120b-a12b`
 `custom-nvidia-nim/deepseek-ai/deepseek-v4-flash-0731` pr-reviewer head is now
 a dead lane.
 
+NIM wave models now back the CF `dynamic/TUI` route too (2026-10-01, active
+version `b10b4878-a241-4fcb-9b02-cf18abba89cb`): START → `custom-nvidia-nim/z-ai/glm-5.3`
+→ `custom-nvidia-nim/z-ai/glm-5.3-flash` → downstream non-NIM rungs. Count of
+NIM-backed nodes on CF gateway routes is now 6 (was 4), all sharing the same
+~40 RPM account-wide pool — do not add more without retiring one.
+
 **Terms and limits (the catch):** NVIDIA API Trial ToS restricts free use to
 "internal testing and evaluation purposes, not in production" (personal/fleet
 agent tooling fits; nothing customer-facing). No fixed published rate limit;
@@ -595,9 +601,11 @@ DYNAMIC-route caveat: model nodes naming bare custom-provider names
   output, multimodal input, mandatory reasoning, tool calls, $0 preview pricing.
   The captain judged it unusable for interactive agent work — tangents,
   unrelated topics, and incorrect tool use — so it was removed from the CF
-  `dynamic/TUI` head (active version `cce0c37c-48dd-44a3-aa7e-e0739abcd85c`,
-  START now routes to `custom-opencode-zen/mimo-v2.5-free`) and from the live
-  Vercel `vmc/tui` ladder. Do not re-add it to any route without explicit
+  `dynamic/TUI` head (removal-time version `cce0c37c-48dd-44a3-aa7e-e0739abcd85c`)
+  and from the live Vercel `vmc/tui` ladder. The `dynamic/TUI` head has since
+  moved on (2026-10-01: active version `b10b4878-a241-4fcb-9b02-cf18abba89cb`,
+  START routes to `custom-nvidia-nim/z-ai/glm-5.3` — see the NIM wave section).
+  Do not re-add it to any route without explicit
   captain approval. Source: https://openrouter.ai/stealth/space-bunny-alpha
 
 ## pi + opencode wiring for dynamic routes
