@@ -80,3 +80,8 @@ age-key.txt.age
 firstmate/projects/selfhost/.env.primary
 firstmate/projects/selfhost/.env.tinyauth
 {{- end }}
+
+# Kali (devcabinkali) selfhost per-server env — only deploy on this host (2026-09-30).
+{{- if ne .chezmoi.hostname "CabinInspiron22Kali" }}
+firstmate/projects/selfhost/.env.devcabinkali
+{{- end }}
