@@ -75,10 +75,11 @@ age-key.txt.age
 .config/fleet-backup/restic-password-primary55522
 {{- end }}
 
-# Primary selfhost per-server env files — only deploy on primary (2026-09-27).
+# Primary selfhost per-server env — only deploy on primary (2026-09-27).
+# .env.tinyauth deploys globally since 2026-10-01 (captain order): tinyauth is a
+# fleet-wide forward-auth provider, not a primary-only service.
 {{- if ne .chezmoi.hostname "primary" }}
 firstmate/projects/selfhost/.env.primary
-firstmate/projects/selfhost/.env.tinyauth
 {{- end }}
 
 # Kali (devcabinkali) selfhost per-server env — only deploy on this host (2026-09-30).
