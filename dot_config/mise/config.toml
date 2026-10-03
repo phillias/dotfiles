@@ -33,7 +33,15 @@ npm.shell_out = true
 # pipeline features shipped between the two release lines; the fleet global
 # config (dot_no-mistakes/config.yaml) parses on 1.72.0 per `no-mistakes
 # doctor` (not the pi thinking-mode tool_choice issue).
-"go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes" = "1.72.0"
+# 1.84.0 (2026-10-03 bump): v1.84.0 = Latest stable; changelog review found no
+# breaking complications for house usage (v1.77 moved-base rebase merge,
+# v1.81 custody recovery, v1.83.1 memory-file protection, v1.83.2 stricter
+# test gates, v1.84 reviewer questions — docs-only ask-user pattern persists).
+# Upgraded via mise pin bump (never the in-tool self-updater — herdr lesson);
+# stale 1.72-parked runs aborted first; `no-mistakes doctor` must re-verify
+# the fleet global config parses on 1.84.0; first post-upgrade run is the
+# validation run per the pi-pin precedent.
+"go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes" = "1.84.0"
 # mise's registry-resolved gh tool (cli/cli release binary; verified via
 # `mise x gh@2.100.0 -- gh --version`). Replaces the ~/bin/gh hand-download
 # branch in scripts/setup.sh; the identity router (dot_local/bin/executable_gh)
