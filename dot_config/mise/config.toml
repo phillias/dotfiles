@@ -86,6 +86,11 @@ opencode = "1.18.29"
 # opencode-models-discovery — auto-populate model lists from provider endpoints
 "npm:opencode-models-discovery" = "1.5.5"
 # herdr — agent terminal workspace manager (static binary via GitHub release)
+# mise guidance (applies to every pin in [tools]): path strategy + upgrade flow
+# live in the house skill ~/.agents/skills/mise/SKILL.md — bump pin ->
+# chezmoi apply (mise-sync installs; `latest` alias re-points) -> restart
+# daemons holding old binaries. Never in-tool self-updaters; never pin
+# versioned install dirs.
 "github:herdrdev/herdr" = "0.9.0"
  # treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
  # standalone installer copy, the manifest now owns it)
