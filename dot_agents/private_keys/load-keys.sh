@@ -228,4 +228,9 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.meta-key" ]; then
     META_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.meta-key")" && export META_API_KEY
 fi
 
+# Anthropic (Console API key; tokentelemetry billing-mode inference reads ANTHROPIC_API_KEY)
+if [ -r "$HOME/.agents/keys/$_default_profile/.anthropic-key" ]; then
+    ANTHROPIC_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.anthropic-key")" && export ANTHROPIC_API_KEY
+fi
+
 unset _default_profile
