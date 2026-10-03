@@ -59,6 +59,7 @@ Fast, cheap, >=128K context, tool-use:
 | `deepseek/deepseek-v4-flash-0731` | 1M | Yes | Yes | $0.076/MTok | $0.153/MTok | Full 1M, reasoning |
 | `zai/glm-5.3-flash` | 1M | Yes | Yes | $0.15/MTok | $0.50/MTok | 1M context, reasoning |
 | `google/gemini-2.5-flash-lite` | 1M | Yes | Yes | $0.10/MTok | $0.40/MTok | 1M context |
+| `google/gemini-3.8-flash` | 1M | Yes | Yes | $0.75/MTok | $3.75/MTok | 1M context, reasoning efforts low/high, vision+tools; thinking model — probe with max_tokens ≥500 (verified upstream `/v1/models/google/gemini-3.8-flash/endpoints` 2026-10-03) |
 | `openai/gpt-5-nano` | 400K | Yes | Yes | $0.05/MTok | $0.40/MTok | Reasoning, small |
 | `openai/gpt-4o-mini` | 128K | No | Yes | $0.15/MTok | $0.60/MTok | Proven workhorse |
 
@@ -151,6 +152,7 @@ Fast, cheap, >=128K context, tool-use:
    - `vmc/grok` — Grok family (grok-4.1-fast-reasoning → grok-4.20-reasoning)
    - `vmc/kimi` — Kimi family (kimi-k3 → kimi-k2.6)
    - ~~vmc/muse~~ — Muse family (muse-spark-1.2 → llama-3.1-70b) [removed: muse rides Meta directly]
+   - `vmc/antigravity` — firstmate worker flash (gemini-3.8-flash → gemini-2.5-flash → gemini-2.5-flash-lite), kind=router so callable is `router/antigravity` (captain-ordered 2026-10-03, captain sign-in pending — pre-auth model basis, refine after `agy models`)
 5. Wire Vercel as fallback in all harness configs:
    - ~~opencode: `vercel` provider entry in opencode.json~~ (supervisor rides CF; not a worker)
    - ~~pi: `vercel` provider in models.json~~ ✓ (9 vmc models declared)

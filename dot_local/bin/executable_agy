@@ -1,0 +1,10 @@
+#!/bin/sh
+# agy — official short name for the Antigravity CLI (the official
+# install.sh places the release binary at ~/.local/bin/agy). mise's github
+# backend exposes the same binary as `antigravity`; this wrapper provides
+# the official `agy` name without pinning a versioned mise install dir.
+if command -v antigravity >/dev/null 2>&1; then
+  exec antigravity "$@"
+else
+  exec "$HOME/.local/share/mise/shims/antigravity" "$@"
+fi

@@ -1,6 +1,7 @@
 # Routing topology (D1-generated snapshot)
 
 Snapshot generated 2026-09-28 from the shared D1 `provider-catalog` registry: 15 routes, 64 ladder steps, 53 model rows.
+Structural update 2026-10-03 (antigravity worker routes, captain-ordered): 17 routes, 70 ladder steps, 55 model rows. D1 rows inserted same day; refresh picks them up automatically.
 The underlying tables refresh daily at 05:00 ET via `d1-registry-refresh.mjs`; this document is a manual snapshot — regenerate after structural route changes. Regenerated 2026-09-28 after the NIM free-access fit (pr-reviewer head swap, high NIM head, pr-gate Kimi-K3 rung); D1 rows catch up on the first post-`wrangler login` registry refresh.
 Live quota truth is always `quota-axi`, never this file. Ladder truth is the gateway; D1 mirrors it.
 
@@ -49,6 +50,7 @@ flowchart TD
 | dynamic/pr-gate | nvidia-nim/nemotron-3-super-120b → zen/nemotron-3-ultra-free → openrouter/gpt-5.6-luna → commandcode/GLM-5.2 → commandcode/Kimi-K3 → nvidia-nim/kimi-k3 → commandcode/nemotron-3-ultra-550b → commandcode/deepseek-v4-flash → phoenixgrove/deepseek-v4-flash-0731 → google-ai-studio/gemini-2.5-flash |
 | dynamic/pr-reviewer | nvidia-nim/glm-5.3 → nvidia-nim/deepseek-v4.1-flash → openrouter/gpt-5.6-luna → openrouter/nemotron-3-ultra-550b:free → zen/glm-5.2 |
 | dynamic/vision | google-ai-studio/gemini-2.5-flash → together/GLM-4.5V → zen/gemini-3.5-flash → openrouter/gemini-2.5-flash |
+| dynamic/antigravity | google-ai-studio/gemini-3.8-flash → google-ai-studio/gemini-2.5-flash → openrouter/google/gemini-2.5-flash |
 | dynamic/claude | openrouter/anthropic/claude-sonnet-4 |
 | dynamic/codex | commandcode/gpt-5.6-luna → openrouter/gpt-4o |
 | dynamic/cursor | _registered in D1; empty ladder — no models discovered yet_ |
@@ -64,8 +66,13 @@ flowchart TD
 | vmc/tui | alibaba/qwen3.7-flash → deepseek/deepseek-v4-flash-0731 → zai/glm-5.3-flash → openai/gpt-5-nano → google/gemini-2.5-flash-lite → openai/gpt-4o-mini |
 | vmc/pr-gate | deepseek/deepseek-v4-flash-0731 → nvidia/nemotron-3-super-120b-a12b → moonshotai/kimi-k3 → zai/glm-5.2 → openai/gpt-5.6-luna → google/gemini-2.5-flash |
 | vmc/pr-reviewer | deepseek/deepseek-v4-flash-0731 → openai/gpt-5.6-luna → nvidia/nemotron-3-ultra-550b-a55b → zai/glm-5.2 |
+| vmc/antigravity | google/gemini-3.8-flash → google/gemini-2.5-flash → google/gemini-2.5-flash-lite |
 
 **List-API workaround (resolved 2026-09-27):** Vercel's virtual-model list API returns empty (upstream quirk), so `vmc/pr-gate` and `vmc/pr-reviewer` were registered by one-time manual `routes` seed; the daily refresh walks their ladders from those rows. Any NEW Vercel virtual model needs the same one-time seed before the daily refresh discovers it.
+
+**Callable-kind rule (verified 2026-10-03):** D1 labels every Vercel route `vmc/<slug>`, but the inference callable depends on kind — `alias` answers to `vmc/<slug>`, `router` answers ONLY to `router/<slug>` (`invalid_request_error` otherwise; the CLI restore boilerplate says `vmc/` for both — wrong for routers). Pi chains use the correct `vercel/router/*` form. VMC `antigravity` is kind `router` (3-model ladder), so its callable is `router/antigravity`.
+
+**Worker chain — agy (2026-10-03, captain-ordered, pre-auth model basis):** `opencode-go` (subsidized pool, harness-direct, session-gated — never a route node) → `CfAiGw/dynamic/antigravity` → `vmc/antigravity` (callable `router/antigravity`). All three layers serve the budget 3.8-flash class (`gemini-3.8-flash` base id; the agy `-high` tier suffix is harness-internal — 404 on AI Studio, `model_not_found` on Vercel). Refine the pick after `agy models` verifies post-sign-in.
 
 ## Flow 2 — no-mistakes → pi harness → (virtual) providers → models
 
