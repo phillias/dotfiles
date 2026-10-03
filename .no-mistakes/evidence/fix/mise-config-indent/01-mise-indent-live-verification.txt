@@ -1,0 +1,86 @@
+# mise config.toml indentation-drift fix — live verification transcript
+# date: 2026-10-03T15:09:44Z
+# worktree: /home/phillias/.no-mistakes/worktrees/79da17cc01eb/01M414WBTSCCZ14AXQG2SDMZ7G
+# commit: a0aa714f8c8d7edd9d5896412f59ab596eeaca92  branch: HEAD
+# driver cwd (isolated, no local mise.toml): /tmp/misetest
+
+## 1. change is cosmetic-only (only leading whitespace removed, lines 95-111)
+diff --git a/dot_config/mise/config.toml b/dot_config/mise/config.toml
+index c47c70c..5d0a020 100644
+--- a/dot_config/mise/config.toml
++++ b/dot_config/mise/config.toml
+@@ -92,20 +92,20 @@ opencode = "1.18.29"
+ # daemons holding old binaries. Never in-tool self-updaters; never pin
+ # versioned install dirs.
+ "github:herdrdev/herdr" = "0.9.0"
+- # treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
+- # standalone installer copy, the manifest now owns it)
+- "github:kunchenguid/treehouse" = "2.3.0"
+- # cloudflared — Cloudflare tunnel CLI (mise registry; replaces setup.sh branch)
+- cloudflared = "2025.9.0"
+- # chezmoi — dotfile manager (mise registry; replaces setup.sh branch)
+- chezmoi = "2.70.4"
+-  go = "1.25"
+- # vercel — Vercel CLI for AI Gateway management (virtual models, routing
+- # rules, budgets, coding agent setup). Required for vmc/<slug> creation and
+- # CLI-based gateway administration. Inference uses AI_GATEWAY_API_KEY; CLI
+- # management needs `vercel login` or --token (personal access token).
+-  "npm:vercel" = "59.23.2"
+- # treg — unified tool catalog CLI (3,600+ endpoints, 89 providers). PyPI package
+- # tools-registry[proxy]; pipx backend (uv tool under the hood). AXI-compliant
+- # TOON output: catalog search, call, balance. $1.00 free credit, pay-per-call.
+- "pipx:tools-registry" = "0.20.0"
++# treehouse — firstmate worker worktree pool (GitHub-release binary; replaces the
++# standalone installer copy, the manifest now owns it)
++"github:kunchenguid/treehouse" = "2.3.0"
++# cloudflared — Cloudflare tunnel CLI (mise registry; replaces setup.sh branch)
++cloudflared = "2025.9.0"
++# chezmoi — dotfile manager (mise registry; replaces setup.sh branch)
++chezmoi = "2.70.4"
++go = "1.25"
++# vercel — Vercel CLI for AI Gateway management (virtual models, routing
++# rules, budgets, coding agent setup). Required for vmc/<slug> creation and
++# CLI-based gateway administration. Inference uses AI_GATEWAY_API_KEY; CLI
++# management needs `vercel login` or --token (personal access token).
++"npm:vercel" = "59.23.2"
++# treg — unified tool catalog CLI (3,600+ endpoints, 89 providers). PyPI package
++# tools-registry[proxy]; pipx backend (uv tool under the hood). AXI-compliant
++# TOON output: catalog search, call, balance. $1.00 free credit, pay-per-call.
++"pipx:tools-registry" = "0.20.0"
+
+## 2. semantic model equality (python tomllib: real TOML parser)
+cosmetic-only (lstrip equal) : True
+parsed model equal           : True
+[tools] equal, pin count     : True 40
+[settings] equal             : True
+tool order preserved         : True
+comment text preserved       : True 65
+differing lines              : 17 | all whitespace-only: True
+negative control - guard detects version bump    : True
+negative control - guard detects commented-out pin: True
+
+## 3. real consumer: chezmoi renders the worktree source into a fresh isolated HOME
+chezmoi apply exit=0
+rendered target == source (byte-identical)
+
+## 4. real consumer: mise parses the rendered config and resolves the pins
+tools resolved by mise : 40
+config actually read   : {'/tmp/misetest/home2/.config/mise/config.toml'}
+go pin                 : 1.25
+chezmoi pin            : 2.70.4
+treehouse pin          : 2.3.0
+treg pin               : 0.20.0
+
+## 5. pre/post resolution parity: mise reads base and target identically (neutral cwd)
+base tools: 40 | target tools: 40
+same tool set: True
+same pins    : True
+
+## 6. drift check (documented in config header: exit 1 = declared-but-missing)
+mise all tools are installed
+target exit=0
+
+## 7. live applied target already matches the committed source
+live ~/.config/mise/config.toml == worktree source
+live chezmoi source == worktree source
+chezmoi diff exit=0 (empty output = clean)
