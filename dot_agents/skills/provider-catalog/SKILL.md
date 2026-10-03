@@ -12,6 +12,10 @@ Chat and completion providers route through Cloudflare AI Gateway `opencode` (BY
 Read `references/PROVIDERS.md` for the provider table, gateway URL segments, BYOK mechanics, and known live statuses.
 Read `references/ROUTING_TOPOLOGY.md` for the D1-generated routing snapshot (firstmate→harnesses→providers→models, no-mistakes→pi→chains, free lanes + quota).
 
+## Antigravity worker chain (agy harness, 2026-10-03)
+
+`agy` is the Antigravity CLI (Go binary TUI; mise-pinned `github:google-antigravity/antigravity-cli`, official short name via `~/.local/bin/agy` wrapper; model catalog via `agy models`, runs under the captain's signed-in Google account). Worker fallback chain: `opencode-go` (subsidized pool, harness-direct, session-gated — never a gateway route node) → `CfAiGw/dynamic/antigravity` (CF route, compat string `dynamic/antigravity`, token `$CF_AI_GATEWAY_TOKEN`) → `vmc/antigravity` (Vercel router-kind VMC, callable `router/antigravity` — the `vmc/` prefix is alias-only; inference token `$AI_GATEWAY_API_KEY`). All three layers serve the budget 3.8-flash class; ladder detail, retry semantics (linear, timeout 60000, retries 1), and the pre-auth model basis live in `references/PROVIDERS.md` §dynamic routes and `references/ROUTING_TOPOLOGY.md` (worker-chain note).
+
 ## Deterministic dynamic-route audit
 
 Route health prefers `~/.config/opencode/scripts/dynamic-audit.mjs` (scheduled hourly via the `dynamic-audit.timer` systemd user timer), never a live LLM probe: transcript at `~/.local/state/opencode-fleet/dynamic-audit.jsonl` ("dynamic-audit.jsonl"). See `references/PROVIDERS.md` §"Deterministic dynamic-route audit" for the test list, log schema, and the interactive-LLM interrogation procedure. Ask the captain before mutating any gateway route — `served_model` counts in the audit log are the evidence base.

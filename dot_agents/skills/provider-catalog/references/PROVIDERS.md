@@ -481,6 +481,23 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   mandates x-opencode-session, which route nodes cannot send.
 - `vision` — image-capable chat lanes (GLM-4.5V via together, gemini-2.5-flash
   via google-ai-studio, zen/openrouter gemini variants).
+- `antigravity` — firstmate worker flash ladder (captain-ordered 2026-10-03,
+  created + deployed version `114df362-a15a-4598-8237-d04292e10cf1`, route id
+  `ee5af7c8-2d57-462e-a8c5-e3d5fca51a83`, compat probe served
+  `gemini-3.8-flash` content ok): `google-ai-studio/gemini-3.8-flash` →
+  `google-ai-studio/gemini-2.5-flash` → `openrouter/google/gemini-2.5-flash`
+  (PAYG tail). Linear, every node `timeout` 60000 / `retries` 1, success→END,
+  fallback→next, last fallback→END. Token: `$CF_AI_GATEWAY_TOKEN` (route
+  scope); compat model string `dynamic/antigravity`; probe with
+  `cf-aig-skip-cache: true` and max_tokens ≥500 (3.8-flash is a thinking
+  model — small budgets return length-cutoff empties). Model basis is
+  PRE-AUTH (captain sign-in pending): head id is the live base
+  `gemini-3.8-flash` — the agy `-high` tier suffix 404s on AI Studio
+  (agy-harness-internal) and Vercel (`model_not_found`); refine after
+  `agy models` verifies. Never add opencode-go nodes (session-gated).
+  Worker chain position: middle layer of
+  `opencode-go → CfAiGw/dynamic/antigravity → vmc/antigravity`
+  (opencode-go rides the harness directly, never a route node).
 - `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
   rides `CfAiGw/dynamic/pr-reviewer` via `review_agents.reviewer`
   (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14;
