@@ -1,0 +1,5 @@
+mise WARN  Failed to resolve tool version list for no-mistakes: [--runtime] no-mistakes@latest: no-mistakes not found in mise tool registry
+
+Did you mean?
+  aqua:nmstate/nmstate
+no-mistakes version v1.84.0 (unknown) unknown

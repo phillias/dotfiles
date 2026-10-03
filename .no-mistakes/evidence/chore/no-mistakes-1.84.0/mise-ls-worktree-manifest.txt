@@ -1,0 +1,4 @@
+TOOL: go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes
+{"version": "1.60.2", "install_path": "/home/phillias/.local/share/mise/installs/go-github-com-kunchenguid-no-mistakes-cmd-no-mistakes/1.60.2", "installed": true, "active": false}
+{"version": "1.72.0", "install_path": "/home/phillias/.local/share/mise/installs/go-github-com-kunchenguid-no-mistakes-cmd-no-mistakes/1.72.0", "installed": true, "active": false}
+{"version": "1.84.0", "requested_version": "1.84.0", "install_path": "/home/phillias/.local/share/mise/installs/go-github-com-kunchenguid-no-mistakes-cmd-no-mistakes/1.84.0", "source": {"type": "mise.toml", "path": "/home/phillias/.no-mistakes/worktrees/79da17cc01eb/01M41K9RH56SSEYX6VX0KP4CB8/dot_config/mise/config.toml"}, "installed": true, "active": true}

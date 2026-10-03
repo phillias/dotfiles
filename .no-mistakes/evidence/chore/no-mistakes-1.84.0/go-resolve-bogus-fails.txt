@@ -1,0 +1,1 @@
+go: github.com/kunchenguid/no-mistakes@v1.84.99: invalid version: unknown revision v1.84.99

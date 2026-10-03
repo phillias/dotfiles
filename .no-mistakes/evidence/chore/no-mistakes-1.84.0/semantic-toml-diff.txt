@@ -1,0 +1,4 @@
+target [tools] entries: 41
+only changed pin: go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes 1.72.0 -> 1.84.0
+all other 40 pins byte-identical between base and target
+PASS: manifest parses (tomllib); single-pin semantic diff confirmed

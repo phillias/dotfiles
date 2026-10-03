@@ -1,0 +1,21 @@
+  System
+  ✓ git             git version 2.53.0
+  ✓ gh              ok
+  – az              not found (optional, needed for Azure DevOps PR/CI)
+  ✓ data directory  /home/phillias/.no-mistakes
+  ✓ database        ok
+  ✓ daemon          running
+
+  Agents
+  ✓ claude          /home/phillias/.local/share/mise/installs/npm-anthropic-ai-claude-code/2.1.263/bin/claude
+  ✓ codex           /home/phillias/.local/share/mise/installs/npm-openai-codex/0.153.4/bin/codex
+  ✓ grok            /home/phillias/.local/share/mise/installs/npm-xai-official-grok/1.0.13/bin/grok
+  – rovodev         not found
+  ✓ opencode        /home/phillias/.local/share/mise/installs/opencode/1.18.29/opencode
+  ✓ pi              /home/phillias/.local/share/mise/installs/npm-earendil-works-pi-coding-agent/0.84.2/bin/pi
+  – copilot         not found
+  ✓ antigravity     /home/phillias/.local/bin/agy
+  – acpx            not found
+  – cursor          not found (cursor-agent, acpx)
+  – devin           not found (devin, acpx)
+  ✓ gate validation  pi is runnable
