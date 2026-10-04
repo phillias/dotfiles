@@ -1,0 +1,26 @@
+PASS  gate chain head is opencode-go-gw/deepseek-v4-flash; no longcat rung
+PASS  gate chain == [deepseek-v4-flash, CfAiGw/dynamic/pr-gate, vercel/router/pr-gate]
+PASS  review chain head is deepseek (verdict-table role claim)
+PASS  PROVIDERS.md line 11 asserts full post-removal chain in order
+PASS  PROVIDERS.md line 11 mentions longcat only via removal (PR #392 / 2026-10-04)
+PASS  PROVIDERS.md line 11 no stale '2026-09-28 regenerated' flow-2 pointer
+PASS  flow-2 mermaid block found
+PASS  GATEC node == 'gate<br/>' + exactly fallback-chains gate chain
+PASS  REV2 node == 'review<br/>' + exactly fallback-chains review chain
+PASS  DEF node == 'default<br/>' + exactly fallback-chains default chain
+PASS  GATEC head edge goes to ogw[deepseek-v4-flash], no lcat node
+PASS  flow-2 diagrams contain no longcat token
+PASS  structural-update 2026-10-04 note names PR #392, new head, and NO_MISTAKES_MODELS.md
+PASS  config has no test_agents key (doc: 'no test_agents role exists')
+PASS  global agent_config.pi.model == fallback/gate (test steps ride gate chain)
+PASS  review_agents.reviewer.model == fallback/review (reviewer/fixer chain claim)
+PASS  review_agent_timeout == 12m as documented
+PASS  test_agent_timeout == 12m as documented
+PASS  step_quiet_warning == 10m (observability-only claim)
+PASS  doc records 12m budgets + observed 36s-434s / 2.5m-7.7m / 19.8m ranges
+PASS  doc verdict table: longcat BROKEN with both JSON failures + 51m stalls; removed via PR #392
+PASS  doc documents 60m -> 12m with retired nemotron NIM rationale
+PASS  doc step-role map claims test rides global fallback/gate and reviewer rides fallback/review
+PASS  no repo file still asserts longcat as a live gate/chain head
+
+RESULT: ALL CHECKS PASS
