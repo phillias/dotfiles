@@ -66,6 +66,14 @@
       "out": 0,
       "free": true
     },
+    "opencode-zen/fledge-alpha-free": {
+      "context": 1048576,
+      "in": 0,
+      "out": 0,
+      "free": true,
+      "max_output": 131072,
+      "note": "Stealth preview 2026-10-01, $0 in/out, limited-time; anonymous lab (community speculation: DeepSeek V4.1 Pro, unconfirmed); reasoning effort adjustable, tools + vision; TRIAL interactive primary only, NOT for no-mistakes pipeline roles"
+    },
     "opencode-zen/gemini-3.6-flash": {
       "context": null,
       "in": 0,
@@ -1181,5 +1189,5 @@
       "free": true
     }
   },
-  "updated_at": "2026-10-03T00:00:00.000Z"
+  "updated_at": "2026-10-04T00:00:00.000Z"
 }

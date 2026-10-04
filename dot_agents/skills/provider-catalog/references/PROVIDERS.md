@@ -8,7 +8,7 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 - Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Two-path architecture (captain decision 2026-09-19, PRs #327 + #330): utility chains are `dynamic/TUI` (gateway cascading GLM ladder) → `opencode-go/glm-5.1` → `opencode-go/deepseek-v4-flash` (session-gated direct-client tail); specialized agents/categories keep pinned chains.
 - Pi default chain — `~/.pi/fallback-chains.json` → `default` key (added 2026-09-01). Same GLM-5.1 ladder; activates via `fallback/default` model string.
-- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key. Live chain order is that file itself (current ladders are drawn in `references/ROUTING_TOPOLOGY.md` flow-2, regenerated from it 2026-09-28: longcat gate head, `vercel/router/*` rungs). Chain semantics/history live in the Gate chain section; the 2026-09-01 gate-chain v4 record was superseded when the openrouter `:free` trio was removed after no-mistakes run deaths — that lane class is documented in the pr-gate entry.
+- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key. Live chain order is that file itself (drawn in `references/ROUTING_TOPOLOGY.md` flow-2: `opencode-go-gw/deepseek-v4-flash` head → `CfAiGw/dynamic/pr-gate` → `vercel/router/pr-gate`; the longcat-2.5-preview-free head was removed via dotfiles PR #392, structural update 2026-10-04). Chain semantics/history live in the Gate chain section; the 2026-09-01 gate-chain v4 record was superseded when the openrouter `:free` trio was removed after no-mistakes run deaths — that lane class is documented in the pr-gate entry.
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
@@ -422,6 +422,10 @@ the hourly audit; TUI intentionally kept NIM-free (40 RPM account-wide pool).
 NIM nodes now on live routes: 4 (pr-gate head nemotron, pr-gate kimi-k3,
 pr-reviewer glm-5.3 + deepseek-v4.1-flash, high glm-5.3) — the shared pool
 is the binding constraint; do not add more without retiring one.
+
+## Fledge Alpha free preview (2026-10-04, live-verified)
+
+`opencode-zen/fledge-alpha-free` — present in the 82-model zen `/models` list (verified live via the house gateway 2026-10-04), NOT on the opencode-go lane. Free-tier stealth preview released 2026-10-01: **$0 in/out**, ~1M context (1,048,576) / ~130k output, adjustable reasoning effort (low/high/max), tool use + vision, limited-time listing, strict free-tier rate limits. Anonymous lab — the captain describes it as inkling-class; community speculation says DeepSeek V4.1 Pro (unconfirmed). Early anecdotal executable-code checks: 61/61 vs LongCat 59/61, 4/4 logic, 12/12 hidden-key retrieval from ~1M-char inputs. Inkling lineage note: unlike the OpenRouter free inkling lane (dropped from gate chains 2026-09-15 for 403 funnel rejection of pi-shaped gate requests + TM training logging), fledge rides the opencode-zen free tier. Verdict: **TRIAL for interactive primary use ONLY — NOT for no-mistakes pipeline roles** (JSON discipline unproven, anonymous identity, limited-time listing = unstable for fleet config; `opencode-go-gw/deepseek-v4-flash` keeps gate/review). Fit analysis 2026-10-04: best fit = interactive primary model trial (same class as longcat-2.5-preview-free — free, 1M ctx — with better early code results + reasoning-effort control + vision); second fit = long-context retrieval sessions.
 
 ## Gate chain (pi-fallback-provider)
 
