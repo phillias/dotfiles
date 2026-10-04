@@ -1,0 +1,35 @@
+Real pipeline run under the changed config (read-only queries of the gate run DB
+/home/phillias/.no-mistakes/state.sqlite and applied ~/.no-mistakes/config.yaml).
+
+Host config applied before run start (2026-10-04 09:49 local, run started ~09:51):
+  review_agent_timeout: "12m"
+  test_agent_timeout: "12m"
+Applied ~/.pi/fallback-chains.json gate chain:
+  ["opencode-go-gw/deepseek-v4-flash","CfAiGw/dynamic/pr-gate","vercel/router/pr-gate"]
+
+Run record:
+  id=01M43JX914Z4EX4747ZEQAQBWA  branch=chore/no-mistakes-gate-hardening
+  head=a7c557fcae40413b0fe6ca4e20c11241c7fce065  status=running
+
+Step timing under the 12m budgets:
+  step_name  status     duration_ms
+  intent     completed  162
+  rebase     completed  1298
+  review     completed  55093        (55s; budget headroom vs 12m cap)
+  test       running    elapsed 6m33s at capture (still under the 12m test budget, no budget kill)
+
+The gate accepted the config at run setup (a parse failure would abort before any step),
+executed review in 55s, and is executing test right now under test_agent_timeout=12m.
+
+Supplemental semantic parse of the changed repo file dot_no-mistakes/config.yaml:
+  review_agent_timeout = 12m -> minutes: 12.0
+  test_agent_timeout = 12m -> minutes: 12.0
+  asserts: 12m parses as 12.0 minutes for both keys; no test_agents key present
+  (test steps ride the global agent, so removing the longcat gate rung fixes test too).
+
+Adversarial sweep:
+  - git grep longcat in the changed tree: only provider-catalog skill docs/snapshot
+    (not runtime config); zero longcat in private_dot_pi/fallback-chains.json.
+  - no lingering 60m values in dot_no-mistakes/config.yaml (only historical comments).
+  - sibling invariant: gate chain still contains CfAiGw/dynamic/pr-gate (mid-chain)
+    and keeps vercel/router/pr-gate as last-resort fallthrough.

@@ -1,0 +1,26 @@
+Live consumer drive: pi 0.84.2 + pi-fallback-provider (the real consumer of ~/.pi/fallback-chains.json)
+in a disposable HOME containing the changed private_dot_pi/fallback-chains.json.
+
+1) pi --list-models (extension loaded, chains registered from the changed file):
+
+[Fallback] Loading Fallback Router Extension...
+[Fallback] Found chains: gate, review, default
+[Fallback] Cache TTL: 60min, Failed cooldown: 300s
+[Fallback] Extension loaded successfully.
+[Fallback] Available: fallback/gate, fallback/review, fallback/default
+provider  model    context  max-out  thinking  images
+fallback  default  200K     16.4K    no        no
+fallback  gate     200K     16.4K    no        no
+fallback  review   200K     16.4K    no        no
+
+2) Chain probe executing the consumer's loadFallbackChains() inside the real pi runtime:
+
+CHAIN-PROBE gate=["opencode-go-gw/deepseek-v4-flash","CfAiGw/dynamic/pr-gate","vercel/router/pr-gate"]
+CHAIN-PROBE review=["opencode-go-gw/deepseek-v4-flash","CfAiGw/dynamic/pr-reviewer","vercel/router/pr-reviewer","openrouter-direct/z-ai/glm-5.2"]
+CHAIN-PROBE default=["CfAiGw/dynamic/TUI","vercel/router/tui"]
+CHAIN-PROBE gate-head=opencode-go-gw/deepseek-v4-flash
+CHAIN-PROBE longcat-anywhere=false
+
+=> gate chain leads with opencode-go-gw/deepseek-v4-flash; no longcat rung anywhere;
+   review and default chains untouched. Order is the provider's attempt order
+   (getModelOrder returns the file order verbatim, no cache in a fresh env).
