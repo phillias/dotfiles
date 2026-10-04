@@ -1,0 +1,25 @@
+chezmoi: /home/phillias/.local/share/mise/installs/chezmoi/2.70.4/chezmoi chezmoi version v2.70.4, commit 64583685c5eb36e10670bad076d5406a08baf751, built at 2026-05-19T22:47:23Z, built by goreleaser
+-- old script has bare 'selfhost' entry? 0
+-- new script has bare 'selfhost' entry? 1
+### apply: src=src-old home=home-existing
+### apply rc=0
+-- selfhost installed after base apply?  YES (lines: 2009)
+-- pirate-stack pruned by base script?   YES
+### apply: src=src-new home=home-existing
+### apply rc=0
+-- selfhost pruned after new apply?      YES
+-- keepme survived?                      YES
+-- selfhost prune line in 02 log?        1
+### apply: src=src-new-noscript home=home-adversarial
+### apply rc=0
+-- stale survives apply w/o script?      YES
+### apply: src=src-new home=home-adversarial
+### apply rc=0
+-- removed once script present?          YES
+-- selfhost prune line in 04 log?        1
+### apply: src=src-new home=home-fresh
+### apply rc=0
+-- fresh host installs selfhost?         NO
+-- chezmoi managed selfhost count?       0
+-- script evidence lines in 05 log?      2
+=== DONE ===

@@ -1,0 +1,4 @@
+prune deprecated skill: /tmp/nm-selfhost-drive4/home-existing/.agents/skills/selfhost
+repo: ? (ahead ?, behind ?)
+WARNING: source repo on branch '?' — commits here target the wrong PR base
+sync-dotfiles: all files managed, nothing to do
