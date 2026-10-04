@@ -1,6 +1,5 @@
 {
   "gate": [
-    "opencode-go-gw/longcat-2.5-preview-free",
     "opencode-go-gw/deepseek-v4-flash",
     "CfAiGw/dynamic/pr-gate",
     "vercel/router/pr-gate"
