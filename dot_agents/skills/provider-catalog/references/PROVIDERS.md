@@ -429,7 +429,7 @@ is the binding constraint; do not add more without retiring one.
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider's free inkling lane remains for personal agentic experiments only (the provider's PAYG `z-ai/glm-5.2` lane, added 2026-09-28, rides the pi review chain's terminal rung). Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider's free inkling lane remains for personal agentic experiments only (the provider's PAYG `z-ai/glm-5.2` lane, added 2026-09-28, rode the pi review chain's terminal rung until retired 2026-10-04 when the free `z-ai/glm-5.2:free` variant took the head). Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
 
 2026-10-04 repositioning (captain directive, JSON-chain positioning): `openrouter-direct/z-ai/glm-5.2:free` now HEADS both the gate and review chains — every JSON-bearing no-mistakes stage (reviewer, test, document, lint, rebase-repair, PR-drafting, CI-fix) tries the free glm lane first; `opencode-go-gw/deepseek-v4-flash` is rung-2 (the proven-JSON safety net — 429/403 invocations fall through to it; silent stalls do NOT, since pi fallback fires on invocation failure only); virtual routers demoted behind it; the PAYG `z-ai/glm-5.2` terminal rung is retired from both chains. Longcat is light-work/scout-class only. The 2026-09-15 inkling-403 lesson applies to all OpenRouter :free lanes: watch for funnel rejections of pi-shaped requests; if glm:free 403s, the chain self-heals to deepseek rung-2.
 
@@ -467,9 +467,10 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `fallback/gate` chain** (dotfiles PR #343 restored the chain, previously
   pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
   200-wrapped overload errors 6/6 nights runs). Review agent rides the
-  separate `fallback/review` chain (opencode-go-gw/deepseek-v4-flash →
-  CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer →
-  openrouter-direct/z-ai/glm-5.2 terminal PAYG rung). The route serves
+  separate `fallback/review` chain (openrouter-direct/z-ai/glm-5.2:free →
+  opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer →
+  vercel/router/pr-reviewer; the PAYG glm-5.2 tail was retired 2026-10-04
+  when the free variant took the head). The route serves
   gate, probe, and external traffic.
   Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
   free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
@@ -515,10 +516,11 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
   `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
-  the separate `fallback/review` chain (pi fallback-chains.json), with
-  `opencode-go-gw/deepseek-v4-flash` as first rung, `CfAiGw/dynamic/pr-reviewer`
-  second, `vercel/router/pr-reviewer` third, and `openrouter-direct/z-ai/glm-5.2`
-  as terminal PAYG tail (account-independent of CF/zen budget walls).
+  the separate `fallback/review` chain (pi fallback-chains.json); current order
+  is `openrouter-direct/z-ai/glm-5.2:free` head → `opencode-go-gw/deepseek-v4-flash`
+  rung-2 → `CfAiGw/dynamic/pr-reviewer` third → `vercel/router/pr-reviewer`
+  terminal — the PAYG `z-ai/glm-5.2` tail was retired 2026-10-04 when the free
+  variant took the head (account-independent of CF/zen budget walls).
 - Harness family routes (2026-09-19 build, captain directive — house models
   per family across providers, openrouter PAYG + plan lanes). 2026-09-20
   less-wrong pass (captain order, route versions deployed and probed 200):

@@ -99,7 +99,7 @@ flowchart TD
     DEF --> cfroute3[CF dynamic/TUI ladder ×10]
     GATEC -->|vercel seed| vg[vercel/vmc/pr-gate]
     REV2 -->|vercel seed| vr[vercel/vmc/pr-reviewer]
-    REV2 -->|head| ogw
+    REV2 -->|rung 2| ogw
     DEF --> vtui[vercel/router/tui = D1 vmc/tui]
 ```
 
