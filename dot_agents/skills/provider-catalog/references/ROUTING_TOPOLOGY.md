@@ -100,6 +100,8 @@ flowchart TD
     DEF --> vtui[vercel/router/tui = D1 vmc/tui]
 ```
 
+Fledge note (2026-10-04): `opencode-zen/fledge-alpha-free` (stealth preview, $0, 1M ctx, live-verified on the zen lane) is a candidate for the **interactive primary model only** — never a no-mistakes pipeline rung (JSON discipline unproven, anonymous lab, limited-time listing). See PROVIDERS.md "Fledge Alpha free preview" for the full fit analysis.
+
 ## Free lanes, quota and limits
 
 Provider-level headroom snapshot (quota-axi, 2026-09-27, kalione). Live values: run `quota-axi`.
