@@ -66,7 +66,8 @@ agent_config:
 # Review rides the separate `fallback/review` chain so the second-set-of-eyes
 # exercises the pr-reviewer ladder (openrouter-direct/z-ai/glm-5.2:free head →
 # opencode-go-gw deepseek → CF dynamic/pr-reviewer →
-# vercel/router/pr-reviewer; exact ladder: provider-catalog references
+# vercel/router/pr-reviewer → openrouter-direct/z-ai/glm-5.2 PAYG terminal
+# rung, kept per captain 2026-10-04; exact ladder: provider-catalog references
 # ROUTING_TOPOLOGY.md flow-2) rather than the cheaper gate ladder.
 # Budget-ranked, JSON discipline first, stronger model pool than gate.
 review_agents:

@@ -3,7 +3,7 @@
 Snapshot generated 2026-09-28 from the shared D1 `provider-catalog` registry: 15 routes, 64 ladder steps, 53 model rows.
 Structural update 2026-10-03 (antigravity worker routes, captain-ordered): 17 routes, 70 ladder steps, 55 model rows. D1 rows inserted same day; refresh picks them up automatically.
 Structural update 2026-10-04 (no-mistakes gate harden, dotfiles PR #392): longcat rung dropped from the gate chain; head is now opencode-go-gw/deepseek-v4-flash (→ CfAiGw/dynamic/pr-gate → vercel/router/pr-gate). longcat-2.5-preview-free was removed for repeated JSON parse failures and silent stalls — see references/NO_MISTAKES_MODELS.md verdict table.
-Structural update 2026-10-04, later same day (captain directive, JSON-chain positioning): openrouter-direct/z-ai/glm-5.2:free moved to the HEAD of both gate and review chains — every JSON-bearing no-mistakes stage (reviewer, test, document, lint, rebase-repair, PR-drafting, CI-fix) tries the free glm lane first; deepseek-v4-flash stays rung-2 as the proven-JSON safety net; virtual routers demoted behind it; the former PAYG z-ai/glm-5.2 terminal rung retired from both chains. Longcat is light-work/scout-class only, never a JSON-bearing pipeline rung.
+Structural update 2026-10-04, later same day (captain directive, JSON-chain positioning): openrouter-direct/z-ai/glm-5.2:free moved to the HEAD of both gate and review chains — every JSON-bearing no-mistakes stage (reviewer, test, document, lint, rebase-repair, PR-drafting, CI-fix) tries the free glm lane first; deepseek-v4-flash stays rung-2 as the proven-JSON safety net; virtual routers demoted behind it; the PAYG z-ai/glm-5.2 terminal rung is KEPT on the review chain (captain 2026-10-04: keep the former terminal rung — the gate chain never carried it). Longcat is light-work/scout-class only, never a JSON-bearing pipeline rung.
 The underlying tables refresh daily at 05:00 ET via `d1-registry-refresh.mjs`; this document is a manual snapshot — regenerate after structural route changes. Regenerated 2026-09-28 after the NIM free-access fit (pr-reviewer head swap, high NIM head, pr-gate Kimi-K3 rung); D1 rows catch up on the first post-`wrangler login` registry refresh.
 Live quota truth is always `quota-axi`, never this file. Ladder truth is the gateway; D1 mirrors it.
 
@@ -88,7 +88,7 @@ flowchart TD
     subgraph chains[pi fallback chains ~/.pi/fallback-chains.json]
         DEF["default<br/>CfAiGw/dynamic/TUI → vercel/router/tui"]
         GATEC["gate<br/>openrouter-direct/z-ai/glm-5.2:free → opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-gate → vercel/router/pr-gate"]
-        REV2["review<br/>openrouter-direct/z-ai/glm-5.2:free → opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer"]
+        REV2["review<br/>openrouter-direct/z-ai/glm-5.2:free → opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer → openrouter-direct/z-ai/glm-5.2"]
     end
     pi --> chains
     GATEC -->|head| orglm[openrouter-direct/z-ai/glm-5.2:free]
@@ -100,6 +100,7 @@ flowchart TD
     GATEC -->|vercel seed| vg[vercel/vmc/pr-gate]
     REV2 -->|vercel seed| vr[vercel/vmc/pr-reviewer]
     REV2 -->|rung 2| ogw
+    REV2 -->|terminal rung| payg[openrouter-direct/z-ai/glm-5.2 PAYG]
     DEF --> vtui[vercel/router/tui = D1 vmc/tui]
 ```
 

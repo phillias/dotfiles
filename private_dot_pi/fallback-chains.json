@@ -5,12 +5,13 @@
     "CfAiGw/dynamic/pr-gate",
     "vercel/router/pr-gate"
   ],
-  "review": [
-    "openrouter-direct/z-ai/glm-5.2:free",
-    "opencode-go-gw/deepseek-v4-flash",
-    "CfAiGw/dynamic/pr-reviewer",
-    "vercel/router/pr-reviewer"
-  ],
+ "review": [
+  "openrouter-direct/z-ai/glm-5.2:free",
+  "opencode-go-gw/deepseek-v4-flash",
+  "CfAiGw/dynamic/pr-reviewer",
+  "vercel/router/pr-reviewer",
+  "openrouter-direct/z-ai/glm-5.2"
+ ],
   "default": [
     "CfAiGw/dynamic/TUI",
     "vercel/router/tui"
