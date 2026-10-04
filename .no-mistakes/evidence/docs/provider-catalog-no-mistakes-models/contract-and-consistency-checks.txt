@@ -1,0 +1,38 @@
+provider-catalog fledge-alpha-free change — deterministic artifact checks (2026-10-04 run)
+Worktree: dotfiles branch docs/provider-catalog-no-mistakes-models (commits 97afc40 fef, 8fbebf4 review fixes)
+
+1) models.snapshot.json machine-consumed JSON contract (node require / JSON.parse, the file's own stated validation)
+- parses clean (JSON.parse)
+- root keys: models, updated_at
+- entry count 197 (intent: "dict now 197 entries")
+- updated_at = 2026-10-04T00:00:00.000Z  (review fix F1: was 2026-10-03)
+- opencode-zen/fledge-alpha-free entry:
+  {"context":1048576,"in":0,"out":0,"free":true,"max_output":131072,
+   "note":"Stealth preview 2026-10-01, $0 in/out, limited-time; anonymous lab (community speculation: DeepSeek V4.1 Pro, unconfirmed); reasoning effort adjustable, tools + vision; TRIAL interactive primary only, NOT for no-mistakes pipeline roles"}
+  -> matches intent: context 1048576, in 0, out 0, free true, max_output 131072, TRIAL interactive-primary-only note
+- schema conformance: 0 of 197 entries missing required core keys (context/in/out/free); notee/max_output are optional per sibling rows (longcat-2.5-preview-free also carries a note)
+- entry inserted at alphabetically correct position (fledge between ... and opencode-zen/gemini-3.6-flash)
+
+2) Chain-identity label check (review fix F2)
+- Actual machine-consumed chain, /home/phillias/.pi/fallback-chains.json (read-only):
+    gate:   ["opencode-go-gw/deepseek-v4-flash", "CfAiGw/dynamic/pr-gate", "vercel/router/pr-gate"]
+    review: ["opencode-go-gw/deepseek-v4-flash", "CfAiGw/dynamic/pr-reviewer", "vercel/router/pr-reviewer", "openrouter-direct/z-ai/glm-5.2"]
+    default:["CfAiGw/dynamic/TUI", "vercel/router/tui"]
+- PROVIDERS.md fledge verdict sentence now names the gate/review incumbent "opencode-go-gw/deepseek-v4-flash" — byte-identical chain identity to fallback-chains.json heads. No "opencode-go/deepseek-v4-flash" (non-gw) form remains in the fledge verdict sentence.
+- Pipeline config ~/.no-mistakes/config.yaml contains no "fledge" mention -> verdict "NOT for pipeline roles" respected by real config; fallback-chains.json chains contain no fledge.
+
+3) Corpus cross-file consistency (branch diff files: models.snapshot.json, PROVIDERS.md, ROUTING_TOPOLOGY.md, NO_MISTAKES_MODELS.md)
+- ROUTING_TOPOLOGY.md flow-2 gate chain: opencode-go-gw/deepseek-v4-flash -> CfAiGw/dynamic/pr-gate -> vercel/router/pr-gate == fallback-chains.json; no longcat node in diagram (structural update 2026-10-04, PR #392 note at line 5)
+- PROVIDERS.md line 11: same post-removal chain, dated structural update 2026-10-04, longcat head removed via PR #392
+- NO_MISTAKES_MODELS.md verdict table: deepseek-v4-flash CLEAN (review head), longcat-2.5-preview-free BROKEN/removed via PR #392 — consistent
+- Fledge described identically in all three files: TRIAL interactive primary ONLY, never a no-mistakes pipeline rung (JSON discipline unproven, anonymous lab, limited-time), opencode-go-gw/deepseek-v4-flash keeps gate/review
+- No surviving longcat-as-gate-head claim anywhere in the changed corpus (longcat rows in models.snapshot.json are catalog entries, not chain claims; PROVIDERS.md lines 699-761 are provider-description content, not chain state)
+
+4) Change scope
+- git diff --name-only base..HEAD = only the 4 skill-corpus files above; no fallback-chains.json, no config.yaml, no gateway route config, no secrets touched — matches intent constraints ("no gateway route mutation, no pipeline config change, no secrets, no live-infra ops")
+
+5) Installed-copy sync note (observed, informational)
+- Installed skill at /home/phillias/.agents/skills/provider-catalog/ (read-only diff vs source): fledge entries present (applied at 97afc40), but the two review-fix fields are NOT yet applied there:
+    models.snapshot.json line 1192: installed updated_at "2026-10-03T00:00:00.000Z" vs source "2026-10-04T00:00:00.000Z"
+    PROVIDERS.md line 428: installed verdict label "opencode-go/deepseek-v4-flash" vs source "opencode-go-gw/deepseek-v4-flash"
+- Cause: 8fbebf4 (pipeline review fix) landed after the scoped chezmoi apply; this phase cannot apply chezmoi outside the worktree. Remedy: re-run scoped chezmoi apply after merge so installed copies pick up the two fix fields.

@@ -1,0 +1,42 @@
+{
+ "probe": "GET https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/<provider>/v1/models (read-only, CF_AI_GATEWAY_TOKEN; 2026-10-04 run, matching intent's verification method)",
+ "zen_lane": {
+  "provider_route": "custom-opencode-zen/v1/models",
+  "http": 200,
+  "total_ids": 82,
+  "fledge_alpha_free_present": true,
+  "fledge_entry": [
+   {
+    "id": "fledge-alpha-free",
+    "object": "model",
+    "created": 1791131997,
+    "owned_by": "opencode"
+   }
+  ],
+  "first_ids": [
+   "big-pickle",
+   "ling-3.1-flash-free",
+   "fledge-alpha-free",
+   "mimo-v2.5-free",
+   "mimo-v2.6-flash-free"
+  ]
+ },
+ "go_lane": {
+  "provider_route": "custom-opencode-go/v1/models",
+  "http": 200,
+  "total_ids": 36,
+  "fledge_alpha_free_present": false,
+  "deepseek_v4_flash_present": true,
+  "first_ids": [
+   "deepseek-v4-flash",
+   "deepseek-v4-flash-vision-exp",
+   "deepseek-flash",
+   "deepseek-v4.1-flash",
+   "deepseek-v4-pro"
+  ]
+ },
+ "claim_vs_live": {
+  "PROVIDERS.md 'present in the 82-model zen /models list'": true,
+  "PROVIDERS.md 'NOT on the opencode-go lane'": true
+ }
+}
