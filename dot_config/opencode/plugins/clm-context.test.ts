@@ -11,6 +11,9 @@ let hooks: Record<string, (input: any, output?: any) => unknown>;
 let originalClmEnv: string | undefined;
 
 const mirrorPath = (sessionID: string) =>
+  // homeDir is a mkdtempSync temp dir and sessionID is a module-level test
+  // constant; no user input reaches this path.
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   join(homeDir, ".local", "state", "opencode-clm", `LIVE_CTX_${sessionID}.txt`);
 
 const readMirror = (sessionID: string): string => {

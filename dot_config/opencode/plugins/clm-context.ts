@@ -107,6 +107,11 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
     return list;
   };
 
+  // sessionID is sanitized by liveContextFileName -> sanitizeSessionID, which
+  // replaces every character outside [A-Za-z0-9._-] (including / and \\) with
+  // "_"; the LIVE_CTX_ prefix and .txt suffix keep the result a single filename
+  // component, so it cannot escape STATE_DIR.
+  // nosemgrep: javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
   const fileFor = (sessionID: string) => join(STATE_DIR, liveContextFileName(sessionID));
 
   const read = (sessionID: string): string => {
