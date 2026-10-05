@@ -1,7 +1,7 @@
 {
   "name": "opencode-clm-context",
   "version": "0.1.0",
-  "description": "CLM-style self-managed context for opencode: a live model-editable context file with a fit/shrink edit gate and a verbatim compaction hook",
+  "description": "CLM-style self-managed context for opencode: a live model-editable context file with a fit/shrink edit gate and a compaction-prompt hook",
   "main": "README.md",
   "keywords": [
     "opencode",

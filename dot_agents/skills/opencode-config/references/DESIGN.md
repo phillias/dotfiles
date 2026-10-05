@@ -574,7 +574,7 @@ never reaches downstream handlers. All three must be isolation-safe.
 
 | # | Plugin | Failure Mode | Purpose |
 |---|---|---|---|
-| 1 | clm-context.ts | swallow | Sets `output.prompt` to a verbatim-replay directive so the authored live-context file becomes the compacted state (inert unless enabled) |
+| 1 | clm-context.ts | swallow | Sets `output.prompt` to a verbatim-replay directive when the mirror fits the budget, else a condense-into-fresh-CLM directive (inert unless enabled) |
 
 **Coexistence:** dcp does not subscribe to `experimental.session.compacting`, so
 this hook is additive; built-in compaction still runs its hidden summarizer
