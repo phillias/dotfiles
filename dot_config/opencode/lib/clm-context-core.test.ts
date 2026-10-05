@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import {
+  DEFAULT_BUDGET_RESERVE,
   DEFAULT_BUDGET_TOKENS,
   TURN_CLOSE,
   TURN_OPEN,
   appendTurn,
   buildCompactionPrompt,
   computeBudget,
+  effectiveBudget,
   enforceBudget,
   estimateTokens,
   evaluateEdit,
@@ -106,11 +108,21 @@ describe("computeBudget", () => {
 describe("evaluateEdit (the edit gate)", () => {
   const small = `${TURN_OPEN} user 1\nhi\n${TURN_CLOSE}`;
 
-  test("accepts an edit that fits the budget", () => {
-    const decision = evaluateEdit("", small, 100);
+  test("accepts an edit that fits the effective budget", () => {
+    const decision = evaluateEdit("", small, 3000);
     expect(decision.accepted).toBe(true);
     expect(decision.receipt).toContain("accepted (fits)");
     expect(decision.receipt.split("\n")).toHaveLength(1);
+    expect(decision.budget).toBe(effectiveBudget(3000));
+  });
+
+  test("rejects an edit over the effective cap even when within the configured budget", () => {
+    const text = `${TURN_OPEN} user 1\n${"x".repeat(4000)}\n${TURN_CLOSE}`;
+    const decision = evaluateEdit("", text, 3000);
+    expect(decision.after.tokens).toBeGreaterThan(effectiveBudget(3000));
+    expect(decision.after.tokens).toBeLessThanOrEqual(3000);
+    expect(decision.accepted).toBe(false);
+    expect(decision.reason).toContain("over budget");
   });
 
   test("accepts a strict shrink when over budget", () => {
@@ -146,7 +158,7 @@ describe("evaluateEdit (the edit gate)", () => {
 
   test("default budget is applied when omitted", () => {
     const decision = evaluateEdit("", small);
-    expect(decision.budget).toBe(DEFAULT_BUDGET_TOKENS);
+    expect(decision.budget).toBe(effectiveBudget(DEFAULT_BUDGET_TOKENS, DEFAULT_BUDGET_RESERVE));
   });
 });
 
@@ -229,19 +241,19 @@ describe("session file naming", () => {
 describe("buildCompactionPrompt", () => {
   test("embeds the authored context verbatim and instructs replay", () => {
     const live = `${TURN_OPEN} user 1\nhi\n${TURN_CLOSE}`;
-    const prompt = buildCompactionPrompt(live, 100);
+    const prompt = buildCompactionPrompt(live, 3000);
     expect(prompt).toContain(live);
     expect(prompt).toContain("verbatim");
-    expect(prompt).toContain("100-token budget");
+    expect(prompt).toContain(`${effectiveBudget(3000)}-token budget`);
     expect(prompt).toContain("Do NOT read or use the conversation history");
   });
 
   test("re-seed mode instructs condensation without embedding the file", () => {
-    const prompt = buildCompactionPrompt(undefined, 500);
+    const prompt = buildCompactionPrompt(undefined, 3000);
     expect(prompt).not.toContain("verbatim");
     expect(prompt).toContain("@@TURN");
     expect(prompt).toContain("@@END");
-    expect(prompt).toContain("500-token budget");
+    expect(prompt).toContain(`${effectiveBudget(3000)}-token budget`);
     expect(prompt).toContain("Condense");
   });
 });
@@ -275,6 +287,19 @@ describe("enforceBudget", () => {
       expect(parsed.messages.length).toBeLessThan(5);
       expect(parsed.messages.length).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  test("trims to the effective cap (budget minus reserve)", () => {
+    const big = "x".repeat(4000);
+    let text = "";
+    for (let i = 0; i < 4; i++) {
+      text = appendTurn(text, "user", `${big} turn ${i}`);
+    }
+    const budget = 6000;
+    const result = enforceBudget(text, budget);
+    expect(result.trimmed).toBe(true);
+    expect(result.tokens).toBeLessThanOrEqual(effectiveBudget(budget));
+    expect(result.nudge).toContain(`${effectiveBudget(budget)}-token budget`);
   });
 
   test("never removes the last remaining turn", () => {
@@ -312,15 +337,15 @@ describe("reseedLiveContext", () => {
   });
 
   test("repairs an unparsable summary into a bounded parseable mirror", () => {
-    const raw = "Here is the summary:\n" + "x".repeat(1000);
-    const result = reseedLiveContext(raw, 50);
+    const raw = "Here is the summary:\n" + "x".repeat(12000);
+    const result = reseedLiveContext(raw, 3000);
     expect(result.repaired).toBe(true);
     const parsed = parseLiveContext(result.content);
     expect(parsed.ok).toBe(true);
     if (parsed.ok) {
       expect(parsed.messages).toHaveLength(1);
       expect(parsed.messages[0].content).toContain("Here is the summary:");
-      expect(computeBudget(parsed.messages).tokens).toBeLessThanOrEqual(50);
+      expect(computeBudget(parsed.messages).tokens).toBeLessThanOrEqual(effectiveBudget(3000));
     }
   });
 });

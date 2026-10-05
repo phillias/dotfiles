@@ -56,6 +56,7 @@ export interface ClmEditDecision {
   receipt: string;
   before: ClmBudget;
   after: ClmBudget;
+  /** Effective token budget the decision was evaluated against. */
   budget: number;
 }
 
@@ -90,8 +91,23 @@ export const TURN_OPEN = "@@TURN";
 export const TURN_CLOSE = "@@END";
 /** Default token budget for a live-context file. */
 export const DEFAULT_BUDGET_TOKENS = 8000;
+/** Headroom reserved from the budget so enforcement can roll back turns. */
+export const DEFAULT_BUDGET_RESERVE = 2048;
 
 const ROLES: ReadonlySet<string> = new Set(["user", "assistant", "system"]);
+
+/**
+ * The token cap actually enforced on the live-context file: the configured
+ * budget minus the reserved headroom, floored at zero. The edit gate and
+ * enforcement both use this, so content the gate accepts as fitting is never
+ * trimmed later.
+ */
+export function effectiveBudget(
+  budget: number = DEFAULT_BUDGET_TOKENS,
+  reserve: number = DEFAULT_BUDGET_RESERVE,
+): number {
+  return Math.max(0, budget - reserve);
+}
 
 /**
  * Rough token estimate: ~4 characters per token. Deliberately simple and
@@ -219,9 +235,10 @@ export function appendTurn(text: string, role: ClmRole, content: string): string
 export function reseedLiveContext(
   text: string,
   budget: number = DEFAULT_BUDGET_TOKENS,
+  reserve: number = DEFAULT_BUDGET_RESERVE,
 ): ClmReseedResult {
   if (parseLiveContext(text).ok) return { content: text, repaired: false };
-  const capped = [...text].slice(0, Math.max(0, budget * 4)).join("");
+  const capped = [...text].slice(0, Math.max(0, effectiveBudget(budget, reserve) * 4)).join("");
   return {
     content: serializeLiveContext([{ role: "system", content: capped }]),
     repaired: true,
@@ -238,7 +255,7 @@ export function reseedLiveContext(
 export function enforceBudget(
   text: string,
   budget: number = DEFAULT_BUDGET_TOKENS,
-  reserve: number = 2048,
+  reserve: number = DEFAULT_BUDGET_RESERVE,
 ): ClmEnforceResult {
   const parsed = parseLiveContext(text);
   if (!parsed.ok) {
@@ -250,11 +267,12 @@ export function enforceBudget(
   if (messages.length === 0) {
     return { content: text, trimmed: false, removed: 0, nudge: "", tokens: 0 };
   }
+  const cap = effectiveBudget(budget, reserve);
   let current = messages.slice();
   let removed = 0;
   while (current.length > 1) {
     const tokens = estimateTokens(current.map((m) => m.content).join("\n"));
-    if (tokens <= budget - reserve) break;
+    if (tokens <= cap) break;
     current.pop();
     removed++;
   }
@@ -262,21 +280,23 @@ export function enforceBudget(
   const trimmed = removed > 0;
   const content = serializeLiveContext(current);
   const nudge = trimmed
-    ? `CLM budget enforcement: removed ${removed} newest turn(s) to stay within the ${budget}-token budget. Condense older turns with context_edit to free space.`
+    ? `CLM budget enforcement: removed ${removed} newest turn(s) to stay within the ${cap}-token budget. Condense older turns with context_edit to free space.`
     : "";
   return { content, trimmed, removed, nudge, tokens };
 }
 
 /**
- * The edit gate. An edit is accepted when it parses AND either fits the token
- * budget or strictly shrinks the file. Everything else is rejected with a
- * one-line reason. A one-line receipt is always produced.
+ * The edit gate. An edit is accepted when it parses AND either fits the
+ * effective token budget or strictly shrinks the file. Everything else is
+ * rejected with a one-line reason. A one-line receipt is always produced.
  */
 export function evaluateEdit(
   previous: string,
   edited: string,
   budget: number = DEFAULT_BUDGET_TOKENS,
+  reserve: number = DEFAULT_BUDGET_RESERVE,
 ): ClmEditDecision {
+  const cap = effectiveBudget(budget, reserve);
   const before = computeBudget(safeParse(previous));
   const parsed = parseLiveContext(edited);
   if (!parsed.ok) {
@@ -287,19 +307,19 @@ export function evaluateEdit(
       receipt: `context_edit: rejected — ${reason}`,
       before,
       after: before,
-      budget,
+      budget: cap,
     };
   }
   const after = computeBudget(parsed.messages);
-  const delta = `blocks ${before.blocks}->${after.blocks} tokens ${before.tokens}->${after.tokens} budget ${budget}`;
-  if (after.tokens <= budget) {
+  const delta = `blocks ${before.blocks}->${after.blocks} tokens ${before.tokens}->${after.tokens} budget ${cap}`;
+  if (after.tokens <= cap) {
     return {
       accepted: true,
       reason: "",
       receipt: `context_edit: accepted (fits) ${delta}`,
       before,
       after,
-      budget,
+      budget: cap,
     };
   }
   if (after.tokens < before.tokens) {
@@ -309,17 +329,17 @@ export function evaluateEdit(
       receipt: `context_edit: accepted (shrink) ${delta}`,
       before,
       after,
-      budget,
+      budget: cap,
     };
   }
-  const reason = `over budget (${after.tokens} > ${budget}) and did not shrink (${before.tokens} -> ${after.tokens})`;
+  const reason = `over budget (${after.tokens} > ${cap}) and did not shrink (${before.tokens} -> ${after.tokens})`;
   return {
     accepted: false,
     reason,
     receipt: `context_edit: rejected — ${reason}`,
     before,
     after,
-    budget,
+    budget: cap,
   };
 }
 
@@ -370,7 +390,9 @@ export function liveContextFileName(sessionID: string): string {
 export function buildCompactionPrompt(
   liveContext?: string,
   budget: number = DEFAULT_BUDGET_TOKENS,
+  reserve: number = DEFAULT_BUDGET_RESERVE,
 ): string {
+  const cap = effectiveBudget(budget, reserve);
   if (liveContext !== undefined && liveContext.trim()) {
     return [
       "You are the context carrier for CLM (Context Language Models) self-managed context.",
@@ -382,7 +404,7 @@ export function buildCompactionPrompt(
       liveContext.trimEnd(),
       "=== END LIVE CONTEXT ===",
       "",
-      `The authored context is held within a ${budget}-token budget. Preserve it byte-for-byte.`,
+      `The authored context is held within a ${cap}-token budget. Preserve it byte-for-byte.`,
     ].join("\n");
   }
   return [
@@ -390,7 +412,7 @@ export function buildCompactionPrompt(
     "Condense the conversation history that follows into a fresh CLM live-context file.",
     "Output ONLY the file content — no commentary, no markdown fences, no explanation.",
     "Format: one `@@TURN <role> <n>` header per message, content lines, then `@@END`. Roles: user|assistant|system.",
-    `Keep the total within a ${budget}-token budget (~4 chars/token). Preserve the most recent and most important turns; drop or merge older ones.`,
+    `Keep the total within a ${cap}-token budget (~4 chars/token). Preserve the most recent and most important turns; drop or merge older ones.`,
     "The output becomes the new live-context file for this session.",
   ].join("\n");
 }

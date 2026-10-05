@@ -38,23 +38,23 @@ mechanics.
    parses the edit back into a well-formed message structure and applies the
    **edit gate**:
 
-   - accepted if the edit **fits** the token budget, or
+   - accepted if the edit **fits** the effective token budget, or
    - accepted if it **strictly shrinks** the file, otherwise
    - **rejected** with a one-line reason.
 
    Every call returns a one-line receipt, e.g.
-   `context_edit: accepted (fits) blocks 3->3 tokens 120->118 budget 8000`.
+   `context_edit: accepted (fits) blocks 3->3 tokens 120->118 budget 5952`.
 
-3. **Injection.** Once per session the current file, trimmed to the token
-   budget via the same enforcement, is appended to the system prompt
+3. **Injection.** Once per session the current file, trimmed to the effective
+   token budget via the same enforcement, is appended to the system prompt
    (additive) so the model sees its own authored context; an over-budget file
    that cannot be trimmed is never injected. Budget-trim nudges are delivered
    to the model here and in `context_edit` responses.
 
 4. **Compaction.** When opencode compacts, the plugin replaces the built-in
-   summarizer prompt. If the mirror is within budget, the prompt embeds the
-   file verbatim (bounded mode). If the mirror is unbounded, the prompt
-   instructs the summarizer to condense the conversation into a fresh
+   summarizer prompt. If the mirror is within the effective budget, the prompt
+   embeds the file verbatim (bounded mode). If the mirror is unbounded, the
+   prompt instructs the summarizer to condense the conversation into a fresh
    bounded CLM context (re-seed mode). On `session.compacted`, the plugin
    fetches the compaction summary message and writes it back to the mirror
    file, re-seeding it for the next session segment. A summary that does not
@@ -70,7 +70,7 @@ Config file `~/.config/opencode/clm.jsonc`:
 {
   // master gate; false/absent = inert
   "enabled": true,
-  // token budget for the edit gate (default 8000)
+  // total token budget; the file cap is this minus the 2048 reserve (default 8000)
   "budget_tokens": 8000
 }
 ```
@@ -81,8 +81,12 @@ Environment override (wins over config): `OPENCODE_CLM=1` / `OPENCODE_CLM=0`.
 
 `estimateTokens(text) = ceil(chars / 4)` — a deliberately simple, deterministic
 order-of-magnitude estimate so the gate is reproducible without a tokenizer.
-`budget_tokens` bounds the file; edits over budget are only accepted when they
-strictly reduce it.
+`budget_tokens` is the total budget; the live-context file is capped at
+`budget_tokens - 2048`, the headroom reserved so enforcement can roll back the
+newest turn. The edit gate and budget enforcement both apply that same
+**effective cap**, so an edit the gate accepts as fitting is never trimmed
+afterward. An edit over the effective cap is accepted only when it strictly
+shrinks the file.
 
 ## Coexistence contract
 

@@ -29,6 +29,7 @@ import {
   type ClmRole,
   appendTurn,
   buildCompactionPrompt,
+  effectiveBudget,
   enforceBudget,
   evaluateEdit,
   liveContextFileName,
@@ -148,13 +149,13 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
           if (current.trim()) {
             const enforced = enforceBudget(current, budget);
             if (enforced.nudge) pending.push(enforced.nudge);
-            if (enforced.tokens <= budget) {
+            if (enforced.tokens <= effectiveBudget(budget)) {
               injected.add(sessionID);
               output.system.push(
                 [
                   "# CLM live context (self-managed)",
                   "You own the context file below. Read it with `context_edit` (action: read) and rewrite it with `context_edit` (action: replace).",
-                  "The edit gate accepts a rewrite only if it fits the token budget or strictly shrinks the file; otherwise it is rejected with a one-line reason.",
+                  "The edit gate accepts a rewrite only if it fits the effective token budget or strictly shrinks the file; otherwise it is rejected with a one-line reason.",
                   ...(pending.length ? ["", ...pending] : []),
                   "",
                   enforced.content.trimEnd(),
@@ -183,7 +184,7 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
         const current = read(sessionID);
         if (!current.trim()) return;
         const enforced = enforceBudget(current, budget);
-        if (enforced.tokens <= budget) {
+        if (enforced.tokens <= effectiveBudget(budget)) {
           output.prompt = buildCompactionPrompt(enforced.content, budget);
         } else {
           output.prompt = buildCompactionPrompt(undefined, budget);
@@ -289,7 +290,7 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
         description:
           "Read or rewrite this session's CLM live-context file. action=read returns the current file. " +
           "action=replace validates the full new content and, if accepted, overwrites the file. " +
-          "An edit is accepted only if it fits the token budget or strictly shrinks the file; otherwise it is rejected with a one-line reason.",
+          "An edit is accepted only if it fits the effective token budget or strictly shrinks the file; otherwise it is rejected with a one-line reason.",
         args: {
           action: tool.schema.enum(["read", "replace"]),
           content: tool.schema
