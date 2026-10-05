@@ -45,11 +45,14 @@ a bad rung poisons the whole step.
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)
 
-`review_agent_timeout` + `test_agent_timeout`: **12m** (was 60m; the 60m era
-was for nemotron NIM gate reviews, a chain since retired). Observed legitimate
-durations: review 36s–434s; test 2.5m–7.7m clean, worst ~19.8m with two fix
-rounds. `step_quiet_warning: 10m` is observability only — it never cancels;
-the budget kill is the stop.
+`review_agent_timeout`: **12m**; `test_agent_timeout`: **25m** (both were 60m
+until the 2026-10-04 tightening — the 60m era was for nemotron NIM gate
+reviews, a chain since retired; test raised 12m -> 25m that same day after two
+glm-headed test drives were cut at 12m while actively working — provider
+slowness under the free lane, not stalls). Observed legitimate durations:
+review 36s–434s; test 2.5m–7.7m clean, worst ~19.8m with two fix rounds.
+`step_quiet_warning: 10m` is observability only — it never cancels; the budget
+kill is the stop.
 
 ## Operational gotchas
 
