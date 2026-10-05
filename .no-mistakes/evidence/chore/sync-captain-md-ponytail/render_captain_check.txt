@@ -1,0 +1,15 @@
+# Render check: chezmoi execute-template --source . < firstmate/data/captain.md.tmpl vs live /home/ubuntu/firstmate/data/captain.md
+
+RESULT: rendered template is byte-identical to the live captain.md (diff exit 0)
+
+# Base (pre-change) rendered template vs live — shows ONLY the missing Ponytail bullet (+ blank separator) was the pre-existing drift:
+
+28a29,30
+> - Ponytail principles — build like the laziest senior dev; the best code is the code never written. Before writing code, stop at the first rung that holds: (1) does this need to exist at all (YAGNI); (2) reuse what already exists in the codebase; (3) standard library; (4) native platform feature; (5) already-installed dependency; (6) one line; (7) only then, the minimum that works. Climb only after reading the code and tracing the real flow end to end — a small diff you don't understand is a second bug, not efficiency. Deletion over addition, boring over clever, fewest files, shortest working diff; no unrequested abstractions, dependencies, or boilerplate. Bug fix = root cause: grep every caller and fix the shared function once. Question complex requests ("do you actually need X, or does Y cover it?"). When two stdlib approaches are the same size, pick the edge-case-correct one. Never cut: understanding, trust-boundary validation, error handling that prevents data loss, security, accessibility, explicitly requested behavior. Non-trivial logic leaves one runnable check behind — the smallest thing that fails if the logic breaks; trivial one-liners are exempt. Mark deliberate corners with a `ponytail:` comment naming the ceiling and upgrade path. (set 2026-10-04, distilled from DietrichGebert/ponytail MIT ruleset)
+> 
+
+# Scope: files changed base..target
+firstmate/data/captain.md.tmpl
+
+# Template variable preserved:
+1
