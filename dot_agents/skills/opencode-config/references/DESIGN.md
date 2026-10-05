@@ -519,7 +519,7 @@ subscribers.
 | 1 | opencode-log-sanitizer | swallow | Redacts JWTs, bcrypt hashes, base64 blobs, long quoted strings |
 | 2 | fleet-state-writer | swallow | Mines `[BACKGROUND TASK *]` headers; records task state transitions |
 | 3 | axi-memory-bridge | swallow | Injection veto, stores last user message, scores for auto-capture, topic-shift auto-recall |
-| 4 | clm-context.ts | swallow | Mirrors user turns (chat.message) and assistant turns (settled message.part.updated events) into the per-session CLM live-context file; enforces token budget via rollback; re-seeds mirror from compaction summary (inert unless enabled) |
+| 4 | clm-context.ts | swallow | Mirrors user turns (chat.message) and assistant turns (settled message.part.updated parts, appended once per completed message.updated) into the per-session CLM live-context file; enforces token budget via rollback; bounds the one-shot injection; delivers budget nudges; re-seeds mirror from compaction summary (inert unless enabled) |
 
 **Execution order:** opencode runs handlers in plugin registration order
 (opencode.json `plugin[]` array). Log-sanitizer runs first so redacted content
@@ -534,7 +534,7 @@ never reaches downstream handlers. All three must be isolation-safe.
 | 3 | axi-chrome-devtools-axi.js | swallow | chrome-devtools-axi ambient context |
 | 4 | axi-lavish-axi.js | swallow | lavish-axi ambient context (sessions, visual guidance, playbooks) |
 | 5 | opencode-runtime-fallback.ts | swallow | Fallback chain state annotation |
-| 6 | clm-context.ts | swallow | One-shot injection of the authored CLM live-context file (inert unless enabled) |
+| 6 | clm-context.ts | swallow | One-shot, budget-bounded injection of the authored CLM live-context file plus any pending budget-trim nudge (inert unless enabled) |
 
 #### `tool.execute.after` — after every tool call
 
@@ -559,7 +559,7 @@ never reaches downstream handlers. All three must be isolation-safe.
 | 3 | opencode-telemetry | swallow | SQLite telemetry |
 | 4 | opencode-runtime-fallback.ts | swallow | Model fallback chain on retry/error |
 | 5 | tps-status.tsx | swallow | TPS calculation for TUI status bar |
-| 6 | clm-context.ts | swallow | Clears the per-session injection guard on `session.deleted` (inert unless enabled) |
+| 6 | clm-context.ts | swallow | Mirrors assistant turns, re-seeds the mirror from the compaction summary, and clears per-session state on `session.deleted` (inert unless enabled) |
 
 #### `tool` — register custom tools
 

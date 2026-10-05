@@ -3,8 +3,9 @@
  *
  * The model's context is exposed as a live, per-session file it can read and
  * rewrite through the `context_edit` tool. The harness mirrors user turns
- * (via chat.message) and assistant turns (via settled message.part.updated
- * events) into the file, injects it into the system prompt once per session,
+ * (via chat.message) and assistant turns (settled message.part.updated parts,
+ * joined once per completed message.updated) into the file, injects it into
+ * the system prompt once per session,
  * and enforces a token budget by rolling back newest turns when the mirror
  * grows too large. At compaction, the mirror is re-seeded from the compacted
  * summary instead of embedding the unbounded file.
@@ -72,6 +73,22 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
 
   const injected = new Set<string>();
   const mirrored = new Set<string>();
+  const nudges = new Map<string, string[]>();
+  const assistantParts = new Map<string, Map<string, string>>();
+
+  const queueNudge = (sessionID: string, nudge: string): void => {
+    if (!nudge) return;
+    const list = nudges.get(sessionID) ?? [];
+    list.push(nudge);
+    nudges.set(sessionID, list);
+  };
+
+  const takeNudges = (sessionID: string): string[] => {
+    const list = nudges.get(sessionID);
+    if (!list || list.length === 0) return [];
+    nudges.delete(sessionID);
+    return list;
+  };
 
   const fileFor = (sessionID: string) => join(STATE_DIR, liveContextFileName(sessionID));
 
@@ -110,7 +127,10 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
         const appended = appendTurn(read(sessionID), role as ClmRole, text);
         const enforced = enforceBudget(appended, budget);
         write(sessionID, enforced.content);
-        if (enforced.nudge) console.info(`[clm-context] ${enforced.nudge}`);
+        if (enforced.nudge) {
+          console.info(`[clm-context] ${enforced.nudge}`);
+          queueNudge(sessionID, enforced.nudge);
+        }
       } catch (err) {
         console.error("[clm-context] chat.message mirror failed", err);
       }
@@ -120,19 +140,30 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
     "experimental.chat.system.transform": async (input, output) => {
       try {
         const sessionID = input.sessionID;
-        if (!sessionID || injected.has(sessionID)) return;
-        const current = read(sessionID);
-        if (!current.trim()) return;
-        injected.add(sessionID);
-        output.system.push(
-          [
-            "# CLM live context (self-managed)",
-            "You own the context file below. Read it with `context_edit` (action: read) and rewrite it with `context_edit` (action: replace).",
-            "The edit gate accepts a rewrite only if it fits the token budget or strictly shrinks the file; otherwise it is rejected with a one-line reason.",
-            "",
-            current.trimEnd(),
-          ].join("\n"),
-        );
+        if (!sessionID) return;
+        const pending = takeNudges(sessionID);
+        if (!injected.has(sessionID)) {
+          const current = read(sessionID);
+          if (current.trim()) {
+            const enforced = enforceBudget(current, budget);
+            if (enforced.nudge) pending.push(enforced.nudge);
+            if (enforced.tokens <= budget) {
+              injected.add(sessionID);
+              output.system.push(
+                [
+                  "# CLM live context (self-managed)",
+                  "You own the context file below. Read it with `context_edit` (action: read) and rewrite it with `context_edit` (action: replace).",
+                  "The edit gate accepts a rewrite only if it fits the token budget or strictly shrinks the file; otherwise it is rejected with a one-line reason.",
+                  ...(pending.length ? ["", ...pending] : []),
+                  "",
+                  enforced.content.trimEnd(),
+                ].join("\n"),
+              );
+              return;
+            }
+          }
+        }
+        if (pending.length) output.system.push(pending.join("\n"));
       } catch (err) {
         console.error("[clm-context] system.transform inject failed", err);
       }
@@ -151,6 +182,7 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
         const current = read(sessionID);
         if (!current.trim()) return;
         const enforced = enforceBudget(current, budget);
+        if (enforced.nudge) queueNudge(sessionID, enforced.nudge);
         if (enforced.tokens <= budget) {
           output.prompt = buildCompactionPrompt(enforced.content, budget);
         } else {
@@ -165,15 +197,23 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
       try {
         const e = event as {
           type?: string;
-          properties?: { sessionID?: string; part?: { id?: string; type?: string; text?: string; time?: { end?: number } } };
+          properties?: {
+            sessionID?: string;
+            info?: { id?: string; sessionID?: string; role?: string; summary?: boolean; time?: { completed?: number } };
+            part?: { id?: string; messageID?: string; type?: string; text?: string; time?: { end?: number } };
+          };
         };
         const sid = e.properties?.sessionID;
         if (e?.type === "session.deleted") {
           if (sid) {
             injected.delete(sid);
+            nudges.delete(sid);
             const prefix = `${sid}:`;
             for (const key of mirrored) {
               if (key.startsWith(prefix)) mirrored.delete(key);
+            }
+            for (const key of assistantParts.keys()) {
+              if (key.startsWith(prefix)) assistantParts.delete(key);
             }
           }
           return;
@@ -195,14 +235,36 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
           if (!sid) return;
           const part = e.properties?.part;
           if (!part || part.type !== "text" || part.time?.end === undefined) return;
-          if (!part.text?.trim()) return;
-          const key = `${sid}:part:${part.id}`;
-          if (mirrored.has(key)) return;
-          mirrored.add(key);
-          const appended = appendTurn(read(sid), "assistant", part.text);
+          if (!part.text?.trim() || !part.id || !part.messageID) return;
+          const key = `${sid}:${part.messageID}`;
+          const buffer = assistantParts.get(key) ?? new Map<string, string>();
+          buffer.set(part.id, part.text);
+          assistantParts.set(key, buffer);
+          return;
+        }
+        if (e?.type === "message.updated") {
+          const info = e.properties?.info;
+          const messageSid = info?.sessionID ?? sid;
+          if (!messageSid || !info || info.role !== "assistant") return;
+          if (info.summary === true || info.time?.completed === undefined) return;
+          const messageID = info.id;
+          if (!messageID) return;
+          const key = `${messageSid}:${messageID}`;
+          const buffer = assistantParts.get(key);
+          assistantParts.delete(key);
+          const seen = `${messageSid}:msg:${messageID}`;
+          if (mirrored.has(seen)) return;
+          const text = buffer ? [...buffer.values()].join("\n") : "";
+          if (!text.trim()) return;
+          mirrored.add(seen);
+          const appended = appendTurn(read(messageSid), "assistant", text);
           const enforced = enforceBudget(appended, budget);
-          write(sid, enforced.content);
-          if (enforced.nudge) console.info(`[clm-context] ${enforced.nudge}`);
+          write(messageSid, enforced.content);
+          if (enforced.nudge) {
+            console.info(`[clm-context] ${enforced.nudge}`);
+            queueNudge(messageSid, enforced.nudge);
+          }
+          return;
         }
       } catch (err) {
         console.error("[clm-context] event handler failed", err);
@@ -223,21 +285,24 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
             .describe("Full new file content (required when action=replace)"),
         },
         execute: async (args, ctx) => {
+          const sessionID = ctx.sessionID;
+          const pending = takeNudges(sessionID);
+          const withNudges = (reply: string) =>
+            pending.length ? [...pending, reply].join("\n") : reply;
           try {
-            const sessionID = ctx.sessionID;
             const current = read(sessionID);
             if (args.action === "read") {
-              return current.trim() ? current : "(live context is empty)";
+              return withNudges(current.trim() ? current : "(live context is empty)");
             }
             if (typeof args.content !== "string") {
-              return "context_edit: rejected — action=replace requires content";
+              return withNudges("context_edit: rejected — action=replace requires content");
             }
             const decision = evaluateEdit(current, args.content, budget);
             if (decision.accepted) write(sessionID, args.content);
-            return decision.receipt;
+            return withNudges(decision.receipt);
           } catch (err) {
             console.error("[clm-context] context_edit failed", err);
-            return "context_edit: rejected — internal error (see logs)";
+            return withNudges("context_edit: rejected — internal error (see logs)");
           }
         },
       }),

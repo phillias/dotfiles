@@ -14,8 +14,9 @@ mechanics.
 
 1. **Live-context file (per session).** Every message turn is mirrored into
    `~/.local/state/opencode-clm/LIVE_CTX_<session>.txt` as one block. User turns
-   arrive via `chat.message`; assistant turns arrive via settled
-   `message.part.updated` events (part.type==='text' with part.time.end set):
+   arrive via `chat.message`; assistant turns are accumulated from settled
+   `message.part.updated` text parts and appended once per completed
+   `message.updated`, so each assistant message becomes one block:
 
    ```
    @@TURN user 1
@@ -44,8 +45,11 @@ mechanics.
    Every call returns a one-line receipt, e.g.
    `context_edit: accepted (fits) blocks 3->3 tokens 120->118 budget 8000`.
 
-3. **Injection.** Once per session the current file is appended to the system
-   prompt (additive) so the model sees its own authored context.
+3. **Injection.** Once per session the current file, trimmed to the token
+   budget via the same enforcement, is appended to the system prompt
+   (additive) so the model sees its own authored context; an over-budget file
+   that cannot be trimmed is never injected. Budget-trim nudges are delivered
+   to the model here and in `context_edit` responses.
 
 4. **Compaction.** When opencode compacts, the plugin replaces the built-in
    summarizer prompt. If the mirror is within budget, the prompt embeds the
