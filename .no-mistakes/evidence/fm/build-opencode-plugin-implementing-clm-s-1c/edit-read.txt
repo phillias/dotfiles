@@ -1,0 +1,5 @@
+# context_edit action=read live (tool result returned to the model)
+@@TURN user 1
+"read please [[CALL_READ]]"
+@@END
+

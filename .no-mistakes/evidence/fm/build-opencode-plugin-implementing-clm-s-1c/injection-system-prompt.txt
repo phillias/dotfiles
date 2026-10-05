@@ -1,0 +1,8 @@
+# One-shot system-prompt injection (real model request body captured at the mock endpoint)
+
+/tmp/clm-live/logs/requests/req-004.json role=system:
+# CLM live context (self-managed)
+You own the context file below. Read it with `context_edit` (action: read) and rewrite it with `context_edit` (action: replace).
+The edit gate accepts a rewrite only if it fits the effective token budget or strictly shrinks the file; otherwise it is rejected with a one-line reason.
+
+@@TURN user 

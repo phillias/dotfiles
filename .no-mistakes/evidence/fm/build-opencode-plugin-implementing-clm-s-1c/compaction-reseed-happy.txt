@@ -1,0 +1,18 @@
+# Compaction re-seed live (summarizer returned valid CLM (happy path))
+session: ses_ef37e0e3fffebURcsUsgRKS0Bm
+
+## compaction hook replaced the summarizer prompt (request detected by mock)
+requests containing 'context carrier for CLM': 1
+
+## mirror after session.compacted re-seed
+@@TURN system 1
+COMPACTED-SUMMARY-CONTENT
+@@END
+
+## parse
+PARSE_OK messages=1
+  [system] "COMPACTED-SUMMARY-CONTENT"
+budget={"tokens":7,"blocks":1,"chars":25}
+
+## CLM reseed log lines
+(none)

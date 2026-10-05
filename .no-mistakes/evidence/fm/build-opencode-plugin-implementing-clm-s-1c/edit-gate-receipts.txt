@@ -1,0 +1,5 @@
+# context_edit gate live receipts (budget_tokens=2600 => effective cap 552)
+CALL_FIT  -> context_edit: accepted (fits) blocks 1->1 tokens 7->4 budget 552
+CALL_GROW -> context_edit: rejected — over budget (15000 > 552) and did not shrink (7 -> 15000)
+CALL_GROW mirror bytes (unchanged small, huge rejected): 94
+CALL_SHRINK_OVER -> context_edit: accepted (shrink) blocks 1->1 tokens 131->100 budget 52

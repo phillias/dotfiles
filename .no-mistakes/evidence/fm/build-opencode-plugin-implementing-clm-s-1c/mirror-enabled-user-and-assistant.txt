@@ -1,0 +1,7 @@
+@@TURN user 1
+"hello assistant mirror"
+@@END
+
+@@TURN assistant 2
+pong-from-mock-model
+@@END

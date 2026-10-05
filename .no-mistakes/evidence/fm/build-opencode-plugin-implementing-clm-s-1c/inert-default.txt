@@ -1,0 +1,4 @@
+# Inert-by-default live check (clm.jsonc enabled:false)
+state dir after run: absent (no mirror created)
+context_edit tool result:
+The arguments provided to the tool are invalid: Model tried to call unavailable tool 'context_edit'. Available tools: bash, edit, glob, grep, invalid, read, skill, task, todowrite, webfetch, write.

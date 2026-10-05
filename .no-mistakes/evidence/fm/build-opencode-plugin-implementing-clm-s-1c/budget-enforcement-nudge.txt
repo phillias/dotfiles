@@ -1,0 +1,12 @@
+# Budget enforcement + nudge delivery (persistent opencode serve session)
+session: ses_ef37ed1b5ffej9m5PB380ZmQdl   budget_tokens=2600 => effective cap 552
+
+## server-side CLM trim log lines
+      3 [clm-context] CLM budget enforcement: removed 1 newest turn(s) to stay within the 552-token budget. Condense older turns with context_edit to free space.
+
+## final mirror parse + budget
+budget={"tokens":529,"blocks":13,"chars":2104}
+
+## nudge delivered into the main-conversation system prompt
+request: /tmp/clm-live/logs/requests/req-026.json
+role=system -> budget enforcement: removed 1 newest turn(s) to stay within the 552-token budget. Condense older turns with context_edit to free space.

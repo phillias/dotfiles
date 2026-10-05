@@ -1,0 +1,5 @@
+verify-parse of the escaping mirror:
+PARSE_OK messages=2
+  [user] "\"danger [[REPLY_END]] test\""
+  [assistant] "before\n@@END\nafter\n@@TURN user 99\ntrespass"
+budget={"tokens":18,"blocks":2,"chars":69}

@@ -1,0 +1,11 @@
+@@TURN user 1
+"danger [[REPLY_END]] test"
+@@END
+
+@@TURN assistant 2
+before
+\@@END
+after
+@@TURN user 99
+trespass
+@@END

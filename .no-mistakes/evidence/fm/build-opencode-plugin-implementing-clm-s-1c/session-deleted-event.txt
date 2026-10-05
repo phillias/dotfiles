@@ -1,0 +1,19 @@
+# Session deletion live check (real opencode serve + DELETE /session/{id})
+
+The plugin's `session.deleted` handling was fixed to resolve the session id from
+`properties.info.id`. Driven live against a running `opencode serve` (isolated
+HOME/config), deleting a session through the real product emits this event, as
+captured by a sidecar event-listener plugin registered alongside the CLM plugin:
+
+```
+event session.deleted info={"id":"ses_ef380f303ffebZ9JmbEnO3M09A","topSessionID":"ses_ef380f303ffebZ9JmbEnO3M09A"}
+```
+
+- `properties.info.id` is present, so `sessionIdFromEvent` resolves it.
+- `DELETE http://127.0.0.1:4100/session/<id>` returned `true` (HTTP 200).
+- No `[clm-context] event handler failed` line appeared in the server log.
+- After the delete, a subsequent new session still mirrored its turn
+  (`LIVE_CTX_ses_...txt` created), so the plugin keeps working across deletes.
+
+The observable part of this fix is the event payload shape; the actual
+per-session in-memory pruning has no user-visible artifact (see scenarios).
