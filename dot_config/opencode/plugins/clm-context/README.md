@@ -57,7 +57,10 @@ mechanics.
    instructs the summarizer to condense the conversation into a fresh
    bounded CLM context (re-seed mode). On `session.compacted`, the plugin
    fetches the compaction summary message and writes it back to the mirror
-   file, re-seeding it for the next session segment.
+   file, re-seeding it for the next session segment. A summary that does not
+   parse as CLM is preserved as a single bounded `system` turn instead of
+   being written verbatim, so a misbehaving summarizer can neither corrupt the
+   mirror nor inject an unbounded raw file.
 
 ## How to enable
 

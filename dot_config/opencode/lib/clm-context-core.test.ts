@@ -12,6 +12,7 @@ import {
   liveContextFileName,
   parseConfig,
   parseLiveContext,
+  reseedLiveContext,
   resolveEnabled,
   sanitizeSessionID,
   serializeLiveContext,
@@ -291,5 +292,35 @@ describe("enforceBudget", () => {
     expect(result.trimmed).toBe(false);
     expect(result.removed).toBe(0);
     expect(result.tokens).toBe(0);
+  });
+
+  test("reports the real size of unparsable content instead of zero", () => {
+    const raw = "not a valid file\n" + "x".repeat(4000);
+    const result = enforceBudget(raw, 100);
+    expect(result.tokens).toBe(estimateTokens(raw));
+    expect(result.tokens).toBeGreaterThan(100);
+    expect(result.content).toBe(raw);
+  });
+});
+
+describe("reseedLiveContext", () => {
+  test("keeps a well-formed summary unchanged", () => {
+    const valid = serializeLiveContext([{ role: "user", content: "hi" }]);
+    const result = reseedLiveContext(valid, 1000);
+    expect(result.repaired).toBe(false);
+    expect(result.content).toBe(valid);
+  });
+
+  test("repairs an unparsable summary into a bounded parseable mirror", () => {
+    const raw = "Here is the summary:\n" + "x".repeat(1000);
+    const result = reseedLiveContext(raw, 50);
+    expect(result.repaired).toBe(true);
+    const parsed = parseLiveContext(result.content);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.messages).toHaveLength(1);
+      expect(parsed.messages[0].content).toContain("Here is the summary:");
+      expect(computeBudget(parsed.messages).tokens).toBeLessThanOrEqual(50);
+    }
   });
 });

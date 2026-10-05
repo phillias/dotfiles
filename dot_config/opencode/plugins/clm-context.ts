@@ -33,6 +33,7 @@ import {
   evaluateEdit,
   liveContextFileName,
   parseConfig,
+  reseedLiveContext,
   resolveEnabled,
 } from "../lib/clm-context-core";
 
@@ -182,7 +183,6 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
         const current = read(sessionID);
         if (!current.trim()) return;
         const enforced = enforceBudget(current, budget);
-        if (enforced.nudge) queueNudge(sessionID, enforced.nudge);
         if (enforced.tokens <= budget) {
           output.prompt = buildCompactionPrompt(enforced.content, budget);
         } else {
@@ -226,7 +226,14 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
             const entry = messages[i];
             if ((entry.info as { summary?: boolean } | undefined)?.summary !== true) continue;
             const text = textFromParts(entry.parts);
-            if (text.trim()) write(sid, text);
+            if (!text.trim()) return;
+            const reseeded = reseedLiveContext(text, budget);
+            if (reseeded.repaired) {
+              console.warn(
+                "[clm-context] compaction summary was not valid CLM; re-seeded as a bounded single turn",
+              );
+            }
+            write(sid, reseeded.content);
             return;
           }
           return;
@@ -245,11 +252,14 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
         if (e?.type === "message.updated") {
           const info = e.properties?.info;
           const messageSid = info?.sessionID ?? sid;
-          if (!messageSid || !info || info.role !== "assistant") return;
-          if (info.summary === true || info.time?.completed === undefined) return;
+          if (!messageSid || !info) return;
           const messageID = info.id;
-          if (!messageID) return;
-          const key = `${messageSid}:${messageID}`;
+          const key = `${messageSid}:${messageID ?? ""}`;
+          if (info.role !== "assistant" || info.summary === true) {
+            if (messageID) assistantParts.delete(key);
+            return;
+          }
+          if (info.time?.completed === undefined || !messageID) return;
           const buffer = assistantParts.get(key);
           assistantParts.delete(key);
           const seen = `${messageSid}:msg:${messageID}`;

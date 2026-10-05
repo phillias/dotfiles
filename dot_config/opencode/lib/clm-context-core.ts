@@ -77,6 +77,13 @@ export interface ClmEnforceResult {
   tokens: number;
 }
 
+export interface ClmReseedResult {
+  /** A valid live-context file content. */
+  content: string;
+  /** True when the input did not parse and had to be repaired. */
+  repaired: boolean;
+}
+
 /** Opening marker of a context block: `@@TURN <role> <n>`. */
 export const TURN_OPEN = "@@TURN";
 /** Closing marker of a context block. */
@@ -204,6 +211,24 @@ export function appendTurn(text: string, role: ClmRole, content: string): string
 }
 
 /**
+ * Turn a compaction summary into a valid live-context file. A well-formed
+ * summary is kept as authored; an unparsable one is preserved as a single
+ * bounded `system` turn so a misbehaving summarizer can neither corrupt the
+ * mirror nor cause an unbounded raw file to be injected.
+ */
+export function reseedLiveContext(
+  text: string,
+  budget: number = DEFAULT_BUDGET_TOKENS,
+): ClmReseedResult {
+  if (parseLiveContext(text).ok) return { content: text, repaired: false };
+  const capped = [...text].slice(0, Math.max(0, budget * 4)).join("");
+  return {
+    content: serializeLiveContext([{ role: "system", content: capped }]),
+    repaired: true,
+  };
+}
+
+/**
  * Enforce the token budget on the live-context file. When the file exceeds
  * the budget, roll back newest turns until at least `reserve` tokens are free
  * (or only one turn remains). Returns the trimmed content plus a nudge message
@@ -215,7 +240,13 @@ export function enforceBudget(
   budget: number = DEFAULT_BUDGET_TOKENS,
   reserve: number = 2048,
 ): ClmEnforceResult {
-  const messages = safeParse(text);
+  const parsed = parseLiveContext(text);
+  if (!parsed.ok) {
+    // Unparsable content cannot be trimmed by turn. Report its real size so
+    // callers never mistake a raw, unbounded file for an empty context.
+    return { content: text, trimmed: false, removed: 0, nudge: "", tokens: estimateTokens(text) };
+  }
+  const messages = parsed.messages;
   if (messages.length === 0) {
     return { content: text, trimmed: false, removed: 0, nudge: "", tokens: 0 };
   }
