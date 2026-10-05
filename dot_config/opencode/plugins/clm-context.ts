@@ -169,7 +169,13 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
         };
         const sid = e.properties?.sessionID;
         if (e?.type === "session.deleted") {
-          if (sid) injected.delete(sid);
+          if (sid) {
+            injected.delete(sid);
+            const prefix = `${sid}:`;
+            for (const key of mirrored) {
+              if (key.startsWith(prefix)) mirrored.delete(key);
+            }
+          }
           return;
         }
         if (e?.type === "session.compacted") {
