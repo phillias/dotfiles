@@ -1,0 +1,15 @@
+{
+  "name": "opencode-clm-context",
+  "version": "0.1.0",
+  "description": "CLM-style self-managed context for opencode: a live model-editable context file with a fit/shrink edit gate and a verbatim compaction hook",
+  "main": "README.md",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "context",
+    "clm",
+    "context-language-models",
+    "compaction"
+  ],
+  "license": "MIT"
+}

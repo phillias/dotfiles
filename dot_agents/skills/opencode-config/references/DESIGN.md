@@ -519,6 +519,7 @@ subscribers.
 | 1 | opencode-log-sanitizer | swallow | Redacts JWTs, bcrypt hashes, base64 blobs, long quoted strings |
 | 2 | fleet-state-writer | swallow | Mines `[BACKGROUND TASK *]` headers; records task state transitions |
 | 3 | axi-memory-bridge | swallow | Injection veto, stores last user message, scores for auto-capture, topic-shift auto-recall |
+| 4 | clm-context.ts | swallow | Mirrors user/assistant turns into the per-session CLM live-context file (inert unless enabled) |
 
 **Execution order:** opencode runs handlers in plugin registration order
 (opencode.json `plugin[]` array). Log-sanitizer runs first so redacted content
@@ -533,6 +534,7 @@ never reaches downstream handlers. All three must be isolation-safe.
 | 3 | axi-chrome-devtools-axi.js | swallow | chrome-devtools-axi ambient context |
 | 4 | axi-lavish-axi.js | swallow | lavish-axi ambient context (sessions, visual guidance, playbooks) |
 | 5 | opencode-runtime-fallback.ts | swallow | Fallback chain state annotation |
+| 6 | clm-context.ts | swallow | One-shot injection of the authored CLM live-context file (inert unless enabled) |
 
 #### `tool.execute.after` — after every tool call
 
@@ -557,6 +559,7 @@ never reaches downstream handlers. All three must be isolation-safe.
 | 3 | opencode-telemetry | swallow | SQLite telemetry |
 | 4 | opencode-runtime-fallback.ts | swallow | Model fallback chain on retry/error |
 | 5 | tps-status.tsx | swallow | TPS calculation for TUI status bar |
+| 6 | clm-context.ts | swallow | Clears the per-session injection guard on `session.deleted` (inert unless enabled) |
 
 #### `tool` — register custom tools
 
@@ -565,6 +568,18 @@ never reaches downstream handlers. All three must be isolation-safe.
 | envsitter-guard | `envsitter_*` (keys, match, set, add, delete, copy, format, validate, annotate, help) |
 | axi-memory-bridge | `axi-memory-search`, `axi-memory-add`, `axi-memory-show` |
 | opencode-runtime-fallback.ts | `fallback-status` |
+| clm-context.ts | `context_edit` (read/replace the CLM live-context file; inert unless enabled) |
+
+#### `experimental.session.compacting` — replaces the built-in compaction prompt
+
+| # | Plugin | Failure Mode | Purpose |
+|---|---|---|---|
+| 1 | clm-context.ts | swallow | Sets `output.prompt` to a verbatim-replay directive so the authored live-context file becomes the compacted state (inert unless enabled) |
+
+**Coexistence:** dcp does not subscribe to `experimental.session.compacting`, so
+this hook is additive; built-in compaction still runs its hidden summarizer
+agent, but with the replaced prompt. clm-context.ts never touches
+`experimental.chat.messages.transform`, so it cannot collide with dcp.
 
 #### Safety contract
 

@@ -11,6 +11,7 @@ Runtime-behavior plugins loaded by the OpenCode config. All plugin-level — ope
 - **opencode-runtime-fallback.ts** — model fallback (this file) + `lib/opencode-runtime-fallback-core.ts`
 - **opencode-ntfy.sh**, **opencode-log-sanitizer**, **envsitter-guard**, **opencode-telemetry** — notification/observability hooks
 - **dcp node_module** — context-management hook
+- **clm-context.ts** — CLM self-managed context; live model-editable context file + fit/shrink edit gate + verbatim compaction hook. **Inert by default** (see `plugins/clm-context/README.md`)
 
 **Retired (enforced-removed):** better-compaction.ts, tmux-subagent-activator.ts (2026), go-pool-guard.ts (2026-08-12).
 
@@ -88,6 +89,16 @@ stateDiagram-v2
 ```
 
 **Mermaid parsing note:** node labels containing `<br/>` MUST be quoted — `CFG["opencode-fallback.jsonc<br/>single-root OmO shape"]` — unquoted `<br/>` inside `[...]` breaks the chart (the exact error the captain hit at "Layer D → Architecture"). The charts above carry the fix.
+
+## CLM self-managed context plugin
+
+Local plugin `plugins/clm-context.ts` + pure core `lib/clm-context-core.ts` (tests `lib/clm-context-core.test.ts`). Implements CLM (Context Language Models) style self-managed context: the model's context is a live per-session file it reads/rewrites via the `context_edit` tool, with a harness-supplied fit/shrink edit gate and a compaction hook that replays the authored file verbatim.
+
+- **Inert default.** Gate off (absent `~/.config/opencode/clm.jsonc` or `enabled:false`) ⇒ plugin returns `{}`: no hooks, no tool, zero behavioral change. Enable via `clm.jsonc` `{"enabled":true}` or `OPENCODE_CLM=1`. Config is jsonc (uses `stripJsonc` from `lib/opencode-runtime-fallback-core.ts`).
+- **State.** `~/.local/state/opencode-clm/LIVE_CTX_<session>.txt` (one `@@TURN <role> <n>` … `@@END` block per message turn).
+- **Hooks.** `chat.message` (mirror turns, dedup by messageID), `experimental.chat.system.transform` (one-shot inject), `experimental.session.compacting` (sets `output.prompt` to a verbatim-replay directive), `event` (`session.deleted` cleanup), `tool` (`context_edit`).
+- **Coexistence.** dcp does not use `experimental.session.compacting`, so the compaction hook is additive; built-in compaction still runs its hidden summarizer agent but with this plugin's replacing prompt. clm-context does **not** touch `experimental.chat.messages.transform`, so it cannot collide with dcp. Full contract in `plugins/clm-context/README.md`.
+- **Refs.** facebookresearch/context-language-models; arXiv:2609.37725. MIT.
 
 ## Fleet state writer fixes (2026-07-22)
 
