@@ -63,6 +63,21 @@ function textFromParts(parts: unknown): string {
     .join("\n");
 }
 
+function sessionIdFromEvent(e: {
+  type?: string;
+  properties?: {
+    sessionID?: string;
+    info?: { id?: string; sessionID?: string };
+    part?: { sessionID?: string };
+  };
+}): string | undefined {
+  const props = e.properties;
+  if (e.type === "session.deleted") return props?.info?.id ?? props?.sessionID;
+  if (e.type === "message.part.updated") return props?.part?.sessionID ?? props?.sessionID;
+  if (e.type === "message.updated") return props?.info?.sessionID ?? props?.sessionID;
+  return props?.sessionID;
+}
+
 export const ClmContextPlugin: Plugin = async ({ client }) => {
   const cfg = loadConfig();
   const enabled = resolveEnabled(cfg, process.env.OPENCODE_CLM);
@@ -201,10 +216,10 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
           properties?: {
             sessionID?: string;
             info?: { id?: string; sessionID?: string; role?: string; summary?: boolean; time?: { completed?: number } };
-            part?: { id?: string; messageID?: string; type?: string; text?: string; time?: { end?: number } };
+            part?: { id?: string; sessionID?: string; messageID?: string; type?: string; text?: string; time?: { end?: number } };
           };
         };
-        const sid = e.properties?.sessionID;
+        const sid = sessionIdFromEvent(e);
         if (e?.type === "session.deleted") {
           if (sid) {
             injected.delete(sid);
