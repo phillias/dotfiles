@@ -95,8 +95,10 @@ replace it:
   summarizer prompt*. opencode still appends the rendered conversation history
   after that prompt, which is why the directive explicitly tells the summarizer
   to replay the authored file verbatim and ignore the history. When
-  `compaction.auto` is `false`, the hook never fires and the plugin has no
-  effect on compaction.
+  `compaction.auto` is `false`, automatic overflow-triggered compaction is
+  skipped, so the plugin has no effect on it; manual (or API-triggered)
+  compaction still fires the hook and this plugin still replaces the
+  summarizer prompt.
 - **Inert default.** Disabled ⇒ `{}` returned from the plugin factory ⇒ no
   hooks, no tool, zero behavioral change.
 
