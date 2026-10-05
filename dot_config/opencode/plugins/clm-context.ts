@@ -60,7 +60,7 @@ function textFromParts(parts: unknown): string {
     .join("\n");
 }
 
-export const ClmContextPlugin: Plugin = async () => {
+export const ClmContextPlugin: Plugin = async ({ client }) => {
   const cfg = loadConfig();
   const enabled = resolveEnabled(cfg, process.env.OPENCODE_CLM);
   if (!enabled) return {};
@@ -161,7 +161,7 @@ export const ClmContextPlugin: Plugin = async () => {
       }
     },
 
-    event: async ({ event, client }) => {
+    event: async ({ event }) => {
       try {
         const e = event as {
           type?: string;
@@ -173,12 +173,16 @@ export const ClmContextPlugin: Plugin = async () => {
           return;
         }
         if (e?.type === "session.compacted") {
-          if (!sid || !client) return;
-          const messages = await client.session.messages({ sessionID: sid });
-          const summary = messages.find((m) => m.info?.summary === true);
-          if (!summary) return;
-          const text = textFromParts(summary.parts);
-          if (text.trim()) write(sid, text);
+          if (!sid) return;
+          const result = await client.session.messages({ path: { id: sid } });
+          const messages = result.data ?? [];
+          for (let i = messages.length - 1; i >= 0; i--) {
+            const entry = messages[i];
+            if ((entry.info as { summary?: boolean } | undefined)?.summary !== true) continue;
+            const text = textFromParts(entry.parts);
+            if (text.trim()) write(sid, text);
+            return;
+          }
           return;
         }
         if (e?.type === "message.part.updated") {
