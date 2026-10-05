@@ -243,10 +243,9 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
           const part = e.properties?.part;
           if (!part || part.type !== "text" || part.time?.end === undefined) return;
           if (!part.text?.trim() || !part.id || !part.messageID) return;
-          const key = `${sid}:${part.messageID}`;
-          const buffer = assistantParts.get(key) ?? new Map<string, string>();
+          const buffer = assistantParts.get(`${sid}:${part.messageID}`);
+          if (!buffer) return;
           buffer.set(part.id, part.text);
-          assistantParts.set(key, buffer);
           return;
         }
         if (e?.type === "message.updated") {
@@ -254,12 +253,16 @@ export const ClmContextPlugin: Plugin = async ({ client }) => {
           const messageSid = info?.sessionID ?? sid;
           if (!messageSid || !info) return;
           const messageID = info.id;
-          const key = `${messageSid}:${messageID ?? ""}`;
+          if (!messageID) return;
+          const key = `${messageSid}:${messageID}`;
           if (info.role !== "assistant" || info.summary === true) {
-            if (messageID) assistantParts.delete(key);
+            assistantParts.delete(key);
             return;
           }
-          if (info.time?.completed === undefined || !messageID) return;
+          if (info.time?.completed === undefined) {
+            if (!assistantParts.has(key)) assistantParts.set(key, new Map<string, string>());
+            return;
+          }
           const buffer = assistantParts.get(key);
           assistantParts.delete(key);
           const seen = `${messageSid}:msg:${messageID}`;
