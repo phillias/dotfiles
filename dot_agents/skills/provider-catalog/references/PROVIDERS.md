@@ -8,11 +8,11 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 - Opencode interactive chains — `~/.config/opencode/opencode-fallback.jsonc` (owner). Two-path architecture (captain decision 2026-09-19, PRs #327 + #330): utility chains are `dynamic/TUI` (gateway cascading GLM ladder) → `opencode-go/glm-5.1` → `opencode-go/deepseek-v4-flash` (session-gated direct-client tail); specialized agents/categories keep pinned chains.
 - Pi default chain — `~/.pi/fallback-chains.json` → `default` key (added 2026-09-01). Same GLM-5.1 ladder; activates via `fallback/default` model string.
-- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key. Live chain order is that file itself (drawn in `references/ROUTING_TOPOLOGY.md` flow-2: `opencode-go-gw/deepseek-v4-flash` head → `CfAiGw/dynamic/pr-gate` → `vercel/router/pr-gate`; the longcat-2.5-preview-free head was removed via dotfiles PR #392, structural update 2026-10-04). Chain semantics/history live in the Gate chain section; the 2026-09-01 gate-chain v4 record was superseded when the openrouter `:free` trio was removed after no-mistakes run deaths — that lane class is documented in the pr-gate entry.
+- Pi GATE chain — `~/.pi/fallback-chains.json` → `gate` key. Live chain order is that file itself (drawn in `references/ROUTING_TOPOLOGY.md` flow-2: `openrouter-direct/z-ai/glm-5.2:free` head → `opencode-go-gw/deepseek-v4-flash` → `CfAiGw/dynamic/pr-gate` → `vercel/router/pr-gate`; the longcat-2.5-preview-free head was removed via dotfiles PR #392, and glm-5.2:free was positioned at the head of both gate + review chains per the captain's 2026-10-04 JSON-chain directive — longcat is light-work/scout-class ONLY, never a JSON-bearing pipeline role). Chain semantics/history live in the Gate chain section; the 2026-09-01 gate-chain v4 record was superseded when the openrouter `:free` trio was removed after no-mistakes run deaths — that lane class is documented in the pr-gate entry.
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** the pi model pin lives in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`) — `agent_config.pi.model` for all steps and `review_agents.reviewer.model` for the reviewer both pin `opencode-go-gw/deepseek-v4-flash` (1M context, session-gated subsidized pool, riding pi via the opencode-go-gw static header). The pin moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which silently nullified the reviewer pin and left review riding `fallback/gate` → dynamic/pr-gate (see the config's prose). The `fallback/gate` 1M ladder string in `~/.pi/fallback-chains.json` remains for manual pi use; pi-fallback-provider semantics there: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
+**no-mistakes reviewer pin (deterministic):** the pi model pin lives in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`) — `agent_config.pi.model` for all steps and `review_agents.reviewer.model` for the reviewer pin the `fallback/gate` / `fallback/review` chains respectively — both lead with `openrouter-direct/z-ai/glm-5.2:free` (captain's 2026-10-04 JSON-chain directive), fall through to `opencode-go-gw/deepseek-v4-flash` rung-2 as the proven-JSON safety net (1M context, session-gated subsidized pool, riding pi via the opencode-go-gw static header), and the review chain keeps the PAYG `openrouter-direct/z-ai/glm-5.2` terminal rung. The pin moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which silently nullified the reviewer pin and left review riding `fallback/gate` → dynamic/pr-gate (see the config's prose). The `fallback/gate` 1M ladder string in `~/.pi/fallback-chains.json` remains for manual pi use; pi-fallback-provider semantics there: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
 
 ## Cheapest-qualified-lane dispatch rule (spawn selection)
 
@@ -429,7 +429,9 @@ is the binding constraint; do not add more without retiring one.
 
 ## Gate chain (pi-fallback-provider)
 
-Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider's free inkling lane remains for personal agentic experiments only (the provider's PAYG `z-ai/glm-5.2` lane, added 2026-09-28, rides the pi review chain's terminal rung). Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
+Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider's free inkling lane remains for personal agentic experiments only (the provider's PAYG `z-ai/glm-5.2` lane, added 2026-09-28, rode the pi review chain's terminal rung and REMAINS the review chain's terminal rung after the free `z-ai/glm-5.2:free` variant took the head 2026-10-04 — captain: keep the PAYG terminal rung). Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
+
+2026-10-04 repositioning (captain directive, JSON-chain positioning): `openrouter-direct/z-ai/glm-5.2:free` now HEADS both the gate and review chains — every JSON-bearing no-mistakes stage (reviewer, test, document, lint, rebase-repair, PR-drafting, CI-fix) tries the free glm lane first; `opencode-go-gw/deepseek-v4-flash` is rung-2 (the proven-JSON safety net — 429/403 invocations fall through to it; silent stalls do NOT, since pi fallback fires on invocation failure only); virtual routers demoted behind it; the PAYG `z-ai/glm-5.2` terminal rung is KEPT on the review chain (captain 2026-10-04 — the gate chain never carried it). Longcat is light-work/scout-class only. The 2026-09-15 inkling-403 lesson applies to all OpenRouter :free lanes: watch for funnel rejections of pi-shaped requests; if glm:free 403s, the chain self-heals to deepseek rung-2.
 
 ## Dynamic routes on the `opencode` gateway (2026-09-04)
 
@@ -465,9 +467,11 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `fallback/gate` chain** (dotfiles PR #343 restored the chain, previously
   pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
   200-wrapped overload errors 6/6 nights runs). Review agent rides the
-  separate `fallback/review` chain (opencode-go-gw/deepseek-v4-flash →
-  CfAiGw/dynamic/pr-reviewer → vercel/router/pr-reviewer →
-  openrouter-direct/z-ai/glm-5.2 terminal PAYG rung). The route serves
+  separate `fallback/review` chain (openrouter-direct/z-ai/glm-5.2:free →
+  opencode-go-gw/deepseek-v4-flash → CfAiGw/dynamic/pr-reviewer →
+  vercel/router/pr-reviewer → openrouter-direct/z-ai/glm-5.2; the PAYG glm-5.2 tail is
+  KEPT as terminal rung per captain 2026-10-04 while the free variant heads
+  the chain). The route serves
   gate, probe, and external traffic.
   Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
   free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
@@ -513,10 +517,11 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `openrouter/openai/gpt-5.6-luna` →
   `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
   `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
-  the separate `fallback/review` chain (pi fallback-chains.json), with
-  `opencode-go-gw/deepseek-v4-flash` as first rung, `CfAiGw/dynamic/pr-reviewer`
-  second, `vercel/router/pr-reviewer` third, and `openrouter-direct/z-ai/glm-5.2`
-  as terminal PAYG tail (account-independent of CF/zen budget walls).
+  the separate `fallback/review` chain (pi fallback-chains.json); current order
+  is `openrouter-direct/z-ai/glm-5.2:free` head → `opencode-go-gw/deepseek-v4-flash`
+  rung-2 → `CfAiGw/dynamic/pr-reviewer` third → `vercel/router/pr-reviewer`
+  fourth — the PAYG `z-ai/glm-5.2` tail is KEPT as terminal rung (captain 2026-10-04;
+  account-independent of CF/zen budget walls).
 - Harness family routes (2026-09-19 build, captain directive — house models
   per family across providers, openrouter PAYG + plan lanes). 2026-09-20
   less-wrong pass (captain order, route versions deployed and probed 200):

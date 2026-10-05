@@ -30,6 +30,18 @@ agent: pi
 # trailing prose) and stalled silently to the 60m budget kill. deepseek-v4-flash
 # (same rung the review chain leads with) produced clean structured output
 # all day with zero stalls. Gate and review now share the deepseek head.
+# (2026-10-04, later) glm-5.2:free positioned at the HEAD of both gate and
+# review chains (captain directive: every JSON-bearing stage — reviewer, test,
+# document, lint, rebase-repair, PR-drafting, CI-fix — should try the free
+# glm lane first; deepseek-v4-flash stays rung-2 as the proven-JSON safety
+# net, virtual routers demoted behind it). Longcat is light-work/scout-class
+# only — never a JSON-bearing pipeline role. Caveats: pi agent fallback fires
+# on invocation failure only, NOT on silent stalls or JSON parse failures —
+# a stalling head still burns the budget; if glm stalls on test, consider
+# test_agent_working_timeout or per-run --model pins. OpenRouter :free lanes
+# historically rate-limit aggressively (2026-09-01 trio removed after run
+# deaths; 2026-09-15 inkling 403 funnel + TM logging) — 429/403 invocations
+# DO fall through to deepseek rung-2, which is the designed safety net.
 # (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
@@ -52,9 +64,10 @@ agent_config:
     model: fallback/gate
 
 # Review rides the separate `fallback/review` chain so the second-set-of-eyes
-# exercises the pr-reviewer ladder (opencode-go-gw deepseek head → CF
-# dynamic/pr-reviewer → vercel/router/pr-reviewer →
-# openrouter-direct/z-ai/glm-5.2; exact ladder: provider-catalog references
+# exercises the pr-reviewer ladder (openrouter-direct/z-ai/glm-5.2:free head →
+# opencode-go-gw deepseek → CF dynamic/pr-reviewer →
+# vercel/router/pr-reviewer → openrouter-direct/z-ai/glm-5.2 PAYG terminal
+# rung, kept per captain 2026-10-04; exact ladder: provider-catalog references
 # ROUTING_TOPOLOGY.md flow-2) rather than the cheaper gate ladder.
 # Budget-ranked, JSON discipline first, stronger model pool than gate.
 review_agents:

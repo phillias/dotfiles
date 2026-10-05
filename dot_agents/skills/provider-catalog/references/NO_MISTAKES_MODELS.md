@@ -39,8 +39,9 @@ a bad rung poisons the whole step.
 
 | Model | Role tested | Result |
 |---|---|---|
-| `opencode-go-gw/deepseek-v4-flash` | review chain head (reviewer/fixer) | CLEAN — strict JSON all day, no stalls; reviews 36s–434s |
-| `opencode-go-gw/longcat-2.5-preview-free` | gate chain head (test steps) | BROKEN — both JSON failure modes + 51m silent stalls ×3 in one day; removed from the gate chain (dotfiles PR #392) |
+| `opencode-go-gw/deepseek-v4-flash` | review chain head (reviewer/fixer) | CLEAN — strict JSON all day, no stalls; reviews 36s–434s. Later stalled twice as TEST agent (51m silent at 60m; quiet 6m at 12m budget) — reliable JSON, can go quiet on long test drives. Now rung-2 on both chains. |
+| `opencode-go-gw/longcat-2.5-preview-free` | gate chain head (test steps) | BROKEN — both JSON failure modes + 51m silent stalls ×3 in one day; removed from the gate chain (dotfiles PR #392). **Light work / scout-class ONLY** (captain 2026-10-04) — never a JSON-bearing pipeline role again. |
+| `openrouter-direct/z-ai/glm-5.2:free` | gate + review chain HEAD (captain directive 2026-10-04) | UNPROVEN on this pipeline — the free OpenRouter glm variant positioned so every JSON-bearing stage (reviewer, test, document, lint, rebase-repair, PR-drafting, CI-fix) tries it first; deepseek rung-2 is the safety net (429/403 invocations fall through; silent stalls do NOT). Discipline under observation — report first JSON failure or stall pattern. Caveats: OpenRouter :free lanes historically rate-limit aggressively (2026-09-01 :free trio removed after run deaths; 2026-09-15 inkling 403 funnel + TM training logging). The PAYG `z-ai/glm-5.2` lane stays as the review chain's terminal rung (captain 2026-10-04). |
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)
 
