@@ -338,13 +338,7 @@
       "out": 0,
       "free": true
     },
-    "opencode-zen/ling-3.0-flash-free": {
-      "context": null,
-      "in": 0,
-      "out": 0,
-      "free": true
-    },
-    "opencode-zen/ling-3.0-tiny-free": {
+    "opencode-zen/ling-3.1-flash-free": {
       "context": null,
       "in": 0,
       "out": 0,
@@ -1091,7 +1085,7 @@
       "out": 0,
       "free": true
     },
-    "openrouter/inclusionai/ling-3.0-tiny:free": {
+    "openrouter/inclusionai/ling-3.0-flash-sante:free": {
       "context": 262144,
       "in": 0,
       "out": 0,

@@ -36,7 +36,7 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 
 | Provider | URL segment | Notes |
 |---|---|---|
-| opencode-zen | `custom-opencode-zen/v1` | primary quality (big-pickle) + free tier |
+| opencode-zen | `custom-opencode-zen/v1` | primary quality (big-pickle) + free tier; free tier gated to in-app use (see § "OpenCode zen free-tier client gating") |
 | opencode-go | `custom-opencode-go/v1` | subsidized pool (kimi-k2.6, deepseek-v4-flash). **Session-gated 2026-09-08**: requests require a per-conversation `x-opencode-session` header; a static config header cannot satisfy it. Direct-client use only (opencode/pi send it natively) — EXCLUDES opencode-go models from gateway dynamic routes and any static-header custom-provider hop. Clean 400 `MissingSessionID` otherwise. |
 | commandcode | `custom-commandcode/v1` | GOAT paid pool (Kimi-K2.6, DS-V4-Flash) |
 | zai-coding | `custom-zai-coding/v4` | Z.AI Coding Plan Lite; **`/v4`, not `/v1`** |
@@ -695,6 +695,60 @@ without the $100+/mo native-subscription seats:
 - **Cursor: has no BYOK/per-token bridge.** Seat-based subscription,
   workstation-scoped identity, machine-locked; wire it at most as a paid TUI
   lane, never a model lane.
+
+## OpenCode zen free-tier client gating (2026-10-05, live-verified)
+
+The zen FREE tier is locked to the OpenCode client identity; paid zen is open BYOK.
+
+- **Proof (2026-10-05):** curl with the gateway token gets `403 FreeTierError:
+  "OpenCode's free tier can only be used from within OpenCode"` on every
+  probed free lane — `ling-3.1-flash-free`, `nemotron-3-ultra-free`,
+  `mimo-v2.5-free` (all exist-but-gated; a `cf-aig-metadata` header copied
+  from opencode's own config does not bypass). Paid `glm-5.2` via the same
+  curl: 200 in 2.2s. `fledge-alpha-free` completes from inside a real
+  `opencode run` (exit 0), so the gate passes in-app.
+- **Generalizes the LongCat audit-blind note below:** this is zen free-tier
+  POLICY, not a per-model quirk. Every `-free` zen lane is curl-locked and
+  invisible to the scheduled audit.
+- **Routing rule (extends the opencode-go session-gate precedent in the
+  provider table above):** zen free lanes belong ONLY as direct harness
+  provider entries — opencode.json `.provider["opencode-zen"].models`
+  (which already lists `mimo-v2.5-free`, `nemotron-3-ultra-free`,
+  `deepseek-v4-flash-free`, `fledge-alpha-free`) — never as gateway
+  dynamic-route elements. A route-forwarded request loses the caller
+  identity, so a locked free rung is a suspect-403 for ALL consumers via
+  the route, opencode included (unverified by forced failover — don't
+  force). pi cannot pass the gate at all (not an opencode client) — pi
+  keeps zen PAID lanes only.
+- **Lock scope on current routes (2026-10-05):** dynamic/TUI rung 3
+  `opencode-zen/mimo-v2.5-free` (free, locked), dynamic/pr-gate rung 2
+  `zen/nemotron-3-ultra-free` (free, locked), dynamic/test's only rung
+  `zen/nemotron-3-ultra-free` — candidates for removal into harness
+  configs. Paid zen route rungs (TUI `glm-5.1`/`glm-5.2`/`glm-5.3-flash`,
+  pr-reviewer `glm-5.2`, vision `gemini-3.5-flash`) are curl-open and stay.
+
+## Ling (InclusionAI) evaluation (2026-10-05)
+
+- **Zen 3.0 lanes are DEAD:** `ling-3.0-flash-free` curl → 400 "Model is
+  unavailable" (tiny likewise); snapshot rows removed. Zen `/models`
+  (84 ids) now lists only `ling-3.1-flash-free` among ling — exists but
+  free-tier-gated (section above), and NOT yet in the global
+  opencode.json zen models map, so `opencode run -m
+  opencode-zen/ling-3.1-flash-free` fails client-side
+  (ProviderModelNotFoundError) until the entry is added there.
+- **OpenRouter `inclusionai/ling-3.0-tiny:free` is GONE** from the listing
+  (snapshot row removed).
+- **`openrouter/inclusionai/ling-3.0-flash-sante:free` — VERIFIED FREE LANE
+  (2026-10-05):** basic completion 200 in 1.7s; tool calling VERIFIED
+  (finish_reason=tool_calls, `get_weather({"city":"Tokyo"})`, 1.17s);
+  instructed JSON discipline VERIFIED (clean raw JSON object, no fences);
+  native structured outputs UNSUPPORTED (Novita 400 "model does not
+  support feature: structured-outputs"); reasoning model
+  (reasoning_details + reasoning_tokens). Served by Novita, cost 0.
+- **Other openrouter ling lanes:** `ling-3.0-flash` / `-vl` (multimodal
+  text+image+video) / `-fin` are PAYG; `ling-3.1-flash` (262144 ctx)
+  lists 0/0 pricing but 429 upstream rate-limited on both probe retries
+  (shared Novita pool) — serving unverified, kept out of the snapshot.
 
 ## LongCat-2.5-Preview on opencode-zen (added 2026-09-27)
 
