@@ -519,7 +519,7 @@ subscribers.
 | 1 | opencode-log-sanitizer | swallow | Redacts JWTs, bcrypt hashes, base64 blobs, long quoted strings |
 | 2 | fleet-state-writer | swallow | Mines `[BACKGROUND TASK *]` headers; records task state transitions |
 | 3 | axi-memory-bridge | swallow | Injection veto, stores last user message, scores for auto-capture, topic-shift auto-recall |
-| 4 | clm-context.ts | swallow | Mirrors user/assistant turns into the per-session CLM live-context file (inert unless enabled) |
+| 4 | clm-context.ts | swallow | Mirrors user turns (chat.message) and assistant turns (settled message.part.updated events) into the per-session CLM live-context file; enforces token budget via rollback; re-seeds mirror from compaction summary (inert unless enabled) |
 
 **Execution order:** opencode runs handlers in plugin registration order
 (opencode.json `plugin[]` array). Log-sanitizer runs first so redacted content

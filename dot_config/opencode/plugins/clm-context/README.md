@@ -12,9 +12,10 @@ mechanics.
 
 ## What it does
 
-1. **Live-context file (per session).** Every message turn (user and assistant)
-   is mirrored into `~/.local/state/opencode-clm/LIVE_CTX_<session>.txt` as one
-   block:
+1. **Live-context file (per session).** Every message turn is mirrored into
+   `~/.local/state/opencode-clm/LIVE_CTX_<session>.txt` as one block. User turns
+   arrive via `chat.message`; assistant turns arrive via settled
+   `message.part.updated` events (part.type==='text' with part.time.end set):
 
    ```
    @@TURN user 1
@@ -45,8 +46,12 @@ mechanics.
    prompt (additive) so the model sees its own authored context.
 
 4. **Compaction.** When opencode compacts, the plugin replaces the built-in
-   summarizer prompt with a directive to reproduce the model-authored file
-   **verbatim**, ignoring the appended conversation history.
+   summarizer prompt. If the mirror is within budget, the prompt embeds the
+   file verbatim (bounded mode). If the mirror is unbounded, the prompt
+   instructs the summarizer to condense the conversation into a fresh
+   bounded CLM context (re-seed mode). On `session.compacted`, the plugin
+   fetches the compaction summary message and writes it back to the mirror
+   file, re-seeding it for the next session segment.
 
 ## How to enable
 

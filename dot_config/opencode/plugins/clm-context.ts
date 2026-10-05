@@ -2,10 +2,12 @@
  * CLM (Context Language Models) self-managed context plugin.
  *
  * The model's context is exposed as a live, per-session file it can read and
- * rewrite through the `context_edit` tool. The harness mirrors each message
- * turn into the file, injects it into the system prompt once per session, and
- * — when opencode compacts — replays the model-authored file verbatim instead
- * of the built-in summarizer output.
+ * rewrite through the `context_edit` tool. The harness mirrors user turns
+ * (via chat.message) and assistant turns (via settled message.part.updated
+ * events) into the file, injects it into the system prompt once per session,
+ * and enforces a token budget by rolling back newest turns when the mirror
+ * grows too large. At compaction, the mirror is re-seeded from the compacted
+ * summary instead of embedding the unbounded file.
  *
  * Inert by default: unless `clm.jsonc` sets `enabled: true` (or
  * `OPENCODE_CLM=1`), this plugin registers no hooks and no tools, so session
@@ -26,6 +28,7 @@ import {
   type ClmRole,
   appendTurn,
   buildCompactionPrompt,
+  enforceBudget,
   evaluateEdit,
   liveContextFileName,
   parseConfig,
@@ -90,21 +93,24 @@ export const ClmContextPlugin: Plugin = async () => {
   };
 
   return {
-    // Mirror each turn (user + assistant) into the live-context file. Dedup by
-    // message id so re-delivery does not double-append.
+    // Mirror user turns via chat.message (fires for user messages only).
+    // Dedup by message id so re-delivery does not double-append.
     "chat.message": async (input, output) => {
       try {
         const sessionID = input.sessionID;
         if (!sessionID) return;
         const role = (output.message as { role?: string } | undefined)?.role;
-        if (role !== "user" && role !== "assistant" && role !== "system") return;
+        if (role !== "user") return;
         const messageID = input.messageID ?? (output.message as { id?: string })?.id ?? "";
         const key = `${sessionID}:${messageID}`;
         if (messageID && mirrored.has(key)) return;
         const text = textFromParts(output.parts);
         if (!text.trim()) return;
         if (messageID) mirrored.add(key);
-        write(sessionID, appendTurn(read(sessionID), role as ClmRole, text));
+        const appended = appendTurn(read(sessionID), role as ClmRole, text);
+        const enforced = enforceBudget(appended, budget);
+        write(sessionID, enforced.content);
+        if (enforced.nudge) console.info(`[clm-context] ${enforced.nudge}`);
       } catch (err) {
         console.error("[clm-context] chat.message mirror failed", err);
       }
@@ -132,7 +138,10 @@ export const ClmContextPlugin: Plugin = async () => {
       }
     },
 
-    // Replace the built-in summarizer prompt with a verbatim-replay directive.
+    // Replace the built-in summarizer prompt. When the mirror is within budget,
+    // embed it verbatim (bounded mode). When unbounded, instruct the summarizer
+    // to condense into a fresh bounded context (re-seed mode) — the summary is
+    // then fetched on session.compacted and written back to the mirror file.
     // dcp does not use this hook, and built-in compaction still runs its hidden
     // summarizer agent — see the README coexistence contract.
     "experimental.session.compacting": async (input, output) => {
@@ -141,18 +150,49 @@ export const ClmContextPlugin: Plugin = async () => {
         if (!sessionID) return;
         const current = read(sessionID);
         if (!current.trim()) return;
-        output.prompt = buildCompactionPrompt(current, budget);
+        const enforced = enforceBudget(current, budget);
+        if (enforced.tokens <= budget) {
+          output.prompt = buildCompactionPrompt(enforced.content, budget);
+        } else {
+          output.prompt = buildCompactionPrompt(undefined, budget);
+        }
       } catch (err) {
         console.error("[clm-context] compacting hook failed", err);
       }
     },
 
-    event: async ({ event }) => {
+    event: async ({ event, client }) => {
       try {
-        const e = event as { type?: string; properties?: { sessionID?: string } };
+        const e = event as {
+          type?: string;
+          properties?: { sessionID?: string; part?: { id?: string; type?: string; text?: string; time?: { end?: number } } };
+        };
+        const sid = e.properties?.sessionID;
         if (e?.type === "session.deleted") {
-          const sid = e.properties?.sessionID;
           if (sid) injected.delete(sid);
+          return;
+        }
+        if (e?.type === "session.compacted") {
+          if (!sid || !client) return;
+          const messages = await client.session.messages({ sessionID: sid });
+          const summary = messages.find((m) => m.info?.summary === true);
+          if (!summary) return;
+          const text = textFromParts(summary.parts);
+          if (text.trim()) write(sid, text);
+          return;
+        }
+        if (e?.type === "message.part.updated") {
+          if (!sid) return;
+          const part = e.properties?.part;
+          if (!part || part.type !== "text" || part.time?.end === undefined) return;
+          if (!part.text?.trim()) return;
+          const key = `${sid}:part:${part.id}`;
+          if (mirrored.has(key)) return;
+          mirrored.add(key);
+          const appended = appendTurn(read(sid), "assistant", part.text);
+          const enforced = enforceBudget(appended, budget);
+          write(sid, enforced.content);
+          if (enforced.nudge) console.info(`[clm-context] ${enforced.nudge}`);
         }
       } catch (err) {
         console.error("[clm-context] event handler failed", err);

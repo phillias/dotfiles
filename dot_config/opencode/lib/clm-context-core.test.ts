@@ -6,6 +6,7 @@ import {
   appendTurn,
   buildCompactionPrompt,
   computeBudget,
+  enforceBudget,
   estimateTokens,
   evaluateEdit,
   liveContextFileName,
@@ -206,5 +207,63 @@ describe("buildCompactionPrompt", () => {
     expect(prompt).toContain("verbatim");
     expect(prompt).toContain("100-token budget");
     expect(prompt).toContain("Do NOT read or use the conversation history");
+  });
+
+  test("re-seed mode instructs condensation without embedding the file", () => {
+    const prompt = buildCompactionPrompt(undefined, 500);
+    expect(prompt).not.toContain("verbatim");
+    expect(prompt).toContain("@@TURN");
+    expect(prompt).toContain("@@END");
+    expect(prompt).toContain("500-token budget");
+    expect(prompt).toContain("Condense");
+  });
+});
+
+describe("enforceBudget", () => {
+  test("returns content unchanged when within budget", () => {
+    const text = `${TURN_OPEN} user 1\nhi\n${TURN_CLOSE}`;
+    const result = enforceBudget(text, 1000);
+    expect(result.trimmed).toBe(false);
+    expect(result.removed).toBe(0);
+    expect(result.nudge).toBe("");
+    const parsed = parseLiveContext(result.content);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.messages).toEqual([{ role: "user", content: "hi" }]);
+  });
+
+  test("rolls back newest turns when over budget", () => {
+    const big = "x".repeat(4000);
+    let text = "";
+    for (let i = 0; i < 5; i++) {
+      text = appendTurn(text, "user", `${big} turn ${i}`);
+    }
+    const result = enforceBudget(text, 1000, 2048);
+    expect(result.trimmed).toBe(true);
+    expect(result.removed).toBeGreaterThan(0);
+    expect(result.nudge).toContain("budget");
+    expect(result.tokens).toBeLessThanOrEqual(1000 - 2048 + 4000);
+    const parsed = parseLiveContext(result.content);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.messages.length).toBeLessThan(5);
+      expect(parsed.messages.length).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  test("never removes the last remaining turn", () => {
+    const huge = "x".repeat(10000);
+    const text = `${TURN_OPEN} user 1\n${huge}\n${TURN_CLOSE}`;
+    const result = enforceBudget(text, 100, 2048);
+    expect(result.removed).toBe(0);
+    const parsed = parseLiveContext(result.content);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.messages.length).toBe(1);
+  });
+
+  test("empty input returns empty result", () => {
+    const result = enforceBudget("", 1000);
+    expect(result.trimmed).toBe(false);
+    expect(result.removed).toBe(0);
+    expect(result.tokens).toBe(0);
   });
 });

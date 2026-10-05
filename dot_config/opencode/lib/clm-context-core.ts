@@ -64,6 +64,19 @@ export interface ClmConfig {
   budget_tokens?: number;
 }
 
+export interface ClmEnforceResult {
+  /** The (possibly trimmed) serialized file content. */
+  content: string;
+  /** True when turns were rolled back to fit the budget. */
+  trimmed: boolean;
+  /** Number of turns removed. */
+  removed: number;
+  /** One-line nudge for the model when trimmed; empty otherwise. */
+  nudge: string;
+  /** Token count after enforcement. */
+  tokens: number;
+}
+
 /** Opening marker of a context block: `@@TURN <role> <n>`. */
 export const TURN_OPEN = "@@TURN";
 /** Closing marker of a context block. */
@@ -176,6 +189,39 @@ export function appendTurn(text: string, role: ClmRole, content: string): string
 }
 
 /**
+ * Enforce the token budget on the live-context file. When the file exceeds
+ * the budget, roll back newest turns until at least `reserve` tokens are free
+ * (or only one turn remains). Returns the trimmed content plus a nudge message
+ * telling the model to condense. Bounded: never removes the last remaining
+ * turn, so the file always has at least one block.
+ */
+export function enforceBudget(
+  text: string,
+  budget: number = DEFAULT_BUDGET_TOKENS,
+  reserve: number = 2048,
+): ClmEnforceResult {
+  const messages = safeParse(text);
+  if (messages.length === 0) {
+    return { content: text, trimmed: false, removed: 0, nudge: "", tokens: 0 };
+  }
+  let current = messages.slice();
+  let removed = 0;
+  while (current.length > 1) {
+    const tokens = estimateTokens(current.map((m) => m.content).join("\n"));
+    if (tokens <= budget - reserve) break;
+    current.pop();
+    removed++;
+  }
+  const tokens = estimateTokens(current.map((m) => m.content).join("\n"));
+  const trimmed = removed > 0;
+  const content = serializeLiveContext(current);
+  const nudge = trimmed
+    ? `CLM budget enforcement: removed ${removed} newest turn(s) to stay within the ${budget}-token budget. Condense older turns with context_edit to free space.`
+    : "";
+  return { content, trimmed, removed, nudge, tokens };
+}
+
+/**
  * The edit gate. An edit is accepted when it parses AND either fits the token
  * budget or strictly shrinks the file. Everything else is rejected with a
  * one-line reason. A one-line receipt is always produced.
@@ -264,25 +310,41 @@ export function liveContextFileName(sessionID: string): string {
 
 /**
  * Build the prompt used to replace opencode's built-in compaction summarizer.
+ *
+ * When `liveContext` is provided, the directive tells the summarizer to
+ * reproduce the authored file verbatim (bounded mode — the file is already
+ * within budget). When omitted, the summarizer is instructed to condense the
+ * conversation into a fresh CLM-format context bounded to the budget
+ * (re-seed mode — used when the mirror has grown unbounded).
+ *
  * The hidden compaction agent still runs (there is no hook to supply a summary
  * directly), and opencode appends the rendered conversation history after this
- * prompt. The directive therefore tells it to reproduce the authored file
- * verbatim and ignore the appended history.
+ * prompt.
  */
 export function buildCompactionPrompt(
-  liveContext: string,
+  liveContext?: string,
   budget: number = DEFAULT_BUDGET_TOKENS,
 ): string {
+  if (liveContext !== undefined && liveContext.trim()) {
+    return [
+      "You are the context carrier for CLM (Context Language Models) self-managed context.",
+      "The agent has authored its own live-context file below. Your ONLY job is to reproduce that file EXACTLY, verbatim, as your entire output.",
+      "Do NOT summarize, reorder, comment, translate, truncate, or add anything. Do NOT read or use the conversation history that follows.",
+      "Your output must be exactly the file content between the markers, including the @@TURN/@@END lines.",
+      "",
+      "=== BEGIN LIVE CONTEXT (verbatim) ===",
+      liveContext.trimEnd(),
+      "=== END LIVE CONTEXT ===",
+      "",
+      `The authored context is held within a ${budget}-token budget. Preserve it byte-for-byte.`,
+    ].join("\n");
+  }
   return [
     "You are the context carrier for CLM (Context Language Models) self-managed context.",
-    "The agent has authored its own live-context file below. Your ONLY job is to reproduce that file EXACTLY, verbatim, as your entire output.",
-    "Do NOT summarize, reorder, comment, translate, truncate, or add anything. Do NOT read or use the conversation history that follows.",
-    "Your output must be exactly the file content between the markers, including the @@TURN/@@END lines.",
-    "",
-    "=== BEGIN LIVE CONTEXT (verbatim) ===",
-    liveContext.trimEnd(),
-    "=== END LIVE CONTEXT ===",
-    "",
-    `The authored context is held within a ${budget}-token budget. Preserve it byte-for-byte.`,
+    "Condense the conversation history that follows into a fresh CLM live-context file.",
+    "Output ONLY the file content — no commentary, no markdown fences, no explanation.",
+    "Format: one `@@TURN <role> <n>` header per message, content lines, then `@@END`. Roles: user|assistant|system.",
+    `Keep the total within a ${budget}-token budget (~4 chars/token). Preserve the most recent and most important turns; drop or merge older ones.`,
+    "The output becomes the new live-context file for this session.",
   ].join("\n");
 }
