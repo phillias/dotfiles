@@ -103,13 +103,27 @@ export function computeBudget(messages: ClmMessage[]): ClmBudget {
   return { tokens: estimateTokens(joined), blocks: messages.length, chars };
 }
 
+const ESCAPE = "\\";
+
+function escapeContentLine(line: string): string {
+  if (line.trim() === TURN_CLOSE || line.startsWith(ESCAPE)) return ESCAPE + line;
+  return line;
+}
+
+function unescapeContentLine(line: string): string {
+  if (!line.startsWith(ESCAPE)) return line;
+  const rest = line.slice(1);
+  if (rest.trim() === TURN_CLOSE || rest.startsWith(ESCAPE)) return rest;
+  return line;
+}
+
 /** Render messages into the live-context file format. */
 export function serializeLiveContext(messages: ClmMessage[]): string {
   const parts: string[] = [];
   for (let i = 0; i < messages.length; i++) {
     const m = messages[i];
     parts.push(`${TURN_OPEN} ${m.role} ${i + 1}`);
-    parts.push(m.content);
+    parts.push(m.content.split("\n").map(escapeContentLine).join("\n"));
     parts.push(TURN_CLOSE);
     parts.push("");
   }
@@ -120,9 +134,10 @@ export function serializeLiveContext(messages: ClmMessage[]): string {
  * Parse the live-context file back into a well-formed message structure.
  *
  * Format: one `@@TURN <role> <n>` header, arbitrary content lines, then
- * `@@END`. Blank lines and `#` comments are allowed outside blocks. Content is
- * taken verbatim; a `@@END` line inside content terminates the block, so content
- * must not contain a line equal to `@@END`.
+ * `@@END`. Blank lines and `#` comments are allowed outside blocks. Content
+ * lines that would otherwise be read as a terminator (or that start with the
+ * escape character) are escaped with a leading backslash on write and reversed
+ * here, so any turn text round-trips without terminating the block early.
  */
 export function parseLiveContext(text: string): ClmParseResult {
   const lines = text.split("\n");
@@ -159,7 +174,7 @@ export function parseLiveContext(text: string): ClmParseResult {
         i++;
         break;
       }
-      content.push(lines[i]);
+      content.push(unescapeContentLine(lines[i]));
       i++;
     }
     if (!closed) {

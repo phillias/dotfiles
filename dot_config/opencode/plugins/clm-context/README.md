@@ -27,8 +27,10 @@ mechanics.
    @@END
    ```
 
-   Blank lines and `#` comments are allowed outside blocks. Content must not
-   contain a line equal to `@@END`.
+   Blank lines and `#` comments are allowed outside blocks. A content line that
+   would otherwise be read as a terminator (or that starts with `\`) is escaped
+   with a leading backslash on write and unescaped on read, so any turn text
+   round-trips verbatim.
 
 2. **`context_edit` tool (model-facing).** `action: read` returns the file;
    `action: replace` supplies the full new file content. On replace the harness

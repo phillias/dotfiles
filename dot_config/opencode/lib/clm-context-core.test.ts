@@ -42,6 +42,19 @@ describe("serialize / parse round trip", () => {
     if (parsed.ok) expect(parsed.messages).toEqual(messages);
   });
 
+  test("round trips content containing the end marker", () => {
+    const messages = [
+      { role: "user" as const, content: "before\n@@END\nafter" },
+      { role: "assistant" as const, content: "  @@END" },
+      { role: "system" as const, content: "\\@@END" },
+      { role: "user" as const, content: "backslash \\ then text" },
+      { role: "assistant" as const, content: "@@TURN user 99\nstill content" },
+    ];
+    const parsed = parseLiveContext(serializeLiveContext(messages));
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.messages).toEqual(messages);
+  });
+
   test("empty input parses to an empty context", () => {
     const parsed = parseLiveContext("");
     expect(parsed.ok).toBe(true);
@@ -146,6 +159,19 @@ describe("appendTurn", () => {
       expect(parsed.messages).toEqual([
         { role: "user", content: "hi" },
         { role: "assistant", content: "hello" },
+      ]);
+    }
+  });
+
+  test("preserves prior turns when new content contains the end marker", () => {
+    const first = appendTurn("", "user", "line1\n@@END\nline2");
+    const second = appendTurn(first, "assistant", "done");
+    const parsed = parseLiveContext(second);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.messages).toEqual([
+        { role: "user", content: "line1\n@@END\nline2" },
+        { role: "assistant", content: "done" },
       ]);
     }
   });
