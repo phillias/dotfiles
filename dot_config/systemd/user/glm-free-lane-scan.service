@@ -1,0 +1,12 @@
+[Unit]
+# Companion to the provider-catalog skill (dotfiles repo). Optional ntfy
+# credentials live in ~/.config/opencode/glm-scan.ntfy.env
+# (NTFY_URL=... NTFY_TOKEN=..., KEY=VALUE lines, user-readable only);
+# without it the scan is silent except for journald output.
+Description=Daily free-GLM lane scan (provider-catalog companion)
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+SuccessExitStatus=1
+ExecStart=%h/.config/opencode/scripts/glm-free-lane-scan.sh
