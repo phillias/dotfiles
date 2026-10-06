@@ -22,15 +22,24 @@
   // GLOBAL LADDER — firstmate & secondmate main sessions (agent=undefined),
   // and the deduped tail of every non-no_global_tail chain.
   // Two-stage architecture:
-  // - Stage 0: opencode-go subsidized pool (session-gated, direct client only)
-  // - Stage 1: CF AI Gateway CfAiGw/dynamic/TUI route (free → subsidized → PAYG ladder)
+  // - Stage 0: zen + opencode-go direct lanes (in-app identity passes both gates)
+  // - Stage 1: CF AI Gateway CfAiGw/dynamic/TUI route (NIM free GLM head →
+  //   GOAT/PGS GLM → openrouter PAYG; zen pulled out 2026-10-05)
   // - Stage 2: Vercel AI Gateway fallback route
   "fallback_models": [
-    // STAGE 0: opencode-go subsidized pool (session-gated fallback)
-    // GLM first (matches TUI route budget preference), deepseek tail
-    "opencode-go/longcat-2.5-preview-free",
+    // STAGE 0 (2026-10-05, captain-ordered re-home of the zen models pulled out
+    // of CfAiGw/dynamic/TUI — route-forwarded requests lose the in-app identity
+    // and hit 403 FreeTierError). In-app reality, live-verified 2026-10-06:
+    // zen has NO free glm tier (glm-5.2:free = "Model is unavailable"), and
+    // paid glm-5.2 / glm-5.3-flash server-error in-app — of the paid GLM trio
+    // only glm-5.1 serves in-app (all three serve on the gateway-token route
+    // path, which this chain cannot use). The only real free-GLM lane is
+    // openrouter z-ai/glm-5.2:free (not wired here — captain call).
+    // longcat-2.5-preview-free dropped (captain 2026-10-05).
+    "opencode-zen/glm-5.1",
     "opencode-go/glm-5.1",
     "opencode-go/deepseek-v4-flash",
+    "opencode-zen/mimo-v2.5-free",
 
     // STAGE 1: Gateway dynamic route (cascading GLM ladder)
     // Route handles free → subsidized → PAYG internally

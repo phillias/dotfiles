@@ -720,12 +720,22 @@ The zen FREE tier is locked to the OpenCode client identity; paid zen is open BY
   the route, opencode included (unverified by forced failover — don't
   force). pi cannot pass the gate at all (not an opencode client) — pi
   keeps zen PAID lanes only.
-- **Lock scope on current routes (2026-10-05):** dynamic/TUI rung 3
-  `opencode-zen/mimo-v2.5-free` (free, locked), dynamic/pr-gate rung 2
-  `zen/nemotron-3-ultra-free` (free, locked), dynamic/test's only rung
-  `zen/nemotron-3-ultra-free` — candidates for removal into harness
-  configs. Paid zen route rungs (TUI `glm-5.1`/`glm-5.2`/`glm-5.3-flash`,
-  pr-reviewer `glm-5.2`, vision `gemini-3.5-flash`) are curl-open and stay.
+- **Lock scope on current routes (updated 2026-10-05 after captain-ordered
+  removals):** dynamic/TUI no longer carries ANY zen element (v b10b4878's
+  mimo-v2.5-free + glm rungs removed; new v 9e1b829d) and dynamic/pr-gate's
+  `zen/nemotron-3-ultra-free` rung is gone (new v b7002724, GOAT/PGS GLM
+  head). The removed zen models were re-homed to opencode's own fallback
+  config stage 0 (in-app identity passes the gate). Remaining zen route
+  nodes: pr-reviewer tail `glm-5.2` and vision `gemini-3.5-flash` (PAID,
+  curl-open — lock does not apply) and dynamic/test's only rung
+  `zen/nemotron-3-ultra-free` (free, locked — retirement candidate).
+- **Route-adjacent provider findings (2026-10-06):** `custom-zai-coding`
+  provider path 404s at the gateway (unusable as a route element until
+  repaired); GOAT (commandcode) and PGS (phoenixgrove) subscriptions
+  reported insufficient credits on this date (volatile — live truth is the
+  vendor dashboard / quota-axi, not this file). In-app zen also serves only
+  `glm-5.1` of the paid GLM trio — `glm-5.2`/`glm-5.3-flash` server-error
+  in-app while serving fine on the gateway-token path.
 
 ## Ling (InclusionAI) evaluation (2026-10-05)
 
