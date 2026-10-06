@@ -24,8 +24,9 @@ Recent structural changes:
   subscriptions report insufficient credits — the GLM head rungs currently
   400-fall-through to the free NIM rungs (see §Free lanes). The `zai-coding`
   provider path 404s at the gateway (broken as a route element until its
-  provider config is repaired). `dynamic/test` still carries a single locked
-  zen rung (retirement candidate).
+  provider config is repaired). `dynamic/test` was retired 2026-10-06
+  (captain order — its single rung was a locked zen free model, 403 for
+  every route consumer).
 
 ## How to read the flowcharts
 
@@ -139,9 +140,9 @@ flowchart LR
 ```
 
 - `dynamic/cursor`: registered, **empty ladder** — no model elements yet.
-- `dynamic/test`: single locked zen rung
-  (`opencode-zen/nemotron-3-ultra-free`) — retirement candidate (free-tier
-  lock makes it 403 for every route consumer).
+- `dynamic/test`: RETIRED 2026-10-06 (deleted from the gateway by captain
+  order — its only rung was a locked zen free model, dead for route
+  consumers).
 
 ## Vercel AI Gateway virtual models
 

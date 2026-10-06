@@ -727,8 +727,9 @@ The zen FREE tier is locked to the OpenCode client identity; paid zen is open BY
   head). The removed zen models were re-homed to opencode's own fallback
   config stage 0 (in-app identity passes the gate). Remaining zen route
   nodes: pr-reviewer tail `glm-5.2` and vision `gemini-3.5-flash` (PAID,
-  curl-open — lock does not apply) and dynamic/test's only rung
-  `zen/nemotron-3-ultra-free` (free, locked — retirement candidate).
+  curl-open — lock does not apply). dynamic/test was deleted from the
+  gateway 2026-10-06 (captain order; its only rung was locked
+  `zen/nemotron-3-ultra-free`).
 - **Route-adjacent provider findings (2026-10-06):** `custom-zai-coding`
   provider path 404s at the gateway (unusable as a route element until
   repaired); GOAT (commandcode) and PGS (phoenixgrove) subscriptions
