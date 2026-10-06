@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily free-GLM lane scan (provider-catalog companion)
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=45m
+
+[Install]
+WantedBy=timers.target
