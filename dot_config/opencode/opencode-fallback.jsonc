@@ -33,8 +33,13 @@
     // zen has NO free glm tier (glm-5.2:free = "Model is unavailable"), and
     // paid glm-5.2 / glm-5.3-flash server-error in-app — of the paid GLM trio
     // only glm-5.1 serves in-app (all three serve on the gateway-token route
-    // path, which this chain cannot use). The only real free-GLM lane is
-    // openrouter z-ai/glm-5.2:free (not wired here — captain call).
+    // path, which this chain cannot use). Free GLM: openrouter z-ai/glm-5.2:free
+    // was wired at head per captain 2026-10-06, then died upstream the same day
+    // (probe: "This model is unavailable for free. The paid version is
+    // available now - use this slug instead: z-ai/glm-5.2"; the live models
+    // list shows NO free glm lanes left) — pulled: a dead head is a wasted or
+    // fatal first hop (404 is not in retry_on_errors). Free GLM now leads
+    // the chain at stage 1 (NIM glm-5.3 TUI head).
     // longcat-2.5-preview-free dropped (captain 2026-10-05).
     "opencode-zen/glm-5.1",
     "opencode-go/glm-5.1",

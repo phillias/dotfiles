@@ -34,14 +34,14 @@ pi-internal cache — configuration lives in the two named files.
 
 ```mermaid
 flowchart LR
-    step["no-mistakes step<br/>(test/document/lint/rebase/PR/CI)"] --> c1["openrouter-direct<br/>z-ai/glm-5.2:free<br/>captain head 2026-10-04"] --> c2["opencode-go-gw<br/>deepseek-v4-flash<br/>proven-JSON safety net"] --> c3["CfAiGw/dynamic/pr-gate<br/>(12-rung ladder:<br/>GOAT/PGS GLM head →<br/>NIM nemotron → tail)"] --> c4["vercel/router/pr-gate<br/>(vmc/pr-gate 7-rung)"] --> done[done]
+    step["no-mistakes step<br/>(test/document/lint/rebase/PR/CI)"] --> c1["openrouter-direct<br/>z-ai/glm-5.2:free<br/>captain head 2026-10-04<br/>lane DEAD 2026-10-06 (self-heals to rung 2)"] --> c2["opencode-go-gw<br/>deepseek-v4-flash<br/>proven-JSON safety net"] --> c3["CfAiGw/dynamic/pr-gate<br/>(12-rung ladder:<br/>GOAT/PGS GLM head →<br/>NIM nemotron → tail)"] --> c4["vercel/router/pr-gate<br/>(vmc/pr-gate 7-rung)"] --> done[done]
 ```
 
 ### review chain (reviewer/fixer steps)
 
 ```mermaid
 flowchart LR
-    rev["no-mistakes review step"] --> v1["openrouter-direct<br/>z-ai/glm-5.2:free"] --> v2["opencode-go-gw<br/>deepseek-v4-flash"] --> v3["CfAiGw/dynamic/pr-reviewer<br/>(5-rung: NIM glm-5.3 →<br/>NIM deepseek-v4.1 → luna →<br/>nemotron:free → zen glm-5.2 PAID)"] --> v4["vercel/router/pr-reviewer<br/>(vmc/pr-reviewer 4-rung)"] --> v5["openrouter-direct<br/>z-ai/glm-5.2 PAYG<br/>terminal rung (captain 2026-10-04)"] --> done[done]
+    rev["no-mistakes review step"] --> v1["openrouter-direct<br/>z-ai/glm-5.2:free<br/>DEAD 2026-10-06 (self-heals)"] --> v2["opencode-go-gw<br/>deepseek-v4-flash"] --> v3["CfAiGw/dynamic/pr-reviewer<br/>(5-rung: NIM glm-5.3 →<br/>NIM deepseek-v4.1 → luna →<br/>nemotron:free → zen glm-5.2 PAID)"] --> v4["vercel/router/pr-reviewer<br/>(vmc/pr-reviewer 4-rung)"] --> v5["openrouter-direct<br/>z-ai/glm-5.2 PAYG<br/>terminal rung (captain 2026-10-04)"] --> done[done]
 ```
 
 ### default chain (pi's own sessions)
@@ -96,7 +96,7 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 |---|---|---|
 | `opencode-go-gw/deepseek-v4-flash` | review chain head (reviewer/fixer) | CLEAN — strict JSON all day, no stalls; reviews 36s–434s. Later stalled twice as TEST agent (51m silent at 60m; quiet 6m at 12m budget) — reliable JSON, can go quiet on long test drives. Now rung-2 on both chains. |
 | `opencode-go-gw/longcat-2.5-preview-free` | gate chain head (test steps) | BROKEN — both JSON failure modes + 51m silent stalls ×3 in one day; removed from the gate chain (dotfiles PR #392). **Light work / scout-class ONLY** (captain 2026-10-04) — never a JSON-bearing pipeline role again. Also dropped from opencode's fallback stage 0 (captain 2026-10-05). |
-| `openrouter-direct/z-ai/glm-5.2:free` | gate + review chain HEAD (captain directive 2026-10-04) | UNPROVEN on this pipeline — free OpenRouter glm variant first for every JSON-bearing stage; deepseek rung-2 is the safety net (429/403 invocations fall through; silent stalls do NOT). Discipline under observation — report first JSON failure or stall pattern. PAYG `z-ai/glm-5.2` stays the review chain's terminal rung. |
+| `openrouter-direct/z-ai/glm-5.2:free` | gate + review chain HEAD (captain directive 2026-10-04) | UNPROVEN on this pipeline — free OpenRouter glm variant first for every JSON-bearing stage; deepseek rung-2 is the safety net (429/403 invocations fall through; silent stalls do NOT). Discipline under observation — report first JSON failure or stall pattern. PAYG `z-ai/glm-5.2` stays the review chain's terminal rung. **2026-10-06: free lane DEAD upstream ("unavailable for free, use paid slug"); live gate probe self-healed to rung-2 OK — head re-point pending captain.** |
 | GOAT/PGS GLM (commandcode zai-org/GLM-5.2, phoenixgrove glm-5.3-flash/5.2) | pr-gate route head (captain order 2026-10-05) | PENDING — subscriptions reported insufficient credits 2026-10-06; route walks through to free NIM nemotron until topped up. GLM fit rationale: reasoning-capable, JSON-bearing (same family as the captain's chosen gate heads), subscription utility instead of rate-capped free NIM. |
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)

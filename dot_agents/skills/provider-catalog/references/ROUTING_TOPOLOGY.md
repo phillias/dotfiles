@@ -184,7 +184,7 @@ flowchart TD
     pi -->|"agent_config.pi.model:<br/>fallback/gate — generic + test steps"| GATE["~/.pi/fallback-chains.json gate"]
     pi -->|"review_agents.reviewer.model:<br/>fallback/review — reviewer/fixer only"| REV["~/.pi/fallback-chains.json review"]
     pi -->|"~/.pi/agent/settings.json<br/>defaultModel: fallback/default"| DEF["~/.pi/fallback-chains.json default"]
-    GATE -->|"rung 1"| orglm["openrouter-direct<br/>z-ai/glm-5.2:free"]
+    GATE -->|"rung 1"| orglm["openrouter-direct<br/>z-ai/glm-5.2:free<br/>DEAD 2026-10-06 — hops to rung 2"]
     GATE -->|"rung 2"| ogw["opencode-go-gw<br/>deepseek-v4-flash"]
     GATE -->|"rung 3"| pg["CfAiGw/dynamic/pr-gate<br/>(ladder above)"]
     GATE -->|"rung 4"| vpg["vercel/router/pr-gate<br/>(ladder above)"]
@@ -214,7 +214,7 @@ Live values: run `quota-axi`. Dated observations below are snapshots, not state.
 | commandcode (GOAT) | individual-goat subscription | — | **insufficient credits 2026-10-06** — route rungs 400-fall-through until topped up |
 | phoenixgrove (PGS) | PGS subscription | — | **insufficient_quota 2026-10-06** — same fall-through behavior |
 | zai-coding | Z.AI Coding Plan Lite | — | provider path 404s at the gateway (2026-10-06) — unusable as a route element until repaired |
-| openrouter | credit balance + :free lanes | nemotron-3-super-120b-a12b:free, nemotron-3-ultra-550b:free, z-ai/glm-5.2:free (direct) | balance ~6% (2026-09-27) |
+| openrouter | credit balance + :free lanes | nemotron-3-super-120b-a12b:free, nemotron-3-ultra-550b:free, z-ai/glm-5.2:free (direct; lane DEAD 2026-10-06 — paid slug only) | balance ~6% (2026-09-27) |
 | google-ai-studio | $5 min → flash pricing | gemini-2.5/3.8-flash | vision/pr-gate/vision tails |
 
 Model status counts in D1: 50 unknown · 1 degraded (mimo) · 1 quarantined
