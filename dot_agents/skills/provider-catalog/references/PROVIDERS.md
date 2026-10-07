@@ -1213,9 +1213,10 @@ tiers, compliance, and per-provider options.
 | Provider options | Per-provider AI SDK options | Merges per option |
 | Observability tags | Tags for spend attribution | Virtual model wins |
 
-**Usage:** Call `vmc/<slug>` as the model string in any API surface (AI SDK,
-Chat Completions, Responses, Anthropic Messages). Example: `"model": "vmc/tui"`
-in a chat completions request routes through the virtual model's configuration.
+**Usage:** Call the virtual model's callable name as the model string in any API
+surface (AI SDK, Chat Completions, Responses, Anthropic Messages); the callable
+prefix depends on the model's kind — see the `vercel-ai-gateway` skill. Example:
+`"model": "router/tui"` for the router-kind `tui`.
 
 **Routing rules** (separate from virtual models): Team-wide model rewrites and
 denies, managed via REST API (`GET/POST/PATCH/DELETE /v1/ai-gateway/rules`) or
