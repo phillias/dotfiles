@@ -148,7 +148,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    vt0["vmc/tui<br/>(callable vmc/tui)"] --> vt1["alibaba/qwen3.7-flash"] --> vt2["deepseek/deepseek-v4-flash-0731"] --> vt3["zai/glm-5.3-flash"] --> vt4["openai/gpt-5-nano"] --> vt5["google/gemini-2.5-flash-lite"] --> vt6["openai/gpt-4o-mini"] --> done
+    vt0["vmc/tui<br/>(callable router/tui)"] --> vt1["alibaba/qwen3.7-flash"] --> vt2["deepseek/deepseek-v4-flash-0731"] --> vt3["zai/glm-5.3-flash"] --> vt4["openai/gpt-5-nano"] --> vt5["google/gemini-2.5-flash-lite"] --> vt6["openai/gpt-4o-mini"] --> done
 ```
 
 ```mermaid
