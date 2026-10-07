@@ -1,0 +1,209 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@inquirer/editor": {
+      "name": "@inquirer/editor",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "external-editor"
+      ],
+      "effects": [
+        "@inquirer/prompts"
+      ],
+      "range": "<=4.2.15",
+      "nodes": [
+        "node_modules/@inquirer/editor"
+      ],
+      "fixAvailable": {
+        "name": "composio-core",
+        "version": "0.4.8",
+        "isSemVerMajor": true
+      }
+    },
+    "@inquirer/prompts": {
+      "name": "@inquirer/prompts",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@inquirer/editor"
+      ],
+      "effects": [
+        "inquirer"
+      ],
+      "range": "<=6.0.1",
+      "nodes": [
+        "node_modules/@inquirer/prompts"
+      ],
+      "fixAvailable": {
+        "name": "composio-core",
+        "version": "0.4.8",
+        "isSemVerMajor": true
+      }
+    },
+    "composio-core": {
+      "name": "composio-core",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "inquirer",
+        "uuid"
+      ],
+      "effects": [],
+      "range": "0.1.1-8.1 - 0.1.1-8.5 || 0.1.6-0 - 0.3.3 || >=0.5.0-rc.1",
+      "nodes": [
+        "node_modules/composio-core"
+      ],
+      "fixAvailable": {
+        "name": "composio-core",
+        "version": "0.4.8",
+        "isSemVerMajor": true
+      }
+    },
+    "external-editor": {
+      "name": "external-editor",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "tmp"
+      ],
+      "effects": [
+        "@inquirer/editor"
+      ],
+      "range": ">=1.1.1",
+      "nodes": [
+        "node_modules/external-editor"
+      ],
+      "fixAvailable": {
+        "name": "composio-core",
+        "version": "0.4.8",
+        "isSemVerMajor": true
+      }
+    },
+    "inquirer": {
+      "name": "inquirer",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@inquirer/prompts"
+      ],
+      "effects": [
+        "composio-core"
+      ],
+      "range": "10.0.0 - 11.1.0",
+      "nodes": [
+        "node_modules/inquirer"
+      ],
+      "fixAvailable": {
+        "name": "composio-core",
+        "version": "0.4.8",
+        "isSemVerMajor": true
+      }
+    },
+    "tmp": {
+      "name": "tmp",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1109537,
+          "name": "tmp",
+          "dependency": "tmp",
+          "title": "tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter",
+          "url": "https://github.com/advisories/GHSA-52f5-9888-hmc6",
+          "severity": "low",
+          "cwe": [
+            "CWE-59"
+          ],
+          "cvss": {
+            "score": 2.5,
+            "vectorString": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:L/A:N"
+          },
+          "range": "<=0.2.3"
+        },
+        {
+          "source": 1120654,
+          "name": "tmp",
+          "dependency": "tmp",
+          "title": "tmp has Path Traversal via unsanitized prefix/postfix that enables directory escape",
+          "url": "https://github.com/advisories/GHSA-ph9p-34f9-6g65",
+          "severity": "high",
+          "cwe": [
+            "CWE-22"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": "<0.2.6"
+        }
+      ],
+      "effects": [
+        "external-editor"
+      ],
+      "range": "<=0.2.5",
+      "nodes": [
+        "node_modules/tmp"
+      ],
+      "fixAvailable": {
+        "name": "composio-core",
+        "version": "0.4.8",
+        "isSemVerMajor": true
+      }
+    },
+    "uuid": {
+      "name": "uuid",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1119441,
+          "name": "uuid",
+          "dependency": "uuid",
+          "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+          "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-787",
+            "CWE-1285"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": "<11.1.1"
+        }
+      ],
+      "effects": [
+        "composio-core"
+      ],
+      "range": "<11.1.1",
+      "nodes": [
+        "node_modules/uuid"
+      ],
+      "fixAvailable": {
+        "name": "composio-core",
+        "version": "0.4.8",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 4,
+      "moderate": 2,
+      "high": 1,
+      "critical": 0,
+      "total": 7
+    },
+    "dependencies": {
+      "prod": 92,
+      "dev": 0,
+      "optional": 0,
+      "peer": 36,
+      "peerOptional": 0,
+      "total": 127
+    }
+  }
+}

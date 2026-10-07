@@ -1,0 +1,35 @@
+# Dependabot config validation (.github/dependabot.yml)
+
+## Parsed semantic model (yaml.safe_load)
+{
+  "version": 2,
+  "updates": [
+    {
+      "package-ecosystem": "github-actions",
+      "directory": "/",
+      "schedule": {
+        "interval": "weekly"
+      },
+      "open-pull-requests-limit": 5,
+      "labels": [
+        "dependencies",
+        "ci"
+      ]
+    },
+    {
+      "package-ecosystem": "npm",
+      "directory": "/dot_agents/skills/x-research",
+      "schedule": {
+        "interval": "weekly"
+      },
+      "open-pull-requests-limit": 5,
+      "labels": [
+        "dependencies"
+      ]
+    }
+  ]
+}
+
+## Official SchemaStore dependabot-2.0.json validation
+PASS: .github/dependabot.yml validates against https://json.schemastore.org/dependabot-2.0.json
+npm entry directory /dot_agents/skills/x-research contains package.json + package-lock.json

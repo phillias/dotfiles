@@ -1,0 +1,28 @@
+# Skill runtime smoke test with overridden deps (tmp@0.2.7, uuid@11.1.1)
+
+Disposable copy: /tmp/xres-skill-live (skill source + fresh npm ci).
+
+## composio-core loads with forced uuid@11 (major bump from ^10)
+require(composio-core) OK; Composio = function ; ComposioToolSet = function
+
+## uuid public API produces valid v4 under forced version
+uuid.v4() = ae3dfa8c-3c74-4476-8abd-7412872a9d04 | validate = true
+
+## x-search.ts CLI (bun) live commands
+$ bun run x-search.ts watchlist
+Watchlist is empty. Add accounts with: watchlist add <username>
+$ bun run x-search.ts watchlist add testing-dummy
+Added @testing-dummy to watchlist.
+$ bun run x-search.ts watchlist
+Watchlist (1 accounts)
+
+  @testing-dummy (added 2026-10-07)
+$ bun run x-search.ts watchlist remove testing-dummy
+Removed @testing-dummy from watchlist.
+$ bun run x-search.ts cache clear
+Cleared 0 cached entries.
+
+## external-editor (transitive consumer of tmp) with forced tmp@0.2.7
+$ EDITOR=true node -e 'const EE=require("external-editor"); console.log(EE.edit("hello-tmp-override"))'
+external-editor.edit round-trip returned: "hello-tmp-override"
+(tmp 0.2.7 creates, writes, reads back, and cleans up the temp file for external-editor)

@@ -1,0 +1,43 @@
+# Dependency resolution evidence (tmp/uuid overrides)
+
+## Fresh install from NEW lockfile (target commit): npm ci
+$ npm ls tmp uuid os-tmpdir
+x-research@1.0.0 /tmp/xres-install-fwpTgC
+└─┬ composio-core@0.5.39
+  ├─┬ inquirer@10.2.2
+  │ └─┬ @inquirer/prompts@5.5.0
+  │   └─┬ @inquirer/editor@2.2.0
+  │     └─┬ external-editor@3.1.0
+  │       └── tmp@0.2.7 overridden
+  └── uuid@11.1.1 overridden
+
+
+Installed versions:
+  tmp = 0.2.7
+  uuid = 11.1.1
+  os-tmpdir = ABSENT (removed)
+## Fresh install from BASE lockfile (pre-change): npm ci
+$ npm ls tmp uuid
+x-research@1.0.0 /tmp/xres-install-base
+└─┬ composio-core@0.5.39
+  ├─┬ inquirer@10.2.2
+  │ └─┬ @inquirer/prompts@5.5.0
+  │   └─┬ @inquirer/editor@2.2.0
+  │     └─┬ external-editor@3.1.0
+  │       └── tmp@0.0.33
+  └── uuid@10.0.0
+
+
+## npm audit summary -- BASE lockfile
+metadata.vulnerabilities: {"info":0,"low":4,"moderate":2,"high":1,"critical":0,"total":7}
+   @inquirer/editor low
+   @inquirer/prompts low
+   composio-core moderate
+   external-editor low
+   inquirer low
+   tmp high
+   uuid moderate
+
+## npm audit summary -- NEW lockfile
+metadata.vulnerabilities: {"info":0,"low":0,"moderate":0,"high":0,"critical":0,"total":0}
+  vulnerabilities object empty: true
