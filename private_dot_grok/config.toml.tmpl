@@ -1,3 +1,10 @@
+# GUARDRAILS (2026-10-07):
+# - Default route vmc/grok → Vercel AI Gateway; dynamic/grok → CF AI Gateway
+#   (ladder in ROUTING_TOPOLOGY.md). CF handles failover internally.
+# - Dead-lane models (404) are route-FATAL; 400 insufficient-credits falls
+#   through. GOAT/PGS are subscriptions — heads fall through until renewal.
+# - See provider-catalog/references/d1/NO_MISTAKES_MODELS.md for full
+#   per-harness config inventory and chain diagrams.
 [marketplace]
 default_skills_installs_purged = true
 

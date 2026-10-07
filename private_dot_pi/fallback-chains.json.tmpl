@@ -1,0 +1,18 @@
+{{- /* GUARDRAILS (2026-10-07) — pi-fallback-provider fires on invocation failure (429/5xx/timeout) ONLY. It does NOT fire on silent mid-stream stalls, JSON parse failures, or thinking-mode adapter rejections (kunchenguid/no-mistakes#633). DO NOT put as chain heads: dead-lane models (404 route-FATAL; 400 falls through), app-locked free models (zen 403s via route hops), models that silently stall on long JSON (deepseek-v4-flash can go quiet on test; budget raises mitigate). JSON-bearing pipeline stages need JSON-disciplined models; longcat = light/scout-class ONLY. GOAT/PGS are subscriptions — heads 400-fall-through until renewal. NIM free ~40 RPM shared key — no stage-0 duplication without retiring a node. See provider-catalog/references/ROUTING_TOPOLOGY.md and references/d1/NO_MISTAKES_MODELS.md. */ -}}
+{
+  "gate": [
+    "opencode-go-gw/deepseek-v4-flash",
+    "CfAiGw/dynamic/pr-gate",
+    "vercel/router/pr-gate"
+  ],
+  "review": [
+    "opencode-go-gw/deepseek-v4-flash",
+    "CfAiGw/dynamic/pr-reviewer",
+    "vercel/router/pr-reviewer",
+    "openrouter-direct/z-ai/glm-5.2"
+  ],
+  "default": [
+    "CfAiGw/dynamic/TUI",
+    "vercel/router/tui"
+  ]
+}

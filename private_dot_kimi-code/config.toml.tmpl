@@ -1,3 +1,14 @@
+# GUARDRAILS (2026-10-07):
+# - Default tui-via-vercel → Vercel AI Gateway vmc/kimi (1M context);
+#   tui-via-cf → CF AI Gateway dynamic/kimi (200K context, ladder in
+#   ROUTING_TOPOLOGY.md). CF handles failover internally.
+# - Dead-lane models (404) are route-FATAL; 400 insufficient-credits
+#   falls through. GOAT/PGS are subscriptions — heads fall through
+#   until renewal window.
+# - KIMI_CODE_CUSTOM_HEADERS in ~/.zshenv adds cf-aig headers for
+#   direct gateway access outside this config.
+# - See provider-catalog/references/d1/NO_MISTAKES_MODELS.md for full
+#   per-harness config inventory and chain diagrams.
 default_model = "tui-via-vercel"
 
 [providers.cf-aig]

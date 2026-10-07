@@ -1,3 +1,4 @@
+{{- /* GUARDRAILS (2026-10-07) — Zen free-tier models (deepseek-v4-flash-free, nemotron-3-ultra-free, mimo-v2.5-free, fledge-alpha-free) are app-locked: 403 via route hops, serve only in-app. Never place as pi chain rungs (route-forwarded requests lose caller identity). Paid zen models (glm-5.1+ etc) serve fine via gateway. opencode-go is session-gated (never a gateway route node). NIM free models share ~40 RPM key — no duplication without retiring a node. Dead-lane models (404) are route-FATAL. See ROUTING_TOPOLOGY.md and NO_MISTAKES_MODELS.md. */ -}}
 {
   "providers": {
     "opencode-zen": {

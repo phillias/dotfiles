@@ -1,3 +1,13 @@
+# GUARDRAILS (2026-10-07):
+# - Default route is vercel-aig → gpt-5.5 (Vercel AI Gateway virtual model).
+# - [profiles.cf] uses CF AI Gateway dynamic/codex route (ladder in
+#   ROUTING_TOPOLOGY.md). CF route handles failover internally; codex
+#   profiles.cf is a fallback when Vercel is down.
+# - Dead-lane models (404) are route-FATAL; 400 insufficient-credits falls
+#   through to next rung. GOAT/PGS are subscriptions — heads fall through
+#   until renewal window.
+# - See provider-catalog/references/d1/NO_MISTAKES_MODELS.md for full
+#   per-harness config inventory and chain diagrams.
 model = "openai/gpt-5.5"
 model_provider = "vercel-aig"
 
