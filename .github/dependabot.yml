@@ -8,3 +8,11 @@ updates:
     labels:
       - dependencies
       - ci
+
+  - package-ecosystem: npm
+    directory: /dot_agents/skills/x-research
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
