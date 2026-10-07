@@ -2,3 +2,4 @@
 .chezmoi-sync.log.old
 .opencode/
 .no-mistakes/
+node_modules/
