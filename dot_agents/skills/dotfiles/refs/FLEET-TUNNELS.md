@@ -9,8 +9,8 @@ passphraseless SSH keys; no firewall changes, no public exposure.
 ## Architecture
 
 ```
-kalione opencode agent ──> localhost:14001 ──autossh──> primary55522:55522 ──> 127.0.0.1:4096 (remote serve)
-kalione opencode agent ──> localhost:14002 ──autossh──> kali:55554 ──────────> 127.0.0.1:4096 (remote serve)
+kalione opencode agent ──> localhost:14001 ──autossh──> primary55522 ──> 127.0.0.1:4096 (remote serve)
+kalione opencode agent ──> localhost:14002 ──autossh──> kali ────────────> 127.0.0.1:4096 (remote serve)
 ```
 
 Each node runs BOTH:
@@ -22,8 +22,8 @@ Each node runs BOTH:
 | Unit | Purpose |
 |---|---|
 | `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1`, EnvironmentFile reads the age-encrypted `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) |
-| `opencode-tunnel-primary55522.service` | autossh `-L 14001:127.0.0.1:4096 -p 55522 primary55522` |
-| `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 -p 55554 kali` |
+| `opencode-tunnel-primary55522.service` | autossh `-L 14001:127.0.0.1:4096 primary55522` |
+| `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 kali` |
 
 Tunnel hardening flags: `-M 0` (systemd owns restarts; no monitoring port),
 `ServerAliveInterval=15 ServerAliveCountMax=3` (dead-peer detection),
@@ -32,10 +32,10 @@ Tunnel hardening flags: `-M 0` (systemd owns restarts; no monitoring port),
 
 ## Port assignments (sequential, localhost only)
 
-| Local port | Remote node | SSH endpoint (from ~/.ssh/config) |
+| Local port | Remote node | SSH alias |
 |---|---|---|
-| 14001 | primary55522 | primary55522.phillias.cc:55522 |
-| 14002 | kali | kali.phillias.us:55554 |
+| 14001 | primary55522 | `primary55522` (rides cloudflared proxy, no -p) |
+| 14002 | kali | `kali` (rides cloudflared proxy, no -p) |
 | 14003… | future nodes | next sequential |
 
 The remote serve port is always 4096. Local ports only need per-node uniqueness.

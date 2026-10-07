@@ -11,8 +11,12 @@ RestartSec=30
 
 EnvironmentFile=%h/.config/opencode/opencode-serve.env
 IOWeight=10
+IOWriteBandwidthMax=/dev/sda 5M
+IOReadBandwidthMax=/dev/sda 10M
+# Envelope sized for the pure headless role
 CPUQuota=100%
 MemoryMax=768M
+Nice=10
 
 [Install]
 WantedBy=default.target

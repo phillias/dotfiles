@@ -10,4 +10,4 @@
 if [ -x "$HOME/.kimi-code/bin/kimi" ]; then
   exit 0
 fi
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
+curl -fsSL https://code.kimi.com/kimi-code/install.sh -o "$HOME/.kimi-code/install.sh" && bash "$HOME/.kimi-code/install.sh"

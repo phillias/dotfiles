@@ -5,7 +5,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/autossh -M 0 -N -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 14001:127.0.0.1:4096 -p 55522 primary55522
+ExecStart=/usr/bin/autossh -M 0 -N -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 14001:127.0.0.1:4096 primary55522
 Restart=on-failure
 RestartSec=5
 Environment=AUTOSSH_GATETIME=0
