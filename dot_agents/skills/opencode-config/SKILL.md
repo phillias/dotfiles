@@ -14,6 +14,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 | Skills — CE stagger dispatch, related skills | `references/SKILLS.md` |
 | OmO-era archive (Model Selection Priorities, Config File Hierarchy) | `references/ARCHIVE-OMO.md` |
 | Firstmate agent distro brief | `references/FIRSTMATE.md` |
+| Fleet serve mesh (cross-node agent communication) | `references/DESIGN.md` §9 |
 | OS dependencies (gh, bw, wrangler, sqlite, mise, ...) | `references/DEPENDENCIES.md` |
 | Model snapshot (drift baseline) | `~/.agents/skills/provider-catalog/models.snapshot.json` |
 

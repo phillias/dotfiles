@@ -43,7 +43,7 @@ chezmoi-axi diff                # show pending differences
 
 ## What are you trying to do?
 
-situations[11]{situation,go-to}:
+situations[13]{situation,go-to}:
   New config file to start tracking,Add a new file
   Edited tracked file on disk,Re-add a changed file
   File has secrets — need to encrypt,Encrypt a file
@@ -55,6 +55,8 @@ situations[11]{situation,go-to}:
   Encrypted files skipped during apply,refs/DESIGN.md — Setup & Recovery
   New machine,refs/DESIGN.md — Setup
   Broken SSH deploy key,refs/DESIGN.md — Setup & Recovery
+  Fleet opencode tunnels (cross-node agent mesh),refs/FLEET-TUNNELS.md
+  Add a fleet node or debug a tunnel,refs/FLEET-TUNNELS.md
 
 ---
 
