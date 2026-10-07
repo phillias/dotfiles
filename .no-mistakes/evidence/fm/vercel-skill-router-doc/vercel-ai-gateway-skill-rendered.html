@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>vercel-ai-gateway SKILL.md (target commit)</title>
+<style>
+ body { font: 15px/1.55 -apple-system, Segoe UI, Roboto, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color:#1b1b1b; }
+ table { border-collapse: collapse; } th,td { border:1px solid #ccc; padding:.35rem .6rem; text-align:left; }
+ code, pre { background:#f4f4f4; } pre { padding:.7rem; overflow:auto; }
+ h1,h2 { border-bottom:1px solid #eee; padding-bottom:.2rem; }
+ .note { background:#fff8e1; border-left:4px solid #f0ad4e; padding:.6rem .9rem; }
+</style></head><body>
+<div class="note">Rendered from the target commit <code>ab310f14d635970a64ec61b1432cd243525a2511</code> for
+<code>dot_agents/skills/vercel-ai-gateway/SKILL.md</code>. This is the reviewer-visible document produced by the change.</div>
+<hr />
+<p>name: vercel-ai-gateway
+description: Manage Vercel AI Gateway virtual models and routing rules via the Vercel CLI. Use when creating, listing, inspecting, editing, or removing virtual models (vmc/<slug> for alias, router/<slug> for router), when managing routing rules (rewrites/denies), when checking gateway credits/spend, or when the user mentions "vercel gateway", "virtual model", "vmc", "router", or "vercel ai gateway".</p>
+<hr />
+<h1 id="vercel-ai-gateway">Vercel AI Gateway</h1>
+<p>Manage virtual models and routing rules on the Vercel AI Gateway via the <code>vercel</code> CLI. TOON output preferred.</p>
+<h2 id="auth">Auth</h2>
+<p>Two tokens, different purposes:</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Prefix</th>
+<th>Purpose</th>
+<th>Location</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VERCEL_TOKEN</code></td>
+<td><code>vcp_</code></td>
+<td>Platform management (CLI commands)</td>
+<td><code>~/.agents/keys/&lt;profile&gt;/.vercel-token</code></td>
+</tr>
+<tr>
+<td><code>AI_GATEWAY_API_KEY</code></td>
+<td><code>vck_</code></td>
+<td>Inference (API calls)</td>
+<td><code>~/.agents/keys/default/.vercel-gateway-key</code></td>
+</tr>
+</tbody>
+</table>
+<p>Both loaded by <code>load-keys.sh</code>. Team scope: <code>phils-projects-336d7fca</code>.</p>
+<pre><code class="language-bash"># Verify management auth
+vercel whoami --token &quot;$VERCEL_TOKEN&quot;
+
+# Verify inference auth
+curl -s -H &quot;Authorization: Bearer $AI_GATEWAY_API_KEY&quot; https://ai-gateway.vercel.sh/v1/credits
+</code></pre>
+<h2 id="quick-reference">Quick Reference</h2>
+<pre><code class="language-bash"># Virtual models
+vercel ai-gateway virtual-models list --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway virtual-models inspect &lt;slug&gt; --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway virtual-models create &lt;slug&gt; --model &lt;provider/model&gt; --kind alias --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway virtual-models edit &lt;slug&gt; --config '&lt;json&gt;' --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway virtual-models rm &lt;slug&gt; --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway virtual-models restore &lt;slug&gt; --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+
+# Routing rules
+vercel ai-gateway rules list --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway rules add --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway rules edit &lt;rule-id&gt; --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+vercel ai-gateway rules remove &lt;rule-id&gt; --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+
+# Spend tracking
+curl -s -H &quot;Authorization: Bearer $AI_GATEWAY_API_KEY&quot; &quot;https://ai-gateway.vercel.sh/v1/credits&quot;
+curl -s -H &quot;Authorization: Bearer $AI_GATEWAY_API_KEY&quot; &quot;https://ai-gateway.vercel.sh/v1/report?start_date=2026-09-01&amp;end_date=2026-09-30&amp;group_by=model&quot;
+</code></pre>
+<h2 id="virtual-model-rules">Virtual Model Rules</h2>
+<ul>
+<li><strong>Slug is immutable</strong> after creation. All other settings are editable.</li>
+<li><strong>Slug format:</strong> letters, numbers, hyphens, underscores, periods only. NO slashes.</li>
+<li><strong>Callable name:</strong> depends on kind — <code>vmc/&lt;slug&gt;</code> for alias, <code>router/&lt;slug&gt;</code> for router. The prefix is automatic. Slug <code>pr-gate</code> (kind=router) → callable as <code>router/pr-gate</code>; slug <code>my-alias</code> (kind=alias) → callable as <code>vmc/my-alias</code>. Do NOT prefix slugs with <code>vmc-</code> or <code>router-</code>.</li>
+<li><strong>Kind:</strong> <code>alias</code> (single model, default) or <code>router</code> (multi-model with fallback ladders).</li>
+</ul>
+<h2 id="creating-a-virtual-model">Creating a Virtual Model</h2>
+<h3 id="simple-alias-one-model">Simple alias (one model)</h3>
+<pre><code class="language-bash">vercel ai-gateway virtual-models create my-model \
+  --model anthropic/claude-sonnet-4 \
+  --kind alias \
+  --display-name &quot;My Model&quot; \
+  --description &quot;Description here&quot; \
+  --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+</code></pre>
+<h3 id="router-with-cost-sorting-fallback-ladder">Router with cost sorting (fallback ladder)</h3>
+<pre><code class="language-bash">vercel ai-gateway virtual-models create pr-gate \
+  --model deepseek/deepseek-v4-flash \
+  --kind router \
+  --display-name &quot;pr-gate (economy CI)&quot; \
+  --description &quot;Economy ladder for no-mistakes gate&quot; \
+  --config '{&quot;sort&quot;:&quot;cost&quot;}' \
+  --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+</code></pre>
+<h3 id="router-with-explicit-provider-order">Router with explicit provider order</h3>
+<pre><code class="language-bash">vercel ai-gateway virtual-models create my-router \
+  --model anthropic/claude-sonnet-4 \
+  --kind router \
+  --config '{&quot;order&quot;:[&quot;anthropic&quot;,&quot;openai&quot;,&quot;deepseek&quot;],&quot;sort&quot;:&quot;cost&quot;}' \
+  --scope phils-projects-336d7fca --token &quot;$VERCEL_TOKEN&quot;
+</code></pre>
+<h2 id="per-model-settings-via-config-json">Per-Model Settings (via --config JSON)</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>order</code></td>
+<td><code>string[]</code></td>
+<td>Ordered provider list to try</td>
+</tr>
+<tr>
+<td><code>only</code></td>
+<td><code>string[]</code></td>
+<td>Restrict to specific providers</td>
+</tr>
+<tr>
+<td><code>models</code></td>
+<td><code>string[]</code></td>
+<td>Fallback model chain (replaces request chain)</td>
+</tr>
+<tr>
+<td><code>sort</code></td>
+<td><code>"cost"</code> | <code>"ttft"</code> | <code>"tps"</code></td>
+<td>Rank providers by cost, latency, or throughput</td>
+</tr>
+<tr>
+<td><code>serviceTier</code></td>
+<td><code>"flex"</code> | <code>"priority"</code> | <code>"fast"</code></td>
+<td>Service tier</td>
+</tr>
+<tr>
+<td><code>caching</code></td>
+<td><code>"auto"</code></td>
+<td>Prompt caching mode</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td><code>string[]</code></td>
+<td>Observability tags for spend attribution</td>
+</tr>
+</tbody>
+</table>
+<h2 id="verification">Verification</h2>
+<p>After creating or editing a virtual model, verify inference works:</p>
+<pre><code class="language-bash"># Router-kind model (current inventory is all routers):
+curl -s -X POST https://ai-gateway.vercel.sh/v1/chat/completions \
+  -H &quot;Authorization: Bearer $AI_GATEWAY_API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;model&quot;:&quot;router/&lt;slug&gt;&quot;,&quot;messages&quot;:[{&quot;role&quot;:&quot;user&quot;,&quot;content&quot;:&quot;Reply OK&quot;}],&quot;max_tokens&quot;:5}' \
+  | jq -r '.choices[0].message.content // .error.message // &quot;NO RESPONSE&quot;'
+
+# Alias-kind model:
+#   use &quot;vmc/&lt;slug&gt;&quot; instead of &quot;router/&lt;slug&gt;&quot;
+</code></pre>
+<p>Expected: model content (e.g. "OK") or a recognizable model response. If "Model not found", check slug spelling and that the callable prefix matches the kind: <code>router/&lt;slug&gt;</code> for router-kind, <code>vmc/&lt;slug&gt;</code> for alias-kind.</p>
+<h2 id="current-inventory">Current Inventory</h2>
+<table>
+<thead>
+<tr>
+<th>Slug</th>
+<th>Kind</th>
+<th>Target/Head</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pr-gate</code></td>
+<td>router</td>
+<td>deepseek-v4-flash</td>
+<td>Economy CI gate (no-mistakes)</td>
+</tr>
+<tr>
+<td><code>pr-reviewer</code></td>
+<td>router</td>
+<td>deepseek-v4-flash → gpt-5.6-luna</td>
+<td>Review second-set-of-eyes</td>
+</tr>
+<tr>
+<td><code>tui</code></td>
+<td>router</td>
+<td>qwen3.7-flash</td>
+<td>Daily driver</td>
+</tr>
+<tr>
+<td><code>high</code></td>
+<td>router</td>
+<td>glm-5.3</td>
+<td>High reasoning</td>
+</tr>
+<tr>
+<td><code>claude</code></td>
+<td>router</td>
+<td>claude-sonnet-5</td>
+<td>Claude family</td>
+</tr>
+<tr>
+<td><code>codex</code></td>
+<td>router</td>
+<td>gpt-5.6-luna</td>
+<td>OpenAI family</td>
+</tr>
+<tr>
+<td><code>grok</code></td>
+<td>router</td>
+<td>grok-4.1-fast-reasoning</td>
+<td>xAI family</td>
+</tr>
+<tr>
+<td><code>kimi</code></td>
+<td>router</td>
+<td>kimi-k3</td>
+<td>Kimi family</td>
+</tr>
+<tr>
+<td><code>muse</code></td>
+<td>router</td>
+<td>muse-spark-1.2</td>
+<td>Meta family</td>
+</tr>
+</tbody>
+</table>
+<h2 id="gotchas">Gotchas</h2>
+<ul>
+<li><strong>Head-node poisoning:</strong> a provider returning HTTP 200 with an error JSON body is treated as success — fallback never fires. Put suspect providers LAST in the order.</li>
+<li><strong>Slug vs callable:</strong> the callable prefix depends on kind — <code>vmc/&lt;slug&gt;</code> for alias, <code>router/&lt;slug&gt;</code> for router. A router slug <code>pr-gate</code> is callable as <code>router/pr-gate</code> (NOT <code>vmc/pr-gate</code>). An alias slug <code>my-model</code> is callable as <code>vmc/my-model</code>. A slug named <code>vmc-pr-gate</code> becomes <code>router/vmc-pr-gate</code> (wrong — don't prefix slugs).</li>
+<li><strong>Inference key vs management key:</strong> <code>vck_</code> (AI_GATEWAY_API_KEY) is for inference only. <code>vcp_</code> (VERCEL_TOKEN) is for CLI management. They are different tokens.</li>
+<li><strong>Team scope required:</strong> all CLI commands need <code>--scope phils-projects-336d7fca</code>. Omitting it yields "No team selected" errors.</li>
+<li><strong>Cache:</strong> inference responses may be cached. Bypass with <code>cf-aig-skip-cache: true</code> header for health probes.</li>
+<li><strong>Routing rules vs virtual models:</strong> rules are team-wide rewrites/denies that apply BEFORE virtual model resolution. Separate from virtual models.</li>
+</ul>
+<h2 id="cf-ai-gateway-comparison">CF AI Gateway Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>CF Dynamic Routes</th>
+<th>Vercel Virtual Models</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Management</td>
+<td>REST API (POST versions + deploy)</td>
+<td>CLI (<code>vercel ai-gateway virtual-models</code>)</td>
+</tr>
+<tr>
+<td>Slug format</td>
+<td>Route ID (any string)</td>
+<td>Letters/hyphens/underscores only</td>
+</tr>
+<tr>
+<td>Fallback</td>
+<td>Linear ladder in route graph</td>
+<td><code>models</code> array or <code>sort</code> auto-routing</td>
+</tr>
+<tr>
+<td>Cost routing</td>
+<td>None</td>
+<td><code>sort: "cost"</code></td>
+</tr>
+<tr>
+<td>Cache</td>
+<td>1800s TTL, bypass header</td>
+<td>Proper caching with invalidation</td>
+</tr>
+<tr>
+<td>Error handling</td>
+<td>200-wrapped errors pass through</td>
+<td>Proper provider failover</td>
+</tr>
+<tr>
+<td>Provider prefix</td>
+<td><code>custom-&lt;name&gt;</code> required</td>
+<td>Native provider names</td>
+</tr>
+<tr>
+<td>Observability</td>
+<td>Gateway logs only</td>
+<td><code>GET /v1/generation</code> + <code>/v1/report</code></td>
+</tr>
+</tbody>
+</table>
+</body></html>

@@ -1,0 +1,51 @@
+diff --git a/dot_agents/skills/vercel-ai-gateway/SKILL.md b/dot_agents/skills/vercel-ai-gateway/SKILL.md
+index 54d2ad2..257e831 100644
+--- a/dot_agents/skills/vercel-ai-gateway/SKILL.md
++++ b/dot_agents/skills/vercel-ai-gateway/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: vercel-ai-gateway
+-description: Manage Vercel AI Gateway virtual models and routing rules via the Vercel CLI. Use when creating, listing, inspecting, editing, or removing virtual models (vmc/<slug>), when managing routing rules (rewrites/denies), when checking gateway credits/spend, or when the user mentions "vercel gateway", "virtual model", "vmc", or "vercel ai gateway".
++description: Manage Vercel AI Gateway virtual models and routing rules via the Vercel CLI. Use when creating, listing, inspecting, editing, or removing virtual models (vmc/<slug> for alias, router/<slug> for router), when managing routing rules (rewrites/denies), when checking gateway credits/spend, or when the user mentions "vercel gateway", "virtual model", "vmc", "router", or "vercel ai gateway".
+ ---
+ 
+ # Vercel AI Gateway
+@@ -52,7 +52,7 @@ curl -s -H "Authorization: Bearer $AI_GATEWAY_API_KEY" "https://ai-gateway.verce
+ 
+ - **Slug is immutable** after creation. All other settings are editable.
+ - **Slug format:** letters, numbers, hyphens, underscores, periods only. NO slashes.
+-- **Callable name:** `vmc/<slug>` — the `vmc/` prefix is automatic. Slug `pr-gate` → callable as `vmc/pr-gate`. Do NOT prefix slugs with `vmc-`.
++- **Callable name:** depends on kind — `vmc/<slug>` for alias, `router/<slug>` for router. The prefix is automatic. Slug `pr-gate` (kind=router) → callable as `router/pr-gate`; slug `my-alias` (kind=alias) → callable as `vmc/my-alias`. Do NOT prefix slugs with `vmc-` or `router-`.
+ - **Kind:** `alias` (single model, default) or `router` (multi-model with fallback ladders).
+ 
+ ## Creating a Virtual Model
+@@ -107,14 +107,18 @@ vercel ai-gateway virtual-models create my-router \
+ After creating or editing a virtual model, verify inference works:
+ 
+ ```bash
++# Router-kind model (current inventory is all routers):
+ curl -s -X POST https://ai-gateway.vercel.sh/v1/chat/completions \
+   -H "Authorization: Bearer $AI_GATEWAY_API_KEY" \
+   -H "Content-Type: application/json" \
+-  -d '{"model":"vmc/<slug>","messages":[{"role":"user","content":"Reply OK"}],"max_tokens":5}' \
++  -d '{"model":"router/<slug>","messages":[{"role":"user","content":"Reply OK"}],"max_tokens":5}' \
+   | jq -r '.choices[0].message.content // .error.message // "NO RESPONSE"'
++
++# Alias-kind model:
++#   use "vmc/<slug>" instead of "router/<slug>"
+ ```
+ 
+-Expected: model content (e.g. "OK") or a recognizable model response. If "Model not found", check slug spelling and that the callable name is `vmc/<slug>` (not `vmc/vmc-<slug>`).
++Expected: model content (e.g. "OK") or a recognizable model response. If "Model not found", check slug spelling and that the callable prefix matches the kind: `router/<slug>` for router-kind, `vmc/<slug>` for alias-kind.
+ 
+ ## Current Inventory
+ 
+@@ -133,7 +137,7 @@ Expected: model content (e.g. "OK") or a recognizable model response. If "Model
+ ## Gotchas
+ 
+ - **Head-node poisoning:** a provider returning HTTP 200 with an error JSON body is treated as success — fallback never fires. Put suspect providers LAST in the order.
+-- **Slug vs callable:** the CLI help says "callable as vmc/<slug>" — the prefix is automatic. A slug named `vmc-pr-gate` becomes `vmc/vmc-pr-gate` (wrong).
++- **Slug vs callable:** the callable prefix depends on kind — `vmc/<slug>` for alias, `router/<slug>` for router. A router slug `pr-gate` is callable as `router/pr-gate` (NOT `vmc/pr-gate`). An alias slug `my-model` is callable as `vmc/my-model`. A slug named `vmc-pr-gate` becomes `router/vmc-pr-gate` (wrong — don't prefix slugs).
+ - **Inference key vs management key:** `vck_` (AI_GATEWAY_API_KEY) is for inference only. `vcp_` (VERCEL_TOKEN) is for CLI management. They are different tokens.
+ - **Team scope required:** all CLI commands need `--scope phils-projects-336d7fca`. Omitting it yields "No team selected" errors.
+ - **Cache:** inference responses may be cached. Bypass with `cf-aig-skip-cache: true` header for health probes.

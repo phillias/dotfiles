@@ -1,0 +1,9 @@
+ab310f14d635970a64ec61b1432cd243525a2511 dynamic/TUI@primary <phillias@phillias.us>
+docs(skills): fix vercel-ai-gateway callable prefix — router kind uses router/<slug>
+
+Router-kind virtual models are callable as router/<slug>, not vmc/<slug>.
+Alias-kind models remain vmc/<slug>. Updated Virtual Model Rules,
+Verification example (shows router since current inventory is all
+routers), Model-not-found hint, Slug-vs-callable gotcha, and
+frontmatter description.
+
