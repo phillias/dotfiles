@@ -5,12 +5,20 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/tokentelemetry
-ExecStart=/usr/bin/env /usr/bin/node %h/tokentelemetry/bin/cli.js --port 3010 --api-port 8880 --host 127.0.0.1
+ExecStart=/bin/bash -c 'export ANTHROPIC_API_KEY="$(cat "%h/.agents/keys/default/.anthropic-key")"; export NEXT_PUBLIC_API_BASE=""; exec %h/.local/share/mise/shims/node %h/tokentelemetry/bin/cli.js --port 13000 --api-port 18000 --host 127.0.0.1 --no-open'
 Restart=on-failure
-RestartSec=10
+RestartSec=5
+Environment=TOKENTELEMETRY_DATA_DIR=%h/.tokentelemetry
+Environment=TOKENTELEMETRY_HOME=%h/.tokentelemetry
 Environment=NODE_ENV=production
 Environment=DO_NOT_TRACK=1
 Environment=TT_NO_UPDATE_CHECK=1
+MemoryHigh=1536M
+MemoryMax=2G
+CPUQuota=100%
+CPUWeight=100
+IOWeight=100
+TasksMax=128
 
 [Install]
 WantedBy=default.target
