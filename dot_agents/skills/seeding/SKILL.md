@@ -22,8 +22,8 @@ metadata:
 All commands run from the kali firstmate home unless noted.
 
 ```bash
-# SSH (root key login)
-ssh -o BatchMode=yes -i ~/.ssh/id_ed25519_rapidseedbox -p 2222 root@45.152.210.245
+# SSH (rapidseedbox alias — root key login)
+ssh rapidseedbox
 
 # ruTorrent XML-RPC (digest auth — plain -u gives 401)
 PW=$(cat ~/.agents/keys/default/.rapidseedbox-utorrent-password)
@@ -39,8 +39,6 @@ curl -s --digest -u "user:$PW" -X POST \
   (127.0.0.1:5000 on box). Any rTorrent methodCall works: `download_list`,
   `d.*`, `load.start`, etc. A bare GET on it 500s with "Link to XMLRPC
   failed" — misleading; it means empty POST body, not a downed client.
-- No `~/.ssh/config` Host entry exists (file is chezmoi-managed; a nickname
-  would need a dotfiles PR). Use explicit `-i`/`-p` flags.
 
 ## Box facts (verified 2026-10-07)
 
@@ -56,18 +54,18 @@ curl -s --digest -u "user:$PW" -X POST \
 
 | Tracker | Torrents | Notes (yield verified 2026-10-08) |
 |---|---|---|
-| MyAnonamouse (MAM) | 37 | Gazelle; the invite gateway (34 routes); 50.75 GiB up, 363 MiB/day |
+| MyAnonamouse (MAM) | 36 | Gazelle; the invite gateway (34 routes); 50.75 GiB up, 363 MiB/day |
 | SeedPool (SP) | 14 | UNIT3D; young 0-day tracker (b. 2024); 74.80 GiB up, 495 MiB/day |
 | AnimeZ | 8 | 68.06 GiB up, 486 MiB/day — highest per-torrent yield (Captain Tsubasa S02: 65 GiB alone); no API, but RSS feed verified (key file + enclosure downloads); software unidentified (non-UNIT3D `announce7` path; API tokens disabled) |
 
 2026-10-08 lifecycle test: + Magic Knight Rayearth BD Remux (263.37 GiB,
 AnimeZ freeleech), − Newsweek.International.2021.01.22.pdf (MAM, zero
-upload in 154 days). Portfolio: 37 MAM / 14 SeedPool / 8 AnimeZ.
+upload in 154 days). Portfolio: 36 MAM / 14 SeedPool / 8 AnimeZ.
 
 Refresh method (avoids the SCGI hang, see Known-failed):
 
 ```bash
-ssh root@box 'grep -h -o "https\?://[a-zA-Z0-9.-]*" /var/www/session/user/*.torrent 2>/dev/null \
+ssh rapidseedbox 'grep -h -o "https\?://[a-zA-Z0-9.-]*" /var/www/session/user/*.torrent 2>/dev/null \
   | sort | uniq -c | sort -rn'
 ```
 
@@ -174,7 +172,7 @@ via their sanctioned download URLs with the cookie/Bearer header):
 
 ```bash
 # 1. fetch the .torrent ON the box (RSS enclosure embeds the key)
-ssh -o BatchMode=yes -i ~/.ssh/id_ed25519_rapidseedbox -p 2222 root@45.152.210.245 \
+ssh rapidseedbox \
   "curl -s -o /home/user/rl-<id>.torrent 'https://animez.to/rss/download/<key>/<id>'"
 # 2. load + start — TWO params: empty-string target, then the on-box path
 curl -s --digest -u "user:$PW" -X POST -H 'Content-Type: text/xml' \
@@ -194,7 +192,7 @@ Remove (safe order — close, erase, then delete data):
 ```bash
 rpc d.close "<hash>"   # stop cleanly
 rpc d.erase "<hash>"   # remove from rTorrent + session dir
-ssh root@box 'rm -rf "/home/user/Downloads/<content-dir-or-file>"'  # data only after confirming nothing else needs it
+ssh rapidseedbox 'rm -rf "/home/user/Downloads/<content-dir-or-file>"'  # data only after confirming nothing else needs it
 ```
 
 Before any removal, confirm the torrent is outside every tracker's
