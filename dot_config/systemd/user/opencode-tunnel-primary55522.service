@@ -2,6 +2,7 @@
 Description=OpenCode fleet tunnel to primary55522
 After=network-online.target opencode-serve.service
 Wants=network-online.target
+ConditionFileIsExecutable=/usr/bin/autossh
 
 [Service]
 Type=simple
