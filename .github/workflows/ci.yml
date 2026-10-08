@@ -89,12 +89,13 @@ jobs:
           import json, re
           def load(p):
               s = open(p).read()
-              s = re.sub(r'\{\{-?\s*/\*.*?\*/\s*-?\}\}', '', s, flags=re.S)  # strip template comments
-              s = re.sub(r'\s*\{\{.*?\}\}\s*', 'host', s, flags=re.S)        # stub value templates
+              # strip template comments
+              s = re.sub(r'\{\{-?\s*/\*.*?\*/\s*-?\}\}', '', s, flags=re.S)
+              # stub value templates
+              s = re.sub(r'\s*\{\{.*?\}\}\s*', 'host', s, flags=re.S)
               return json.loads(s)
           load('private_dot_pi/fallback-chains.json.tmpl')
           load('private_dot_pi/private_agent/models.json.tmpl')
           json.loads(open('private_dot_pi/private_agent/settings.json').read())
           print('pi config valid')
           EOF
-
