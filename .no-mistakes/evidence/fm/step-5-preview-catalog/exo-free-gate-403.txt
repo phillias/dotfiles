@@ -1,0 +1,10 @@
+# exo-free zen free-tier client gate probe (2026-10-08, live)
+## Probe 1: exo-free via house gateway as non-OpenCode client
+{"type":"error","error":{"type":"FreeTierError","message":"OpenCode's free tier can only be used from within OpenCode"}}
+HTTP 403
+## Probe 2 (control): fledge-alpha-free same lane
+{"type":"error","error":{"type":"FreeTierError","message":"OpenCode's free tier can only be used from within OpenCode"}}
+HTTP 403
+## Probe 3: zen /models through the gateway (count + exo-free/fledge presence)
+zen model count via gateway: 83
+exo-free present: False | fledge-alpha-free present: False

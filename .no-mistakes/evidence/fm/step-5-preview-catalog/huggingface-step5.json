@@ -1,0 +1,19 @@
+{
+ "id": "SHSLab/Step-5-Preview-BF16",
+ "createdAt": "2026-09-20T12:34:30.000Z",
+ "license_tag": [
+  "license:other"
+ ],
+ "license_file_present": false,
+ "file_count": 37,
+ "sample_files": [
+  "Step-5",
+  ".gitattributes",
+  "README.md",
+  "chat_template.jinja",
+  "config.json",
+  "model-00001.safetensors",
+  "model-00002.safetensors",
+  "model-00003.safetensors"
+ ]
+}

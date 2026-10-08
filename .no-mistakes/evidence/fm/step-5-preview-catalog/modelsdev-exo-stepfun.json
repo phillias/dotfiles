@@ -1,0 +1,72 @@
+{
+ "exo-free": {
+  "cost": {
+   "input": 0,
+   "output": 0
+  },
+  "limit": {
+   "context": 1048576,
+   "output": 131072
+  },
+  "modalities": {
+   "input": [
+    "text",
+    "image"
+   ],
+   "output": [
+    "text"
+   ]
+  },
+  "name": "Exo Free",
+  "reasoning": true,
+  "tool_call": true
+ },
+ "stepfun-node:stepfun": {
+  "api": "https://api.stepfun.com/v1",
+  "cost": {
+   "cache_read": 0.048,
+   "input": 0.959,
+   "output": 2.741
+  },
+  "env": [
+   "STEPFUN_API_KEY"
+  ],
+  "limit": {
+   "context": 1000000,
+   "input": 1000000,
+   "output": 65536
+  },
+  "npm": "@ai-sdk/openai-compatible",
+  "release_date": "2026-09-16"
+ },
+ "stepfun-node:stepfun-ai": {
+  "api": "https://api.stepfun.ai/v1",
+  "cost": {
+   "cache_read": 0.05,
+   "input": 1,
+   "output": 2.7
+  },
+  "env": [
+   "STEPFUN_API_KEY"
+  ],
+  "limit": {
+   "context": 1024000,
+   "input": 1024000,
+   "output": 65536
+  },
+  "npm": "@ai-sdk/openai-compatible",
+  "release_date": "2026-09-16"
+ },
+ "stepfun-node:stepfun-ai-step-plan": {
+  "env": [
+   "STEPFUN_API_KEY"
+  ],
+  "npm": "@ai-sdk/openai-compatible"
+ },
+ "stepfun-node:stepfun-step-plan": {
+  "env": [
+   "STEPFUN_API_KEY"
+  ],
+  "npm": "@ai-sdk/openai-compatible"
+ }
+}

@@ -1,0 +1,8 @@
+snapshot: valid JSON, 198 models, updated_at=2026-10-08T00:00:00.000Z
+entry openrouter/stepfun/step-5-preview -> {'context': 1000000, 'in': 1, 'out': 2.7, 'free': False}
+entry opencode-zen/exo-free -> {'context': 1048576, 'in': 0, 'out': 0, 'free': True}
+parity models.snapshot.json worktree == ~/.agents/skills/provider-catalog/models.snapshot.json : True
+parity models.snapshot.json worktree == ~/.local/share/chezmoi/dot_agents/skills/provider-catalog/models.snapshot.json : True
+parity PROVIDERS.md worktree == ~/.agents/skills/provider-catalog/references/PROVIDERS.md : True
+parity PROVIDERS.md worktree == ~/.local/share/chezmoi/dot_agents/skills/provider-catalog/references/PROVIDERS.md : True
+diff scope vs base: ['dot_agents/skills/provider-catalog/models.snapshot.json', 'dot_agents/skills/provider-catalog/references/PROVIDERS.md']
