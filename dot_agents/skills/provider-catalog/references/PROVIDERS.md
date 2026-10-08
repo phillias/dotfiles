@@ -427,6 +427,25 @@ is the binding constraint; do not add more without retiring one.
 
 `opencode-zen/fledge-alpha-free` — present in the 82-model zen `/models` list (verified live via the house gateway 2026-10-04), NOT on the opencode-go lane. Free-tier stealth preview released 2026-10-01: **$0 in/out**, ~1M context (1,048,576) / ~130k output, adjustable reasoning effort (low/high/max), tool use + vision, limited-time listing, strict free-tier rate limits. Anonymous lab — the captain describes it as inkling-class; community speculation says DeepSeek V4.1 Pro (unconfirmed). Early anecdotal executable-code checks: 61/61 vs LongCat 59/61, 4/4 logic, 12/12 hidden-key retrieval from ~1M-char inputs. Inkling lineage note: unlike the OpenRouter free inkling lane (dropped from gate chains 2026-09-15 for 403 funnel rejection of pi-shaped gate requests + TM training logging), fledge rides the opencode-zen free tier. Verdict: **TRIAL for interactive primary use ONLY — NOT for no-mistakes pipeline roles** (JSON discipline unproven, anonymous identity, limited-time listing = unstable for fleet config; `opencode-go-gw/deepseek-v4-flash` keeps gate/review). Fit analysis 2026-10-04: best fit = interactive primary model trial (same class as longcat-2.5-preview-free — free, 1M ctx — with better early code results + reasoning-effort control + vision); second fit = long-context retrieval sessions.
 
+## Exo Free stealth preview on opencode-zen (2026-10-08, live-verified)
+
+`opencode-zen/exo-free` — new stealth free-tier listing on OpenCode Zen, first observed 2026-10-06 (models.dev sweep 22:54 UTC; zen docs and console listing the same day). Anonymous lab — provider and developer undisclosed (big-pickle/space-bunny class); no benchmarks or tech notes published yet. **$0 in/out/cached read**, limited time, no end date announced. ~1M context (1,048,576) / 131,072 output; text + image input, text output; tool calls; reasoning always-on at a FIXED high effort (single setting — unlike fledge's adjustable low/high/max). **Data clause: "during its free period, collected data may be used to improve the model"** — an explicit exception to zen's general zero-retention policy; confidential fleet content is barred (same posture as the OpenRouter free-inkling TM-logging lesson; the space-bunny and longcat free listings do NOT carry this clause). Client gating (live-verified 2026-10-08): curl via the house gateway returns `403 FreeTierError: "OpenCode's free tier can only be used from within OpenCode"`, exactly as the free-tier client-gating section documents; also NOT present in the current 83-model zen `/models` list through the house gateway — and neither is fledge-alpha-free anymore (was present in the 82-model list 2026-10-04), so the stealth slots rotate and the gateway `/models` list is not authoritative for free-tier availability; the opencode TUI `/models` is. Routing rule (per the gating section): direct harness provider entry only — opencode.json `.provider["opencode-zen"].models` gains `exo-free`; never a gateway dynamic-route element; pi keeps zen PAID lanes only. Verdict: **TRIAL for interactive opencode-TUI primary use ONLY — NOT for no-mistakes pipeline roles, pi chains, or gateway routes** (anonymous identity, limited-time listing, fixed-high reasoning burns output tokens on every call, training-data clause). Fit: free interactive primary trial where 1M context + image input matter; not a fleet-config candidate while the listing is time-limited.
+
+## OpenCode Zen free-tier sweep (2026-10-08, models.dev live)
+
+Captain: "there's more readable" — live models.dev sweep (provider keys rotated: old `opencode-zen` is now `opencode` + `opencode-go`) lists ~40 free models; the catalog and snapshot carried only 11 before this sweep. All free lanes stay client-gated (403 FreeTierError from the gateway, TUI-only — see the 2026-10-05 gating section) and stealth slots rotate without notice; every entry below stays TUI-interactive-trial class: no no-mistakes pipeline roles, no pi chains, no gateway routes. Full inventory recorded as `opencode-zen/*` and `opencode-go/*` free rows in models.snapshot.json (in/out 0).
+
+Standouts:
+- `step-5-preview-free` (zen + go lanes, 1M ctx, released 2026-09-16) — a FREE lane of the Step 5 Preview this catalog added today as a PAYG candidate ($1.00/$2.70 via openrouter). $0 interactive TUI trial beats the PAYG lane for hands-on eval; the client gate still bars pipeline/routing use, so PAYG stays the routing answer. Cross-ref the Step-5-Preview section above.
+- `x-preview-f-free` (zen, 1M ctx, 2026-08-21) — anonymous stealth class (big-pickle/space-bunny/exo lineage), no developer or benchmarks disclosed. TRIAL posture only.
+- `grok-code` (zen, 256K, 2025-08-20) — free Grok coding model, zero-cost interactive coding lane.
+- `nemotron-3-super-free` (204K, 2026-03-11) — free sibling of the already-recorded `nemotron-3-ultra-free` (1M, 2026-06-04).
+- `glm-5-free` (200K) / `glm-4.7-free` (200K) — older GLM generations than the paid glm-5.1/5.2 rotation; zero-cost interactive drafting fallbacks.
+- `muse-spark-1.2-contributor-free` + `muse-spark-1.3-contributor-free` (1M) — contributor-program models, data terms unknown.
+- ling family (InclusionAI, see Ling section): `ling-3.0-flash-fin-free` (262K, fin-tuned), `ling-3.0-tiny-free`, `ling-3.0-flash-free`, `ling-2.6-flash-free`, plus the documented `ling-3.1-flash-free`.
+- Other 1M-ctx free lanes: `mimo-v2-pro-free` (2026-03-18), plus the documented longcat-2.0/2.5-preview, exo, space-bunny, fledge.
+- Smaller-ctx free rows: qwen3.6-plus-free, kimi-k2.5-free, minimax-m3/m2.5/m2.1-free, ring-2.6-1t-free, hy3/hy3-preview-free, nemotron-3.5-lightning-free, mimo-v2.5/v2.6-flash/v2-omni/v2-flash-free, trinity-large-preview-free, north-mini-code-free (documented), big-pickle (documented), deepseek-v4-flash-free (documented), laguna-s-2.1-free (documented).
+
 ## Gate chain (pi-fallback-provider)
 
 Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in `dot_no-mistakes/config.yaml`. 2026-09-15 shape: `CfAiGw/dynamic/pr-gate` (the gateway's linear free-first ladder) → `opencode-go/deepseek-v4-flash` (1M, subsidized pool — **session-gated, rides pi directly, never a gateway route**). kimi-k2.6 excluded (262K < the gate's 1M bar). CF @cf excluded (no 1M models). opencode-zen gemini-3.5-flash is PAID (zen free tier is sub-1M only). Inkling was dropped from the chain 2026-09-15: OpenRouter's routing funnel rejected pi-shaped gate requests unreliably (403 non-agentic in production), the free endpoint logs all traffic for TM training, and confidential data is barred — the `openrouter-direct` pi provider's free inkling lane remains for personal agentic experiments only (the provider's PAYG `z-ai/glm-5.2` lane, added 2026-09-28, rode the pi review chain's terminal rung and REMAINS the review chain's terminal rung after the free `z-ai/glm-5.2:free` variant took the head 2026-10-04 — captain: keep the PAYG terminal rung). Harness-recognition reality (2026-09-15 live probes): the funnel checks **OpenRouter app-listing attribution**, not harness self-claims — codex-cli is rejected (403 "plug into an app listed on openrouter.ai/apps"; TM's announcement named Codex the OpenAI product, not the CLI), and codex-cli 0.153.4 is Responses-wire-only, which the gateway compat plane also rejects (code 2019) — so codex cannot ride inkling:free OR pr-gate. The codex→inkling path exists only via the PAID tier ($0.95/$4.05, no gate, no logging). Impersonating a listed app's attribution is off the table.
@@ -737,6 +756,88 @@ The zen FREE tier is locked to the OpenCode client identity; paid zen is open BY
   vendor dashboard / quota-axi, not this file). In-app zen also serves only
   `glm-5.1` of the paid GLM trio — `glm-5.2`/`glm-5.3-flash` server-error
   in-app while serving fine on the gateway-token path.
+
+## StepFun Step-5-Preview (2026-10-08, live-verified)
+
+StepFun's (阶跃星辰, Shanghai) flagship, announced 2026-09-20: sparse MoE
+600B total / 27B active (~4.5% sparsity), 92 narrow-deep layers, text-only
+output (input accepts text + image, up to 60/request billed at 400
+tokens/image, + video ≤128MB / ≤5min recommended), 1M-token context via
+Sparse GQA with block-wise token merging. Skips the 4.x line entirely
+(3.7-Flash → 5). Pitch: "advancing the Pareto frontier" — frontier-adjacent
+intelligence at a fraction of frontier task cost (Artificial Analysis
+Intelligence Index 44 v4.3.2, 24th of 200, level with Kimi K3, 1 behind
+GLM-5.3; AA ranks it top-3 open-weight). Long-horizon agentic focus: tested
+on 24-hour runs (GPU kernel optimization 508 TFLOPS vs Opus 5's 493;
+automated Qwen3-30B post-training 53.3%→60% AIME24).
+
+### Reachable today through the openrouter lane
+
+`openrouter/stepfun/step-5-preview` is LIVE (verified 2026-10-08 via the
+OpenRouter API): context_length 1,000,000, **passthrough pricing** — $1.00/M
+in / $2.70/M out, matching StepFun direct with no markup — plus tool
+calling (parallel), structured outputs, temperature/top_p/frequency_penalty,
+reasoning + reasoning_effort, streaming. The existing CF AI Gateway
+`opencode` openrouter provider lane serves it with no gateway changes.
+models.dev (opencode discovery) carries four StepFun nodes — `stepfun`
+(China), `stepfun-ai` (Global), and the two `step-plan` Claude Code
+variants — all `@ai-sdk/openai-compatible` with `STEPFUN_API_KEY`; Global
+$1.00/$2.70, China $0.959/$2.741, cache-read $0.05/$0.048; effort
+low/medium/high; interleaved reasoning in `reasoning_content` (same
+pattern as DeepSeek).
+
+### Direct platform (platform.stepfun.ai)
+
+Published pricing (rare for a preview launch): **$1.00/M input (cache
+miss), $0.05/M cache-hit input (95% discount), $2.70/M output — the
+reasoning trace is billed as output**. Free credit first, then paid
+balance. Max output 64K (HF card: default 32,768, configurable 131,072 —
+treat 64K as the platform contract); `max_tokens` defaults to INF (the
+model self-determines); prompt caching supported. Rate limits tier by
+cumulative cash top-up (vouchers don't count): V0 <$15 = 5 concurrency /
+100 RPM / 500K TPM; V1 $15-69 = 20 / 400 / 2M; V2 $70-299 = 30 / 600 /
+3M; V3 $300-1,499 = 40 / 800 / 4M; V4 ≥$1,500 = 130 / 2,600 / 13M.
+OpenAI-compatible Chat Completions (plus a Messages API and audio/image
+generation endpoints); reasoning effort via `reasoning_effort`
+(low/medium/high) or `output_config.effort` on the Messages API.
+
+### Benchmarks + caveats (StepFun-published unless noted)
+
+- **DeepSWE v1.1 67.7 — leads open-weight** (K3 67.5, GLM-5.3 66.9; Opus
+  5 74.0 and GPT-6 Astra 74.1 sit above it).
+- Terminal-Bench v2.1 85.0; **Terminal-Bench v4 33.3 — trails Opus 5's
+  52.3**: hard interactive coding is NOT its class.
+- **FrontierFinance 66.4 — the standout**: beats GPT-6 Astra (55.0), near
+  Opus 5 (69.7). GDPval-AA 1566-1571, BrowseComp 88.7, GPQA Diamond
+  93.5%, HLE 46.5%.
+- StepCodeBench 49.0 (in-house, 553 repos / 33 langs) vs K3 43.9.
+- **Verbose output:** AA's evaluation burned 160M output tokens vs a 92M
+  median — verbosity inflates the expensive side of the bill ($2.70/M
+  out). AA cost per index task $0.71; Vals AI $2.63/test. Speed: 99.8
+  tok/s output, TTFT 2.96s.
+- No tech report yet; all benchmarks self-reported except AA's index.
+- StepFun claims ~1/8 of Claude Opus 5 per-task cost (methodology
+  undisclosed).
+
+### Weights
+
+LIVE on HuggingFace (SHSLab/Step-5-Preview-BF16, posted 2026-09-20 —
+earlier than the announced Oct 15). **License is `license:other` with NO
+LICENSE FILE in the repo; the README names a "StepFun Community License" —
+NOT Apache 2.0, terms unverified**; treat as restricted until read.
+Deploy scale: BF16 8×H100 80GB (1.2TB), FP8 4×H100 (600GB, coming), INT4
+4×A100 (300GB); vLLM/SGLang support, reasoning parser `stepfun`.
+
+### Verdict
+
+**PAYG rotation candidate via the openrouter lane — not a free lane.**
+Strongest fit: long-context reasoning and finance/knowledge-heavy work,
+where its benchmarks stand out. Caveats before it touches fleet pipeline
+roles: verbose-output billing, the OpenRouter funnel's pi-shaped-request
+403 risk (the 2026-09-15 inkling lesson), and JSON discipline unproven —
+same TRIAL posture as the fledge/longcat entries: interactive evaluation
+first, no no-mistakes pipeline roles until verified. Cache-hit economics
+(95% input discount) favor long-agent context-reuse patterns.
 
 ## Ling (InclusionAI) evaluation (2026-10-05)
 
