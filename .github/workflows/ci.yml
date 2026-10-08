@@ -85,5 +85,16 @@ jobs:
 
       - name: Validate pi config
         run: |
-          python3 -c "import json, re; strip = lambda p: re.sub(r'\s*\{\{.*?\}\}\s*', 'host', open(p).read(), flags=re.S); json.loads(open('private_dot_pi/fallback-chains.json').read()); json.loads(strip('private_dot_pi/private_agent/models.json.tmpl')); json.loads(open('private_dot_pi/private_agent/settings.json').read()); print('pi config valid')"
+          python3 - <<'EOF'
+          import json, re
+          def load(p):
+              s = open(p).read()
+              s = re.sub(r'\{\{-?\s*/\*.*?\*/\s*-?\}\}', '', s, flags=re.S)  # strip template comments
+              s = re.sub(r'\s*\{\{.*?\}\}\s*', 'host', s, flags=re.S)        # stub value templates
+              return json.loads(s)
+          load('private_dot_pi/fallback-chains.json.tmpl')
+          load('private_dot_pi/private_agent/models.json.tmpl')
+          json.loads(open('private_dot_pi/private_agent/settings.json').read())
+          print('pi config valid')
+          EOF
 
