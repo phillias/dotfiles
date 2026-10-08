@@ -97,4 +97,3 @@ jobs:
           json.loads(open('private_dot_pi/private_agent/settings.json').read())
           print('pi config valid')
           EOF
-
