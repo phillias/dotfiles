@@ -649,3 +649,32 @@ facts.
 
 **Team Profile:** defaultConcurrency 8; providerConcurrency {opencode 15, opencode-zen 15, opencode-go 8, openrouter 6}; modelConcurrency {big-pickle 2, kimi-k2.6 3, ds-v4-pro 2, gpt-5.5 2, gpt-5.4 2, gpt-5.3-codex 2, glm-5.1 2, ds-v4-flash 15, zen/kimi-k2.6 2}.
 **Free Profile:** default 5; provider {opencode 10, openrouter 5}; modelConcurrency {}.
+
+## 9. Fleet serve mesh (cross-node agent communication)
+
+Fleet nodes (kalione, primary55522, kali) each run `opencode serve --port 4096
+--hostname 127.0.0.1` as a systemd --user unit (`opencode-serve.service`,
+chezmoi-managed in dotfiles). Nodes reach each other's serve through
+persistent autossh SSH tunnels (`opencode-tunnel-<node>.service`), so a
+firstmate's opencode agent reaches a remote node's agent at a localhost port:
+
+| Local endpoint | Remote node | Remote serve |
+|---|---|---|
+| `http://127.0.0.1:14001` | primary55522 | 127.0.0.1:4096 |
+| `http://127.0.0.1:14002` | kali | 127.0.0.1:4096 |
+| `http://127.0.0.1:14003` | kalione | 127.0.0.1:4096 |
+
+Auth: `OPENCODE_SERVER_USERNAME/PASSWORD` from the age-encrypted
+`~/.config/opencode/opencode-serve.env` (EnvironmentFile in the unit).
+Unauthenticated `GET /doc` returns 401 — that is the healthy signal.
+
+Transport for agent-to-agent messaging is the opencode HTTP API:
+create a session (`POST /api/session`), then `POST /api/session/:id/prompt`
+with message parts. The remote opencode agent receives it as a user message.
+
+Each host applies only the tunnels to the OTHER nodes (hostname-gated via
+`.chezmoiignore`), so the endpoints a host sees depend on which node it is:
+kalione sees 14001+14002, primary55522 sees 14002+14003, kali sees
+14001+14003. Tunnel unit design, port assignments, validation commands, and
+the add-a-node procedure are owned by the dotfiles skill:
+`dotfiles/refs/FLEET-TUNNELS.md`.

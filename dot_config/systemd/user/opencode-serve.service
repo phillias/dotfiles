@@ -5,22 +5,17 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=%h/.opencode/bin/opencode serve --port 38889 --hostname 0.0.0.0 --pure --log-level WARN
+ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 127.0.0.1 --pure --log-level WARN
 Restart=on-failure
 RestartSec=30
 
-# Throttle I/O to prevent disk saturation from idle watchers
+EnvironmentFile=%h/.config/opencode/opencode-serve.env
 IOWeight=10
 IOWriteBandwidthMax=/dev/sda 5M
 IOReadBandwidthMax=/dev/sda 10M
-
-# Limit CPU to 50% of one core
-CPUQuota=50%
-
-# Cap memory at 512MB
-MemoryMax=512M
-
-# Lower scheduling priority
+# Envelope sized for the pure headless role
+CPUQuota=100%
+MemoryMax=768M
 Nice=10
 
 [Install]
