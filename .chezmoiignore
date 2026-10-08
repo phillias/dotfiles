@@ -86,3 +86,18 @@ firstmate/projects/selfhost/.env.primary
 {{- if ne .chezmoi.hostname "CabinInspiron22Kali" }}
 firstmate/projects/selfhost/.env.devcabinkali
 {{- end }}
+
+# ── Fleet opencode tunnel self-ignore ───────────────────────
+# Full mesh: every node tunnels to every OTHER node's opencode serve.
+# Each host ignores the tunnel unit that targets ITSELF (a tunnel to
+# your own 127.0.0.1:4096 is a no-op); the other two units apply.
+# Port namespace: 14001=primary55522 14002=kali 14003=kalione.
+{{- if eq .chezmoi.hostname "primary" }}
+.config/systemd/user/opencode-tunnel-primary55522.service
+{{- end }}
+{{- if eq .chezmoi.hostname "CabinInspiron22Kali" }}
+.config/systemd/user/opencode-tunnel-kali.service
+{{- end }}
+{{- if eq .chezmoi.hostname "InspironOne" }}
+.config/systemd/user/opencode-tunnel-kalione.service
+{{- end }}
