@@ -1187,6 +1187,12 @@
       "in": 1,
       "out": 2.7,
       "free": false
+    },
+    "opencode-zen/exo-free": {
+      "context": 1048576,
+      "in": 0,
+      "out": 0,
+      "free": true
     }
   },
   "updated_at": "2026-10-08T00:00:00.000Z"
