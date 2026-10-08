@@ -101,8 +101,10 @@ mise manifest changes (fingerprint covers `dot_config/mise/config.toml`, `.mise.
 
 run_install-kimi.sh — kimi-code CLI bootstrap, runs on every apply:
   guard: exits 0 immediately when ~/.kimi-code/bin/kimi is already executable
-  action: pipes the official installer (code.kimi.com/kimi-code/install.sh) to bash when the
-    binary is missing, so a wiped ~/.kimi-code self-heals on the next apply (sync cron is */30)
+  action: mkdir -p ~/.kimi-code, then stages the official installer
+    (curl -fsSL code.kimi.com/kimi-code/install.sh -o ~/.kimi-code/install.sh) and runs it with
+    bash when the binary is missing, so curl failures propagate and a wiped ~/.kimi-code
+    self-heals on the next apply (sync cron is */30)
   why run_ not run_onchange_: presence, not content, is the trigger — kimi self-updates in place
   auth: NOT handled here — see "Kimi harness bootstrap" under Setup
 
