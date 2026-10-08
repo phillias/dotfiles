@@ -1,0 +1,83 @@
+<html><head><meta charset="utf-8"><style>body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:820px;margin:24px auto;padding:0 20px;line-height:1.5;background:#fff;color:#1a1a1a} h2{font-size:1.25em;border-bottom:2px solid #eee;padding-bottom:6px} h3{font-size:1.05em;margin-top:1.4em} ul{margin:8px 0 8px 0;padding-left:1.4em} li{margin:3px 0} code{background:#f4f4f4;padding:1px 4px;border-radius:3px;font-size:0.92em} pre{background:#f6f8fa;padding:12px;border-radius:6px;overflow-x:auto} p{margin:8px 0}</style></head><body>
+<h2>StepFun Step-5-Preview (2026-10-08, live-verified)</h2>
+
+<p>StepFun&#x27;s (阶跃星辰, Shanghai) flagship, announced 2026-09-20: sparse MoE</p>
+<p>600B total / 27B active (~4.5% sparsity), 92 narrow-deep layers, text-only</p>
+<p>output (input accepts text + image, up to 60/request billed at 400</p>
+<p>tokens/image, + video ≤128MB / ≤5min recommended), 1M-token context via</p>
+<p>Sparse GQA with block-wise token merging. Skips the 4.x line entirely</p>
+<p>(3.7-Flash → 5). Pitch: &quot;advancing the Pareto frontier&quot; — frontier-adjacent</p>
+<p>intelligence at a fraction of frontier task cost (Artificial Analysis</p>
+<p>Intelligence Index 44 v4.3.2, 24th of 200, level with Kimi K3, 1 behind</p>
+<p>GLM-5.3; AA ranks it top-3 open-weight). Long-horizon agentic focus: tested</p>
+<p>on 24-hour runs (GPU kernel optimization 508 TFLOPS vs Opus 5&#x27;s 493;</p>
+<p>automated Qwen3-30B post-training 53.3%→60% AIME24).</p>
+
+<h3>Reachable today through the openrouter lane</h3>
+
+<p><code>openrouter/stepfun/step-5-preview</code> is LIVE (verified 2026-10-08 via the</p>
+<p>OpenRouter API): context_length 1,000,000, **passthrough pricing** — $1.00/M</p>
+<p>in / $2.70/M out, matching StepFun direct with no markup — plus tool</p>
+<p>calling (parallel), structured outputs, temperature/top_p/frequency_penalty,</p>
+<p>reasoning + reasoning_effort, streaming. The existing CF AI Gateway</p>
+<p><code>opencode</code> openrouter provider lane serves it with no gateway changes.</p>
+<p>models.dev (opencode discovery) carries four StepFun nodes — <code>stepfun</code></p>
+<p>(China), <code>stepfun-ai</code> (Global), and the two <code>step-plan</code> Claude Code</p>
+<p>variants — all <code>@ai-sdk/openai-compatible</code> with <code>STEPFUN_API_KEY</code>; Global</p>
+<p>$1.00/$2.70, China $0.959/$2.741, cache-read $0.05/$0.048; effort</p>
+<p>low/medium/high; interleaved reasoning in <code>reasoning_content</code> (same</p>
+<p>pattern as DeepSeek).</p>
+
+<h3>Direct platform (platform.stepfun.ai)</h3>
+
+<p>Published pricing (rare for a preview launch): **$1.00/M input (cache</p>
+<p>miss), $0.05/M cache-hit input (95% discount), $2.70/M output — the</p>
+<p>reasoning trace is billed as output**. Free credit first, then paid</p>
+<p>balance. Max output 64K (HF card: default 32,768, configurable 131,072 —</p>
+<p>treat 64K as the platform contract); <code>max_tokens</code> defaults to INF (the</p>
+<p>model self-determines); prompt caching supported. Rate limits tier by</p>
+<p>cumulative cash top-up (vouchers don&#x27;t count): V0 &lt;$15 = 5 concurrency /</p>
+<p>100 RPM / 500K TPM; V1 $15-69 = 20 / 400 / 2M; V2 $70-299 = 30 / 600 /</p>
+<p>3M; V3 $300-1,499 = 40 / 800 / 4M; V4 ≥$1,500 = 130 / 2,600 / 13M.</p>
+<p>OpenAI-compatible Chat Completions (plus a Messages API and audio/image</p>
+<p>generation endpoints); reasoning effort via <code>reasoning_effort</code></p>
+<p>(low/medium/high) or <code>output_config.effort</code> on the Messages API.</p>
+
+<h3>Benchmarks + caveats (StepFun-published unless noted)</h3>
+
+<li>**DeepSWE v1.1 67.7 — leads open-weight** (K3 67.5, GLM-5.3 66.9; Opus</li>
+<p>  5 74.0 and GPT-6 Astra 74.1 sit above it).</p>
+<li>Terminal-Bench v2.1 85.0; **Terminal-Bench v4 33.3 — trails Opus 5&#x27;s</li>
+<p>  52.3**: hard interactive coding is NOT its class.</p>
+<li>**FrontierFinance 66.4 — the standout**: beats GPT-6 Astra (55.0), near</li>
+<p>  Opus 5 (69.7). GDPval-AA 1566-1571, BrowseComp 88.7, GPQA Diamond</p>
+<p>  93.5%, HLE 46.5%.</p>
+<li>StepCodeBench 49.0 (in-house, 553 repos / 33 langs) vs K3 43.9.</li>
+<li>**Verbose output:** AA&#x27;s evaluation burned 160M output tokens vs a 92M</li>
+<p>  median — verbosity inflates the expensive side of the bill ($2.70/M</p>
+<p>  out). AA cost per index task $0.71; Vals AI $2.63/test. Speed: 99.8</p>
+<p>  tok/s output, TTFT 2.96s.</p>
+<li>No tech report yet; all benchmarks self-reported except AA&#x27;s index.</li>
+<li>StepFun claims ~1/8 of Claude Opus 5 per-task cost (methodology</li>
+<p>  undisclosed).</p>
+
+<h3>Weights</h3>
+
+<p>LIVE on HuggingFace (SHSLab/Step-5-Preview-BF16, posted 2026-09-20 —</p>
+<p>earlier than the announced Oct 15). **License is <code>license:other</code> with NO</p>
+<p>LICENSE FILE in the repo; the README names a &quot;StepFun Community License&quot; —</p>
+<p>NOT Apache 2.0, terms unverified**; treat as restricted until read.</p>
+<p>Deploy scale: BF16 8×H100 80GB (1.2TB), FP8 4×H100 (600GB, coming), INT4</p>
+<p>4×A100 (300GB); vLLM/SGLang support, reasoning parser <code>stepfun</code>.</p>
+
+<h3>Verdict</h3>
+
+<p>**PAYG rotation candidate via the openrouter lane — not a free lane.**</p>
+<p>Strongest fit: long-context reasoning and finance/knowledge-heavy work,</p>
+<p>where its benchmarks stand out. Caveats before it touches fleet pipeline</p>
+<p>roles: verbose-output billing, the OpenRouter funnel&#x27;s pi-shaped-request</p>
+<p>403 risk (the 2026-09-15 inkling lesson), and JSON discipline unproven —</p>
+<p>same TRIAL posture as the fledge/longcat entries: interactive evaluation</p>
+<p>first, no no-mistakes pipeline roles until verified. Cache-hit economics</p>
+<p>(95% input discount) favor long-agent context-reuse patterns.</p>
+</body></html>

@@ -1,0 +1,37 @@
+# Step-5-Preview live-verification transcript (2026-10-08, from this test run)
+
+## 1. OpenRouter API (GET https://openrouter.ai/api/v1/models)
+id: stepfun/step-5-preview  canonical_slug: stepfun/step-5-preview-20261008 (created 1791462849)
+context_length: 1000000
+pricing: prompt=0.000001/tok completion=0.0000027/tok cache_read=0.00000005/tok
+max_completion_tokens (top_provider): 64000
+reasoning: mandatory=True efforts=high,medium,low
+supported_parameters: frequency_penalty, include_reasoning, logprobs, max_tokens, reasoning, reasoning_effort, response_format, stop, structured_outputs, temperature, tools, top_logprobs, top_p
+modality: text+image+video->text
+
+stepfun models on OpenRouter: ['stepfun/step-5-preview', 'stepfun/step-3.7-flash', 'stepfun/step-3.5-flash'] (no step-4 -> 'skips the 4.x line' holds)
+
+## 2. models.dev (GET https://models.dev/api.json)
+stepfun nodes: ['stepfun-ai-step-plan', 'stepfun-step-plan', 'stepfun-ai', 'stepfun']
+global (stepfun-ai) step-5-preview cost: {"input": 1, "output": 2.7, "cache_read": 0.05}
+china (stepfun) step-5-preview cost: {"input": 0.959, "output": 2.741, "cache_read": 0.048}
+env: STEPFUN_API_KEY  npm: @ai-sdk/openai-compatible
+global api: https://api.stepfun.ai/v1  reasoning efforts=['low', 'medium', 'high']
+interleaved field: reasoning_content  release_date=2026-09-16
+
+## 3. HuggingFace (GET https://huggingface.co/api/models/SHSLab/Step-5-Preview-BF16)
+id: SHSLab/Step-5-Preview-BF16  createdAt: 2026-09-20T12:34:30.000Z
+license (card): other / license_name: stepfun-community-license
+LICENSE file in repo: False  (raw/LICENSE HTTP 404 -> no license file present)
+tags (subset): ['moe', '1m-context', 'sparse-attention', 'gqa', 'financial-analysis', 'tool-calling', 'parallel-tool-calling']
+README: '600B-parameter sparse Mixture-of-Experts model with 27B active parameters, a 1M-token context window'
+
+## 4. StepFun platform docs (platform.stepfun.ai)
+Pricing details: | Model | Billing unit | Input (cache miss) | Input (cache hit) | Output | | :- | :- | :- | :- | :- | | `step-5-preview` | 1M tokens | \$1.00 | \$0.05 | \$2.70 | | `step-3.7-flash` | 1M tokens | \$0.20 | \$0.04 | \$1.15 | For `step-5-preview`, the cache-miss input price includes writing new content 
+Rate-limit tiers: V0 | Under \$15 | 5 | 100 | 500,000 | | V1 | \$15 to \$69 | 20 | 400 | 2,000,000 | | V2 | \$70 to \$299 | 30 | 600 | 3,000,000 | | V3 | \$300 to \$1,499 | 40 | 800 | 4,000,000 | | V4 | \$1,500 and above | 130 | 2,600 | 13,000,000
+Output-billing note: to the cache. Output tokens include both the model's reasoning process and final answer. See [Prompt caching](/docs/en/guides/developer/prompt-cache) for details.
+step-5-preview spec: Maximum output | **64k tokens** | ## Core capabilities <Columns cols={2}> <Card title="Long-context understanding and reasoning"> 
+step-5-preview spec: Images per request | Up to 60 images | | Image detail level | `low`, `high` | | Video input method | URL, Base64, or a `stepfile://` ref
+step-5-preview spec: 128 MB; less than 5 minutes is recommended | See the [Quickstart](/docs/en/quickstart/overview) for image and video request examples. For
+step-5-preview spec: Context window** | **1M tokens** | | Input types | Text, images, and video | | Output type | Text | | Maximum input | **1M tokens** | 
+step-5-preview spec: Output length — `max_tokens` defaults to INF; no limit is applied and the model determines it automatically
