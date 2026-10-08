@@ -662,6 +662,7 @@ firstmate's opencode agent reaches a remote node's agent at a localhost port:
 |---|---|---|
 | `http://127.0.0.1:14001` | primary55522 | 127.0.0.1:4096 |
 | `http://127.0.0.1:14002` | kali | 127.0.0.1:4096 |
+| `http://127.0.0.1:14003` | kalione | 127.0.0.1:4096 |
 
 Auth: `OPENCODE_SERVER_USERNAME/PASSWORD` from the age-encrypted
 `~/.config/opencode/opencode-serve.env` (EnvironmentFile in the unit).
@@ -671,6 +672,9 @@ Transport for agent-to-agent messaging is the opencode HTTP API:
 create a session (`POST /api/session`), then `POST /api/session/:id/prompt`
 with message parts. The remote opencode agent receives it as a user message.
 
-Tunnel unit design, port assignments, validation commands, and the
-add-a-node procedure are owned by the dotfiles skill:
+Each host applies only the tunnels to the OTHER nodes (hostname-gated via
+`.chezmoiignore`), so the endpoints a host sees depend on which node it is:
+kalione sees 14001+14002, primary55522 sees 14002+14003, kali sees
+14001+14003. Tunnel unit design, port assignments, validation commands, and
+the add-a-node procedure are owned by the dotfiles skill:
 `dotfiles/refs/FLEET-TUNNELS.md`.
