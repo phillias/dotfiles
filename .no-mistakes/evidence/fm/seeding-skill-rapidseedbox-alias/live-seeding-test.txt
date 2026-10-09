@@ -1,0 +1,23 @@
+LIVE VALIDATION — fm/seeding-skill-rapidseedbox-alias (a75d3e9)
+Date: 2026-10-08
+Environment: isolated worktree + temp HOME /tmp/chezdest/home + real RapidSeedbox box
+
+1) SSH alias parsed from chezmoi-rendered config (ssh -G rapidseedbox):
+   host rapidseedbox / user root / hostname 45.152.210.245 / port 2222 / identitiesonly yes
+   identityfile ~/.ssh/id_ed25519_rapidseedbox
+
+2) chezmoi apply (real consumer, --source worktree --source-path, isolated dest): OK
+   -> ~/.ssh/config contains Host rapidseedbox block; SKILL.md installed at .agents/skills/seeding/
+
+3) REAL ssh connection via alias from deployed config:
+   $ ssh -o BatchMode=yes rapidseedbox 'whoami' -> root@rapidseedbox.com
+
+4) Skill's own refresh method, executed live via alias on box:
+   $ ssh rapidseedbox 'grep -h -a -o url /var/www/session/user/*.torrent | sort | uniq -c'
+   => per-tracker live counts: MAM 36 / SeedPool 14 / AnimeZ 8 / total 58
+      (matches SKILL.md table exactly)
+
+5) Skill content checks (installed copy):
+   - All 4 ssh commands use alias (lines 26, 68, 175, 195)
+   - No root@box, no ssh -i/-p flags, no stale "no Host entry" note
+   - MAM row = 36 (down from 37); total stays 58
