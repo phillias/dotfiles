@@ -258,11 +258,20 @@ whitelisted clients only (`/tor/allowed_clients.php` — verify rTorrent
 0.9.8 is whitelisted, disable auto-update); 2.2 never reuse MAM
 .torrent files on other sites; 2.7 no partial downloads.
 
-**SeedPool (UNIT3D 9.1.5):** global minimum ratio 1.0 **plus torrents
-must seed 10 days (864000s) regardless of ratio** — schedule nothing for
-deletion before day 10. Official API + RSS keys are the sanctioned
-surfaces; keep request rates gentle. FAQ is login-gated; the forum needs
-the `_t` remember-me cookie for a one-time read (see Cookie lesson).
+**SeedPool (UNIT3D 9.1.5; FAQ ingested 2026-10-09 via one-time `_t`
+read):** global minimum ratio 1:1 (no per-torrent ratio). **Min seed
+time 10 days for ALL releases, freeleech included** — schedule nothing
+for deletion before day 10; torrents go unsatisfied after 3 days (72h)
+offline; unsatisfieds shrink download slots (eventually to 1) and clear
+only by completing the seed time or paying a fine; <10%-downloaded
+torrents are exempt. Freeleech = all individual TV episodes, all
+individual anime episodes, all remuxes, all music packs — freeleech
+never exempts seed time. Clients: qBittorrent/Deluge/rTorrent allowed
+(rTorrent 0.9.8 on the box is fine), **uTorrent banned**. Uploading is
+restricted to trusted members. SuperPool+ with >1 TiB seedpool unlocks
+site-wide freeleech. IRC: irc.seedpool.org:6697 SSL, nick = site
+username, server password = passkey, #lobby !help. Official API + RSS
+keys are the sanctioned surfaces; keep request rates gentle.
 
 **SpeedApp (rules ingested 2026-10-08, translated from Romanian):** Art
 21(2) — every download MUST seed 30 min uninterrupted immediately after
