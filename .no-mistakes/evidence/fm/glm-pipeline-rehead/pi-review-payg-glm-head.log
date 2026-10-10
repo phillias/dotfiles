@@ -1,0 +1,21 @@
+[Fallback] Loading Fallback Router Extension...
+[Fallback] Found chains: gate, review, default
+[Fallback] Cache TTL: 60min, Failed cooldown: 300s
+[Fallback] Extension loaded successfully.
+[Fallback] Available: fallback/gate, fallback/review, fallback/default
+[Fallback] Loading Fallback Router Extension...
+[Fallback] Found chains: gate, review, default
+[Fallback] Cache TTL: 60min, Failed cooldown: 300s
+[Fallback] Extension loaded successfully.
+[Fallback] Available: fallback/gate, fallback/review, fallback/default
+[Fallback DEBUG] fallbackStream invoked for model: review
+[Fallback] Processing request for chain: review
+[Fallback] Chain: openrouter-direct/z-ai/glm-5.2 -> opencode-go-gw/deepseek-v4-flash -> vercel/router/pr-reviewer -> CfAiGw/dynamic/pr-reviewer
+[Fallback] Selecting by priority, starting from beginning
+[Fallback] Model order: openrouter-direct/z-ai/glm-5.2 -> opencode-go-gw/deepseek-v4-flash -> vercel/router/pr-reviewer -> CfAiGw/dynamic/pr-reviewer
+[Fallback] Attempting: openrouter-direct/z-ai/glm-5.2 (1/4)
+[Fallback DEBUG] Target Base URL: https://openrouter.ai/api/v1
+[Fallback DEBUG] Context Messages: 1
+[Fallback] openrouter-direct/z-ai/glm-5.2 succeeded (streaming started)
+[Fallback] Cached working model: openrouter-direct/z-ai/glm-5.2 (chain: review)
+REVIEW-OK

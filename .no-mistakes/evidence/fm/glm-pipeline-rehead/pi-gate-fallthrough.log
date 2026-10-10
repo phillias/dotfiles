@@ -1,0 +1,77 @@
+[Fallback] Loading Fallback Router Extension...
+[Fallback] Found chains: gate, review, default
+[Fallback] Cache TTL: 60min, Failed cooldown: 300s
+[Fallback] Extension loaded successfully.
+[Fallback] Available: fallback/gate, fallback/review, fallback/default
+[Fallback] Loading Fallback Router Extension...
+[Fallback] Found chains: gate, review, default
+[Fallback] Cache TTL: 60min, Failed cooldown: 300s
+[Fallback] Extension loaded successfully.
+[Fallback] Available: fallback/gate, fallback/review, fallback/default
+[Fallback DEBUG] fallbackStream invoked for model: gate
+[Fallback] Processing request for chain: gate
+[Fallback] Chain: opencode-go-gw/deepseek-v4-flash -> CfAiGw/dynamic/pr-gate -> vercel/router/pr-gate
+[Fallback] Selecting by priority, starting from beginning
+[Fallback] Model order: opencode-go-gw/deepseek-v4-flash -> CfAiGw/dynamic/pr-gate -> vercel/router/pr-gate
+[Fallback] Attempting: opencode-go-gw/deepseek-v4-flash (1/3)
+[Fallback DEBUG] Target Base URL: https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-opencode-go/v1
+[Fallback DEBUG] Context Messages: 1
+[Fallback] opencode-go-gw/deepseek-v4-flash stream failed: 401 [{"code":2009,"message":"Unauthorized"}]
+[Fallback DEBUG] Error Details: {
+  "role": "assistant",
+  "content": [],
+  "api": "openai-completions",
+  "provider": "opencode-go-gw",
+  "model": "deepseek-v4-flash",
+  "usage": {
+    "input": 0,
+    "output": 0,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "totalTokens": 0,
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "total": 0
+    }
+  },
+  "stopReason": "error",
+  "timestamp": 1791673069114,
+  "errorMessage": "401 [{\"code\":2009,\"message\":\"Unauthorized\"}]"
+}
+[Fallback] Attempting: CfAiGw/dynamic/pr-gate (2/3)
+[Fallback DEBUG] Target Base URL: https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat
+[Fallback DEBUG] Context Messages: 1
+[Fallback] CfAiGw/dynamic/pr-gate stream failed: 401 [{"code":2009,"message":"Unauthorized"}]
+[Fallback DEBUG] Error Details: {
+  "role": "assistant",
+  "content": [],
+  "api": "openai-completions",
+  "provider": "CfAiGw",
+  "model": "dynamic/pr-gate",
+  "usage": {
+    "input": 0,
+    "output": 0,
+    "cacheRead": 0,
+    "cacheWrite": 0,
+    "totalTokens": 0,
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "total": 0
+    }
+  },
+  "stopReason": "error",
+  "timestamp": 1791673069526,
+  "errorMessage": "401 [{\"code\":2009,\"message\":\"Unauthorized\"}]"
+}
+[Fallback] Attempting: vercel/router/pr-gate (3/3)
+[Fallback DEBUG] Target Base URL: https://ai-gateway.vercel.sh/v1
+[Fallback DEBUG] Context Messages: 1
+[Fallback] vercel/router/pr-gate succeeded (streaming started)
+[Fallback] Cached working model: vercel/router/pr-gate (chain: gate)
+FALLTHROUGH-OK
