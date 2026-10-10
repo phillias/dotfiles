@@ -56,12 +56,12 @@ agent: pi
 # kept riding fallback/gate head dynamic/pr-gate). Profile-level model lets
 # review_agents.reviewer.model win for review steps only; all other steps
 # keep the profile pin.
-# (2026-10-10, captain) Both pi chains re-headed away from deepseek
-# (~/.pi/fallback-chains.json reordered the same day): gate =
-# CfAiGw/dynamic/pr-gate first (its designed GOAT GLM-5.2 head is dark
-# while subscriptions are dry, so nemotron answers at the rung; the GLM
-# head lights itself at renewal — nemotron is captain-approved for the
-# non-review stages) → deepseek safety net → vercel fallthrough; review =
+# (2026-10-10, captain) pi chain heads (see ~/.pi/fallback-chains.json):
+# gate = opencode-go-gw/deepseek-v4-flash head (proven-JSON lane,
+# captain-approved fallback after three document no-text strikes under the
+# nemotron-headed pr-gate) → CfAiGw/dynamic/pr-gate rung-1 (nemotron answers
+# while the GOAT GLM-5.2 head is dark; the GLM head lights itself at
+# renewal) → vercel/router/pr-gate terminal fallthrough; review =
 # openrouter-direct/z-ai/glm-5.2 (PAYG) head → deepseek rung-1 safety net
 # → vercel/router/pr-reviewer rung-2 → CfAiGw/dynamic/pr-reviewer (NIM)
 # terminal rung, last resort only
