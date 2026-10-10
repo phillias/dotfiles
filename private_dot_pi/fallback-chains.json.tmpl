@@ -1,5 +1,5 @@
 {{- /* GUARDRAILS (2026-10-07) — pi-fallback-provider fires on invocation failure (429/5xx/timeout) ONLY. It does NOT fire on silent mid-stream stalls, JSON parse failures, or thinking-mode adapter rejections (kunchenguid/no-mistakes#633). DO NOT put as chain heads: dead-lane models (404 route-FATAL; 400 falls through), app-locked free models (zen 403s via route hops), models that silently stall on long JSON (deepseek-v4-flash can go quiet on test; budget raises mitigate). JSON-bearing pipeline stages need JSON-disciplined models; longcat = light/scout-class ONLY. GOAT/PGS are subscriptions — heads 400-fall-through until renewal. NIM free ~40 RPM shared key — no stage-0 duplication without retiring a node. See provider-catalog/references/ROUTING_TOPOLOGY.md and references/d1/NO_MISTAKES_MODELS.md.
-(2026-10-10, captain) GLM re-head — deepseek off rung 0 on both pipeline chains: review leads with CfAiGw/dynamic/pr-reviewer (NIM z-ai/glm-5.3 head, captain-ordered fit 2026-09-28, probes 200); gate leads with CfAiGw/dynamic/pr-gate (designed GOAT GLM-5.2 head 400-falls through to nemotron while subscriptions are dry — GLM head lights itself at renewal; nemotron is captain-approved for non-review stages). deepseek demoted to rung-1 proven-JSON safety net on both chains. review_agent_timeout concurrently lowered 60m -> 20m (dot_no-mistakes/config.yaml) now that the 2026-10-10 pi convergence contract targets the re-emit spirals at the prompt level. */ -}}
+(2026-10-10, captain) GLM re-head — deepseek off rung 0 on both pipeline chains; gate leads with CfAiGw/dynamic/pr-gate (designed GOAT GLM-5.2 head 400-falls through to nemotron while subscriptions are dry — GLM head lights itself at renewal; nemotron is captain-approved for non-review stages); deepseek demoted to rung-1 proven-JSON safety net on both chains. Review first tried the CfAiGw/dynamic/pr-reviewer route (NIM z-ai/glm-5.3 head) and the free lane proved non-convergent under viral-wave load: three pipeline runs cancelled at 20m/30m/45m wall-clock (runs 01M4K2TWA0QB3FTZMVC12MD0ZC, 01M4K44HMS18JFANN5PT1NSJA5, 01M4K90SVE4DQ1K30G74VN62YY), steady ~4-5 visible tok/s, output scaling with budget, never quieter than ~1m — slow serving, not queue wait. Captain then chose the PAYG lane: review heads with openrouter-direct/z-ai/glm-5.2 (live probe 2026-10-10 answers in seconds), NIM route demoted to terminal rung — alive but slow, last resort only. review_agent_timeout concurrently lowered 60m -> 45m interim (dot_no-mistakes/config.yaml) while the 2026-10-10 pi convergence contract targets re-emit spirals at the prompt level. */ -}}
 {
   "gate": [
     "CfAiGw/dynamic/pr-gate",
@@ -7,10 +7,10 @@
     "vercel/router/pr-gate"
   ],
   "review": [
-    "CfAiGw/dynamic/pr-reviewer",
+    "openrouter-direct/z-ai/glm-5.2",
     "opencode-go-gw/deepseek-v4-flash",
     "vercel/router/pr-reviewer",
-    "openrouter-direct/z-ai/glm-5.2"
+    "CfAiGw/dynamic/pr-reviewer"
   ],
   "default": [
     "CfAiGw/dynamic/TUI",
