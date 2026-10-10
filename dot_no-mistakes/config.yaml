@@ -62,9 +62,11 @@ agent: pi
 # while subscriptions are dry, so nemotron answers at the rung; the GLM
 # head lights itself at renewal — nemotron is captain-approved for the
 # non-review stages) → deepseek safety net → vercel fallthrough; review =
-# CfAiGw/dynamic/pr-reviewer first (NIM z-ai/glm-5.3 head, captain-ordered
-# fit 2026-09-28) → deepseek safety net → vercel → PAYG glm-5.2 terminal.
-# Exact ladders: provider-catalog references/ROUTING_TOPOLOGY.md flow-2.
+# openrouter-direct/z-ai/glm-5.2 (PAYG) head → deepseek rung-1 safety net
+# → vercel/router/pr-reviewer rung-2 → CfAiGw/dynamic/pr-reviewer (NIM)
+# terminal rung, last resort only
+# Note: Exact ladders in provider-catalog references/ROUTING_TOPOLOGY.md
+# flow-2 were not updated by this change.
 agent_config:
   pi:
     # (2026-09-21; rung names refreshed 2026-09-28) Ride pi's fallback/gate
