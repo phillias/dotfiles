@@ -65,8 +65,6 @@ agent: pi
 # openrouter-direct/z-ai/glm-5.2 (PAYG) head → deepseek rung-1 safety net
 # → vercel/router/pr-reviewer rung-2 → CfAiGw/dynamic/pr-reviewer (NIM)
 # terminal rung, last resort only
-# Note: Exact ladders in provider-catalog references/ROUTING_TOPOLOGY.md
-# flow-2 were not updated by this change.
 agent_config:
   pi:
     # (2026-09-21; rung names refreshed 2026-09-28) Ride pi's fallback/gate
@@ -75,11 +73,9 @@ agent_config:
     model: fallback/gate
 
 # Review rides the separate `fallback/review` chain so the second-set-of-eyes
-# exercises the pr-reviewer ladder (openrouter-direct/z-ai/glm-5.2:free head →
-# opencode-go-gw deepseek → CF dynamic/pr-reviewer →
-# vercel/router/pr-reviewer → openrouter-direct/z-ai/glm-5.2 PAYG terminal
-# rung, kept per captain 2026-10-04; exact ladder: provider-catalog references
-# ROUTING_TOPOLOGY.md flow-2) rather than the cheaper gate ladder.
+# exercises the pr-reviewer ladder rather than the cheaper gate ladder.
+# Ladder owner: ~/.pi/fallback-chains.json (`review` key); rendered in
+# provider-catalog references/ROUTING_TOPOLOGY.md flow-2.
 # Budget-ranked, JSON discipline first, stronger model pool than gate.
 review_agents:
   reviewer:
