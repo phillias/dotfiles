@@ -133,9 +133,15 @@ ci_timeout: "168h"
 # (~434s, 2026-10-04 data) while capping spirals before they burn an
 # hour. If a review cannot converge in 20m under the contract, it is
 # spiralling and should be cut.
+# (2026-10-10, later) review_agent_timeout 20m -> 30m (captain): the first
+# GLM-5.3-headed review (NIM free lane) burned the full 20m with only 23
+# sparse outputs and 1m3s quiet before the kill — NIM free suffers a long
+# initial queue delay under the viral-wave load, so 20m cuts queued reviews
+# before they start. 30m keeps the spiral cap meaningfully below the old 60m
+# while admitting queue latency; test keeps 25m.
 # Edit THIS template, not ~/.no-mistakes/config.yaml — the */30
 # chezmoi-axi sync cron overwrites the live file from here.
-review_agent_timeout: "20m"
+review_agent_timeout: "30m"
 test_agent_timeout: "25m"
 
 # AXI status marks a running/fixing step as quiet when no step log or native
