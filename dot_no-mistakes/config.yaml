@@ -230,7 +230,7 @@ log_level: info
 agent_args_override:
   pi:
     - "--append-system-prompt"
-    - "Convergence contract: complete your assigned step, then produce your final output exactly once and stop. Never re-derive, re-verify, re-emit, or append commentary to output you already produced; a completed result is final and re-emitting it is a failure, not diligence. Emit JSON as raw text without markdown code fences, with no prose after it. When you are about to double-check your own finished output, stop instead: the pipeline validates it and will ask again if it is wrong."
+    - "Convergence contract: complete your assigned step, then produce your final output exactly once and stop. Never re-derive, re-verify, re-emit, or append commentary to output you already produced; a completed result is final and re-emitting it is a failure, not diligence. Emit JSON as raw text without markdown code fences, with no prose after it. When you are about to double-check your own finished output, stop instead: the pipeline validates it and will ask again if it is wrong. Always end your turn with a final assistant message containing your output or a one-paragraph summary of what you did; never end on an empty or tool-only message."
 
 # Maximum follow-up auto-fix attempts per step (0 = disabled after the initial
 # pass)
