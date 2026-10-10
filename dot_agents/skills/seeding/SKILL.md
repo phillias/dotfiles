@@ -49,6 +49,27 @@ curl -s --digest -u "user:$PW" -X POST \
 - Disk 1.2T (ploop); downloads land in `/home/user/Downloads`.
 - Session dir on box: `/var/www/session/user` (one `.torrent` + sidecars
   per item; count only `*.torrent` for true torrent totals).
+- **Memory ceiling: 2.5 GiB cgroup (max 2,684,354,560 bytes) — page cache
+  from downloads counts fully against it.** On 2026-10-09 a 263 GiB
+  download pinned the cgroup to 99.9% and the host flipped the rootfs
+  read-only ~12h later (all web services died; panel Stop+Start did NOT
+  fix it; RapidSeedbox replaced/re-attached the disk after a support
+  ticket, ~4h). Guardrails for every large grab:
+
+  - Check before and after: `ssh rapidseedbox 'cat /proc/meminfo | grep -E "MemTotal|MemFree|Cached:|MemAvailable"'`
+    and the cgroup counter (`cat /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current`
+    on cgroup v2, or `/sys/fs/cgroup/memory/memory.limit_in_bytes` +
+    `memory.usage_in_bytes` on v1 — the Virtuozzo host has used v1).
+  - One large download (>50 GiB) at a time; before starting the next
+    big grab, current usage should sit under ~70% of the ceiling.
+  - Recheck within the hour after any big add. If usage pins >95%,
+    pause the newest download (`rpc d.stop "<hash>"`) until the
+    oldest completes — let the kernel reclaim rather than burst.
+  - Outage signature (repeat): web dead but SSH fine + writes fail
+    with read-only errors → do NOT reinstall the container; email
+    `support@rapidseedbox.com` (sent from the captain's Gmail via
+    Composio `GMAIL_REPLY_TO_THREAD`/`GMAIL_SEND_EMAIL`, gws-axi is
+    drafts-only). Reference ticket: 2026-10-09, fixed by Carlos's team.
 
 ## Portfolio (verified 2026-10-07: 58 torrents, 193G on disk)
 
@@ -180,12 +201,14 @@ curl -s --digest -u "user:$PW" -X POST -H 'Content-Type: text/xml' \
   "$RPC"   # → i4 0 on success
 ```
 
-Verify add: `rpc download_list ""` (count grows by one), `rpc d.name.<hash> ""`,
-`rpc d.state.<hash> ""` = 1 (started), `rpc d.down.rate.<hash> ""` shows
-active download speed, `rpc d.base_path.<hash> ""` the target directory.
-(For `d.<cmd>.<hash>` methods the hash rides in the method name; the
-target param stays an empty string. For `d.close`/`d.erase` the hash is
-the target param.)
+Verify add: `rpc download_list ""` (count grows by one), `rpc d.name "<hash>"`,
+`rpc d.state "<hash>"` = 1 (started), `rpc d.down.rate "<hash>"` shows
+active download speed, `rpc d.base_path "<hash>"` the target directory.
+**The hash is the param value** — pass it as the single string param of
+`d.<cmd>` (e.g. `rpc d.state "<hash>"`). Hash-suffixed method names like
+`d.state.<hash>` are "not defined" on rTorrent 0.9.8 via rpc.php
+(corrected 2026-10-09 after a live fault). Same form for
+`d.close`/`d.erase` and `d.stop`.
 
 Remove (safe order — close, erase, then delete data):
 
@@ -204,7 +227,9 @@ First full lifecycle executed 2026-10-08: **added** Magic Knight
 Rayearth BD Remux (263.37 GiB, AnimeZ freeleech, id 34662, top-ranked
 candidate at 7 seeds/1 leecher — 14.4 MiB/s download observed);
 **removed** Newsweek.International.2021.01.22.pdf (MAM, 154 days old,
-zero bytes ever uploaded) — both ends verified live.
+zero bytes ever uploaded) — both ends verified live. Rayearth survived
+the 2026-10-09 outage complete and is seeding (verified 2026-10-09:
+state=1, complete=1, 345 MiB up).
 
 ## Invite-pathway ladder (trackerpathways dataset, Sep 2026)
 
@@ -320,8 +345,15 @@ HTML with automation when a JSON/RSS surface exists.
   `AuthType Digest`. `curl --digest` is mandatory.
 - **trackerpathways.org direct fetch** 403s / renders empty (JS SPA);
   chrome-devtools-axi was flaky against it. Use the GitHub repo clone.
-- Torrent counts: don't count sidecar files (`.libtorrent_resume`,
-  `.rtorrent`) — 177 files ≠ 177 torrents; it was 58.
+- Torrent counts: don't count sidecars (`.libtorrent_resume`, `.rtorrent`) — 177 files ≠ 58 torrents.
+- **Service-check traps on this box:** rTorrent's process comm is
+  `rtorrent main` — `pgrep -x rtorrent` false-negatives; use
+  `ss -ltnp | grep :5000` (SCGI) instead. `deluged` runs OUTSIDE
+  systemd — `systemctl is-active deluged` reports inactive while it is
+  actually up. ruTorrent alive = HTTP 401 on anonymous GET of
+  `https://45-152-210-245.a.seedbox.vip/rutorrent/`.
+- **Hash-suffixed rpc methods** (`d.state.<hash>`) are "not defined";
+  always pass the hash as the param value.
 
 ## Records
 
