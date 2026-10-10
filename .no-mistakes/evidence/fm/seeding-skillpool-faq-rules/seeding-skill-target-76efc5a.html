@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>seeding/SKILL.md (target 76efc5a)</title>
+<style>
+ body{max-width:900px;margin:2rem auto;padding:0 1.25rem;font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1b1f24;background:#fff}
+ h1,h2,h3{line-height:1.25} h1{border-bottom:2px solid #d0d7de;padding-bottom:.3rem}
+ code{background:#f3f4f6;padding:.15em .35em;border-radius:4px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+ pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow:auto}
+ pre code{background:none;padding:0} table{border-collapse:collapse} td,th{border:1px solid #d0d7de;padding:.4rem .6rem}
+ blockquote{border-left:4px solid #d0d7de;margin:0;padding-left:1rem;color:#57606a}
+</style></head><body>
+<p style="color:#57606a;font-size:13px">Rendered from dot_agents/skills/seeding/SKILL.md at commit 76efc5a0fbf2cf973a75b7374fa64474f22c7e44</p>
+<hr />
+<p>name: seeding
+description: &gt;
+  Runbook for the RapidSeedbox seeding operation — rTorrent 0.9.8 box at
+  45.152.210.245 (SSH root key, ruTorrent XML-RPC over HTTPS), tracker
+  portfolio (MyAnonamouse, SeedPool, AnimeZ), official tracker API usage
+  (Gazelle + UNIT3D), ratio-yield ranking method, the invite-pathway ladder
+  from the trackerpathways dataset, and known-failed troubleshooting paths.
+  Use when the captain asks about the seedbox, seeding ratio, tracker
+  strategy, torrent portfolio analysis, or invite pathways.
+compatibility: opencode
+metadata:
+  stacks: rapidseedbox
+  services: rtorrent,rutorrent,mam,seedpool,animez,speedapp,prowlarr
+  tools: ssh,curl,xml,sqlite3</p>
+<hr />
+<h1 id="seeding-operation-runbook">Seeding Operation Runbook</h1>
+<h2 id="access-verified-2026-10-07">Access (verified 2026-10-07)</h2>
+<p>All commands run from the kali firstmate home unless noted.</p>
+<pre><code class="language-bash"># SSH (rapidseedbox alias — root key login)
+ssh rapidseedbox
+
+# ruTorrent XML-RPC (digest auth — plain -u gives 401)
+PW=$(cat ~/.agents/keys/default/.rapidseedbox-utorrent-password)
+curl -s --digest -u &quot;user:$PW&quot; -X POST \
+  -H 'Content-Type: text/xml' \
+  -d '&lt;methodCall&gt;&lt;methodName&gt;system.client_version&lt;/methodName&gt;&lt;/methodCall&gt;' \
+  https://45-152-210-245.a.seedbox.vip/rutorrent/plugins/rpc/rpc.php
+</code></pre>
+<ul>
+<li>HTTP auth user is literally <code>user</code>; password file is 11 bytes, value never
+  written anywhere else.</li>
+<li>The rpc.php endpoint is a raw XML-RPC passthrough to rTorrent's SCGI socket
+  (127.0.0.1:5000 on box). Any rTorrent methodCall works: <code>download_list</code>,
+  <code>d.*</code>, <code>load.start</code>, etc. A bare GET on it 500s with "Link to XMLRPC
+  failed" — misleading; it means empty POST body, not a downed client.</li>
+</ul>
+<h2 id="box-facts-verified-2026-10-07">Box facts (verified 2026-10-07)</h2>
+<ul>
+<li>rTorrent 0.9.8 in screen session <code>rtorrent-user</code>; ruTorrent + Deluge also
+  present (Deluge has no torrents verified; portfolio lives in rTorrent).</li>
+<li>NIC venet0 reports 10000 Mbps — treat as 10Gbps-class, verify empirically
+  before promising speeds.</li>
+<li>Disk 1.2T (ploop); downloads land in <code>/home/user/Downloads</code>.</li>
+<li>Session dir on box: <code>/var/www/session/user</code> (one <code>.torrent</code> + sidecars
+  per item; count only <code>*.torrent</code> for true torrent totals).</li>
+<li>
+<p><strong>Memory ceiling: 2.5 GiB cgroup (max 2,684,354,560 bytes) — page cache
+  from downloads counts fully against it.</strong> On 2026-10-09 a 263 GiB
+  download pinned the cgroup to 99.9% and the host flipped the rootfs
+  read-only ~12h later (all web services died; panel Stop+Start did NOT
+  fix it; RapidSeedbox replaced/re-attached the disk after a support
+  ticket, ~4h). Guardrails for every large grab:</p>
+</li>
+<li>
+<p>Check before and after: <code>ssh rapidseedbox 'cat /proc/meminfo | grep -E "MemTotal|MemFree|Cached:|MemAvailable"'</code>
+    and the cgroup counter (<code>cat /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current</code>
+    on cgroup v2, or <code>/sys/fs/cgroup/memory/memory.limit_in_bytes</code> +
+    <code>memory.usage_in_bytes</code> on v1 — the Virtuozzo host has used v1).</p>
+</li>
+<li>One large download (&gt;50 GiB) at a time; before starting the next
+    big grab, current usage should sit under ~70% of the ceiling.</li>
+<li>Recheck within the hour after any big add. If usage pins &gt;95%,
+    pause the newest download (<code>rpc d.stop "&lt;hash&gt;"</code>) until the
+    oldest completes — let the kernel reclaim rather than burst.</li>
+<li>Outage signature (repeat): web dead but SSH fine + writes fail
+    with read-only errors → do NOT reinstall the container; email
+    <code>support@rapidseedbox.com</code> (sent from the captain's Gmail via
+    Composio <code>GMAIL_REPLY_TO_THREAD</code>/<code>GMAIL_SEND_EMAIL</code>, gws-axi is
+    drafts-only). Reference ticket: 2026-10-09, fixed by Carlos's team.</li>
+</ul>
+<h2 id="portfolio-verified-2026-10-07-58-torrents-193g-on-disk">Portfolio (verified 2026-10-07: 58 torrents, 193G on disk)</h2>
+<table>
+<thead>
+<tr>
+<th>Tracker</th>
+<th>Torrents</th>
+<th>Notes (yield verified 2026-10-08)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MyAnonamouse (MAM)</td>
+<td>36</td>
+<td>Gazelle; the invite gateway (34 routes); 50.75 GiB up, 363 MiB/day</td>
+</tr>
+<tr>
+<td>SeedPool (SP)</td>
+<td>14</td>
+<td>UNIT3D; young 0-day tracker (b. 2024); 74.80 GiB up, 495 MiB/day</td>
+</tr>
+<tr>
+<td>AnimeZ</td>
+<td>8</td>
+<td>68.06 GiB up, 486 MiB/day — highest per-torrent yield (Captain Tsubasa S02: 65 GiB alone); no API, but RSS feed verified (key file + enclosure downloads); software unidentified (non-UNIT3D <code>announce7</code> path; API tokens disabled)</td>
+</tr>
+</tbody>
+</table>
+<p>2026-10-08 lifecycle test: + Magic Knight Rayearth BD Remux (263.37 GiB,
+AnimeZ freeleech), − Newsweek.International.2021.01.22.pdf (MAM, zero
+upload in 154 days). Portfolio: 36 MAM / 14 SeedPool / 8 AnimeZ.</p>
+<p>Refresh method (avoids the SCGI hang, see Known-failed):</p>
+<pre><code class="language-bash">ssh rapidseedbox 'grep -h -o &quot;https\?://[a-zA-Z0-9.-]*&quot; /var/www/session/user/*.torrent 2&gt;/dev/null \
+  | sort | uniq -c | sort -rn'
+</code></pre>
+<h2 id="official-tracker-apis-verified-2026-10-08-no-scraping-ever">Official tracker APIs (verified 2026-10-08; no scraping ever)</h2>
+<ul>
+<li><strong>MAM — mam_id cookie, NOT an API-key header.</strong> Every official
+  integration (Prowlarr, Jackett, Readarr, Listenarr) authenticates with
+  the <code>mam_id</code> cookie generated at Preferences &gt; Security. Key file (the
+  cookie value, saved by the captain): <code>~/.agents/keys/default/.map-api-key</code>
+  — odd name, verified live against MAM. Sanctioned surfaces (from
+  Prowlarr's indexer source, <code>MyAnonamouse.cs</code>):</li>
+<li>User stats: <code>GET https://www.myanonamouse.net/jsonLoad.php</code> with
+    <code>Cookie: mam_id=&lt;value&gt;</code> → JSON: classname, ratio, uploaded_bytes,
+    downloaded_bytes, seedbonus, wedges, uid, username. Verified output
+    2026-10-08: <strong>Power User, ratio 92, 50.75 GiB up, 60 wedges</strong>.</li>
+<li>Search: <code>GET /tor/js/loadSearchJSONbasic.php?tor[text]=&amp;tor[searchType]=fl</code>
+    (<code>fl</code>=freeleech, <code>all</code>, <code>active</code>, <code>VIP</code>, <code>nVIP</code>) plus
+    <code>tor[cat][]=0</code>, <code>tor[startNumber]=0</code>, <code>perpage=100</code> → envelope
+    <code>{data:[rows], found:&lt;total&gt;, total, perpage, start}</code>; rows use
+    lowercase keys: id, title, seeders, leechers, size (a formatted
+    string like "332.5 KiB" — parse units), added, times_completed,
+    free, fl_vip, personal_freeleech, vip, w, lang_code. Verified
+    2026-10-08: searchType=fl → 1071 freeleech found.</li>
+<li>Download: <code>/tor/download.php?tid=&lt;id&gt;</code> (add <code>&amp;fl=1</code> to spend a wedge).</li>
+<li>HTTP 403 = mam_id expired/invalid.</li>
+<li><strong>SeedPool (UNIT3D 9.1.5 custom) — Bearer token, verified 2026-10-08.</strong>
+  <code>GET https://seedpool.org/api/torrents/filter?perPage=100&amp;sortField=seeders&amp;sortDirection=desc</code>
+  with <code>Authorization: Bearer $(cat ~/.agents/keys/default/.seedpool-api-token)</code>.
+  Freeleech-only filter: <code>&amp;free[]=100</code>. Rows at <code>data[].attributes</code>: seeders,
+  leechers, times_completed, size, freeleech %, double_upload, featured,
+  created_at, details_link, download_link. Token from Settings → API Key.
+  RSS Keys (RID) also exist at Settings &gt; RSS Keys (sanctioned automation).</li>
+<li><strong>SpeedApp (speedapp.io, UNIT3D-family JSON API) — Bearer token,
+  verified live 2026-10-08.</strong> <code>GET
+  https://speedapp.io/api/torrent?itemsPerPage=100&amp;sort=torrent.createdAt&amp;direction=desc</code>
+  with <code>Authorization: Bearer $(cat ~/.agents/keys/default/.speedapp.io-api-token)</code>
+  (token is 427 chars, JWT-shaped). Other params: <code>search=</code>, <code>categories[]=</code>,
+  <code>imdbId</code>, <code>page</code>. Rows (JArray): id, name, seeders, leechers, size
+  (bytes), download_volume_factor (0 = freeleech), upload_volume_factor,
+  is_freeleech, is_double_upload, times_completed, created_at, category,
+  url. Download: <code>api/torrent/&lt;id&gt;/download</code> (same Bearer header).
+  <code>api/login</code> (email/password → token) exists — never use it; token only.
+  Rules INGESTED 2026-10-08 via one-time PHPSESSID cookie read (see Rules
+  compliance). Footer confirms API + RSS as official site features.</li>
+<li><strong>AnimeZ — RSS feed, verified live 2026-10-08 (no API; tokens 404).</strong>
+  Feed pattern:
+  <code>https://animez.to/rss/torrents/&lt;filter&gt;/&lt;key&gt;</code> with filters: all,
+  featured, freeleech, half-download, double-upload, dying, dead, reseed,
+  anime, manga, my-uploads, bookmarks. Key file (64-char hex, saved by
+  the captain): <code>~/.agents/keys/default/.animez.to-rss-key</code>. The
+  freeleech feed returns 50 items; item tags (namespaced — strip the
+  <code>}</code>): title, link, guid, pubDate, description, creator, category,
+  enclosure, fileName, contentLength (bytes), infoHash (lowercase),
+  seeds, peers, hash. The enclosure URL
+  <code>https://animez.to/rss/download/&lt;key&gt;/&lt;id&gt;</code> is the sanctioned
+  key-embedded .torrent download — fetch it ON the box, then
+  <code>load.start</code> (see Lifecycle). No session-cookie login, ever.</li>
+<li><strong>Prowlarr (self-hosted, 66 indexers incl. seedpool (API)):</strong>
+  <code>GET https://prowlarr.phillias.cc/api/v1/indexer</code> with
+  <code>X-Api-Key: $(cat ~/.agents/keys/default/.prowlarr.phillias.cc-api-key)</code>.
+  No MAM or AnimeZ in it. Captain's rule: gentle rates, don't crash it.</li>
+</ul>
+<h2 id="ratio-yield-ranking-method">Ratio-yield ranking method</h2>
+<p>For "which torrents generate the highest ratio on my trackers":</p>
+<ol>
+<li>Pull the live seeding list from rTorrent (<code>download_list</code> + per-hash
+   <code>d.*</code> calls: size, uploaded, ratio, timestamp) or parse session files.</li>
+<li>Join against tracker API data: <code>leechers</code>, <code>seeders</code>, <code>freeleech</code> flag.</li>
+<li>Rank candidates by modeled yield: leecher/seeder ratio × size ×
+   freeleech multiplier (free torrents: all upload counts, downloaded=0).</li>
+<li>Prefer: new free torrents in the first hours after upload, small
+   seeder counts, sustained demand (check twice, hours apart, before
+   committing disk).</li>
+<li>Disk budget: keep ~100G free headroom of the 1.2T.</li>
+</ol>
+<p>MAM specifics: bonus-point economy rewards seed time even when upload
+stalls — keep everything seeding, spend points on VIP (freeleech) months
+or upload credit per the captain's preference.</p>
+<p>Verified snapshot (2026-10-08, 58 torrents, ~1.34 GiB/day aggregate):
+per-tracker play — MAM = evergreen long-tail (sizes are small and FL
+swarms are saturated with 300+ seeders; catch NEW freeleech releases
+fresh via searchType=fl sorted by added, not the old backlog) + bonus
+economy; SeedPool = fresh 0-day freeleech within hours of upload
+(<code>free[]=100&amp;sortField=created_at</code>, REMUX sizes carry the yield, 10-day
+seed floor); SpeedApp = fresh freeleech UHD REMUXes (best instant
+demand seen: 45-80 GiB titles with 0-3 seeders); AnimeZ = keep
+everything seeding (no API, manual only).</p>
+<h2 id="lifecycle-add-and-remove-a-torrent-verified-2026-10-08">Lifecycle: add and remove a torrent (verified 2026-10-08)</h2>
+<p>Helper (define once per shell):</p>
+<pre><code class="language-bash">PW=$(cat ~/.agents/keys/default/.rapidseedbox-utorrent-password)
+RPC=&quot;https://45-152-210-245.a.seedbox.vip/rutorrent/plugins/rpc/rpc.php&quot;
+rpc() { curl -s --digest -u &quot;user:$PW&quot; -X POST -H 'Content-Type: text/xml' \
+  --data &quot;&lt;methodCall&gt;&lt;methodName&gt;$1&lt;/methodName&gt;&lt;params&gt;&lt;param&gt;&lt;value&gt;&lt;string&gt;$2&lt;/string&gt;&lt;/value&gt;&lt;/param&gt;&lt;/params&gt;&lt;/methodCall&gt;&quot; &quot;$RPC&quot;; }
+</code></pre>
+<p>Add (AnimeZ example; MAM/SeedPool/SpeedApp: fetch the .torrent on box
+via their sanctioned download URLs with the cookie/Bearer header):</p>
+<pre><code class="language-bash"># 1. fetch the .torrent ON the box (RSS enclosure embeds the key)
+ssh rapidseedbox \
+  &quot;curl -s -o /home/user/rl-&lt;id&gt;.torrent 'https://animez.to/rss/download/&lt;key&gt;/&lt;id&gt;'&quot;
+# 2. load + start — TWO params: empty-string target, then the on-box path
+curl -s --digest -u &quot;user:$PW&quot; -X POST -H 'Content-Type: text/xml' \
+  --data &quot;&lt;methodCall&gt;&lt;methodName&gt;load.start&lt;/methodName&gt;&lt;params&gt;&lt;param&gt;&lt;value&gt;&lt;string&gt;&lt;/string&gt;&lt;/value&gt;&lt;/param&gt;&lt;param&gt;&lt;value&gt;&lt;string&gt;/home/user/rl-&lt;id&gt;.torrent&lt;/string&gt;&lt;/value&gt;&lt;/param&gt;&lt;/params&gt;&lt;/methodCall&gt;&quot; \
+  &quot;$RPC&quot;   # → i4 0 on success
+</code></pre>
+<p>Verify add: <code>rpc download_list ""</code> (count grows by one), <code>rpc d.name "&lt;hash&gt;"</code>,
+<code>rpc d.state "&lt;hash&gt;"</code> = 1 (started), <code>rpc d.down.rate "&lt;hash&gt;"</code> shows
+active download speed, <code>rpc d.base_path "&lt;hash&gt;"</code> the target directory.
+<strong>The hash is the param value</strong> — pass it as the single string param of
+<code>d.&lt;cmd&gt;</code> (e.g. <code>rpc d.state "&lt;hash&gt;"</code>). Hash-suffixed method names like
+<code>d.state.&lt;hash&gt;</code> are "not defined" on rTorrent 0.9.8 via rpc.php
+(corrected 2026-10-09 after a live fault). Same form for
+<code>d.close</code>/<code>d.erase</code> and <code>d.stop</code>.</p>
+<p>Remove (safe order — close, erase, then delete data):</p>
+<pre><code class="language-bash">rpc d.close &quot;&lt;hash&gt;&quot;   # stop cleanly
+rpc d.erase &quot;&lt;hash&gt;&quot;   # remove from rTorrent + session dir
+ssh rapidseedbox 'rm -rf &quot;/home/user/Downloads/&lt;content-dir-or-file&gt;&quot;'  # data only after confirming nothing else needs it
+</code></pre>
+<p>Before any removal, confirm the torrent is outside every tracker's
+seed window (MAM 72h/30d HnR, SeedPool 10-day floor, SpeedApp Art 21
+48h/30d) and has no upload promise worth keeping. Deletion candidates:
+zero-upload + aged + low forward demand.</p>
+<p>First full lifecycle executed 2026-10-08: <strong>added</strong> Magic Knight
+Rayearth BD Remux (263.37 GiB, AnimeZ freeleech, id 34662, top-ranked
+candidate at 7 seeds/1 leecher — 14.4 MiB/s download observed);
+<strong>removed</strong> Newsweek.International.2021.01.22.pdf (MAM, 154 days old,
+zero bytes ever uploaded) — both ends verified live. Rayearth survived
+the 2026-10-09 outage complete and is seeding (verified 2026-10-09:
+state=1, complete=1, 345 MiB up).</p>
+<h2 id="invite-pathway-ladder-trackerpathways-dataset-sep-2026">Invite-pathway ladder (trackerpathways dataset, Sep 2026)</h2>
+<p>Dataset: <code>github.com/handokota/trackerpathways</code> → <code>src/data/trackers.json</code>
+(MIT). Shape: <code>trackerInfo[name]</code> (182 trackers), <code>unlockInviteClass[name]</code>
+= [days, reqs], <code>routeInfo[source][dest]</code> = {days, reqs, active, updated}.
+Re-clone on demand (site itself is a JS SPA; fetch the repo, not the page).</p>
+<p>Ladder given current portfolio and box (10Gbps, ~900G free):</p>
+<ol>
+<li><strong>MAM is ALREADY Power User</strong> (verified live via <code>/jsonLoad.php</code>
+   2026-10-08: ratio 92, 50.75 GiB up, wedges 60). The trackerpathways
+   "1 TiB uploaded" string is stale vs the live class — the PU-gated
+   invite forum (34 routes) is plausibly open NOW. Confirm inside the
+   invite threads before applying; each thread adds its own profile-link
+   and age requirements.</li>
+<li><strong>At PU, MAM invite forum</strong> (days=0 routes): DigitalCore.Club and Milkie
+   (0-day/general), Luminarr and ReelFliX (HD movies) — burst-yield picks
+   for a fast pipe; seedpool (already have); BakaBT, TheGeeks, RetroFlix,
+   Unwalled (25 seeded uploads) etc. as demand fits.</li>
+<li><strong>6 months in (180d routes):</strong> Blutopia — "9 months or 6 months and
+   10+ uploads"; big free general, top per-TB yield on a fast box.
+   PixelHD needs 3× 6-month profile links (MAM qualifies).</li>
+<li><strong>9 months (270d):</strong> LST (large general), ShareIsland ("9mo or 10+
+   uploads").</li>
+<li><strong>12 months (365d):</strong> Immortal-s, Phoenix Project. (Secret Cinema route
+   inactive.)</li>
+<li><strong>SeedPool side track:</strong> SuperPool class = 6 months, 1 TiB seedsize,
+   ratio ≥ 1 — seedsize-based, trivial for the box; SeedPool itself has no
+   recorded outgoing routes (young tracker), so treat it as an end node.</li>
+</ol>
+<p>Shazbat and XSpeeds require MAM VIP+ (beyond PU). All route data as of the
+dataset's ~Sep 2026 timestamps — re-verify requirements in the invite
+threads before applying; forums can change reqs without the dataset
+noticing.</p>
+<h2 id="rules-compliance-reviewed-2026-10-08-read-before-any-tracker-action">Rules compliance (reviewed 2026-10-08 — read before any tracker action)</h2>
+<p><strong>MAM (rules.php, rule 1.7 "Bots, Automation, and Scraping" = anchor
+<code>#rsc68</code>):</strong> only functions in the API documentation (/api/list.php,
+login-gated) or admin-approved surfaces may be automated; this explicitly
+covers AI assistants and LLM tools. Never automate login with
+email/password; never give login credentials to an agent; the <code>mam_id</code>
+cookie is the sanctioned agent credential. No scraping, ever. Other
+binding rules: 1.2 seedbox/VPN use must be declared to staff (ticket) —
+and if the browsing IP differs from the client IP, the Dynamic Seedbox
+API (thread /f/t/78248) authorizes the client; 1.4/2.4 global ratio
+≥ 1.0; 2.5 every torrent must seed 72h within 30 days (HnR); 2.8
+unsatisfied-torrent caps by class (User 50 / PU 100 / VIP 150); 2.3
+whitelisted clients only (<code>/tor/allowed_clients.php</code> — verify rTorrent
+0.9.8 is whitelisted, disable auto-update); 2.2 never reuse MAM
+.torrent files on other sites; 2.7 no partial downloads.</p>
+<p><strong>SeedPool (UNIT3D 9.1.5; FAQ ingested 2026-10-09 via one-time <code>_t</code>
+read):</strong> global minimum ratio 1:1 (no per-torrent ratio). <strong>Min seed
+time 10 days for ALL releases, freeleech included</strong> — schedule nothing
+for deletion before day 10; torrents go unsatisfied after 3 days (72h)
+offline; unsatisfieds shrink download slots (eventually to 1) and clear
+only by completing the seed time or paying a fine; &lt;10%-downloaded
+torrents are exempt. Freeleech = all individual TV episodes, all
+individual anime episodes, all remuxes, all music packs — freeleech
+never exempts seed time. Clients: qBittorrent/Deluge/rTorrent allowed
+(rTorrent 0.9.8 on the box is fine), <strong>uTorrent banned</strong>. Uploading is
+restricted to trusted members. SuperPool+ with &gt;1 TiB seedpool unlocks
+site-wide freeleech. IRC: irc.seedpool.org:6697 SSL, nick = site
+username, server password = passkey, #lobby !help. Official API + RSS
+keys are the sanctioned surfaces; keep request rates gentle.</p>
+<p><strong>SpeedApp (rules ingested 2026-10-08, translated from Romanian):</strong> Art
+21(2) — every download MUST seed 30 min uninterrupted immediately after
+completing, then per-torrent ratio 1.0 OR 48h cumulative seed within 30
+days; violations are H&amp;R. Ratio &lt;0.95 risks limits until User class;
+global ≤0.2 → 7-day download limit. &gt;4 unsatisfied bars new users from
+&lt;24h-old torrents; H&amp;R&gt;9 → 24h-limited, &gt;29 → 7d-limited. Scripts that
+cheat seeding stats = disable; <strong>excessive upload throttling is
+punishable</strong> (never throttle seeding on this tracker). Unconnectable ≠
+H&amp;R. API + RSS are official site features (sanctioned surfaces); no
+AI/automation ban clause exists.</p>
+<p><strong>AnimeZ:</strong> ToS has no AI/automation clause; forbidden: circumventing
+rate limits/security/filtering, interfering with the service, collecting
+other users' info. The RSS feed (key-embedded) is the sanctioned
+surface; use it instead of the site. No session-cookie automation.</p>
+<p><strong>Cookie lesson (one-time rules reads):</strong> Discourse forums
+(forums.seedpool.org) rotate <code>_forum_session</code> on nearly every request —
+a copied value goes stale and 302s to SSO. Request the <code>_t</code> remember-me
+cookie instead (long-lived; Discourse mints a fresh session from it).
+SpeedApp's PHPSESSID worked fine for a single read. Cookie values are
+used once, never stored anywhere.</p>
+<p><strong>Prowlarr:</strong> self-hosted; only rule is don't crash it.</p>
+<p><strong>General posture:</strong> one-off gentle API reads from the kali home; bulk
+swarm interaction happens on the box via rTorrent; never touch a site's
+HTML with automation when a JSON/RSS surface exists.</p>
+<h2 id="known-failed-avoid-verified-2026-10-07">Known-failed / avoid (verified 2026-10-07)</h2>
+<ul>
+<li><strong>SCGI nested multicall hangs rTorrent 0.9.8:</strong> <code>d.multicall2</code> with
+  nested <code>t.multicall=d.url=</code> deadlocks the client (socket timeout, needs
+  screen restart). Avoid raw nested multicalls over SCGI; use simple
+  methodCalls, the ruTorrent RPC passthrough, or grep session files.</li>
+<li><strong>rTorrent 0.9.8 quirks over rpc.php:</strong> <code>d.timestamp.added</code> is NOT
+  defined (use session-file mtime as add-time proxy); <code>d.multicall2</code>
+  with any view target faults ("" → "Could not find view", named views
+  → -501 unsupported target type); classic <code>d.multicall</code> undefined.
+  Bulk stats DO work via standard XML-RPC <code>system.multicall</code> batching
+  per-hash simple calls — verified: 348 entries in ONE POST
+  (d.name, d.size_bytes, d.up.total, d.down.total, d.ratio per hash;
+  <code>d.ratio</code> returns permille, e.g. 92000 = ratio 92.0).</li>
+<li><strong>Basic auth against ruTower proxies 401s</strong> — the Apache gate is
+  <code>AuthType Digest</code>. <code>curl --digest</code> is mandatory.</li>
+<li><strong>trackerpathways.org direct fetch</strong> 403s / renders empty (JS SPA);
+  chrome-devtools-axi was flaky against it. Use the GitHub repo clone.</li>
+<li>Torrent counts: don't count sidecars (<code>.libtorrent_resume</code>, <code>.rtorrent</code>) — 177 files ≠ 58 torrents.</li>
+<li><strong>Service-check traps on this box:</strong> rTorrent's process comm is
+  <code>rtorrent main</code> — <code>pgrep -x rtorrent</code> false-negatives; use
+  <code>ss -ltnp | grep :5000</code> (SCGI) instead. <code>deluged</code> runs OUTSIDE
+  systemd — <code>systemctl is-active deluged</code> reports inactive while it is
+  actually up. ruTorrent alive = HTTP 401 on anonymous GET of
+  <code>https://45-152-210-245.a.seedbox.vip/rutorrent/</code>.</li>
+<li><strong>Hash-suffixed rpc methods</strong> (<code>d.state.&lt;hash&gt;</code>) are "not defined";
+  always pass the hash as the param value.</li>
+</ul>
+<h2 id="records">Records</h2>
+<ul>
+<li>Backlog task tracking this line of work: <code>seeding-ops-q2</code> (firstmate
+  kali home). Setup task <code>rapidseedbox-mgmt-q1</code> is done.</li>
+<li>This skill lives under chezmoi-managed <code>~/.agents/</code> — added to chezmoi
+  source 2026-10-08 with captain approval (dotfiles PR); portability to
+  other machines rides the normal apply/sync flow.</li>
+<li>Secrets live only under <code>~/.agents/keys/default/</code>; never write values
+  into this skill, memory, or chat.</li>
+</ul></body></html>
