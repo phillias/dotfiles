@@ -174,6 +174,26 @@ log_level: info
 #     - "--no-prompt-templates"
 #     - "--no-themes"
 #
+# (2026-10-10) Pi convergence contract, active below: pipeline agents were
+# finishing their step correctly, then re-deriving and re-emitting their own
+# completed output to "double-check" it — a second JSON emission fails
+# no-mistakes parsing ("multiple JSON code fences found in output"), voiding
+# the attempt and forcing a full rerun (observed: 51m docs-only review vs the
+# 36s-434s legitimate range; run 01M4HW9FEN00ME61FDVKW2SHYT, plus two more
+# 25m+ runs 2026-10-09). Swapping model families (glm -> deepseek) did not
+# change it — pi has no temperature or reasoning-effort knob on any surface
+# we control, so the lever is prompt-level: the step prompts carry no
+# emit-once/termination contract. --append-system-prompt adds the missing
+# stop rule to every pi-invoked step (gate/review/test/lint/document/CI/fixer)
+# while keeping pi's core context and skills intact — the 2026-09-24 minimal
+# profile above (which stripped context instead) caused thrashing and
+# hallucinations. Appending text does not pin a model, so it does not touch
+# the agent_config/review_agents model separation noted 2026-09-14 above.
+agent_args_override:
+  pi:
+    - "--append-system-prompt"
+    - "Convergence contract: complete your assigned step, then produce your final output exactly once and stop. Never re-derive, re-verify, re-emit, or append commentary to output you already produced; a completed result is final and re-emitting it is a failure, not diligence. Emit JSON as raw text without markdown code fences, with no prose after it. When you are about to double-check your own finished output, stop instead: the pipeline validates it and will ask again if it is wrong."
+
 # Maximum follow-up auto-fix attempts per step (0 = disabled after the initial
 # pass)
 # Document fixes are attempted during the initial document pass.
