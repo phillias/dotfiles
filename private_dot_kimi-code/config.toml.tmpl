@@ -1,5 +1,5 @@
 # GUARDRAILS (2026-10-07):
-# - Default tui-via-vercel → Vercel AI Gateway vmc/kimi (1M context);
+# - Default tui-via-vercel → Vercel AI Gateway router/kimi (1M context);
 #   tui-via-cf → CF AI Gateway dynamic/kimi (200K context, ladder in
 #   ROUTING_TOPOLOGY.md). CF handles failover internally.
 # - Dead-lane models (404) are route-FATAL; 400 insufficient-credits
@@ -30,6 +30,6 @@ api_key_env = "AI_GATEWAY_API_KEY"
 
 [models.tui-via-vercel]
 provider = "vercel-aig"
-model = "vmc/kimi"
+model = "router/kimi"
 max_context_size = 1000000
 protocol = "openai"

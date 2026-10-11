@@ -145,7 +145,7 @@ function vcRouteFromConfig(vm) {
     .filter(Boolean)
     .map((s) => { const i = s.indexOf("/"); return i === -1 ? ["vercel", s] : [s.slice(0, i), s.slice(i + 1)]; });
   return {
-    route: `vmc/${vm.virtualModelSlug ?? vm.slug}`,
+    route: `router/${vm.virtualModelSlug ?? vm.slug}`,
     active_version: null,
     deployed_at: vm.updatedAt ? new Date(vm.updatedAt).toISOString() : null,
     ladder,
