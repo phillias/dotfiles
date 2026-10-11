@@ -51,22 +51,22 @@ Host ora
   User ubuntu
 
 Host primary55522
-  IdentityFile ~/.ssh/id_ed25519_kali
-  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  IdentityFile ~/.ssh/chezmoi-deploy-key
+  IdentitiesOnly yes
   HostName primary55522.phillias.cc
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User ubuntu
 
 Host kali
-  IdentityFile ~/.ssh/id_ed25519_inspironkali
-  IdentityFile ~/.ssh/id_ed25519_memgit
+  IdentityFile ~/.ssh/chezmoi-deploy-key
+  IdentitiesOnly yes
   HostName kali.phillias.us
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User phillias
 
 Host kalione
-  IdentityFile ~/.ssh/id_ed25519_inspironkali
-  IdentityFile ~/.ssh/id_ed25519_memgit
+  IdentityFile ~/.ssh/chezmoi-deploy-key
+  IdentitiesOnly yes
   HostName ssh.phillias.org
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User phillias
