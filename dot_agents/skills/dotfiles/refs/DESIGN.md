@@ -100,7 +100,10 @@ mise manifest changes (fingerprint covers `dot_config/mise/config.toml`, `.mise.
     packages not in mise's tool registry (codemem, composio)
 
 run_install-kimi.sh — kimi-code CLI bootstrap, runs on every apply:
-  guard: exits 0 immediately when ~/.kimi-code/bin/kimi is already executable
+  guard: when ~/.kimi-code/bin/kimi is executable, self-heals the ~/.local/bin/kimi
+    PATH symlink the installer creates (ln -sf when missing or dangling; a real file
+    at the path is left untouched), then exits 0 — a lost symlink once silently
+    dropped kimi off PATH with no repair path on later applies
   action: mkdir -p ~/.kimi-code, then stages the official installer
     (curl -fsSL code.kimi.com/kimi-code/install.sh -o ~/.kimi-code/install.sh) and runs it with
     bash when the binary is missing, so curl failures propagate and a wiped ~/.kimi-code
