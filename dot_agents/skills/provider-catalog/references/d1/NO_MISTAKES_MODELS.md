@@ -15,7 +15,7 @@ Deep log: axi-memory `f-2026-10-04-no-mistakes-test-step-json-failures-stal`.
 | `~/.no-mistakes/config.yaml` | `agent: pi` | every pipeline step runs on the pi harness |
 | | `agent_config.pi.model: fallback/gate` | generic steps (test, document, lint, rebase-repair, PR drafting, CI repair) ride pi's `fallback/gate` chain |
 | | `review_agents.reviewer.model: fallback/review` | reviewer/fixer steps ride the separate `fallback/review` chain |
-| | `review_agent_timeout: 12m` / `test_agent_timeout: 25m` | budget kills (step_quiet_warning 10m is observability only) |
+| | `review_agent_timeout: 45m` / `test_agent_timeout: 25m` | budget kills (step_quiet_warning 10m is observability only) |
 | | `auto_fix.{rebase,lint,test,document,ci}: 3`, `auto_fix.review: 0` | follow-up fix attempts per step |
 | | `session_reuse: true` | one durable fixer session per run across review-fix turns (claude/codex) |
 | | `intent.enabled: false` | user-intent extraction disabled fleet-wide (2026-09-02 incident) |
@@ -34,14 +34,14 @@ pi-internal cache — configuration lives in the two named files.
 
 ```mermaid
 flowchart LR
-    step["no-mistakes step<br/>(test/document/lint/rebase/PR/CI)"] --> c1["openrouter-direct<br/>z-ai/glm-5.2:free<br/>captain head 2026-10-04<br/>lane DEAD 2026-10-06 (self-heals to rung 2)"] --> c2["opencode-go-gw<br/>deepseek-v4-flash<br/>proven-JSON safety net"] --> c3["CfAiGw/dynamic/pr-gate<br/>(12-rung ladder:<br/>GOAT/PGS GLM head →<br/>NIM nemotron → tail)"] --> c4["vercel/router/pr-gate<br/>(vmc/pr-gate 7-rung)"] --> done[done]
+    step["no-mistakes step<br/>(test/document/lint/rebase/PR/CI)"] --> c1["opencode-go-gw<br/>deepseek-v4-flash<br/>proven-JSON head (captain 2026-10-10)"] --> c2["CfAiGw/dynamic/pr-gate<br/>(12-rung ladder:<br/>GOAT/PGS GLM head →<br/>NIM nemotron → tail)"] --> c3["vercel/router/pr-gate<br/>(vmc/pr-gate 7-rung)"] --> done[done]
 ```
 
 ### review chain (reviewer/fixer steps)
 
 ```mermaid
 flowchart LR
-    rev["no-mistakes review step"] --> v1["openrouter-direct<br/>z-ai/glm-5.2:free<br/>DEAD 2026-10-06 (self-heals)"] --> v2["opencode-go-gw<br/>deepseek-v4-flash"] --> v3["CfAiGw/dynamic/pr-reviewer<br/>(5-rung: NIM glm-5.3 →<br/>NIM deepseek-v4.1 → luna →<br/>nemotron:free → zen glm-5.2 PAID)"] --> v4["vercel/router/pr-reviewer<br/>(vmc/pr-reviewer 4-rung)"] --> v5["openrouter-direct<br/>z-ai/glm-5.2 PAYG<br/>terminal rung (captain 2026-10-04)"] --> done[done]
+    rev["no-mistakes review step"] --> v1["openrouter-direct<br/>z-ai/glm-5.2 PAYG<br/>head (captain 2026-10-10)"] --> v2["opencode-go-gw<br/>deepseek-v4-flash"] --> v3["vercel/router/pr-reviewer<br/>(vmc/pr-reviewer 4-rung)"] --> v4["CfAiGw/dynamic/pr-reviewer<br/>(5-rung: NIM glm-5.3 →<br/>NIM deepseek-v4.1 → luna →<br/>nemotron:free → zen glm-5.2 PAID)<br/>terminal rung, last resort"] --> done[done]
 ```
 
 ### default chain (pi's own sessions)
@@ -94,17 +94,19 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 
 | Model | Role tested | Result |
 |---|---|---|
-| `opencode-go-gw/deepseek-v4-flash` | review chain head (reviewer/fixer) | CLEAN — strict JSON all day, no stalls; reviews 36s–434s. Later stalled twice as TEST agent (51m silent at 60m; quiet 6m at 12m budget) — reliable JSON, can go quiet on long test drives. Now rung-2 on both chains. |
+| `opencode-go-gw/deepseek-v4-flash` | review chain head (reviewer/fixer) | CLEAN — strict JSON all day, no stalls; reviews 36s–434s. Later stalled twice as TEST agent (51m silent at 60m; quiet 6m at 12m budget) — reliable JSON, can go quiet on long test drives. Now the gate chain head and review rung-1 (captain 2026-10-10). |
 | `opencode-go-gw/longcat-2.5-preview-free` | gate chain head (test steps) | BROKEN — both JSON failure modes + 51m silent stalls ×3 in one day; removed from the gate chain (dotfiles PR #392). **Light work / scout-class ONLY** (captain 2026-10-04) — never a JSON-bearing pipeline role again. Also dropped from opencode's fallback stage 0 (captain 2026-10-05). |
-| `openrouter-direct/z-ai/glm-5.2:free` | gate + review chain HEAD (captain directive 2026-10-04) | UNPROVEN on this pipeline — free OpenRouter glm variant first for every JSON-bearing stage; deepseek rung-2 is the safety net (429/403 invocations fall through; silent stalls do NOT). Discipline under observation — report first JSON failure or stall pattern. PAYG `z-ai/glm-5.2` stays the review chain's terminal rung. **2026-10-06: free lane DEAD upstream ("unavailable for free, use paid slug"); live gate probe self-healed to rung-2 OK — head re-point pending captain.** |
+| `openrouter-direct/z-ai/glm-5.2` (PAYG) | review chain HEAD (captain 2026-10-10) | Head after the free `z-ai/glm-5.2:free` variant died upstream (2026-10-06) and the NIM `CfAiGw/dynamic/pr-reviewer` lane proved non-convergent (three 2026-10-10 cancellations at 20m/30m/45m wall-clock, output scaling with budget — slow serving, not queue wait). Live probe answers in seconds; the NIM route demotes to the terminal rung, last resort only. |
 | GOAT/PGS GLM (commandcode zai-org/GLM-5.2, phoenixgrove glm-5.3-flash/5.2) | pr-gate route head (captain order 2026-10-05) | PENDING — subscriptions reported insufficient credits 2026-10-06; route walks through to free NIM nemotron until topped up. GLM fit rationale: reasoning-capable, JSON-bearing (same family as the captain's chosen gate heads), subscription utility instead of rate-capped free NIM. |
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)
 
-`review_agent_timeout`: **12m**; `test_agent_timeout`: **25m** (both were 60m
-until the 2026-10-04 tightening; test raised 12m → 25m after two glm-headed
-test drives were cut at 12m while actively working — provider slowness under
-the free lane, not stalls). Observed legitimate durations: review 36s–434s;
+`review_agent_timeout`: **45m**; `test_agent_timeout`: **25m** (both were 60m
+until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m across
+2026-10-10 as the pi convergence contract landed and the v1.84.0 config
+marshal rejected the working-cap knob; test raised 12m → 25m after two
+glm-headed test drives were cut at 12m while actively working — provider
+slowness under the free lane, not stalls). Observed legitimate durations: review 36s–434s;
 test 2.5m–7.7m clean, worst ~19.8m with two fix rounds.
 `step_quiet_warning: 10m` is observability only — it never cancels; the budget
 kill is the stop.

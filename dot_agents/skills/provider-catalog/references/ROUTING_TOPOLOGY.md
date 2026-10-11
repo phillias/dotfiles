@@ -185,18 +185,23 @@ flowchart TD
     pi -->|"agent_config.pi.model:<br/>fallback/gate — generic + test steps"| GATE["~/.pi/fallback-chains.json gate"]
     pi -->|"review_agents.reviewer.model:<br/>fallback/review — reviewer/fixer only"| REV["~/.pi/fallback-chains.json review"]
     pi -->|"~/.pi/agent/settings.json<br/>defaultModel: fallback/default"| DEF["~/.pi/fallback-chains.json default"]
-    GATE -->|"rung 1"| orglm["openrouter-direct<br/>z-ai/glm-5.2:free<br/>DEAD 2026-10-06 — hops to rung 2"]
-    GATE -->|"rung 2"| ogw["opencode-go-gw<br/>deepseek-v4-flash"]
-    GATE -->|"rung 3"| pg["CfAiGw/dynamic/pr-gate<br/>(ladder above)"]
-    GATE -->|"rung 4"| vpg["vercel/router/pr-gate<br/>(ladder above)"]
-    REV -->|"rung 1"| orglm
+    GATE -->|"rung 1"| ogw["opencode-go-gw<br/>deepseek-v4-flash<br/>(head, captain 2026-10-10)"]
+    GATE -->|"rung 2"| pg["CfAiGw/dynamic/pr-gate<br/>(ladder above)"]
+    GATE -->|"rung 3"| vpg["vercel/router/pr-gate<br/>(ladder above)"]
+    REV -->|"rung 1"| payg["openrouter-direct<br/>z-ai/glm-5.2 PAYG<br/>(head, captain 2026-10-10)"]
     REV -->|"rung 2"| ogw
-    REV -->|"rung 3"| prr["CfAiGw/dynamic/pr-reviewer<br/>(ladder above)"]
-    REV -->|"rung 4"| vprr["vercel/router/pr-reviewer<br/>(ladder above)"]
-    REV -->|"terminal rung"| payg["openrouter-direct<br/>z-ai/glm-5.2 PAYG"]
+    REV -->|"rung 3"| vprr["vercel/router/pr-reviewer<br/>(ladder above)"]
+    REV -->|"rung 4"| prr["CfAiGw/dynamic/pr-reviewer<br/>(ladder above) — terminal rung, last resort"]
     DEF -->|"rung 1"| tui["CfAiGw/dynamic/TUI<br/>(ladder above)"]
     DEF -->|"rung 2"| vtui["vercel/router/tui<br/>(ladder above)"]
 ```
+pi chain heads re-pointed 2026-10-10 (captain): gate → `opencode-go-gw/deepseek-v4-flash`
+head (proven-JSON lane, after three document-step no-text strikes under the
+nemotron-effective `CfAiGw/dynamic/pr-gate` head — now rung-2); review →
+`openrouter-direct/z-ai/glm-5.2` PAYG head (after three NIM free-lane
+cancellations), with the NIM `CfAiGw/dynamic/pr-reviewer` route demoted to the
+terminal rung, last resort only. The chain arrays themselves are owned by
+`private_dot_pi/fallback-chains.json`.
 
 Step-role details, model verdicts, and budgets: `references/d1/NO_MISTAKES_MODELS.md`.
 

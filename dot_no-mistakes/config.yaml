@@ -56,6 +56,15 @@ agent: pi
 # kept riding fallback/gate head dynamic/pr-gate). Profile-level model lets
 # review_agents.reviewer.model win for review steps only; all other steps
 # keep the profile pin.
+# (2026-10-10, captain) pi chain heads (see ~/.pi/fallback-chains.json):
+# gate = opencode-go-gw/deepseek-v4-flash head (proven-JSON lane,
+# captain-approved fallback after three document no-text strikes under the
+# nemotron-headed pr-gate) → CfAiGw/dynamic/pr-gate rung-1 (nemotron answers
+# while the GOAT GLM-5.2 head is dark; the GLM head lights itself at
+# renewal) → vercel/router/pr-gate terminal fallthrough; review =
+# openrouter-direct/z-ai/glm-5.2 (PAYG) head → deepseek rung-1 safety net
+# → vercel/router/pr-reviewer rung-2 → CfAiGw/dynamic/pr-reviewer (NIM)
+# terminal rung, last resort only
 agent_config:
   pi:
     # (2026-09-21; rung names refreshed 2026-09-28) Ride pi's fallback/gate
@@ -64,11 +73,9 @@ agent_config:
     model: fallback/gate
 
 # Review rides the separate `fallback/review` chain so the second-set-of-eyes
-# exercises the pr-reviewer ladder (openrouter-direct/z-ai/glm-5.2:free head →
-# opencode-go-gw deepseek → CF dynamic/pr-reviewer →
-# vercel/router/pr-reviewer → openrouter-direct/z-ai/glm-5.2 PAYG terminal
-# rung, kept per captain 2026-10-04; exact ladder: provider-catalog references
-# ROUTING_TOPOLOGY.md flow-2) rather than the cheaper gate ladder.
+# exercises the pr-reviewer ladder rather than the cheaper gate ladder.
+# Ladder owner: ~/.pi/fallback-chains.json (`review` key); rendered in
+# provider-catalog references/ROUTING_TOPOLOGY.md flow-2.
 # Budget-ranked, JSON discipline first, stronger model pool than gate.
 review_agents:
   reviewer:
@@ -115,9 +122,36 @@ ci_timeout: "168h"
 # findings JSON (8934 outputs, last 2s before the cut, risk judged low).
 # This is glm free-lane deliberation slowness, not a stall; 60m restores
 # the old ceiling for reviews only, test keeps 25m.
+# (2026-10-10) review_agent_timeout 60m -> 20m (captain): those 40-45m
+# "actively working" runs were the re-emit spiral the 2026-10-10 pi
+# convergence contract (agent_args_override below) now targets at the
+# prompt level; with the contract landed and the review chain re-headed
+# with GLM-5.3 (pr-reviewer route first, deepseek rung-1 safety net),
+# 20m holds ~3x headroom over the worst legitimate review observed
+# (~434s, 2026-10-04 data) while capping spirals before they burn an
+# hour. If a review cannot converge in 20m under the contract, it is
+# spiralling and should be cut.
+# (2026-10-10, later) review_agent_timeout 20m -> 30m (captain): the first
+# GLM-5.3-headed review (NIM free lane) burned the full 20m with only 23
+# sparse outputs and 1m3s quiet before the kill — NIM free suffers a long
+# initial queue delay under the viral-wave load, so 20m cuts queued reviews
+# before they start. 30m keeps the spiral cap meaningfully below the old 60m
+# while admitting queue latency; test keeps 25m.
+# (2026-10-10, interim) review_agent_timeout 30m -> 45m and DROP
+# review_agent_working_timeout (captain): the working-cap knob landed
+# upstream only in v1.87.0, every release after our v1.84.0 is flagged
+# prerelease, and v1.84.0 strict-unmarshal rejects the field ("field
+# review_agent_working_timeout not found in type config.globalConfigRaw"),
+# which blocked every pipeline run. Until a stable release carries the
+# knob, one flat 45m budget (captain's number) lets the producing-but-
+# slow GLM-5.3 reviews finish — invocation-table evidence: steady
+# serving ~1 output/min, output tokens 4,667 -> 9,512 across the two
+# cancelled runs, never quieter than 1m14s. The approved 30m-stall /
+# 60m-working design is filed as backlog task
+# no-mistakes-working-cap-upgrade-be. Test keeps 25m.
 # Edit THIS template, not ~/.no-mistakes/config.yaml — the */30
 # chezmoi-axi sync cron overwrites the live file from here.
-review_agent_timeout: "60m"
+review_agent_timeout: "45m"
 test_agent_timeout: "25m"
 
 # AXI status marks a running/fixing step as quiet when no step log or native
@@ -192,7 +226,7 @@ log_level: info
 agent_args_override:
   pi:
     - "--append-system-prompt"
-    - "Convergence contract: complete your assigned step, then produce your final output exactly once and stop. Never re-derive, re-verify, re-emit, or append commentary to output you already produced; a completed result is final and re-emitting it is a failure, not diligence. Emit JSON as raw text without markdown code fences, with no prose after it. When you are about to double-check your own finished output, stop instead: the pipeline validates it and will ask again if it is wrong."
+    - "Convergence contract: complete your assigned step, then produce your final output exactly once and stop. Never re-derive, re-verify, re-emit, or append commentary to output you already produced; a completed result is final and re-emitting it is a failure, not diligence. Emit JSON as raw text without markdown code fences, with no prose after it. When you are about to double-check your own finished output, stop instead: the pipeline validates it and will ask again if it is wrong. Always end your turn with a final assistant message containing your output or a one-paragraph summary of what you did; never end on an empty or tool-only message."
 
 # Maximum follow-up auto-fix attempts per step (0 = disabled after the initial
 # pass)
