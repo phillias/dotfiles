@@ -182,17 +182,37 @@ context (with `rg --context`-style evidence), cheap run cost, zero external
 dependencies.
 
 When `mem search` returns >50 matches and the right one isn't in the top 5,
-semantic search is the next layer. Plan: sqlite-vec as a build artifact in
-`$MEM_DIR/.cache/index.sqlite` (NOT source of truth), in-process ONNX
-embedding (Xenova/bge-small-en-v1.5, 80MB). Activate with `--features=vector`,
-not on by default. NEVER use a hosted vector DB.
+semantic search is the next layer. Plan (amended 2026-10-11 from the System One
+survey — provenance: memory `d-2026-10-11-mem-v2-improvement-survey-static-embeddi`):
+
+- **Vector store:** sqlite-vec as a build artifact in `$MEM_DIR/.cache/index.sqlite`
+  (NOT source of truth). Prefer the hardened `@photostructure/sqlite-vec` fork
+  (ASan/UBSan-clean, bundled prebuilds, no post-install scripts, SIMD uses AVX
+  not AVX2). At this scale (≤5000 vectors) plain `vec0` brute-force scan is the
+  correct mode — ANN/quantization targets 1M+ vectors and is unnecessary.
+- **Embedding:** STATIC embeddings, not transformer inference. Default
+  `potion-retrieval-32m` (~30MB, token-lookup + mean-pooling, no transformer
+  pass, implementable in pure JS — zero native deps, immune to the prebuilt-
+  binary CPU-instruction failure class). Alternate `static-retrieval-mrl-en-v1`
+  (contrastive, Matryoshka dims 32-768). The original bge-small/ONNX plan stays
+  viable on weak hosts (ONNX Runtime does CPUID dispatch, SSE2 baseline) but is
+  strictly dominated here: static models run 100-400x faster on CPU at 81-87%
+  of transformer retrieval quality — the right trade for a recall backstop
+  behind literal search.
+- **Weakest-host gate (required before adoption):** smoke-test the full
+  inference path on the weakest fleet host (AMD A8-7410, AVX1-only) first. The
+  zvec-grep lesson: prebuilt Rust bindings hardwired AVX2 and died with SIGILL
+  exit 132 on this host; pure-JS static inference is chosen partly to make
+  that failure class impossible.
+- **Activation:** `--features=vector`, not on by default. NEVER use a hosted
+  vector DB.
 
 **Embedding-model change detection (required in v2):** persist
 `{provider, model, dimensions}` in `$MEM_DIR/.cache/embedding-meta` when the
 index is built. On startup, diff against the current embedding config —
 any mismatch means every stored vector is invalid → drop vec tables and
 rebuild the index from the markdown source of truth. Without this guard,
-swapping the ONNX model silently corrupts retrieval (TencentDB-Agent-Memory
+swapping the embedding model silently corrupts retrieval (TencentDB-Agent-Memory
 solves this identically with their `embedding_meta` table).
 
 If you find yourself wanting semantic search, that's the signal — but ship v1
@@ -200,10 +220,13 @@ first, prove the literal-search ceiling before paying the embedding tax.
 
 ## Backup
 
-`~/mem-bare.git` is included in the existing restic backup schedule on OCI
-(daily 03:00 UTC, retention 7d/4w/12m, offsite to OCI Object Storage). No
-additional cron, no additional configuration. Loss of OCI = recoverable from
-last restic snapshot. Loss of one client = recoverable from OCI bare repo.
+`~/memories` is backed up directly by the restic fleet backup (systemd user
+unit `fleet-backup.timer`, daily 03:30 local, retention 7d/4w/12m, offsite
+repository configured in `~/.config/fleet-backup/restic-env`; path list
+verified 2026-10-11). The git store has no configured remote (`mem status`
+shows `remote: none`), so `mem sync` is a local no-op — offsite protection
+comes from restic, not git. Loss of the host = recoverable from the last
+offsite snapshot.
 
 ## Sample memory file
 
