@@ -142,7 +142,7 @@ Fast, cheap, >=128K context, tool-use:
 1. ~~Install Vercel CLI: `mise install` (pinned at vercel@59.23.2 in mise config)~~ ✓
 2. ~~Authenticate CLI: `vercel login` or pass `--token` for CI/automation~~ ✓ (platform token via dotfiles PR #343)
 3. ~~Refresh API key (current `vck_` key returns auth errors)~~ ✓ (key works for inference; platform token `vcp_` for management)
-4. ~~Create virtual models mirroring CF dynamic routes~~ ✓ (9 created 2026-09-20 as kind=router with multi-model fallback ladders):
+ 4. ~~Create virtual models mirroring CF dynamic routes~~ ✓ (9 created 2026-09-20 as kind=router with multi-model fallback ladders; gateway now enforces the callable form `router/<slug>` for kind=router models — `vmc/<slug>` references are rejected with a 400 "is a router" error, observed 2026-10-11):
    - `vmc/pr-gate` — economy background CI (deepseek-v4-flash → nemotron-super → kimi-k3 → glm-5.2 → gpt-5.6-luna → gemini-flash)
    - `vmc/pr-reviewer` — review second-set-of-eyes (deepseek-v4-flash → gpt-5.6-luna → nemotron-ultra → glm-5.2)
    - `vmc/tui` — daily driver (qwen3.7-flash → deepseek-v4-flash → glm-5.3-flash → gpt-5-nano → gemini-flash-lite → gpt-4o-mini) [2026-09-25: removed the live `stealth/space-bunny-alpha` head by captain order after unusable interactive behavior; list above is authoritative]
@@ -150,7 +150,7 @@ Fast, cheap, >=128K context, tool-use:
    - `vmc/claude` — Claude family (claude-sonnet-5 → claude-sonnet-4 → claude-haiku-4.5)
    - `vmc/codex` — Codex family (gpt-5.6-luna → gpt-5-codex → gpt-4o)
    - `vmc/grok` — Grok family (grok-4.1-fast-reasoning → grok-4.20-reasoning)
-   - `vmc/kimi` — Kimi family (kimi-k3 → kimi-k2.6)
+   - `router/kimi` — Kimi family (kimi-k3 → kimi-k2.6)
    - ~~vmc/muse~~ — Muse family (muse-spark-1.2 → llama-3.1-70b) [removed: muse rides Meta directly]
    - `vmc/antigravity` — firstmate worker flash (gemini-3.8-flash → gemini-2.5-flash → gemini-2.5-flash-lite), kind=router so callable is `router/antigravity` (captain-ordered 2026-10-03, captain sign-in pending — pre-auth model basis, refine after `agy models`)
 5. Wire Vercel as fallback in all harness configs:

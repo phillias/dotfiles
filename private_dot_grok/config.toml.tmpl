@@ -1,5 +1,5 @@
 # GUARDRAILS (2026-10-07):
-# - Default route vmc/grok → Vercel AI Gateway; dynamic/grok → CF AI Gateway
+# - Default route router/grok → Vercel AI Gateway; dynamic/grok → CF AI Gateway
 #   (ladder in ROUTING_TOPOLOGY.md). CF handles failover internally.
 # - Dead-lane models (404) are route-FATAL; 400 insufficient-credits falls
 #   through. GOAT/PGS are subscriptions — heads fall through until renewal.
@@ -9,7 +9,7 @@
 default_skills_installs_purged = true
 
 [models]
-default = "vmc/grok"
+default = "router/grok"
 
 [model."dynamic/grok"]
 model = "dynamic/grok"
@@ -19,9 +19,9 @@ env_key = "CF_AI_GATEWAY_TOKEN"
 api_backend = "chat_completions"
 extra_headers = { "cf-aig-gateway-id" = "opencode", "cf-aig-metadata" = "{\"harness\":\"grok\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}" }
 
-[model."vmc/grok"]
-model = "vmc/grok"
+[model."router/grok"]
+model = "router/grok"
 base_url = "https://ai-gateway.vercel.sh/v1"
-name = "Vercel AI Gateway (vmc/grok)"
+name = "Vercel AI Gateway (router/grok)"
 env_key = "AI_GATEWAY_API_KEY"
 api_backend = "chat_completions"

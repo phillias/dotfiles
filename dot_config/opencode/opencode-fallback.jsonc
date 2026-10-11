@@ -52,7 +52,7 @@
     "CfAiGw/dynamic/TUI",
     
     // STAGE 2: Vercel AI Gateway fallback route
-    "vercel/vmc/tui"
+    "vercel/router/tui"
 
   ],
 
@@ -65,7 +65,7 @@
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash",
         "CfAiGw/dynamic/TUI",
-        "vercel/vmc/tui"
+        "vercel/router/tui"
       ]
     },
     "explore": {
@@ -74,7 +74,7 @@
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash",
         "CfAiGw/dynamic/TUI",
-        "vercel/vmc/tui"
+        "vercel/router/tui"
       ]
     },
     // Specialized flywheel agents: models pinned, fallback Z.AI → GOAT → Go → Zen only.
@@ -105,7 +105,7 @@
     "quick": {
       "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
-        "vercel/vmc/tui",
+        "vercel/router/tui",
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash"
       ]
@@ -113,7 +113,7 @@
     "unspecified-low": {
       "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
-        "vercel/vmc/tui",
+        "vercel/router/tui",
         "opencode-go/glm-5.1",
         "opencode-go/deepseek-v4-flash"
       ]

@@ -115,11 +115,11 @@ kill is the stop.
 
 | Harness | Config file | Tag | Flows to |
 |---|---|---|---|
-| opencode | `~/.config/opencode/opencode.json` + `opencode-fallback.jsonc` | `.model` (session primary), `fallback_models` stage 0–2 | zen/go direct lanes (stage 0), `CfAiGw/dynamic/TUI` (stage 1), `vercel/vmc/tui` (stage 2) |
+| opencode | `~/.config/opencode/opencode.json` + `opencode-fallback.jsonc` | `.model` (session primary), `fallback_models` stage 0–2 | zen/go direct lanes (stage 0), `CfAiGw/dynamic/TUI` (stage 1), `vercel/router/tui` (stage 2) |
 | pi | `~/.pi/agent/settings.json`, `~/.pi/agent/models.json`, `~/.pi/fallback-chains.json` | `defaultModel: fallback/default`, chain arrays | chains above |
 | codex | `~/.codex/config.toml` | `model = "openai/gpt-5.5"`, `model_provider = "vercel-aig"`; `[profiles.cf] model = "dynamic/codex"` | Vercel AI GW by default; `CfAiGw/dynamic/codex` on the cf profile |
-| grok | `~/.grok/config.toml` | `[models] default = "vmc/grok"`; `[model."dynamic/grok"]` | Vercel vmc/grok by default; `CfAiGw/dynamic/grok` defined |
-| kimi-code | `~/.kimi-code/config.toml` (+ `KIMI_CODE_CUSTOM_HEADERS` in `~/.zshenv`) | `default_model = "tui-via-vercel"` → `vmc/kimi`; `[models.tui-via-cf] model = "dynamic/kimi"` | Vercel vmc/kimi by default; `CfAiGw/dynamic/kimi` defined |
+| grok | `~/.grok/config.toml` | `[models] default = "router/grok"`; `[model."dynamic/grok"]` | Vercel router/grok by default; `CfAiGw/dynamic/grok` defined |
+| kimi-code | `~/.kimi-code/config.toml` (+ `KIMI_CODE_CUSTOM_HEADERS` in `~/.zshenv`) | `default_model = "tui-via-vercel"` → `router/kimi`; `[models.tui-via-cf] model = "dynamic/kimi"` | Vercel router/kimi by default; `CfAiGw/dynamic/kimi` defined |
 | claude | `~/.claude/settings.json` | hooks only — no model pin | native Anthropic auth; `dynamic/claude` exists for future pinning |
 | muse | `~/.config/muse/settings.json` | `model: muse-spark-1.3` | native muse; `dynamic/muse` exists for future pinning |
 | agy | worker chain (provider-catalog skill §Antigravity) | `opencode-go` → `CfAiGw/dynamic/antigravity` → `router/antigravity` | 3.8-flash budget class |
