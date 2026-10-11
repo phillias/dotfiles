@@ -5,6 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+# Keep the headless server's model pin independent from interactive TUI config.
+Environment=XDG_CONFIG_HOME=%h/.config/opencode-serve
 ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 127.0.0.1 --pure --log-level WARN
 Restart=on-failure
 RestartSec=30
