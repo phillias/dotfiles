@@ -1,0 +1,342 @@
+=== install driven by repo config (npm_args=--ignore-scripts=false) ===
+mise npm:@anthropic-ai/claude-code@2.1.263 [1/3] install
+mise npm:@anthropic-ai/claude-code@2.1.263 [1/3] added 2 packages in 7s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:@anthropic-ai/claude-code@2.1.263 ✓ installed
+install-rc=0
+
+=== installed tree (native binary + bin) ===
+
+=== mise exec -- claude --version ===
+mise age@1.2.1                     [1/3] install
+mise npm:gh-axi@0.1.30             [1/3] install
+mise npm:chrome-devtools-axi@0.1.29 [1/3] install
+mise npm:@masculinecache/quota-axi@0.1.30 [1/3] install
+mise npm:lavish-axi@0.1.50         [1/3] install
+mise npm:pnpm@11.20.0              [1/3] install
+mise npm:composio@1.0.0            [1/3] install
+mise npm:tasks-axi@0.2.5           [1/3] install
+mise age@1.2.1                     [1/3] download age-v1.2.1-linux-arm64.tar.gz
+mise npm:composio@1.0.0            [1/3] added 1 package in 1s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:composio@1.0.0          ✓ installed
+mise npm:wrangler@4.125.0          [1/3] install
+mise age@1.2.1                     [1/3] generate checksum age-v1.2.1-linux-arm64.tar.gz
+mise age@1.2.1                     [2/3] extract age-v1.2.1-linux-arm64.tar.gz
+mise age@1.2.1                   ✓ installed
+mise npm:@earendil-works/pi-coding-agent@0.84.2 [1/3] install
+mise npm:tasks-axi@0.2.5           [1/3] added 3 packages in 2s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:tasks-axi@0.2.5         ✓ installed
+mise gh@2.100.0                    [1/3] install
+mise gh@2.100.0                    [1/3] download gh_2.100.0_linux_arm64.tar.gz
+mise npm:@masculinecache/quota-axi@0.1.30 [1/3] added 3 packages in 3s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:@masculinecache/quota-axi@0.1.30 ✓ installed
+mise pipx:semgrep@1.157.0          [1/3] install
+mise WARN  pipx may be required but was not found.
+
+To use pipx packages with mise, you need to install pipx first:
+  mise use pipx@latest
+
+Alternatively, you can use uv/uvx by installing uv:
+  mise use uv@latest
+mise github:gitleaks/gitleaks@8.30.1 [1/3] install
+mise github:gitleaks/gitleaks@8.30.1 [1/3] download gitleaks_8.30.1_linux_arm64.tar.gz
+mise gh@2.100.0                    [2/3] verify GitHub artifact attestations
+mise npm:gh-axi@0.1.30             [1/3] added 3 packages in 4s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:gh-axi@0.1.30           ✓ installed
+mise npm:@ast-grep/cli@0.43.0      [1/3] install
+mise github:gitleaks/gitleaks@8.30.1 [2/3] checksum gitleaks_8.30.1_linux_arm64.tar.gz
+mise github:gitleaks/gitleaks@8.30.1 [2/3] verify GitHub artifact attestations
+mise github:gitleaks/gitleaks@8.30.1 [2/3] verify SLSA provenance
+mise github:gitleaks/gitleaks@8.30.1 [3/3] extract gitleaks_8.30.1_linux_arm64.tar.gz
+mise gh@2.100.0                    [2/3] ✓ GitHub artifact attestations verified
+mise gh@2.100.0                    [2/3] checksum gh_2.100.0_linux_arm64.tar.gz
+mise gh@2.100.0                    [3/3] extract gh_2.100.0_linux_arm64.tar.gz
+mise github:gitleaks/gitleaks@8.30.1 ✓ installed
+mise npm:@bitwarden/cli@2026.5.0   [1/3] install
+mise gh@2.100.0                  ✓ installed
+mise npm:@smithery/cli@4.11.1      [1/3] install
+mise npm:pnpm@11.20.0              [1/3] added 1 package in 10s
+mise npm:pnpm@11.20.0              [1/3] 1 package is looking for funding
+mise npm:pnpm@11.20.0              [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:pnpm@11.20.0            ✓ installed
+mise npm:codeburn@0.9.19           [1/3] install
+mise npm:@ast-grep/cli@0.43.0      [1/3] added 3 packages in 7s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise WARN  npm:@ast-grep/cli@0.43.0 declares npm lifecycle script(s) (postinstall) in SB/fix/data/installs/npm-ast-grep-cli/0.43.0/lib/node_modules/@ast-grep/cli/package.json, but mise skipped them with --ignore-scripts=true. Review the package before opting in. Use `allow_builds` with npm 11.16.0+, use aube/pnpm, or explicitly set `npm_args = "--ignore-scripts=false"` if you accept all install scripts.
+mise npm:@ast-grep/cli@0.43.0    ✓ installed
+mise npm:gws-axi@0.17.0            [1/3] install
+mise npm:@smithery/cli@4.11.1      [1/3] added 2 packages in 9s
+mise npm:@smithery/cli@4.11.1      [1/3] 1 package is looking for funding
+mise npm:@smithery/cli@4.11.1      [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise WARN  npm:@smithery/cli@4.11.1 declares npm lifecycle script(s) (postinstall) in SB/fix/data/installs/npm-smithery-cli/4.11.1/lib/node_modules/@smithery/cli/package.json, but mise skipped them with --ignore-scripts=true. Review the package before opting in. Use `allow_builds` with npm 11.16.0+, use aube/pnpm, or explicitly set `npm_args = "--ignore-scripts=false"` if you accept all install scripts.
+mise npm:@smithery/cli@4.11.1    ✓ installed
+mise npm:typescript@6.0.3          [1/3] install
+mise npm:lavish-axi@0.1.50         [1/3] added 90 packages in 18s
+mise npm:lavish-axi@0.1.50         [1/3] 43 packages are looking for funding
+mise npm:lavish-axi@0.1.50         [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:lavish-axi@0.1.50       ✓ installed
+mise npm:typescript-language-server@5.3.0 [1/3] install
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+mise npm:typescript@6.0.3          [1/3] added 1 package in 6s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:typescript@6.0.3        ✓ installed
+mise npm:@openai/codex@0.153.4     [1/3] install
+mise npm:typescript-language-server@5.3.0 [1/3] added 1 package in 3s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:typescript-language-server@5.3.0 ✓ installed
+mise npm:@xai-official/grok@1.0.13 [1/3] install
+mise npm:chrome-devtools-axi@0.1.29 [1/3] added 98 packages in 23s
+mise npm:chrome-devtools-axi@0.1.29 [1/3] 34 packages are looking for funding
+mise npm:chrome-devtools-axi@0.1.29 [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:chrome-devtools-axi@0.1.29 ✓ installed
+mise npm:@moonshot-ai/kimi-code@2.1.1 [1/3] install
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+mise npm:@xai-official/grok@1.0.13 [1/3] added 3 packages in 10s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise WARN  npm:@xai-official/grok@1.0.13 declares npm lifecycle script(s) (postinstall) in SB/fix/data/installs/npm-xai-official-grok/1.0.13/lib/node_modules/@xai-official/grok/package.json, but mise skipped them with --ignore-scripts=true. Review the package before opting in. Use `allow_builds` with npm 11.16.0+, use aube/pnpm, or explicitly set `npm_args = "--ignore-scripts=false"` if you accept all install scripts.
+mise npm:@xai-official/grok@1.0.13 ✓ installed
+mise npm:@ampcode/cli@0.0.1790452833-gea4e33 [1/3] install
+mise npm:wrangler@4.125.0          [1/3] added 38 packages in 42s
+mise npm:wrangler@4.125.0          [1/3] 7 packages are looking for funding
+mise npm:wrangler@4.125.0          [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:wrangler@4.125.0        ✓ installed
+mise bun@1.3.14                    [1/3] install
+mise bun@1.3.14                    [1/3] download bun-linux-aarch64.zip
+mise npm:@moonshot-ai/kimi-code@2.1.1 [1/3] added 35 packages in 20s
+mise npm:@moonshot-ai/kimi-code@2.1.1 [1/3] 2 packages are looking for funding
+mise npm:@moonshot-ai/kimi-code@2.1.1 [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise WARN  npm:@moonshot-ai/kimi-code@2.1.1 declares npm lifecycle script(s) (postinstall) in SB/fix/data/installs/npm-moonshot-ai-kimi-code/2.1.1/lib/node_modules/@moonshot-ai/kimi-code/package.json, but mise skipped them with --ignore-scripts=true. Review the package before opting in. Use `allow_builds` with npm 11.16.0+, use aube/pnpm, or explicitly set `npm_args = "--ignore-scripts=false"` if you accept all install scripts.
+mise npm:@moonshot-ai/kimi-code@2.1.1 ✓ installed
+mise opencode@1.18.29              [1/3] install
+mise bun@1.3.14                    [2/3] generate checksum bun-linux-aarch64.zip
+mise bun@1.3.14                    [3/3] extract bun-linux-aarch64.zip
+mise bun@1.3.14                    [3/3] bun -v
+mise bun@1.3.14                    [3/3] 1.3.14
+mise opencode@1.18.29              [1/3] download opencode-linux-arm64.tar.gz
+mise bun@1.3.14                  ✓ installed
+mise npm:@opencode-ai/plugin@1.18.29 [1/3] install
+mise npm:@earendil-works/pi-coding-agent@0.84.2 [1/3] added 132 packages in 46s
+mise npm:@earendil-works/pi-coding-agent@0.84.2 [1/3] 17 packages are looking for funding
+mise npm:@earendil-works/pi-coding-agent@0.84.2 [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:@earendil-works/pi-coding-agent@0.84.2 ✓ installed
+mise npm:@tarquinen/opencode-dcp@3.1.15 [1/3] install
+mise opencode@1.18.29              [2/3] checksum opencode-linux-arm64.tar.gz
+mise opencode@1.18.29              [3/3] extract opencode-linux-arm64.tar.gz
+mise npm:gws-axi@0.17.0            [1/3] added 97 packages in 40s
+mise npm:gws-axi@0.17.0            [1/3] 30 packages are looking for funding
+mise npm:gws-axi@0.17.0            [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:gws-axi@0.17.0          ✓ installed
+mise npm:opencode-ntfy.sh@1.1.0    [1/3] install
+mise npm:@ampcode/cli@0.0.1790452833-gea4e33 [1/3] added 2 packages in 18s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise WARN  npm:@ampcode/cli@0.0.1790452833-gea4e33 declares npm lifecycle script(s) (postinstall) in SB/fix/data/installs/npm-ampcode-cli/0.0.1790452833-gea4e33/lib/node_modules/@ampcode/cli/package.json, but mise skipped them with --ignore-scripts=true. Review the package before opting in. Use `allow_builds` with npm 11.16.0+, use aube/pnpm, or explicitly set `npm_args = "--ignore-scripts=false"` if you accept all install scripts.
+mise opencode@1.18.29            ✓ installed
+mise npm:opencode-log-sanitizer@1.3.0 [1/3] install
+mise npm:@ampcode/cli@0.0.1790452833-gea4e33 ✓ installed
+mise npm:envsitter-guard@0.0.4     [1/3] install
+mise npm:opencode-log-sanitizer@1.3.0 [1/3] added 1 package in 3s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:opencode-log-sanitizer@1.3.0 ✓ installed
+mise npm:opencode-telemetry@0.1.19 [1/3] install
+mise npm:codeburn@0.9.19           [1/3] added 164 packages in 46s
+mise npm:codeburn@0.9.19           [1/3] 58 packages are looking for funding
+mise npm:codeburn@0.9.19           [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:codeburn@0.9.19         ✓ installed
+mise npm:opencode-models-discovery@1.5.5 [1/3] install
+mise npm:@bitwarden/cli@2026.5.0   [1/3] added 217 packages in 54s
+mise npm:@bitwarden/cli@2026.5.0   [1/3] 44 packages are looking for funding
+mise npm:@bitwarden/cli@2026.5.0   [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:@bitwarden/cli@2026.5.0 ✓ installed
+mise github:herdrdev/herdr@0.9.0   [1/3] install
+mise github:herdrdev/herdr@0.9.0   [1/3] download herdr-linux-aarch64
+mise github:herdrdev/herdr@0.9.0   [2/3] checksum herdr-linux-aarch64
+mise github:herdrdev/herdr@0.9.0   [2/3] verify GitHub artifact attestations
+mise github:herdrdev/herdr@0.9.0   [2/3] ✓ GitHub artifact attestations verified
+mise github:herdrdev/herdr@0.9.0 ✓ installed
+mise github:google-antigravity/antigravity-cli@1.2.16 [1/3] install
+mise github:google-antigravity/antigravity-cli@1.2.16 [1/3] download agy_cli_linux_arm64.tar.gz
+mise github:google-antigravity/antigravity-cli@1.2.16 [2/3] checksum agy_cli_linux_arm64.tar.gz
+mise npm:@openai/codex@0.153.4     [1/3] added 2 packages in 41s
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:@openai/codex@0.153.4   ✓ installed
+mise github:kunchenguid/treehouse@2.3.0 [1/3] install
+mise github:google-antigravity/antigravity-cli@1.2.16 [2/3] verify GitHub artifact attestations
+mise github:kunchenguid/treehouse@2.3.0 [1/3] download treehouse-v2.3.0-linux-arm64.tar.gz
+mise github:kunchenguid/treehouse@2.3.0 [2/3] checksum treehouse-v2.3.0-linux-arm64.tar.gz
+mise github:kunchenguid/treehouse@2.3.0 [2/3] verify GitHub artifact attestations
+mise github:kunchenguid/treehouse@2.3.0 [2/3] verify SLSA provenance
+mise github:kunchenguid/treehouse@2.3.0 [3/3] extract treehouse-v2.3.0-linux-arm64.tar.gz
+mise github:google-antigravity/antigravity-cli@1.2.16 [2/3] verify SLSA provenance
+mise github:kunchenguid/treehouse@2.3.0 ✓ installed
+mise cloudflared@2025.9.0          [1/2] install
+mise github:google-antigravity/antigravity-cli@1.2.16 [3/3] extract agy_cli_linux_arm64.tar.gz
+mise WARN  [cloudflare/cloudflared] failed to fetch version tags, URL may be incorrect: HTTP timed out after 3.00s for https://api.github.com/repos/cloudflare/cloudflared/releases?per_page=100 (change with `fetch_remote_versions_timeout` or env `MISE_FETCH_REMOTE_VERSIONS_TIMEOUT`).
+mise cloudflared@2025.9.0          [1/2] download cloudflared-linux-arm64
+mise cloudflared@2025.9.0          [2/2] checksum cloudflared-linux-arm64
+mise cloudflared@2025.9.0          [2/2] extract cloudflared-linux-arm64
+mise cloudflared@2025.9.0        ✓ installed
+mise chezmoi@2.70.4                [1/3] install
+mise github:google-antigravity/antigravity-cli@1.2.16 ✓ installed
+mise go@1.25.14                    [1/3] install
+mise go@1.25.14                    [1/3] download go1.25.14.linux-arm64.tar.gz
+mise chezmoi@2.70.4                [1/3] download chezmoi_2.70.4_linux_arm64.tar.gz
+mise chezmoi@2.70.4                [2/3] checksum chezmoi_2.70.4_linux_arm64.tar.gz
+mise chezmoi@2.70.4                [3/3] extract chezmoi_2.70.4_linux_arm64.tar.gz
+mise go@1.25.14                    [2/3] checksum go1.25.14.linux-arm64.tar.gz
+mise go@1.25.14                    [3/3] extract go1.25.14.linux-arm64.tar.gz
+mise chezmoi@2.70.4              ✓ installed
+mise npm:vercel@59.23.2            [1/3] install
+mise npm:opencode-ntfy.sh@1.1.0    [1/3] added 30 packages in 28s
+mise npm:opencode-ntfy.sh@1.1.0    [1/3] 5 packages are looking for funding
+mise npm:opencode-ntfy.sh@1.1.0    [1/3]   run `npm fund` for details
+mise npm:@opencode-ai/plugin@1.18.29 [1/3] added 27 packages in 31s
+mise npm:@opencode-ai/plugin@1.18.29 [1/3] 5 packages are looking for funding
+mise npm:@opencode-ai/plugin@1.18.29 [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:opencode-ntfy.sh@1.1.0  ✓ installed
+mise pipx:tools-registry@0.20.0    [1/3] install
+mise WARN  pipx may be required but was not found.
+
+To use pipx packages with mise, you need to install pipx first:
+  mise use pipx@latest
+
+Alternatively, you can use uv/uvx by installing uv:
+  mise use uv@latest
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:@opencode-ai/plugin@1.18.29 ✓ installed
+mise npm:envsitter-guard@0.0.4     [1/3] added 29 packages in 28s
+mise npm:envsitter-guard@0.0.4     [1/3] 5 packages are looking for funding
+mise npm:envsitter-guard@0.0.4     [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:envsitter-guard@0.0.4   ✓ installed
+mise go@1.25.14                    [3/3] go version
+mise go@1.25.14                    [3/3] go version go1.25.14 linux/arm64
+mise go@1.25.14                  ✓ installed
+mise go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes@1.84.0 [1/3] install
+go: downloading github.com/kunchenguid/no-mistakes v1.84.0
+mise npm:opencode-telemetry@0.1.19 [1/3] added 28 packages in 28s
+mise npm:opencode-telemetry@0.1.19 [1/3] 5 packages are looking for funding
+mise npm:opencode-telemetry@0.1.19 [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:opencode-telemetry@0.1.19 ✓ installed
+go: downloading github.com/charmbracelet/lipgloss v1.1.0
+go: downloading github.com/mattn/go-isatty v0.0.20
+go: downloading github.com/muesli/termenv v0.16.0
+go: downloading github.com/oklog/ulid/v2 v2.1.1
+go: downloading github.com/spf13/cobra v1.10.2
+go: downloading github.com/toon-format/toon-go v0.0.0-20251202084852-7ca0e27c4e8c
+go: downloading golang.org/x/sys v0.42.0
+mise npm:opencode-models-discovery@1.5.5 [1/3] added 29 packages in 27s
+mise npm:opencode-models-discovery@1.5.5 [1/3] 6 packages are looking for funding
+mise npm:opencode-models-discovery@1.5.5 [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:opencode-models-discovery@1.5.5 ✓ installed
+go: downloading gopkg.in/yaml.v3 v3.0.1
+go: downloading modernc.org/sqlite v1.48.1
+go: downloading github.com/charmbracelet/bubbles v1.0.0
+go: downloading github.com/charmbracelet/bubbletea v1.3.10
+go: downloading github.com/charmbracelet/x/ansi v0.11.6
+go: downloading github.com/charmbracelet/x/cellbuf v0.0.15
+go: downloading github.com/rivo/uniseg v0.4.7
+go: downloading github.com/aymanbagabas/go-osc52/v2 v2.0.1
+go: downloading github.com/lucasb-eyer/go-colorful v1.3.0
+go: downloading github.com/spf13/pflag v1.0.9
+go: downloading github.com/atotto/clipboard v0.1.4
+go: downloading github.com/mattn/go-runewidth v0.0.19
+go: downloading github.com/charmbracelet/x/term v0.2.2
+go: downloading github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6
+go: downloading github.com/muesli/cancelreader v0.2.2
+go: downloading github.com/charmbracelet/colorprofile v0.4.1
+go: downloading github.com/clipperhouse/displaywidth v0.9.0
+go: downloading github.com/clipperhouse/uax29/v2 v2.5.0
+go: downloading github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e
+go: downloading github.com/clipperhouse/stringish v0.1.1
+npm warn deprecated glob@9.3.5: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+go: downloading modernc.org/libc v1.70.0
+go: downloading modernc.org/mathutil v1.7.1
+go: downloading github.com/dustin/go-humanize v1.0.1
+go: downloading modernc.org/memory v1.11.0
+go: downloading github.com/google/uuid v1.6.0
+go: downloading github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec
+mise npm:@tarquinen/opencode-dcp@3.1.15 [1/3] added 135 packages in 49s
+mise npm:@tarquinen/opencode-dcp@3.1.15 [1/3] 24 packages are looking for funding
+mise npm:@tarquinen/opencode-dcp@3.1.15 [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:@tarquinen/opencode-dcp@3.1.15 ✓ installed
+npm warn deprecated stream-to-promise@2.2.0: Deprecated. Use node:stream/promises and node:stream/consumers instead.
+npm warn deprecated tar@7.5.7: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+mise npm:vercel@59.23.2            [1/3] added 298 packages in 1m
+mise npm:vercel@59.23.2            [1/3] 38 packages are looking for funding
+mise npm:vercel@59.23.2            [1/3]   run `npm fund` for details
+Reshimming mise 22...
+SB/fix/data/installs/node/22/bin/npm: line 101: mise: command not found
+mise npm:vercel@59.23.2          ✓ installed
+mise go:github.com/kunchenguid/no-mistakes/cmd/no-mistakes@1.84.0 ✓ installed
+mise ERROR Failed to install tools: pipx:semgrep@1.157.0, pipx:tools-registry@0.20.0
+
+pipx:semgrep@1.157.0: pipx is required to install pipx:semgrep but was not found.
+
+To use pipx packages with mise, you need to install pipx first:
+  mise use pipx@latest
+
+Alternatively, you can use uv/uvx by installing uv:
+  mise use uv@latest
+
+pipx:tools-registry@0.20.0: pipx is required to install pipx:tools-registry but was not found.
+
+To use pipx packages with mise, you need to install pipx first:
+  mise use pipx@latest
+
+Alternatively, you can use uv/uvx by installing uv:
+  mise use uv@latest
+mise ERROR Version: 2026.8.12 linux-arm64 (2026-08-24)
+mise ERROR Run with --verbose or MISE_VERBOSE=1 for more information
+version-rc=0
+
+=== fallback: mise x tool-qualified ===
+2.1.263 (Claude Code)
+x-rc=0

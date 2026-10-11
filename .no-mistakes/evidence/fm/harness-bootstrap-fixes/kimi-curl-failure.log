@@ -1,0 +1,8 @@
+### Variant A: real curl write-error (install.sh is a directory -> curl -o fails, exit 23)
+script rc=23 (curl's own failure code propagated, not 0)
+bash never ran (no install.sh content written): 0 entries in install.sh dir
+
+### Variant B: stub curl returning 22 (HTTP error exit code, hermetic endpoint)
+script rc=22
+stub curl output: curl: (22) The requested URL returned error: 404
+bash not invoked (no install.sh): true

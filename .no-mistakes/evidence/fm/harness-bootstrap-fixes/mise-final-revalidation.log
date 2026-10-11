@@ -1,0 +1,14 @@
+=== 1) mise settings ls (parse check, any WARN/ERROR?) ===
+not_found_system_fallback  true CFG
+npm.shell_out              true CFG
+settings-rc=0
+
+=== 2) mise ls -> claude-code entry resolution ===
+npm:@anthropic-ai/claude-code                          2.1.263                 /home/ubuntu/.no-mistakes/worktrees/25a5d6d1beb0/01M4PA2T2YNYD86CZC7V7C79ND/dot_config/mise/config.toml  2.1.263
+
+=== 3) mise install --dry-run (already-installed check: should be no-op) ===
+mise npm:@anthropic-ai/claude-code@2.1.263 ⇢ already installed
+dryrun-rc=0
+
+=== 4) claude --version once more (final) ===
+2.1.263 (Claude Code)

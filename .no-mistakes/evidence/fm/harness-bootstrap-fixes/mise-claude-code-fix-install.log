@@ -1,0 +1,5 @@
+mise ERROR Failed to install npm:@anthropic-ai/claude-code@2.1.263: tool 'npm:@anthropic-ai/claude-code@2.1.263' requires configured install dependency 'node@22', but its selected version is not installed
+hint: Run `mise install node@22` before installing 'npm:@anthropic-ai/claude-code@2.1.263'. Remove the dependency from configuration to allow the install hook to rely on system PATH instead.
+mise ERROR Version: 2026.8.12 linux-arm64 (2026-08-24)
+mise ERROR Run with --verbose or MISE_VERBOSE=1 for more information
+/tmp/mise-sandbox/run-fixed-inside.sh: 11: Bad substitution

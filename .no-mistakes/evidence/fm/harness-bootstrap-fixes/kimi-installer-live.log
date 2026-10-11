@@ -1,0 +1,11 @@
+==> Detected target: linux-arm64
+==> Resolving latest version from https://code.kimi.com/kimi-code/latest
+==> Latest version: 2.1.1
+==> Fetching manifest https://code.kimi.com/kimi-code/binaries/2.1.1/manifest.json
+==> Downloading https://code.kimi.com/kimi-code/binaries/2.1.1/kimi-code-linux-arm64.tar.gz
+==> Extracting tarball
+==> Verifying checksum
+==> Installed to /tmp/kimi-sandbox/home.dCSxrt/.kimi-code/bin/kimi
+==> Added /tmp/kimi-sandbox/home.dCSxrt/.kimi-code/bin to PATH in /tmp/kimi-sandbox/home.dCSxrt/.zshrc
+==> Done. Run: kimi --version
+==> If `kimi` is not found, restart your shell or run: source /tmp/kimi-sandbox/home.dCSxrt/.zshrc

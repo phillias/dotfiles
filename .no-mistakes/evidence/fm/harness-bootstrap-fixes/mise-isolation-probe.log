@@ -1,0 +1,10 @@
+### settings ls (full):
+not_found_system_fallback  true CFG
+npm.shell_out              true CFG
+settings-rc=0
+
+### mise ls -> claude:
+npm:@anthropic-ai/claude-code                          2.1.263 (missing)                 CFG  2.1.263
+
+### mise ls -> first config-file sources seen:
+/home/ubuntu/.no-mistakes/worktrees/25a5d6d1beb0/01M4PA2T2YNYD86CZC7V7C79ND/dot_config/mise/config.toml

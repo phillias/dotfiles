@@ -1,0 +1,5 @@
+=== S1-symlink-missing: PASS rc=0 link=/tmp/kimi-sandbox/home.G1vYND/.kimi-code/bin/kimi install.sh_absent=true
+=== S2-present-untouched: PASS rc=0 mtime_unchanged=true install.sh_absent=true
+=== S3-dangling-repaired: PASS rc=0 link=/tmp/kimi-sandbox/home.wBQaWt/.kimi-code/bin/kimi resolves=true
+=== S4-real-file-untouched: PASS rc=0 still_regular_file=true content_preserved=true
+RESULT pass=4 fail=0

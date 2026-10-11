@@ -1,0 +1,15 @@
+### mise settings ls with MISE_CONFIG_DIR=/tmp/mise-sandbox/fix/config
+[WARN] migrate: error parsing config file: /home/ubuntu/.config/mise/config.toml
+not_found_system_fallback  true /home/ubuntu/.no-mistakes/worktrees/25a5d6d1beb0/01M4PA2T2YNYD86CZC7V7C79ND/dot_config/mise/config.toml
+npm.shell_out              true /home/ubuntu/.no-mistakes/worktrees/25a5d6d1beb0/01M4PA2T2YNYD86CZC7V7C79ND/dot_config/mise/config.toml
+not_found_system_fallback  true /home/ubuntu/.config/mise/config.toml                                                                  
+npm.shell_out              true /home/ubuntu/.config/mise/config.toml                                                                  
+rc=0
+### full mise ls | claude/codex/grok/kimi lines:
+npm:@anthropic-ai/claude-code                          2.1.263 (missing)                 hostcfg/config.toml                                                   2.1.263
+npm:@moonshot-ai/kimi-code                             2.1.1 (missing)                   hostcfg/config.toml                                                   2.1.1
+npm:@openai/codex                                      0.153.4 (missing)                 hostcfg/config.toml                                                   0.153.4
+npm:@xai-official/grok                                 1.0.13 (missing)                  hostcfg/config.toml                                                   1.0.13
+
+### grep claude in ls (exact entry + source):
+npm:@anthropic-ai/claude-code                          2.1.263 (missing)                 hostcfg/config.toml                                                   2.1.263
