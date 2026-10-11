@@ -89,6 +89,12 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.cloudflare-key" ]; then
     CLOUDFLARE_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.cloudflare-key")" && export CLOUDFLARE_API_KEY
 fi
 
+# Cloudflare deploy token (scoped API token for wrangler/Workers deploys;
+# wrangler reads CLOUDFLARE_API_TOKEN in non-interactive environments)
+if [ -r "$HOME/.agents/keys/$_default_profile/.cloudflare-deploy-token" ]; then
+    CLOUDFLARE_API_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.cloudflare-deploy-token")" && export CLOUDFLARE_API_TOKEN
+fi
+
 # Command Code
 if [ -r "$HOME/.agents/keys/$_default_profile/.command-code-key" ]; then
     COMMAND_CODE_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.command-code-key")" && export COMMAND_CODE_API_KEY
