@@ -77,7 +77,23 @@ gh = "2.100.0"
 "npm:typescript" = "6.0.3"
 "npm:typescript-language-server" = "5.3.0"
 # Agent harnesses — CLI fleet for Firstmate dispatch
-"npm:@anthropic-ai/claude-code" = "2.1.263"
+# claude-code postinstall opt-in: the package's `postinstall: node install.cjs`
+# links the platform native binary (from its @anthropic-ai/claude-code-<os>-<arch>
+# optionalDependency) into bin/claude.exe. mise's npm path (npm.shell_out above)
+# defaults to `--ignore-scripts=true`, which skips that postinstall on every
+# (re)install — `claude --version` then dies with "Error: claude native binary
+# not installed." npm_args is appended AFTER mise's flag, and npm lets the later
+# flag win, so --ignore-scripts=false re-enables scripts for THIS entry only.
+# Deliberately not `allow_builds = ["@anthropic-ai/claude-code"]` (mise docs'
+# per-package allowlist): that only reaches npm as `--allow-scripts=` on
+# npm >= 11.16; the fleet's installer path resolves node 22.23.x -> npm 10.9.8,
+# where mise 2026.8.12 keeps `--ignore-scripts=true` and warns (verified in a
+# sandboxed mise 2026.8.12 install). Blast radius stays per-package: claude-code
+# ships zero runtime dependencies and its platform optionalDeps declare no
+# scripts, so the only lifecycle script this can run is claude-code's own
+# postinstall. Once the resolved npm is >= 11.16 (node 24 line ships 11.19),
+# prefer allow_builds and drop npm_args.
+"npm:@anthropic-ai/claude-code" = { version = "2.1.263", npm_args = "--ignore-scripts=false" }
 "npm:@openai/codex" = "0.153.4"
 "npm:@xai-official/grok" = "1.0.13"
 # Kimi Code — Moonshot agent CLI; verified firstmate worker (re-verify harness
