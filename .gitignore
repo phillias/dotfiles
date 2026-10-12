@@ -2,4 +2,5 @@
 .chezmoi-sync.log.old
 .opencode/
 .no-mistakes/
+.nm-test/
 node_modules/
