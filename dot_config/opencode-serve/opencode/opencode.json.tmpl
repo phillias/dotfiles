@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "CfAiGw/dynamic/TUI",
+  "provider": {
+    "CfAiGw": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "CfAiGw",
+      "options": {
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat",
+        "apiKey": "{file:~/.agents/keys/default/.cf-ai-gw}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
+        }
+      },
+      "models": {
+        "dynamic/TUI": { "name": "TUI" }
+      }
+    }
+  }
+}
