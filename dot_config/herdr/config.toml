@@ -144,66 +144,68 @@ last_pane = ["prefix+ctrl+a", "prefix+a"]          # optional, unset by default;
 # workspaces = "" # e.g. "ctrl+shift" makes ctrl+shift+1..9 switch workspaces directly
 # agents = ""     # e.g. "alt" makes alt+1..9 focus agent rows directly
 
-# --- Plugin action keybindings (captain directive 2026-10-12) ---
-# Keys chosen to avoid the active core bindings (prefix+{c,p,n}, prefix=ctrl+a).
-# lazysql and reviewr plugins install once the herdr server reaches 0.9.3;
-# their keys are pre-wired so they work immediately after that restart.
+# --- Plugin keybindings (2026-10-12) ---
+# Boundary: prefix+<key> stays herdr-native; alt+<key> is the plugin surface.
+# Mac clients: terminal must send Option as Esc+ (iTerm2 "Option key acts as
+# Esc+", Terminal.app "Use Option as Meta", Kitty macos_option_as_alt yes).
 
 # Captain's Deck — Firstmate flow kanban (deimantasnork/captains-deck)
 [[keys.command]]
-key = "prefix+d"
+key = "alt+d"
 type = "plugin_action"
 command = "herdr-firstmate-flow.open-captain-deck"
 description = "Open Captain's Deck flow kanban"
 
 [[keys.command]]
-key = "prefix+shift+f"
+key = "alt+shift+f"
 type = "plugin_action"
 command = "herdr-firstmate-flow.open-flow"
 description = "Open flow kanban pane"
 
 # Token Dashboard — per-agent cost/tokens (Davidcreador/herdr-token-dashboard)
 [[keys.command]]
-key = "prefix+$"
+key = "alt+$"
 type = "plugin_action"
 command = "dave.token-dashboard.open-dashboard"
 description = "Open agent token dashboard"
 
-# PC RAM & CPU Usage Overlay (ezcorp-org) — prefix+m kept for lazydocker
+# PC RAM & CPU Usage Overlay (ezcorp-org) — alt+shift+o opens the live
+# self-refreshing usage dashboard pane; alt+o toggles the sidebar status
+# readout; the full-screen monitor action stays reachable from the palette.
 [[keys.command]]
-key = "prefix+shift+o"
+key = "alt+shift+o"
 type = "shell"
-command = "herdr plugin pane open --plugin ez-corp.space-usage --entrypoint monitor --placement overlay --focus"
-description = "Open CPU/RAM overlay monitor"
+command = "herdr plugin pane open --plugin ez-corp.space-usage --entrypoint dashboard --placement overlay --focus"
+description = "Open self-refreshing usage dashboard"
 
 [[keys.command]]
-key = "prefix+ctrl+o"
+key = "alt+o"
 type = "shell"
 command = "herdr plugin action invoke status-toggle --plugin ez-corp.space-usage"
 description = "Toggle CPU/RAM status-line overlay"
 
-# Lazydocker (sudoeren/herdr-lazydocker)
+# Lazydocker (sudoeren/herdr-lazydocker) — alt+l (memex owns alt+m)
 [[keys.command]]
-key = "prefix+m"
+key = "alt+l"
 type = "plugin_action"
 command = "herdr-lazydocker.open-lazydocker"
 description = "Open lazydocker split"
 
 [[keys.command]]
-key = "prefix+shift+m"
+key = "alt+shift+l"
 type = "plugin_action"
 command = "herdr-lazydocker.open-lazydocker-tab"
 description = "Open lazydocker tab"
 
 # Git Graph (sjlee06/herdr-git-graph)
 [[keys.command]]
-key = "prefix+u"
+key = "alt+u"
 type = "plugin_action"
 command = "herdr.git-graph.open"
 description = "Open Git Graph full view"
 
 [[keys.command]]
-key = "prefix+shift+u"
+key = "alt+shift+u"
 type = "plugin_action"
 command = "herdr.git-graph.sidebar"
 description = "Open Git Graph sidebar"
