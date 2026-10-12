@@ -51,7 +51,8 @@ The kimi-code CLI is fleet-standard and fully mise-managed (legacy bootstrap ret
 kimi-facts[4]{layer,mechanism}:
   "binary","`npm:@moonshot-ai/kimi-code` pinned in dot_config/mise/config.toml — the official
     npm package (v2.1.1 at time of writing), native on aarch64; mise-sync installs/reconciles
-    it like every other manifest tool and the mise shim at ~/.local/bin/kimi owns PATH. The
+    it like every other manifest tool and the mise shim at ~/.local/share/mise/shims/kimi owns
+    PATH. The
     legacy install.sh bootstrap (run_install-kimi.sh: x86-64-only ELF into ~/.kimi-code/bin +
     a ~/.local/bin/kimi symlink guard that shadowed the mise shim, self-update in place) was
     removed — the lane duplicated the shim and was dead on aarch64 hosts"
