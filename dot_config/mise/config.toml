@@ -108,7 +108,14 @@ opencode = "1.18.29"
 # chezmoi apply (mise-sync installs; `latest` alias re-points) -> restart
 # daemons holding old binaries. Never in-tool self-updaters; never pin
 # versioned install dirs.
-"github:herdrdev/herdr" = "0.9.0"
+"github:herdrdev/herdr" = "0.9.3"
+# herdr plugin deps (captain directive 2026-10-12): lazydocker TUI for
+# sudoeren/herdr-lazydocker; lazysql table toggle for baeroe/herdr-lazysql
+# (go: backend, built by the pinned go toolchain above); memex transcript
+# search TUI / herdr plugin from nicosuave.
+lazydocker = "0.25.2"
+"go:github.com/jorgerojas26/lazysql" = "0.6.0"
+"github:nicosuave/memex" = "0.27.1"
 # agy — Antigravity CLI (Go binary TUI; firstmate-verified CREWMATE/SCOUT
 # harness, models via `agy models`, runs under the captain's signed-in Google
 # account). GitHub-release binary, pinned like herdr above.
