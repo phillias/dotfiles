@@ -11,6 +11,6 @@
     [fleet.nodes.kali]
         hostname = "CabinInspiron22Kali"
     [fleet.nodes.phillias]
-        hostname = "phillias-dev"
+        hostname = "InspironOne"
     [fleet.nodes.primary55522]
         hostname = "primary"

@@ -7,27 +7,55 @@
 RESTIC_ENV="${RESTIC_ENV:-$HOME/.config/fleet-backup/restic-env}"
 STATE_DIR="${STATE_DIR:-$HOME/.local/state/fleet-backup}"
 STATUS_FILE="${STATE_DIR}/.backup-status.json"
+SHARED_SECRETS="${SHARED_SECRETS:-$HOME/.config/fleet-backup/restic-shared-secrets}"
 
-# shellcheck source=/dev/null
-[ -f "$RESTIC_ENV" ] && source "$RESTIC_ENV"
+ENV_LOAD_STATUS=0
+if [ -f "$RESTIC_ENV" ]; then
+  # shellcheck source=/dev/null
+  source "$RESTIC_ENV" || ENV_LOAD_STATUS=$?
+else
+  ENV_LOAD_STATUS=1
+fi
+
+if [ "$ENV_LOAD_STATUS" -ne 0 ] || [ -z "${NTFY_TOKEN:-}" ]; then
+  # shellcheck source=/dev/null
+  [ -f "$SHARED_SECRETS" ] && source "$SHARED_SECRETS"
+fi
 
 NTFY_URL="${NTFY_URL:-https://ntfy.phillias.cc/SelfHostNetSec}"
-HOME_TAG="${HOST_TAG:-$(hostname -s)}"
+HOST_TAG="${HOST_TAG:-unknown}"
 MAX_AGE_H=26
 
 alert() {
-  if [ -n "${NTFY_TOKEN:-}" ]; then
-    curl -sf \
-      -H "Authorization: Bearer ${NTFY_TOKEN}" \
-      -H "Title: Backup watchdog — agent state (${HOME_TAG})" \
-      -H "Priority: urgent" \
-      -d "$1" \
-      "${NTFY_URL}" >/dev/null 2>&1 || true
+  if [ -z "${NTFY_TOKEN:-}" ]; then
+    echo "Backup watchdog could not send alert: NTFY_TOKEN is not set. Alert body: $1" >&2
+    exit 1
+  fi
+  if curl -sf \
+    -H "Authorization: Bearer ${NTFY_TOKEN}" \
+    -H "Title: Backup watchdog - agent state (${HOST_TAG})" \
+    -H "Priority: urgent" \
+    -d "$1" \
+    "${NTFY_URL}" >/dev/null 2>&1; then
+    echo "Backup watchdog alert sent: $1" >&2
+  else
+    echo "Backup watchdog failed to send ntfy alert. Alert body: $1" >&2
+    exit 1
   fi
   exit 0
 }
 
-[ -n "${NTFY_TOKEN:-}" ] || exit 0
+if [ "$ENV_LOAD_STATUS" -ne 0 ]; then
+  alert "Backup env could not be loaded from ${RESTIC_ENV}; host may not be registered in fleet.toml."
+fi
+
+if [ -z "$HOST_TAG" ] || [ "$HOST_TAG" = "unknown" ]; then
+  alert "Host not registered in fleet.toml (HOST_TAG=${HOST_TAG:-unset}); backup env rendered an invalid fleet node."
+fi
+
+if [ -z "${RESTIC_PASSWORD:-}" ]; then
+  alert "Backup env did not load a per-host RESTIC_PASSWORD for ${HOST_TAG}; check restic-password-${HOST_TAG} deployment."
+fi
 
 if [ ! -f "$STATUS_FILE" ]; then
   alert "No backup status file exists — backup has never run. See ${STATE_DIR}"
