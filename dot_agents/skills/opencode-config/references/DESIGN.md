@@ -667,8 +667,12 @@ firstmate's opencode agent reaches a remote node's agent at a localhost port:
 | `http://127.0.0.1:14002` | kali | 127.0.0.1:4096 |
 | `http://127.0.0.1:14003` | kalione | 127.0.0.1:4096 |
 
-Auth: `OPENCODE_SERVER_USERNAME/PASSWORD` from the age-encrypted
-`~/.config/opencode/opencode-serve.env` (EnvironmentFile in the unit).
+Auth: `OPENCODE_SERVER_USERNAME/PASSWORD` from
+`~/.config/opencode/opencode-serve.env` (EnvironmentFile in the unit), rendered
+by the chezmoi template `dot_config/opencode/private_opencode-serve.env.tmpl`
+which age-decrypts each secret from its own age file at apply time — the serve
+password lives in `.chezmoitemplates/opencode-serve-password.age` and appears
+in no plaintext source, shell history, or process args.
 Unauthenticated `GET /doc` returns 401 — that is the healthy signal.
 
 Config: the unit sets `Environment=XDG_CONFIG_HOME=%h/.config/opencode-serve`, so
