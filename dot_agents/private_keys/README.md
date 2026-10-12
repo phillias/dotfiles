@@ -18,6 +18,7 @@ live `~/.agents/keys` dir).
 │   ├── .cf-ai-gw          # CF AI Gateway token consumed by opencode + zshenv
 │   ├── .phoenixgrove-coding-plan-key
 │   ├── .groq-key
+│   ├── .bws-token         # optional: BWS machine-account token for this profile
 │   └── ...                # all keys live in profile subdirectories
 └── ...
 ```
@@ -128,6 +129,45 @@ To add or rotate a managed key: edit the source value, then
 `chezmoi re-add <path>`), commit the `.age` file, and `chezmoi apply` on target
 hosts. See the `dotfiles` / `chezmoi-axi` agent skills for the wrapper
 commands.
+
+## Bitwarden Secrets Manager (BWS)
+
+BWS gives agents fluid, never-locked vault access: machine-account access
+tokens do not require master-password unlocking (unlike `bw`/`bws` user
+sessions). The BWS layout mirrors the profile scheme:
+
+- **Project per profile.** Each key profile gets one BWS project of the same
+  name (`phillias`, `masculinecache`), each with one machine account of the
+  same name. Free org tier allows 3 projects + 3 machine accounts; the
+  existing `selfhost-Dev` account consumes one slot, so per-node accounts
+  do not fit — per-persona accounts fit exactly.
+- **Token per profile.** Each profile's machine-account token lives at
+  `~/.agents/keys/<profile>/.bws-token` (same scheme as any other key:
+  value only, mode 600). Repo copy:
+  `private_<profile>/encrypted_private_dot_bws-token.age`, rotated like any
+  managed key via `chezmoi add --encrypt` / `chezmoi re-add`.
+- **Loader exports** (default profile only, sourced like all other keys):
+  - `BWS_TOKEN_FILE` — path to the default profile's `.bws-token`
+    (consumed by the `bws-axi` wrapper).
+  - `BWS_ACCESS_TOKEN` — the token value itself; plain `bws` requires this
+    env var and does **not** read `BWS_TOKEN_FILE`.
+  - `BWS_BIN` — pinned `bws` binary at the mise latest alias
+    (`~/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws`),
+    per the mise path strategy for env-var consumers.
+
+Machine accounts and tokens are minted only by the org admin in the
+Bitwarden web vault (the `bws` CLI cannot create them).
+
+### Migrating keys into BWS
+
+`~/scripts/bws-migrate-keys.sh` (source: `scripts/bws-migrate-keys.sh`)
+uploads each key file in a profile to the matching BWS project as a secret
+with the same key name. `--dry-run` prints the plan without touching the
+vault; per-key idempotency skips names that already exist. Expected
+counts: `phillias` 58 (57 keys + token), `masculinecache` 1. Values are
+read only at execution time and never logged. After migration is verified,
+retiring the local age-encrypted key files is a destructive,
+captain-gated decision (see the migration task brief).
 
 ## Troubleshooting
 

@@ -239,4 +239,22 @@ if [ -r "$HOME/.agents/keys/$_default_profile/.anthropic-key" ]; then
     ANTHROPIC_API_KEY="$(cat "$HOME/.agents/keys/$_default_profile/.anthropic-key")" && export ANTHROPIC_API_KEY
 fi
 
+# Bitwarden Secrets Manager — machine-account token (never locks, unlike
+# bw/bws login sessions). Per-profile token file; the default profile's
+# token is exported. BWS_TOKEN_FILE is the bws-axi wrapper contract;
+# BWS_ACCESS_TOKEN is what the plain bws CLI reads (it ignores
+# BWS_TOKEN_FILE, verified against bws 2.1.0). Token files are age-encrypted
+# in the repo at dot_agents/private_keys/private_<profile>/encrypted_private_dot_bws-token.age.
+if [ -r "$HOME/.agents/keys/$_default_profile/.bws-token" ]; then
+    BWS_TOKEN_FILE="$HOME/.agents/keys/$_default_profile/.bws-token" && export BWS_TOKEN_FILE
+    BWS_ACCESS_TOKEN="$(cat "$HOME/.agents/keys/$_default_profile/.bws-token")" && export BWS_ACCESS_TOKEN
+fi
+
+# bws binary — mise latest alias (pinned in dot_config/mise/config.toml),
+# exported so bws-axi and scripts reach bws even when the PATH shim is unset,
+# per the mise skill path strategy (never pin versioned install dirs).
+if [ -x "$HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws" ]; then
+    BWS_BIN="$HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws" && export BWS_BIN
+fi
+
 unset _default_profile
