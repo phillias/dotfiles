@@ -3,6 +3,21 @@
 # instead of waiting for checks that never register.
 no_ci: true
 
+commands:
+  test: scripts/no-mistakes-test.sh
+
+test:
+  instructions: |
+    Dotfiles Test scope is the changed templates and their rendered outputs only.
+    Never apply to the real home. Never touch ~/.local/share/chezmoi. Never launch
+    opencode serve or any target app unless the changed file is itself an app
+    launch contract and no shell/render check can prove it. Use mktemp -d outside
+    the worktree, throwaway age keys and fixtures, and remove scratch before exit.
+    Treat the configured command output as the primary evidence; after it passes,
+    report the bounded scenarios it covered and stop.
+  evidence:
+    store_in_repo: false
+
 # --- CI replay-workflow hardening pattern (documentation only; dotfiles stays
 # no_ci: true and its existing CI surface is structural/tool-config-only, with
 # NO PR-code-checkout steps today). For the next repo that adopts a PR-review
