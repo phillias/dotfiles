@@ -22,10 +22,10 @@ age = "1.2.1"
 "npm:chrome-devtools-axi" = "0.1.29"
 "npm:composio" = "1.0.0"
 "npm:gh-axi" = "0.1.30"
-"npm:lavish-axi" = "0.1.50"
+"npm:lavish-axi" = "0.1.86"
 "npm:pnpm" = "11.20.0"
-"npm:@masculinecache/quota-axi" = "0.1.30"
-"npm:tasks-axi" = "0.2.5"
+"npm:quota-axi" = "0.1.60"  # upstream from frozen @masculinecache fork (0.1.30, Aug 31 republish to retire the vendored overlay); firstmate floor is 0.1.51
+"npm:tasks-axi" = "0.2.6"  # firstmate floor 0.2.6 (update --archive-body, mv [<id>...])
 "npm:wrangler" = "4.125.0"
 "npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin). Kept at 0.84.2 2026-09-20: both 0.85.1 and 0.86.0 die on long gate agent sessions with "Stream ended without finish_reason" (three pipeline deaths) while raw streams through the same lane complete cleanly with finish_reason stop — a pi 0.85+ stream-parsing regression; 0.84.2 completed two full pipelines the same night. The static x-opencode-session header on opencode-go-gw is load-bearing on every version (pi does not send it natively for custom providers). Re-bump only after a full no-mistakes run passes on the candidate.
 # no-mistakes gate pipeline (kunchenguid/no-mistakes) — NOT the unrelated npm
@@ -124,7 +124,14 @@ opencode = "1.18.29"
 # chezmoi apply (mise-sync installs; `latest` alias re-points) -> restart
 # daemons holding old binaries. Never in-tool self-updaters; never pin
 # versioned install dirs.
-"github:herdrdev/herdr" = "0.9.0"
+"github:herdrdev/herdr" = "0.9.3"
+# herdr plugin deps (captain directive 2026-10-12): lazydocker TUI for
+# sudoeren/herdr-lazydocker; lazysql table toggle for baeroe/herdr-lazysql
+# (go: backend, built by the pinned go toolchain above); memex transcript
+# search TUI / herdr plugin from nicosuave.
+lazydocker = "0.25.2"
+"go:github.com/jorgerojas26/lazysql" = "0.6.0"
+"github:nicosuave/memex" = "0.27.1"
 # agy — Antigravity CLI (Go binary TUI; firstmate-verified CREWMATE/SCOUT
 # harness, models via `agy models`, runs under the captain's signed-in Google
 # account). GitHub-release binary, pinned like herdr above.

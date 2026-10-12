@@ -144,6 +144,101 @@ last_pane = ["prefix+ctrl+a", "prefix+a"]          # optional, unset by default;
 # workspaces = "" # e.g. "ctrl+shift" makes ctrl+shift+1..9 switch workspaces directly
 # agents = ""     # e.g. "alt" makes alt+1..9 focus agent rows directly
 
+# --- Plugin keybindings (2026-10-12) ---
+# Boundary: prefix+<key> stays herdr-native; alt+<key> is the plugin surface.
+# Mac clients: terminal must send Option as Esc+ (iTerm2 "Option key acts as
+# Esc+", Terminal.app "Use Option as Meta", Kitty macos_option_as_alt yes).
+
+# Captain's Deck — Firstmate flow kanban (deimantasnork/captains-deck)
+[[keys.command]]
+key = "alt+d"
+type = "plugin_action"
+command = "herdr-firstmate-flow.open-captain-deck"
+description = "Open Captain's Deck flow kanban"
+
+[[keys.command]]
+key = "alt+shift+f"
+type = "plugin_action"
+command = "herdr-firstmate-flow.open-flow"
+description = "Open flow kanban pane"
+
+# Token Dashboard — per-agent cost/tokens (Davidcreador/herdr-token-dashboard)
+[[keys.command]]
+key = "alt+$"
+type = "plugin_action"
+command = "dave.token-dashboard.open-dashboard"
+description = "Open agent token dashboard"
+
+# PC RAM & CPU Usage Overlay (ezcorp-org) — alt+shift+o opens the live
+# self-refreshing usage dashboard pane; alt+o toggles the sidebar status
+# readout; the full-screen monitor action stays reachable from the palette.
+[[keys.command]]
+key = "alt+shift+o"
+type = "shell"
+command = "herdr plugin pane open --plugin ez-corp.space-usage --entrypoint dashboard --placement overlay --focus"
+description = "Open self-refreshing usage dashboard"
+
+[[keys.command]]
+key = "alt+o"
+type = "shell"
+command = "herdr plugin action invoke status-toggle --plugin ez-corp.space-usage"
+description = "Toggle CPU/RAM status-line overlay"
+
+# Lazydocker (sudoeren/herdr-lazydocker) — alt+l (memex owns alt+m)
+[[keys.command]]
+key = "alt+l"
+type = "plugin_action"
+command = "herdr-lazydocker.open-lazydocker"
+description = "Open lazydocker split"
+
+[[keys.command]]
+key = "alt+shift+l"
+type = "plugin_action"
+command = "herdr-lazydocker.open-lazydocker-tab"
+description = "Open lazydocker tab"
+
+# Git Graph (sjlee06/herdr-git-graph)
+[[keys.command]]
+key = "alt+u"
+type = "plugin_action"
+command = "herdr.git-graph.open"
+description = "Open Git Graph full view"
+
+[[keys.command]]
+key = "alt+shift+u"
+type = "plugin_action"
+command = "herdr.git-graph.sidebar"
+description = "Open Git Graph sidebar"
+
+# Lazysql (baeroe/herdr-lazysql) — README keys
+[[keys.command]]
+key = "alt+s"
+type = "plugin_action"
+command = "herdr-lazysql.open-lazysql"
+description = "Toggle lazysql split"
+
+[[keys.command]]
+key = "alt+shift+s"
+type = "plugin_action"
+command = "herdr-lazysql.open-lazysql-tab"
+description = "Toggle lazysql tab"
+
+# Reviewr — diff review pane (persiyanov/herdr-reviewr); cmd+r from the README
+# becomes alt+r on Linux terminals
+[[keys.command]]
+key = "alt+r"
+type = "plugin_action"
+command = "persiyanov.reviewr.toggle"
+description = "Toggle diff review pane"
+
+# Memex — transcript search palette (nicosuave/memex); cmd+m becomes alt+m
+[[keys.command]]
+key = "alt+m"
+type = "plugin_action"
+command = "nicosuave.memex.palette"
+description = "memex session palette"
+
+
 # Size of the virtual terminal used when no client is attached.
 # Attached clients always use their own terminal size.
 [server]
