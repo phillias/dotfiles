@@ -28,7 +28,7 @@ Every node runs:
 
 | Unit | Purpose |
 |---|---|
-| `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1 --pure`, EnvironmentFile reads the age-encrypted `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) |
+| `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1 --pure`, EnvironmentFile reads `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) — rendered by chezmoi template `private_opencode-serve.env.tmpl`, age-decrypting each secret from its own age file (serve password in `.chezmoitemplates/opencode-serve-password.age`) |
 | `opencode-tunnel-primary55522.service` | autossh `-L 14001:127.0.0.1:4096 primary55522` |
 | `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 kali` |
 | `opencode-tunnel-kalione.service` | autossh `-L 14003:127.0.0.1:4096 kalione` |
@@ -114,5 +114,4 @@ remote node (pull + chezmoi apply + daemon-reload + restart serve).
 
 The opencode HTTP API is the transport: create a session on the remote serve,
 `POST /api/session/:id/prompt` to message the remote firstmate's agent.
-Password auth comes from `opencode-serve.env` (age-encrypted in chezmoi;
-OPENCODE_SERVER_USERNAME/PASSWORD).
+Password auth comes from `opencode-serve.env` (rendered by the chezmoi template `private_opencode-serve.env.tmpl`, which age-decrypts per-secret source files — the serve password is `.chezmoitemplates/opencode-serve-password.age`; OPENCODE_SERVER_USERNAME/PASSWORD).
