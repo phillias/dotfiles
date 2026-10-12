@@ -97,7 +97,8 @@ gh = "2.100.0"
 "npm:@openai/codex" = "0.153.4"
 "npm:@xai-official/grok" = "1.0.13"
 # Kimi Code — Moonshot agent CLI; verified firstmate worker (re-verify harness
-# facts on this major version; old installer copy at ~/.kimi-code is inert).
+# facts on this major version). Official npm package, native on aarch64; legacy
+# install.sh bootstrap retired (run_install-kimi.sh removed).
 "npm:@moonshot-ai/kimi-code" = "2.1.1"
 # Amp — Sourcegraph cloud coding agent with BYOK support for Cloudflare AI
 # Gateway, Vercel AI Gateway, and OpenCode Go. Model Routing is experimental

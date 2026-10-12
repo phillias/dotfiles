@@ -46,20 +46,26 @@ install-et-sslh-for-moshi.sh) — they are NOT chezmoi run scripts.
 
 ### Kimi harness bootstrap
 
-The kimi-code CLI is fleet-standard but deliberately outside the normal tool manifest:
+The kimi-code CLI is fleet-standard and fully mise-managed (legacy bootstrap retired):
 
 kimi-facts[4]{layer,mechanism}:
-  "binary",`run_install-kimi.sh` — every-apply guard script (kimi is absent from the mise
-    registry and ships no release artifacts, so mise-sync cannot own it; setup.sh does not
-    install it either)
+  "binary","`npm:@moonshot-ai/kimi-code` pinned in dot_config/mise/config.toml — the official
+    npm package (v2.1.1 at time of writing), native on aarch64; mise-sync installs/reconciles
+    it like every other manifest tool and the mise shim at ~/.local/bin/kimi owns PATH. The
+    legacy install.sh bootstrap (run_install-kimi.sh: x86-64-only ELF into ~/.kimi-code/bin +
+    a ~/.local/bin/kimi symlink guard that shadowed the mise shim, self-update in place) was
+    removed — the lane duplicated the shim and was dead on aarch64 hosts"
   "config","`private_dot_kimi-code/config.toml.tmpl` (gateway routes + custom headers in
     dot_zshenv.tmpl) and `private_dot_kimi-code/tui.toml` (client prefs) — tracked means the
     PRISTINE non-worker state; firstmate's fm-kimi-turnend-hook.sh and herdr's agent-state hook
-    each install their own marker-delimited regions at spawn time and remove them at teardown"
+    each install their own marker-delimited regions at spawn time and remove them at teardown.
+    The npm package still consumes both files: it resolves its data dir via $KIMI_CODE_HOME
+    falling back to ~/.kimi-code (verified by kimi doctor + strace against 2.1.1)"
   "credentials","NEVER shipped — kimi rotates its OAuth access/refresh tokens in
     ~/.kimi-code/credentials/ on refresh, so a chezmoi-managed copy would clobber live tokens
     with stale ones; fresh nodes run one interactive `kimi` login, same posture as claude/codex"
-  "self-update","kimi's native updater keeps itself current (v2.1.1 at time of writing)"
+  "upgrades","owned by the mise pin — bump the version in dot_config/mise/config.toml and
+    mise-sync reconciles; kimi's install.sh self-update-in-place lane retired with the bootstrap"
 
 ---
 
@@ -99,20 +105,10 @@ mise manifest changes (fingerprint covers `dot_config/mise/config.toml`, `.mise.
     through the real npm CLI to bypass aube's non-interactive trust-check abort for
     packages not in mise's tool registry (codemem, composio)
 
-run_install-kimi.sh — kimi-code CLI bootstrap, runs on every apply:
-  guard: when ~/.kimi-code/bin/kimi is executable, self-heals the ~/.local/bin/kimi
-    PATH symlink the installer creates (ln -sf when missing or dangling; a real file
-    at the path is left untouched), then exits 0 — a lost symlink once silently
-    dropped kimi off PATH with no repair path on later applies
-  action: mkdir -p ~/.kimi-code, then stages the official installer
-    (curl -fsSL code.kimi.com/kimi-code/install.sh -o ~/.kimi-code/install.sh) and runs it with
-    bash when the binary is missing, so curl failures propagate and a wiped ~/.kimi-code
-    self-heals on the next apply (sync cron is */30)
-  why run_ not run_onchange_: presence, not content, is the trigger — kimi self-updates in place
-  auth: NOT handled here — see "Kimi harness bootstrap" under Setup
-
-Legacy note: an older SKILL.md listed `run_once_cleanup-stale.sh.tmpl`; that script no longer
-exists — its cleanup job moved into the consolidated run_onchange above.
+Legacy notes: an older SKILL.md listed `run_once_cleanup-stale.sh.tmpl`; that script no longer
+exists — its cleanup job moved into the consolidated run_onchange above. `run_install-kimi.sh`
+(kimi-code CLI bootstrap) was also removed — superseded by the `npm:@moonshot-ai/kimi-code`
+mise pin; see "Kimi harness bootstrap" under Setup.
 
 ### Adding a new run script
 
