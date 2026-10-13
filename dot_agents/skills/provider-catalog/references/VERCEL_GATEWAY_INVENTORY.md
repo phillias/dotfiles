@@ -157,7 +157,7 @@ Fast, cheap, >=128K context, tool-use:
    - ~~opencode: `vercel` provider entry in opencode.json~~ (supervisor rides CF; not a worker)
    - ~~pi: `vercel` provider in models.json~~ ✓ (9 vmc models declared)
    - ~~codex: `vercel` provider in config.toml~~ ✓ (was Vercel-primary; 2026-10-13 demoted to native OpenAI default, Vercel now the explicit `vercel.config.toml` `--profile vercel` fallback; CF stays `profiles.cf`)
-   - ~~claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`~~ ✓ (Vercel-primary)
+   - ~~claude: `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`~~ ✓ (was Vercel-primary; 2026-10-13 demoted to native Anthropic OAuth default, Vercel now the explicit `ANTHROPIC_BASE_URL`/`ANTHROPIC_AUTH_TOKEN` fallback)
    - ~~kimi: `vercel` provider in config.toml~~ ✓ (provider declared, default switched to `tui-via-vercel`)
    - grok: Vercel model added, default switched to `vmc/grok` (dotfiles PR #344)
    - muse: rides Meta directly (not through gateway)
