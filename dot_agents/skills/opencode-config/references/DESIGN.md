@@ -218,7 +218,7 @@ opencode-go can never be a gateway route node (it requires the `x-opencode-sessi
 - **No-mistakes** (`config.yaml`): `agent_config.pi.model` and `review_agents.reviewer.model` ride `fallback/gate` instead of directly pinning `CfAiGw/dynamic/pr-gate`, so automated validation also falls through to Vercel.
 
 **Manual profile switching (no automatic failover — tool limitation):**
-- **Codex**: `vercel-aig` provider in `config.toml.tmpl`, Vercel profile in separate `vercel.config.toml.tmpl` (Codex 0.153.4+ deprecated `[profiles.*]` in config.toml). Switch with `codex --profile vercel`. No ordered retry/failover configuration.
+- **Codex**: native OpenAI default (`model = "openai/gpt-5.5"`, no `model_provider`) via ChatGPT sign-in; the `vercel-aig` provider definition stays in `config.toml.tmpl` and the Vercel profile (`model_provider = "vercel-aig"`, `model = "router/codex"`) lives in the separate `vercel.config.toml.tmpl` (Codex 0.153.4+ deprecated `[profiles.*]` in config.toml). Switch to it with `codex --profile vercel`. No ordered retry/failover configuration.
 - **Kimi Code**: `vercel-aig` provider and `tui-via-vercel` model registered. Single `default_model` / `-m` selection only; no ordered fallback chain. Switch manually or via `-m tui-via-vercel`.
 - **opencode-go**: Cannot ride Vercel (no opencode.ai provider). Stays CF-only.
 
