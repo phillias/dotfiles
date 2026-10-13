@@ -43,7 +43,7 @@ flowchart TD
     subgraph harnesses[Harness CLIs - config-level model pins]
         OC["opencode<br/>~/.config/opencode/opencode.json<br/>model: opencode-zen/fledge-alpha-free<br/>fallback: opencode-fallback.jsonc stage 0-2"]
         PI["pi<br/>~/.pi/agent/settings.json<br/>defaultModel: fallback/default"]
-        CX["codex<br/>~/.codex/config.toml<br/>model: openai/gpt-5.5 native OpenAI (default)<br/>vercel.config.toml: router/codex (--profile vercel fallback)<br/>profile cf: dynamic/codex"]
+        CX["codex<br/>~/.codex/config.toml<br/>model: gpt-5.6-luna native OpenAI (default)<br/>vercel.config.toml: router/codex (--profile vercel fallback)<br/>profile cf: dynamic/codex"]
         GR["grok<br/>~/.grok/config.toml<br/>models.default: router/grok<br/>dynamic/grok defined"]
         KM["kimi-code<br/>~/.kimi-code/config.toml<br/>default_model: tui-via-vercel (router/kimi)<br/>tui-via-cf: dynamic/kimi"]
         CL["claude<br/>~/.claude/settings.json - hooks only,<br/>no model pin (native auth)"]
