@@ -27,15 +27,11 @@ fi
 # Route Kimi Code through CF AI Gateway (already configured in ~/.kimi-code/config.toml)
 export KIMI_CODE_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"kimi-code","host":"{{ .chezmoi.hostname }}","agent":"primary"}'
 
-# Route Claude Code through Vercel AI Gateway (native Anthropic Messages API)
-# Vercel serves /v1/messages in proper Anthropic format with SSE events
-# (message_start, content_block_delta, message_stop) — CF AI Gateway's
-# dynamic routes return OpenAI chat.completion format which Claude Code
-# cannot parse. Vercel's /claude-code endpoint is Claude Code's own
-# compatibility surface with model discovery support.
-export ANTHROPIC_BASE_URL="https://ai-gateway.vercel.sh"
-export ANTHROPIC_AUTH_TOKEN="$AI_GATEWAY_API_KEY"
-export ANTHROPIC_API_KEY=""
+# Claude Code uses its native Anthropic OAuth login by default.
+# Explicit Vercel AI Gateway fallback (uncomment all three exports if needed):
+# export ANTHROPIC_BASE_URL="https://ai-gateway.vercel.sh"
+# export ANTHROPIC_AUTH_TOKEN="$AI_GATEWAY_API_KEY"
+# export ANTHROPIC_API_KEY=""
 export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
 
 # CF AI Gateway fallback route for firstmate worker harnesses
