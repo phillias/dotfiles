@@ -144,8 +144,13 @@ for path in "${changed[@]}"; do
     continue
   fi
   if is_encrypted_source "$path"; then
-    if ! head -n 1 "$path" | grep -q '^-----BEGIN AGE ENCRYPTED FILE-----$'; then
-      echo "FAIL: encrypted source lacks age armor header: $path"
+    # Valid age files are either PEM-armored (begin header, as produced by
+    # `chezmoi add --encrypt`) or binary stanzas (magic header
+    # age-encryption.org/v1, as produced by plain `age -e` without --armor).
+    # chezmoi decrypts both formats; both are legitimate committed sources.
+    if ! { head -n 1 "$path" | grep -q '^-----BEGIN AGE ENCRYPTED FILE-----$' \
+        || head -c 21 "$path" | grep -q '^age-encryption.org/v1'; }; then
+      echo "FAIL: encrypted source lacks age armor or binary magic header: $path"
       fail=1
     fi
     continue

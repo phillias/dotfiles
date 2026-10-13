@@ -19,6 +19,17 @@ npm.shell_out = true
 # (chezmoi doctor: failed age-command exit status 1) until this pin landed
 # (2026-10-04). Verify with: age --version via the shim.
 age = "1.2.1"
+# bws — Bitwarden Secrets Manager CLI (machine-account tokens that never lock,
+# the fluid-access vault lane for opencode/firstmate agents; bws-axi wrapper
+# and scripts/bws-migrate-keys.sh consume it). mise registry entry
+# bitwarden-secrets-manager (aqua:bitwarden/sdk); the binary ships at the
+# version-dir root (installs/bitwarden-secrets-manager/<v>/bws, no bin/
+# subdir). 2.1.0 was installed 2026-10-12 but UNPINNED, so the PATH shim died
+# with 'No version is set for shim: bws' (bws-axi doctor: auth failed via
+# shim; direct-path binary works) until this pin landed. The keys loader also
+# exports BWS_BIN at the latest alias below, per the mise skill path strategy.
+# Verify with: bws --version via the shim.
+bitwarden-secrets-manager = "2.1.0"
 "npm:chrome-devtools-axi" = "0.1.29"
 "npm:composio" = "1.0.0"
 "npm:gh-axi" = "0.1.30"
