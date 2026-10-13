@@ -117,10 +117,14 @@ gh = "2.100.0"
 "npm:@ampcode/cli" = "0.0.1790452833-gea4e33"
 # bun via mise's core backend (replaces the npm-packaged bun.exe global; dedupe removes it).
 bun = "1.3.14"
-# opencode CLI — core backend (standalone binary)
-opencode = "1.18.29"
-# opencode plugin SDK — TypeScript API for building plugins
-"npm:@opencode-ai/plugin" = "1.18.29"
+# opencode CLI — core backend (standalone binary). Bumped 1.18.29 -> 1.19.0 (2026-10-13):
+# 1.19.0 is the stable release-line head (2026-10-11; OpenCode 2 is opt-in via /update and
+# not auto-installed). Candidate fix for the silent turn-wedge pattern seen on 1.18.29
+# (worker turns ending without output after inbox reads; away-channel input wedge, same
+# shape). Validate via a full worker run on the candidate before trusting the wedge fixed.
+opencode = "1.19.0"
+# opencode plugin SDK — TypeScript API for building plugins (versioned in lockstep with the CLI)
+"npm:@opencode-ai/plugin" = "1.19.0"
 # DSP dynamic context pruning — token optimization plugin for OpenCode
 "npm:@tarquinen/opencode-dcp" = "3.1.15"
 # opencode plugins — notification, sanitization, guards, telemetry
