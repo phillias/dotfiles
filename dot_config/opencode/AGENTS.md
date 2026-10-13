@@ -16,7 +16,7 @@ export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
 
 `opencode.db` is SQLite at `~/.local/share/opencode/opencode.db`; the `session` table's `model` column stores JSON like `{"id":"big-pickle","providerID":"opencode"}`. `ORDER BY time_updated DESC LIMIT 1` selects the active session. If resolution yields `unknown`, prompt the user for the model name on first commit.
 
-The format is always: **`<model>@<hostname>`** — e.g., `big-pickle@nasbox` or `gpt-oss-120b@phillias-dev`.
+The format is always: **`<model>@<hostname>`** — e.g., `big-pickle@nasbox` or `gpt-oss-120b@InspironOne`.
 
 This applies to both `GIT_AUTHOR_NAME` and `GIT_COMMITTER_NAME`.
 

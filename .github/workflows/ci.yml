@@ -67,7 +67,13 @@ jobs:
           ln -s $GITHUB_WORKSPACE/.chezmoidata ~/.local/share/chezmoi/ 2>/dev/null || true
           ln -s $GITHUB_WORKSPACE/.chezmoi* ~/.local/share/chezmoi/ 2>/dev/null || true
           ln -s $GITHUB_WORKSPACE/.git ~/.local/share/chezmoi/ 2>/dev/null || true
-          chezmoi dump --format=json > /dev/null
+          # CI runners (e.g. runnervmmprz5) are not registered fleet nodes; the
+          # .chezmoiignore fleet-node guard fails by design there. Render the
+          # dump under a registered fleet hostname so template syntax is checked
+          # without weakening the guard. --override-data is the supported way to
+          # set .chezmoi.hostname for the dump (chezmoi has no hostname env).
+          override_data='{"chezmoi":{"hostname":"InspironOne"}}'
+          chezmoi --override-data "$override_data" dump --format=json >/dev/null
 
   tool-configs:
     runs-on: ubuntu-latest

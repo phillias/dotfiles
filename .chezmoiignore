@@ -65,14 +65,19 @@ age-key.txt.age
 
 # Per-host restic password files — only deploy the one matching this host.
 # Template resolves hostname → node name; non-matching files are ignored.
-{{- if ne .chezmoi.hostname "CabinInspiron22Kali" }}
-.config/fleet-backup/restic-password-kali
+{{- $fleetNode := "" -}}
+{{- range $name, $config := .fleet.nodes -}}
+{{- if eq $.chezmoi.hostname $config.hostname -}}
+{{- $fleetNode = $name -}}
+{{- end -}}
 {{- end }}
-{{- if ne .chezmoi.hostname "phillias-dev" }}
-.config/fleet-backup/restic-password-phillias
+{{- if eq $fleetNode "" -}}
+{{- fail (printf "fleet backup host %q is not registered in .chezmoidata/fleet.toml .fleet.nodes" .chezmoi.hostname) -}}
 {{- end }}
-{{- if ne .chezmoi.hostname "primary" }}
-.config/fleet-backup/restic-password-primary55522
+{{- range $name, $_ := .fleet.nodes }}
+{{- if ne $fleetNode $name }}
+.config/fleet-backup/restic-password-{{ $name }}
+{{- end }}
 {{- end }}
 
 # Primary selfhost per-server env — only deploy on primary (2026-09-27).

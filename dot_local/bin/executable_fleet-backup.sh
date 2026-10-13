@@ -30,18 +30,37 @@ STATUS_FILE="${STATE_DIR}/.backup-status.json"
 log()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "${LOG_FILE}"; }
 fail() { log "FATAL: $*"; exit 1; }
 
+mkdir -p "$STATE_DIR"
 [ -f "$RESTIC_ENV" ] || fail "${RESTIC_ENV} not found (see bootstrap comment in the script header)"
+set +e +u
 # shellcheck source=/dev/null
 source "$RESTIC_ENV"
-mkdir -p "$STATE_DIR"
+ENV_LOAD_STATUS=$?
+set -euo pipefail
+if [ "$ENV_LOAD_STATUS" -ne 0 ]; then
+  fail "failed to source ${RESTIC_ENV}; check fleet node registration and per-host password deployment"
+fi
 
-HOST_TAG="${HOST_TAG:-$(hostname -s)}"
+HOST_TAG="${HOST_TAG:-}"
+if [ -z "$HOST_TAG" ] || [ "$HOST_TAG" = "unknown" ]; then
+  fail "host not registered in fleet.toml (HOST_TAG=${HOST_TAG:-unset}); re-render ${RESTIC_ENV} from dotfiles"
+fi
+
+case "${RESTIC_REPOSITORY:-}" in
+  ""|*/unknown)
+    fail "RESTIC_REPOSITORY is missing or points at an unknown fleet node (${RESTIC_REPOSITORY:-unset})"
+    ;;
+esac
+
+if [ -z "${RESTIC_PASSWORD:-}" ]; then
+  fail "RESTIC_PASSWORD is missing for ${HOST_TAG}; check restic-password-${HOST_TAG} deployment"
+fi
 
 log "=== Fleet agent-state backup started (${HOST_TAG}) ==="
 
 # Required from the env file: RESTIC_REPOSITORY, RESTIC_PASSWORD,
 # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, BACKUP_PATHS (array).
-: "${RESTIC_REPOSITORY:?}" "${RESTIC_PASSWORD:?}" "${AWS_ACCESS_KEY_ID:?}" "${AWS_SECRET_ACCESS_KEY:?}" "${BACKUP_PATHS[*]:?}"
+: "${RESTIC_REPOSITORY:?}" "${RESTIC_PASSWORD:?}" "${AWS_ACCESS_KEY_ID:?}" "${AWS_SECRET_ACCESS_KEY:?}" "${HOST_TAG:?}" "${BACKUP_PATHS[*]:?}"
 
 # Only paths that exist — self-healing when a dir is later removed.
 EXISTING_PATHS=()
