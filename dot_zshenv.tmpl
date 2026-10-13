@@ -38,6 +38,7 @@ export ANTHROPIC_AUTH_TOKEN="$AI_GATEWAY_API_KEY"
 export ANTHROPIC_API_KEY=""
 export CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1
 
-# Route Codex through CF AI Gateway  
+# CF AI Gateway fallback route for firstmate worker harnesses
+# (codex itself uses native OpenAI via ChatGPT sign-in, which ignores these).
 export OPENAI_BASE_URL="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
 export OPENAI_API_KEY="$CF_AI_GATEWAY_TOKEN"
