@@ -1,5 +1,5 @@
 # GUARDRAILS (2026-10-07):
-# - Default route is native OpenAI → openai/gpt-5.5 via ChatGPT sign-in.
+# - Default route is native OpenAI → gpt-5.6-luna via ChatGPT sign-in.
 # - Vercel AI Gateway remains an explicit fallback profile in
 #   vercel.config.toml.tmpl; select it with `codex --profile vercel`.
 # - [profiles.cf] uses CF AI Gateway dynamic/codex route (ladder in
@@ -10,7 +10,7 @@
 #   until renewal window.
 # - See provider-catalog/references/d1/NO_MISTAKES_MODELS.md for full
 #   per-harness config inventory and chain diagrams.
-model = "openai/gpt-5.5"
+model = "gpt-5.6-luna"
 
 [features]
 hooks = true
