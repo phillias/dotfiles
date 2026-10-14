@@ -15,7 +15,7 @@ set -uo pipefail
 STATE_DIR="$HOME/.local/state/opencode-fleet"
 STATE="$STATE_DIR/glm-free-scan.state"
 NTFY_ENV="$HOME/.config/opencode/glm-scan.ntfy.env"
-GW="${CF_AI_GATEWAY_TOKEN:-$(cat "$HOME/.agents/keys/default/.cf-ai-gw" 2>/dev/null || true)}"
+GW="${CF_AI_GATEWAY_TOKEN:-$("$HOME/.local/share/mise/installs/age/latest/age/age" -d -i "$HOME/.config/chezmoi/key.txt" "$HOME/.agents/keys/retired/phillias/.cf-ai-gw.age" 2>/dev/null || true)}"
 BASE="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode"
 
 mkdir -p "$STATE_DIR"

@@ -3,7 +3,7 @@
 **Updated:** 2026-09-25
 **Base URL:** `https://ai-gateway.vercel.sh/v1` (OpenAI-compat) / `https://ai-gateway.vercel.sh` (Anthropic Messages)
 **Authentication:** `Authorization: Bearer $AI_GATEWAY_API_KEY` or `x-api-key` header
-**Key file:** `~/.agents/keys/default/.vercel-gateway-key` (loaded by `load-keys.sh`)
+**Key file:** retired to `~/.agents/keys/retired/phillias/.vercel-gateway-key.age` (loaded by `load-keys.sh` from bws; age file is the logged fallback)
 **Total Models:** 376 (16 Anthropic, 20 Grok/xAI, 4 free-tier)
 **Providers:** 47 (alibaba, anthropic, azure, bedrock, cerebras, deepseek, google, groq, mistral, moonshotai, openai, togetherai, xai, zai, and more)
 **Markup:** Zero (all requests, including system credentials and BYOK)

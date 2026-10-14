@@ -240,7 +240,7 @@ curl https://api.abliteration.ai/v1/chat/completions \
 
 **Access:**
 - Endpoint: `POST https://api.tsfm.ai/v1/forecast`
-- Auth: `Bearer $TSFM_API_KEY` (key at `~/.agents/keys/default/.tsfm-key`, loaded in both `.bashrc` and `.zshrc`)
+- Auth: `Bearer $TSFM_API_KEY` (key exported by `load-keys.sh` from bws; retired copy `~/.agents/keys/retired/phillias/.tsfm-key.age`)
 - Model catalog: `GET https://api.tsfm.ai/api/models` (54 models, all $0.00025/forecast)
 - OpenAI-compat model list: `GET https://api.tsfm.ai/v1/models`
 - No GPU provisioning required — fully hosted, autoscaling, 99.9% uptime SLA
@@ -316,7 +316,7 @@ For Gambit's multivariate alpha forecasting: `Salesforce/moirai-1.1-R-large` is 
 **Full model catalog (54 models, 16 families):**
 Chronos (6), Cisco TSM (1), Granite FlowState (2), Granite PatchTST (2), Granite TTM (2), Kairos (3), Kronos (3), Lag-Llama (1), MOMENT (3), Moirai (9), Sundial (1), TEMPO (1), TiRex (3), TimeMoE (2), Timer (1), Timer-S1 (1), TimesFM (2), TinyTimeMixer (1), Toto (6), YingLong (4). All $0.00025/forecast.
 
-**Key env var:** `TSFM_API_KEY` — set in `~/.zshrc` from `~/.agents/keys/default/.tsfm-key`
+**Key env var:** `TSFM_API_KEY` — exported by `load-keys.sh` (sourced from `~/.zshenv`)
 
 ## Gemini 2.5 Flash — limits surfaced live (2026-08-30)
 
@@ -350,7 +350,7 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 
 ## PGS coding tester plan (2026-09-01)
 
-Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-5.3-flash`. Key: `~/.agents/keys/phillias/.phoenixgrove-coding-plan-key` (pgsk_…; deployed to the `phillias` keys profile). Verified plan behavior:
+Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-5.3-flash`. Key: exported by `load-keys.sh` as `PHOENIXGROVE_CODING_PLAN_API_KEY` from bws (pgsk_…; retired copy `~/.agents/keys/retired/phillias/.phoenixgrove-coding-plan-key.age`). Verified plan behavior:
 
 - baseURL unchanged (`https://api.pgsgrove.com/v1`) — zero client config changes; the key swap is a dashboard BYOK update on the gateway's custom-phoenixgrove upstream.
 - `/v1/usage` (HTTP 200) returns percent-based windows: `weekly_used_percent`, `daily_used_percent`, `api_share_of_weekly_percent`, `weekly_resets_at` (2026-09-08T01:56Z). No bank/credits endpoint.
@@ -379,7 +379,7 @@ Captain holds a PGS coding tester plan covering `deepseek-v4-flash-0731` + `glm-
 
 Viral announcement (late Sep 2026): NVIDIA's API catalog serves DeepSeek V4.1
 Flash, GLM-5.3, GLM-5.3-Flash, and Kimi K3 free on one `nvapi-` key (already
-wired as gateway `custom-nvidia-nim`, key `~/.agents/keys/default/.nvidia-key`).
+wired as gateway `custom-nvidia-nim`, key exported by `load-keys.sh` as `NVIDIA_API_KEY`).
 Live `/v1/models` (82 ids, 2026-09-28) confirms all four. Probe results with the
 captain's key (same day):
 
@@ -1261,8 +1261,8 @@ config — each gets its own endpoint shape):
 | Kimi CLI | `https://ai-gateway.vercel.sh/v1` (provider entry) | OpenAI-compat |
 | Coding agent (generic) | `https://ai-gateway.vercel.sh/coding-agent/v1` | Aider, Continue, gptme, Grok Build, etc. |
 
-**Token:** `$AI_GATEWAY_API_KEY` (from `~/.agents/keys/default/.vercel-gateway-key`,
-loaded by `load-keys.sh`). Auth via `Authorization: Bearer <key>` or `x-api-key`
+**Token:** `$AI_GATEWAY_API_KEY` (exported by `load-keys.sh` from bws;
+retired copy `~/.agents/keys/retired/phillias/.vercel-gateway-key.age`). Auth via `Authorization: Bearer <key>` or `x-api-key`
 header. OIDC tokens work on Vercel deployments (`VERCEL_OIDC_TOKEN`).
 
 ### BYOK (Bring Your Own Key)

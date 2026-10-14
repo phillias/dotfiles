@@ -8,8 +8,8 @@ description: Composio REST API patterns for agents — list connected accounts, 
 The npm and pip `composio` packages are placeholders (no usable CLI). The
 usable surface is the REST API. All calls go to
 `https://backend.composio.dev/api/v3.1` with header `x-api-key: $COMPOSIO_API_KEY`
-(the key lives in Bitwarden / `~/.agents/keys/default/.composio-key`, exported
-as `COMPOSIO_API_KEY` by load-keys.sh).
+(the key lives in Bitwarden Secrets Manager, exported
+as `COMPOSIO_API_KEY` by load-keys.sh; retired copy `~/.agents/keys/retired/phillias/.composio-key.age`).
 
 ## Connected accounts
 

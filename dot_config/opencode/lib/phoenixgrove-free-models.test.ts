@@ -29,7 +29,7 @@ import {
 const PI_DIR = "../../../private_dot_pi";
 
 const GATEWAY_HOST = "gateway.ai.cloudflare.com";
-const GATEWAY_TOKEN_FILE = "{file:~/.agents/keys/default/.cf-ai-gw}";
+const GATEWAY_TOKEN_FILE = "{env:CF_AI_GATEWAY_TOKEN}";
 const GATEWAY_TOKEN_ENV = "$CF_AI_GATEWAY_TOKEN";
 const FREE_EVERYDAY_MODELS = [
   "glm-5.3-flash",
@@ -106,10 +106,10 @@ describe("opencode.json phoenixgrove provider routes through the AI Gateway", ()
     );
   });
 
-  test("apiKey is the gateway token file indirection, not the PGS provider key", async () => {
+  test("apiKey is the gateway token indirection, not the PGS provider key", async () => {
     const providers = await loadOpencodeProviderRegistry();
     const key = providers.phoenixgrove.options.apiKey;
-    expect(key, "must use the shared gateway token file").toBe(
+    expect(key, "must use the shared gateway token env var").toBe(
       GATEWAY_TOKEN_FILE,
     );
     expect(

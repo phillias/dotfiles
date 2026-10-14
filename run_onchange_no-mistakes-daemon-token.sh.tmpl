@@ -2,8 +2,10 @@
 # no-mistakes daemon token single-source mechanism.
 #
 # Creates a systemd drop-in override that:
-#   1. Stamps CF_AI_GATEWAY_TOKEN from ~/.agents/keys/default/.cf-ai-gw
-#      (profile symlink) into a transient XDG_RUNTIME_DIR env file via ExecStartPre
+#   1. Stamps CF_AI_GATEWAY_TOKEN from the retired age-encrypted key at
+#      ~/.agents/keys/retired/phillias/.cf-ai-gw.age (post-BWS-migration;
+#      age decrypt keeps the daemon bootable when bws is unreachable)
+#      into a transient XDG_RUNTIME_DIR env file via ExecStartPre
 #   2. Points EnvironmentFile to that transient location
 #
 # This eliminates duplication (token was in both .pi-env and as a standalone
@@ -22,10 +24,10 @@
 # If captain prefers an alternative mechanism, this script should be removed and
 # the daemon configured to read the token via a different path.
 #
-# Fingerprint (tokens): {{ output "bash" "-c" "sha256sum ~/.agents/keys/default/.cf-ai-gw ~/.agents/keys/default/.vercel-gateway-key 2>/dev/null | sha256sum | cut -d' ' -f1" }}
+# Fingerprint (tokens): {{ output "bash" "-c" "for f in ~/.agents/keys/retired/phillias/.cf-ai-gw.age ~/.agents/keys/retired/phillias/.vercel-gateway-key.age; do chezmoi decrypt \"$f\" 2>/dev/null; done | sha256sum | cut -d' ' -f1" }}
 set -euo pipefail
 
-TOKEN_FILE="$HOME/.agents/keys/default/.cf-ai-gw"
+TOKEN_FILE="$HOME/.agents/keys/retired/phillias/.cf-ai-gw.age"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 
 # Discover the hashed daemon unit name with nullglob to handle missing units
@@ -60,7 +62,7 @@ ENV_FILE="$RUNTIME_DIR/no-mistakes-daemon.env"
 
 cat >"$OVERRIDE_CONF" <<'SYSTEMD_EOF'
 [Service]
-ExecStartPre=/bin/bash -c 'set -e; umask 077; [ -f "$ENV_FILE" ] && chmod 0600 "$ENV_FILE"; printf "CF_AI_GATEWAY_TOKEN=%%s\n" "$(cat ~/.agents/keys/default/.cf-ai-gw)" > "$ENV_FILE"; printf "AI_GATEWAY_API_KEY=%%s\n" "$(cat ~/.agents/keys/default/.vercel-gateway-key 2>/dev/null)" >> "$ENV_FILE"; chmod 0600 "$ENV_FILE"'
+ExecStartPre=/bin/bash -c 'set -e; umask 077; [ -f "$ENV_FILE" ] && chmod 0600 "$ENV_FILE"; printf "CF_AI_GATEWAY_TOKEN=%%s\n" "$($HOME/.local/share/mise/installs/age/latest/age/age -d -i $HOME/.config/chezmoi/key.txt $HOME/.agents/keys/retired/phillias/.cf-ai-gw.age)" > "$ENV_FILE"; printf "AI_GATEWAY_API_KEY=%%s\n" "$($HOME/.local/share/mise/installs/age/latest/age/age -d -i $HOME/.config/chezmoi/key.txt $HOME/.agents/keys/retired/phillias/.vercel-gateway-key.age 2>/dev/null)" >> "$ENV_FILE"; chmod 0600 "$ENV_FILE"'
 EnvironmentFile=-$ENV_FILE
 SYSTEMD_EOF
 
