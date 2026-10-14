@@ -70,7 +70,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/tokentelemetry
-ExecStart=/bin/bash -c 'export ANTHROPIC_API_KEY="$(cat "%h/.agents/keys/default/.anthropic-key")"; export NEXT_PUBLIC_API_BASE=""; exec %h/.local/share/mise/shims/node %h/tokentelemetry/bin/cli.js --port 13000 --api-port 18000 --host 127.0.0.1 --no-open'
+ExecStart=/bin/bash -c 'export ANTHROPIC_API_KEY="$(%h/.local/share/mise/installs/age/latest/age/age -d -i %h/.config/chezmoi/key.txt "%h/.agents/keys/retired/phillias/.anthropic-key.age")"; export NEXT_PUBLIC_API_BASE=""; exec %h/.local/share/mise/shims/node %h/tokentelemetry/bin/cli.js --port 13000 --api-port 18000 --host 127.0.0.1 --no-open'
 Restart=on-failure
 RestartSec=5
 Environment=TOKENTELEMETRY_DATA_DIR=%h/.tokentelemetry
@@ -95,9 +95,11 @@ Key points:
   against `~/tokentelemetry/bin/cli.js` with `--port 13000 --api-port 18000
   --host 127.0.0.1 --no-open`. The fork checkout is at `~/tokentelemetry` on
   `fork-main`.
-- The Tokens API key is read at start from
-  `~/.agents/keys/default/.anthropic-key` into `ANTHROPIC_API_KEY`. The key
-  value itself is never committed; only the file path is.
+- The Tokens API key is decrypted at start from the retired age file
+  `~/.agents/keys/retired/phillias/.anthropic-key.age` into `ANTHROPIC_API_KEY`
+  (age -d with the chezmoi identity; post-BWS-migration the key retired from
+  the active profile dir). The key value itself is never committed; only the
+  file path is.
 - Data dir: `TOKENTELEMETRY_DATA_DIR` and `TOKENTELEMETRY_HOME` both point at
   `%h/.tokentelemetry` (data extracted from the retired Docker volume).
 - Memory envelope: `MemoryHigh=1536M`, `MemoryMax=2G`. Earlier 512M limit
@@ -111,7 +113,7 @@ Key points:
   which godoxy routes to `:18000` via the rules block.
 - **No godoxy restart after config:** `hostapps.yml` requires a `godoxy-proxy`
   restart before edits take effect (unless godoxy gains hot-reload).
-- **Key file must exist:** the unit fails fast if `~/.agents/keys/default/.anthropic-key`
+- **Key file must exist:** the unit fails fast if `~/.agents/keys/retired/phillias/.anthropic-key.age`
   is missing at start.
 - **Resource envelope:** do not lower `MemoryMax` below 2G; the Next.js
   production server starves under tighter limits.
@@ -126,5 +128,5 @@ Never delete this dir: it's the cost/yield ledger.
 - `~/tokentelemetry` fork checkout (`bin/cli.js` on `fork-main`)
 - `~/.config/systemd/user/tokentelemetry.service` (chezmoi source:
   `dot_config/systemd/user/tokentelemetry.service`)
-- `~/.agents/keys/default/.anthropic-key` (Tokens/Anthropic API key, never committed)
+- `~/.agents/keys/retired/phillias/.anthropic-key.age` (Tokens/Anthropic API key, age-encrypted retired copy, never committed in plaintext)
 - godoxy `hostapps.yml` entry with split proxy rules

@@ -1,11 +1,27 @@
 # Key profiles — `~/.agents/keys`
 
-Owner documentation for the `~/.agents/keys` key-profile scheme: flat keys plus
-per-profile key directories, and the shell-level loader contract.
+Owner documentation for the `~/.agents/keys` key-profile scheme: the bws-first
+loader contract, the retired-key layout, and recovery procedures.
 
 Applied by chezmoi via `dot_agents/private_keys/README.md` →
 `~/.agents/keys/README.md` (the `chezmoi add` convention target for the
 live `~/.agents/keys` dir).
+
+## Key status map (post-BWS-migration, 2026-10-13)
+
+| Status | Keys | Where they live |
+|---|---|---|
+| **Active** (not migrated) | `.bws-token` (per profile), `.google-tasks-token` | `~/.agents/keys/<profile>/` — unchanged, chezmoi age-encrypted in the repo as before |
+| **Retired** (57 migrated keys: 56 in the `phillias` profile + `masculinecache/.npmjs-key`) | Every other migrated key | bws project named like the profile is the live source; age-encrypted copies at `~/.agents/keys/retired/<profile>/<name>.age` for fallback + recovery |
+| **Excluded from migration** | `.google-tasks-token` | Stays chezmoi age-encrypted in the active profile dir (binary/non-UTF-8; cannot be a bws secret). Never enters the loader or retired tree |
+
+Retired key inventory (56 in the `phillias` profile): the 45 exported by the
+loader (map below) plus 11 recovery-only keys with no exported var:
+`.althub.co.za-api-rss-key`, `.animez.to-rss-key`, `.cf-ai-gw-token`,
+`.command-code.key`, `.map-api-key`, `.prowlarr.phillias.cc-api-key`,
+`.rapidseedbox-utorrent-password`, `.seedpool-api-token`,
+`.speedapp.io-api-token`, `.telegram-chat-id`, `.x-cookies.env`.
+`masculinecache/.npmjs-key` is the 57th retired file.
 
 ## Layout
 
@@ -14,27 +30,31 @@ live `~/.agents/keys` dir).
 ├── README.md              # this file
 ├── load-keys.sh           # shared loader sourced by zshenv and profile
 ├── default -> <profile>   # RELATIVE symlink naming the default key profile
-├── <profile>/             # PROFILE dirs: per-identity/per-host key sets (drwx------)
-│   ├── .cf-ai-gw          # CF AI Gateway token consumed by opencode + zshenv
-│   ├── .phoenixgrove-coding-plan-key
-│   ├── .groq-key
-│   ├── .bws-token         # optional: BWS machine-account token for this profile
-│   └── ...                # all keys live in profile subdirectories
-└── ...
+├── .bws-fallback.log      # durable tripwire log: one line per fallback event
+├── .bws-project-<profile>.id  # cached bws project id (not a secret)
+├── <profile>/             # ACTIVE profile dirs: only never-migrated keys
+│   ├── .bws-token         # BWS machine-account token for this profile
+│   └── .google-tasks-token    # binary/non-UTF-8, stays chezmoi-managed
+└── retired/               # RETIRED keys: age-encrypted recovery copies
+    ├── <profile>/
+    │   ├── .groq-key.age      # age -d returns the value in seconds
+    │   └── ...                # one .age per migrated key
+    └── masculinecache/
+        └── .npmjs-key.age
 ```
 
 Conventions:
 
-- **All keys** live in profile subdirectories. One secret per file, value only
-  (no `KEY=` prefix). All secrets are dotfiles (leading `.`).
-- **Profiles** are subdirectories named with a lowercase slug identifying the
-  machine or persona (e.g. `phillias`, `masculinecache`). Any consumer outside
-  the shell rc selects a profile by **explicit path** — non-default profiles are
-  never auto-loaded.
-- **Default profile** is designated by the `default` symlink in
-  `~/.agents/keys`, pointing at a *relative* profile dirname
-  (`ln -s phillias default` — not an absolute path; the loader resolves it
-  under `~/.agents/keys`).
+- **Active profile dirs hold only never-migrated keys** (`.bws-token`,
+  `.google-tasks-token`). All migrated keys moved to bws + the retired tree;
+  the old live files are removed on apply via `.chezmoiremove`.
+- **One secret per file, value only** (no `KEY=` prefix), dotfile names.
+- **Default profile** is the `default` symlink's relative target
+  (`ln -s phillias default`); non-default profiles are never auto-loaded.
+- **Retired files are raw age ciphertext** (repo source drops the `encrypted_`
+  prefix so chezmoi does not decrypt them on apply). Recovery needs age alone,
+  no bws: `age -d -i ~/.config/chezmoi/key.txt <file>` (or `chezmoi decrypt
+  <file>`).
 
 ## Multi-harness contract (primary)
 
@@ -49,12 +69,12 @@ sourcing conventions:
    is exported after `exec zsh -l` (or the equivalent zshenv evaluation), every
    harness can read it without per-agent wiring. This shell inheritance is the
    documented primary contract; nothing below bypasses it.
-2. **Per-agent configs consume env vars or `{file:}` reads — provenance stays
-   in the shell export or `~/.agents/keys`.** e.g. Codex consumes via
-   `env_key = "CF_AI_GATEWAY_TOKEN"` with `shell_environment_policy`
-   `inherit = "all"` in `~/.codex/config.toml`; opencode resolves
-   `{file:~/.agents/keys/<profile>/…}` at config parse. Neither pattern reads
-   keystores directly.
+2. **Per-agent configs consume env vars — provenance stays in the shell
+   export.** e.g. Codex consumes via `env_key = "CF_AI_GATEWAY_TOKEN"` with
+   `shell_environment_policy` `inherit = "all"` in `~/.codex/config.toml`;
+   opencode providers use `{env:CF_AI_GATEWAY_TOKEN}` (post-migration; the old
+   `{file:~/.agents/keys/...}` indirections retired with the key files).
+   Neither pattern reads keystores directly.
 3. **Skills follow the same single-source pattern** at `~/.agents/skills`:
    per-agent harnesses source them via **symlink farms**, e.g.
    `~/.claude/skills/<name> -> ../../.agents/skills/<name>`; other harnesses do
@@ -63,26 +83,46 @@ sourcing conventions:
 
 Offloaded rc-block consolidation note: `dot_zshenv.tmpl` and the shared loader handle all provider keys. The only exception is `HARBOR_API_KEY` (zshrc-only, sourced from `$HOME/firstmate/projects/mybiz/.harbor-key`). The loader silently skips missing default profiles to avoid noise in non-interactive shells.
 
-## Loader contract
+## Loader contract (bws-first, loud fallback)
 
 | Loader | When | Behavior |
 |---|---|---|
-| `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Shared loader that reads from `~/.agents/keys/default` profile. Loads all keys from the default profile directory into environment variables. Silently skips missing files. |
-| `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Sources `load-keys.sh` for non-interactive availability, then derives gateway routing vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) from `CF_AI_GATEWAY_TOKEN`. |
+| `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Reads the 45 exported migrated keys from the **bws project named like the default profile** (one `bws secret list` call; project id cached at `~/.agents/keys/.bws-project-<profile>.id`). On any bws failure, falls back per key to age-decrypting the retired file — loudly. |
+| `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Sources `load-keys.sh`, then derives gateway routing vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) from the exported values. |
 | `~/.profile` | login shells | Sources `load-keys.sh` for bash login shells and SSH sessions. |
-| `~/.zshrc` | interactive zsh | Sources `load-keys.sh` (redundant but harmless) for interactive sessions. |
-| `~/.bashrc` | interactive bash | Sources `load-keys.sh` (redundant but harmless) for interactive sessions. |
+| `~/.zshrc` / `~/.bashrc` | interactive shells | Source `load-keys.sh` (redundant but harmless). |
+
+bws resolution order: auth from ambient `BWS_ACCESS_TOKEN` or the profile's
+`.bws-token` file; binary from `BWS_BIN`, PATH, or the mise latest alias
+(`~/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws`).
+
+**Fallback tripwire.** When bws cannot supply a key — daemon unreachable,
+token missing/broken, secret absent — the loader age-decrypts
+`~/.agents/keys/retired/<profile>/<key>.age` and exports that. EVERY fallback
+appends one greppable line to `~/.agents/keys/.bws-fallback.log` AND writes
+the same line to stderr:
+
+```
+BWS-FALLBACK 2026-10-13T22:30:00Z profile=phillias key=.groq-key var=GROQ_API_KEY reason=bws-fetch-failed
+```
+
+The fallback is a tripwire that shows where references still need re-pointing
+to bws; it is never silent cover. Secret values are never printed or logged —
+key names and events only. A node whose bws token is missing or broken still
+boots a working environment via fallback + log. **Watch the log**: every line
+is a place that still depends on the retired files.
 
 Design invariants:
 
-1. Secrets never appear in repo history — only age-encrypted copies (see below).
-2. Loaders are additive and idempotent: every guard is per-file, so a partially
-   provisioned directory degrades gracefully to fewer exported vars.
-3. Non-default profiles are opt-in via explicit path (e.g. opencode config uses
-   `{file:~/.agents/keys/phillias/.cf-ai-gw}` to select a profile at parse
-   time, independent of the `default` symlink).
+1. Secrets never appear in repo history — only age-encrypted copies.
+2. Loaders are additive and idempotent: a partially provisioned node degrades
+   gracefully to fewer exported vars.
+3. Non-default profiles are opt-in via explicit path, never auto-loaded.
+4. systemd units and other shell-less consumers age-decrypt the retired file
+   directly at start (see `tokentelemetry.service`, the no-mistakes daemon
+   drop-in, `glm-free-lane-scan.sh`) — local age never depends on bws reachability.
 
-### zshrc flat-key → env var mapping
+### Exported key → env var mapping (45 keys)
 
 ```
 .groq-key            GROQ_API_KEY            .cloudflare-key   CLOUDFLARE_API_KEY
@@ -99,7 +139,16 @@ Design invariants:
 .fireworks-key       FIREWORKS_API_KEY       .synthetic-key    SYNTHETIC_API_KEY
                                              .kenari-key       KENARI_API_KEY
                                              .seevio-key       SEEVIO_API_KEY
-.atlascloud-key      ATLASCLOUD_API_KEY
+.atlascloud-key      ATLASCLOUD_API_KEY      .deepinfra-key    DEEPINFRA_API_KEY
+.abliteration-key    ABLITERATION_API_KEY    .friendli-key     FRIENDLI_API_KEY
+.tsfm-key            TSFM_API_KEY            .greptile-key     GREPTILE_API_KEY
+.treg-token          TREG_TOKEN              .treg-key         TREG_KEY
+.cf-ai-gw            CF_AI_GATEWAY_TOKEN     .vercel-token     VERCEL_TOKEN
+.agnes-key           AGNES_API_KEY           .opencode-key     OPENCODE_API_KEY
+.phoenixgrove-key    PHOENIXGROVE_API_KEY    .meta-key         META_API_KEY
+.phoenixgrove-coding-plan-key PHOENIXGROVE_CODING_PLAN_API_KEY
+.telegram-key        TELEGRAM_API_KEY        .github-models-key GITHUB_MODELS_API_KEY
+.anthropic-key       ANTHROPIC_API_KEY       .cloudflare-deploy-token CLOUDFLARE_API_TOKEN
 ```
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
@@ -108,27 +157,29 @@ sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
 ## Repo mapping (chezmoi)
 
 Age-encrypted copies live in the dotfiles repo at `dot_agents/private_keys/`
-(target `~/.agents/keys` as a private dir). All encrypted files are stored in
-per-profile subdirectories:
+(target `~/.agents/keys` as a private dir):
 
-- `private_<profile>/encrypted_private_dot_<name>.age`
-  → `~/.agents/keys/<profile>/.<name>`
-- `symlink_default` → relative symlink target (content: `<profile>`)
+- **Active keys** — `private_<profile>/encrypted_private_dot_<name>.age`
+  → `~/.agents/keys/<profile>/.<name>` (decrypted on apply). Only
+  `.bws-token` and `.google-tasks-token` remain active.
+- **Retired keys** — `private_retired/private_<profile>/private_dot_<name>.age`
+  → `~/.agents/keys/retired/<profile>/.<name>.age` (raw ciphertext on apply;
+  the `encrypted_` prefix is deliberately absent).
+- `symlink_default` → relative symlink target (content: `<profile>`).
+- `.chezmoiremove` (repo root) removes the 57 old live key paths on apply,
+  completing the move: values live in bws, recovery copies in `retired/`.
 
-Example: `private_phillias/encrypted_private_dot_groq-key.age` decrypts to
-`~/.agents/keys/phillias/.groq-key`, and `~/.agents/keys/default -> phillias`
-makes it the default profile.
+Recovery of any retired key (age alone, no bws, no chezmoi):
 
-Keys provisioned out-of-band (BWS cron sweeps, manual `chezmoi add --encrypt`
-steps, ad-hoc machine setup) are not all in the repo; the absence of a repo
-copy for a key is expected for locally-provisioned secrets — do not "fix" that
-by committing plaintext.
+```sh
+age -d -i ~/.config/chezmoi/key.txt ~/.agents/keys/retired/<profile>/.<name>.age
+```
 
-To add or rotate a managed key: edit the source value, then
-`chezmoi add --encrypt ~/.agents/keys/<profile>/.<name>` (or
-`chezmoi re-add <path>`), commit the `.age` file, and `chezmoi apply` on target
-hosts. See the `dotfiles` / `chezmoi-axi` agent skills for the wrapper
-commands.
+To add or rotate a managed key: create/update the bws secret in the profile's
+project, refresh the retired copy
+(`chezmoi encrypt ~/.agents/keys/<profile>/.<name> >
+dot_agents/private_keys/private_retired/private_<profile>/private_dot_<name>.age`),
+commit, and `chezmoi apply` on target hosts. Never commit plaintext.
 
 ## Bitwarden Secrets Manager (BWS)
 
@@ -142,41 +193,43 @@ sessions). The BWS layout mirrors the profile scheme:
   existing `selfhost-Dev` account consumes one slot, so per-node accounts
   do not fit — per-persona accounts fit exactly.
 - **Token per profile.** Each profile's machine-account token lives at
-  `~/.agents/keys/<profile>/.bws-token` (same scheme as any other key:
-  value only, mode 600). Repo copy:
-  `private_<profile>/encrypted_private_dot_bws-token.age`, rotated like any
-  managed key via `chezmoi add --encrypt` / `chezmoi re-add`.
+  `~/.agents/keys/<profile>/.bws-token` (active, never retired; repo copy
+  `private_<profile>/encrypted_private_dot_bws-token.age`).
 - **Loader exports** (default profile only, sourced like all other keys):
   - `BWS_TOKEN_FILE` — path to the default profile's `.bws-token`
     (consumed by the `bws-axi` wrapper).
   - `BWS_ACCESS_TOKEN` — the token value itself; plain `bws` requires this
     env var and does **not** read `BWS_TOKEN_FILE`.
-  - `BWS_BIN` — pinned `bws` binary at the mise latest alias
-    (`~/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws`),
-    per the mise path strategy for env-var consumers.
+  - `BWS_BIN` — pinned `bws` binary at the mise latest alias.
 
 Machine accounts and tokens are minted only by the org admin in the
 Bitwarden web vault (the `bws` CLI cannot create them).
 
-### Migrating keys into BWS
+### Migration status: COMPLETE (2026-10-13)
 
-`~/scripts/bws-migrate-keys.sh` (source: `scripts/bws-migrate-keys.sh`)
-uploads each key file in a profile to the matching BWS project as a secret
-with the same key name. `--dry-run` prints the plan without touching the
-vault; per-key idempotency skips names that already exist. Expected
-counts: `phillias` 58 (57 keys + token), `masculinecache` 1. Values are
-read only at execution time and never logged. After migration is verified,
-retiring the local age-encrypted key files is a destructive,
-captain-gated decision (see the migration task brief).
+57 key files were migrated into the `phillias` (56) and `masculinecache` (1)
+projects alongside the 64 pre-existing selfhost secrets, and the on-disk
+copies were **retired by moving, not deleting**: source files `git mv`-ed to
+`private_retired/` (history preserved), live files removed via `.chezmoiremove`
+as the retired age copies landed. `.google-tasks-token` stayed chezmoi-managed
+(binary/non-UTF-8) and every node's `.bws-token` stayed live. The historical
+migration script `scripts/bws-migrate-keys.sh` is kept for reference.
 
 ## Troubleshooting
 
+- **Fallback events appearing**: `grep BWS-FALLBACK ~/.agents/keys/.bws-fallback.log`.
+  Each line names a key the loader could not get from bws — fix the cause
+  (bws token, network, missing secret) or re-point the consumer named by the
+  var; the log is the re-pointing work list, not noise to suppress.
+- **bws down and a var is empty but the retired file exists**: check
+  `chezmoi decrypt ~/.agents/keys/retired/<profile>/.<name>.age` works; the
+  loader tries `chezmoi decrypt` then raw `age -d` with the chezmoi identity.
 - **zshenv warns about a missing default symlink** (interactive shells only):
   `ln -s <profile> ~/.agents/keys/default`, then verify
   `source ~/.zshenv && echo "set: ${CF_AI_GATEWAY_TOKEN:+yes}"`.
-- **A provider var is empty but the key file exists**: check file readability
-  (`test -r`) and that the file has no stray `export` wrapping; loader `cat`s
-  the raw value only.
-- **Profile key ignored by opencode**: opencode selects via `{file:…}` at
-  config parse; edit the config path to the right profile, not the default
-  symlink.
+- **Stale bws project id**: delete `~/.agents/keys/.bws-project-<profile>.id`;
+  the loader re-resolves and re-caches on next shell (it also self-heals once
+  automatically after a fetch failure).
+- **Provider var empty and no fallback line**: the key exists in neither bws
+  nor the retired tree — check the bws project contents and the key status
+  map above.

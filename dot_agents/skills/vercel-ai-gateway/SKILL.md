@@ -13,8 +13,8 @@ Two tokens, different purposes:
 
 | Token | Prefix | Purpose | Location |
 |-------|--------|---------|----------|
-| `VERCEL_TOKEN` | `vcp_` | Platform management (CLI commands) | `~/.agents/keys/<profile>/.vercel-token` |
-| `AI_GATEWAY_API_KEY` | `vck_` | Inference (API calls) | `~/.agents/keys/default/.vercel-gateway-key` |
+| `VERCEL_TOKEN` | `vcp_` | Platform management (CLI commands) | retired `~/.agents/keys/retired/<profile>/.vercel-token.age` |
+| `AI_GATEWAY_API_KEY` | `vck_` | Inference (API calls) | retired `~/.agents/keys/retired/phillias/.vercel-gateway-key.age` |
 
 Both loaded by `load-keys.sh`. Team scope: `phils-projects-336d7fca`.
 

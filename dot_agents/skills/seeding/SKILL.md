@@ -26,7 +26,7 @@ All commands run from the kali firstmate home unless noted.
 ssh rapidseedbox
 
 # ruTorrent XML-RPC (digest auth — plain -u gives 401)
-PW=$(cat ~/.agents/keys/default/.rapidseedbox-utorrent-password)
+PW=$(chezmoi decrypt ~/.agents/keys/retired/phillias/.rapidseedbox-utorrent-password.age)
 curl -s --digest -u "user:$PW" -X POST \
   -H 'Content-Type: text/xml' \
   -d '<methodCall><methodName>system.client_version</methodName></methodCall>' \
@@ -95,7 +95,7 @@ ssh rapidseedbox 'grep -h -o "https\?://[a-zA-Z0-9.-]*" /var/www/session/user/*.
 - **MAM — mam_id cookie, NOT an API-key header.** Every official
   integration (Prowlarr, Jackett, Readarr, Listenarr) authenticates with
   the `mam_id` cookie generated at Preferences > Security. Key file (the
-  cookie value, saved by the captain): `~/.agents/keys/default/.map-api-key`
+  cookie value, saved by the captain): `~/.agents/keys/retired/phillias/.map-api-key.age` (decrypt with `chezmoi decrypt`)
   — odd name, verified live against MAM. Sanctioned surfaces (from
   Prowlarr's indexer source, `MyAnonamouse.cs`):
   - User stats: `GET https://www.myanonamouse.net/jsonLoad.php` with
@@ -114,7 +114,7 @@ ssh rapidseedbox 'grep -h -o "https\?://[a-zA-Z0-9.-]*" /var/www/session/user/*.
   - HTTP 403 = mam_id expired/invalid.
 - **SeedPool (UNIT3D 9.1.5 custom) — Bearer token, verified 2026-10-08.**
   `GET https://seedpool.org/api/torrents/filter?perPage=100&sortField=seeders&sortDirection=desc`
-  with `Authorization: Bearer $(cat ~/.agents/keys/default/.seedpool-api-token)`.
+  with `Authorization: Bearer $(chezmoi decrypt ~/.agents/keys/retired/phillias/.seedpool-api-token.age)`.
   Freeleech-only filter: `&free[]=100`. Rows at `data[].attributes`: seeders,
   leechers, times_completed, size, freeleech %, double_upload, featured,
   created_at, details_link, download_link. Token from Settings → API Key.
@@ -122,7 +122,7 @@ ssh rapidseedbox 'grep -h -o "https\?://[a-zA-Z0-9.-]*" /var/www/session/user/*.
 - **SpeedApp (speedapp.io, UNIT3D-family JSON API) — Bearer token,
   verified live 2026-10-08.** `GET
   https://speedapp.io/api/torrent?itemsPerPage=100&sort=torrent.createdAt&direction=desc`
-  with `Authorization: Bearer $(cat ~/.agents/keys/default/.speedapp.io-api-token)`
+  with `Authorization: Bearer $(chezmoi decrypt ~/.agents/keys/retired/phillias/.speedapp.io-api-token.age)`
   (token is 427 chars, JWT-shaped). Other params: `search=`, `categories[]=`,
   `imdbId`, `page`. Rows (JArray): id, name, seeders, leechers, size
   (bytes), download_volume_factor (0 = freeleech), upload_volume_factor,
@@ -136,7 +136,7 @@ ssh rapidseedbox 'grep -h -o "https\?://[a-zA-Z0-9.-]*" /var/www/session/user/*.
   `https://animez.to/rss/torrents/<filter>/<key>` with filters: all,
   featured, freeleech, half-download, double-upload, dying, dead, reseed,
   anime, manga, my-uploads, bookmarks. Key file (64-char hex, saved by
-  the captain): `~/.agents/keys/default/.animez.to-rss-key`. The
+  the captain): `~/.agents/keys/retired/phillias/.animez.to-rss-key.age` (decrypt with `chezmoi decrypt`). The
   freeleech feed returns 50 items; item tags (namespaced — strip the
   `}`): title, link, guid, pubDate, description, creator, category,
   enclosure, fileName, contentLength (bytes), infoHash (lowercase),
@@ -146,7 +146,7 @@ ssh rapidseedbox 'grep -h -o "https\?://[a-zA-Z0-9.-]*" /var/www/session/user/*.
   `load.start` (see Lifecycle). No session-cookie login, ever.
 - **Prowlarr (self-hosted, 66 indexers incl. seedpool (API)):**
   `GET https://prowlarr.phillias.cc/api/v1/indexer` with
-  `X-Api-Key: $(cat ~/.agents/keys/default/.prowlarr.phillias.cc-api-key)`.
+  `X-Api-Key: $(chezmoi decrypt ~/.agents/keys/retired/phillias/.prowlarr.phillias.cc-api-key.age)`.
   No MAM or AnimeZ in it. Captain's rule: gentle rates, don't crash it.
 
 ## Ratio-yield ranking method
@@ -182,7 +182,7 @@ everything seeding (no API, manual only).
 Helper (define once per shell):
 
 ```bash
-PW=$(cat ~/.agents/keys/default/.rapidseedbox-utorrent-password)
+PW=$(chezmoi decrypt ~/.agents/keys/retired/phillias/.rapidseedbox-utorrent-password.age)
 RPC="https://45-152-210-245.a.seedbox.vip/rutorrent/plugins/rpc/rpc.php"
 rpc() { curl -s --digest -u "user:$PW" -X POST -H 'Content-Type: text/xml' \
   --data "<methodCall><methodName>$1</methodName><params><param><value><string>$2</string></value></param></params></methodCall>" "$RPC"; }

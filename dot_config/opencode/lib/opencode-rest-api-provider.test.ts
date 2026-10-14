@@ -186,7 +186,7 @@ describe("gateway-routed provider contract (BYOK through gateway 'opencode')", (
     "zai-coding",
     "openrouter",
   ];
-  const gatewayTokenFile = "{file:~/.agents/keys/default/.cf-ai-gw}";
+  const gatewayTokenFile = "{env:CF_AI_GATEWAY_TOKEN}";
   const perProviderKeyFiles = [
     ".zen-key",
     ".opencode-key",
@@ -224,11 +224,11 @@ describe("gateway-routed provider contract (BYOK through gateway 'opencode')", (
     }
   });
 
-  test("apiKey is the gateway token file indirection with no per-provider key", async () => {
+  test("apiKey is the gateway token env indirection with no per-provider key", async () => {
     const providers = await loadGatewayProviders();
     for (const id of gatewayProviderIds) {
       const key = providers[id].apiKey;
-      expect(key, `${id} apiKey must be the gateway token file`).toBe(
+      expect(key, `${id} apiKey must be the gateway token env var`).toBe(
         gatewayTokenFile,
       );
       for (const kf of perProviderKeyFiles) {

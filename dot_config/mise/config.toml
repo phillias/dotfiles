@@ -13,8 +13,9 @@ not_found_system_fallback = true  # shims fall back to system PATH binaries when
 npm.shell_out = true
 
 [tools]
-# age — chezmoi's encryption backend: dot_agents/private_keys/private_phillias/*.age
-# sources decrypt through the age shim. 1.2.1 was already installed but UNPINNED,
+# age — chezmoi's encryption backend: dot_agents/private_keys/**/*.age sources
+# (active + private_retired/) decrypt through the age shim. 1.2.1 was already
+# installed but UNPINNED,
 # so every decrypting chezmoi apply died with 'No version is set for shim: age'
 # (chezmoi doctor: failed age-command exit status 1) until this pin landed
 # (2026-10-04). Verify with: age --version via the shim.
