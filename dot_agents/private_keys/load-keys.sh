@@ -86,7 +86,7 @@ _keys_bws_project_id() {
         _pid="$(cat "$_pid_cache" 2>/dev/null)"
     fi
     if [ -z "$_pid" ]; then
-        _pid="$(timeout 20 "$BWS_BIN" project list -o json 2>/dev/null \
+        _pid="$(timeout 5 "$BWS_BIN" project list -o json 2>/dev/null \
             | jq -r --arg p "$_default_profile" '.[] | select(.name==$p) | .id' 2>/dev/null \
             | head -n 1)"
         if [ -n "$_pid" ]; then
@@ -99,7 +99,7 @@ _keys_bws_project_id() {
 
 _keys_bws_fetch() {
     # $1 = project id; prints the secret-list JSON array on success.
-    timeout 20 "$BWS_BIN" secret list "$1" -o json 2>/dev/null
+    timeout 5 "$BWS_BIN" secret list "$1" -o json 2>/dev/null
 }
 
 if [ -z "${BWS_ACCESS_TOKEN:-}" ]; then

@@ -96,6 +96,16 @@ bws resolution order: auth from ambient `BWS_ACCESS_TOKEN` or the profile's
 `.bws-token` file; binary from `BWS_BIN`, PATH, or the mise latest alias
 (`~/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws`).
 
+**Per-shell fetch tradeoff.** Because `load-keys.sh` is sourced by `~/.zshenv`
+on every zsh (interactive and non-interactive), the `bws secret list` fetch runs
+once per shell, so shell startup now includes a network round-trip (previously
+instant local reads). This is the accepted bws-first tradeoff: values are never
+cached to disk (that would defeat keeping secrets off disk) and non-interactive
+shells are not skipped (that would permanently consume the retired recovery
+path). Each bws call is bounded by a 5s timeout, so a shell where bws is
+unreachable waits at most ~10s (initial secret list, then one project-list
+re-resolve) before the loud age fallback fires.
+
 **Fallback tripwire.** When bws cannot supply a key — daemon unreachable,
 token missing/broken, secret absent — the loader age-decrypts
 `~/.agents/keys/retired/<profile>/<key>.age` and exports that. EVERY fallback
