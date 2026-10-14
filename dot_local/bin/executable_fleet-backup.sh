@@ -76,30 +76,21 @@ done
 # Optional excludes from the env file (default empty).
 EXCLUDES=("${EXCLUDES[@]:-}")
 
-# ── Step 0: Ensure repository exists (idempotent auto-init) ─
-log "--- Step 0: ensure repository exists ---"
-
-if restic cat config >/dev/null 2>&1; then
-  log "  repository already initialized"
-else
-  REPO_CHECK_EXIT=$?
-  if [ "$REPO_CHECK_EXIT" -eq 10 ]; then
-    log "  repository missing — initializing"
-    if restic init 2>&1 | tee -a "${LOG_FILE}"; then
-      log "  repository initialized"
-    else
-      fail "restic init failed"
-    fi
-  else
-    fail "cannot access repository (restic exit ${REPO_CHECK_EXIT}); check credentials and RESTIC_REPOSITORY"
-  fi
-fi
-
-# ── Step 1: Restic backup ──────────────────────────────────
+# ── Step 1: Restic backup (auto-init on exit 10, one retry) ─
 log "--- Step 1: restic backup ---"
 
 RESTIC_EXIT=0
 restic backup --tag "${HOST_TAG}" "${EXCLUDES[@]}" "${EXISTING_PATHS[@]}" 2>&1 | tee -a "${LOG_FILE}" || RESTIC_EXIT=$?
+
+if [ "$RESTIC_EXIT" -eq 10 ]; then
+  log "  repository missing (exit 10) — initializing, then retrying backup once"
+  if restic init 2>&1 | tee -a "${LOG_FILE}"; then
+    RESTIC_EXIT=0
+    restic backup --tag "${HOST_TAG}" "${EXCLUDES[@]}" "${EXISTING_PATHS[@]}" 2>&1 | tee -a "${LOG_FILE}" || RESTIC_EXIT=$?
+  else
+    fail "restic init failed"
+  fi
+fi
 
 if [ "$RESTIC_EXIT" -eq 0 ]; then
   log "  backup OK"
@@ -172,6 +163,12 @@ d = json.load(sys.stdin)
 if d: print(d[-1].get('time','unknown')[:19])
 " 2>/dev/null || echo "unknown")
 
+SNAP_ID=$(restic snapshots --json 2>/dev/null | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+if d: print(d[-1].get('id','unknown'))
+" 2>/dev/null || echo "unknown")
+
 LAST_STATUS="${RESTIC_STATUS}"
 
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%S")
@@ -185,6 +182,7 @@ data = {
     'last_time': '${LAST_TIME}',
     'last_status': '${LAST_STATUS}',
     'verification': '${VERIFY_RESULT}',
+    'snapshot_id': '${SNAP_ID}',
     'host': '${HOST_TAG}',
     'repo': '${RESTIC_REPOSITORY}',
 }
@@ -204,7 +202,7 @@ NTFY_URL="${NTFY_URL:-https://ntfy.phillias.cc/SelfHostNetSec}"
 if [ "$LAST_STATUS" = "success" ]; then
   NTFY_PRIORITY="min"
   NTFY_TITLE="Backup OK — agent state (${HOST_TAG})"
-  NTFY_BODY="${SNAP_COUNT} snapshots | ${SNAP_TOTAL} | Verify: OK | Retention: 7d/4w/12m"
+  NTFY_BODY="${SNAP_COUNT} snapshots | ${SNAP_TOTAL} | Verify: OK | Snapshot: ${SNAP_ID:0:8} | Retention: 7d/4w/12m"
 else
   NTFY_PRIORITY="urgent"
   NTFY_TITLE="Backup FAILED — agent state (${HOST_TAG})"
