@@ -68,7 +68,7 @@ STATUS=$(python3 -c "import json; print(json.load(open('${STATUS_FILE}'))['last_
 
 AGE_H=$(( ( $(date -u +%s) - $(date -u -d "${LAST}" +%s) ) / 3600 ))
 
-if [ "${STATUS:-unknown}" != "ok" ]; then
+if [ "${STATUS:-unknown}" != "success" ]; then
   alert "Last backup FAILED (at ${LAST}). See ${STATE_DIR}/restic-backup.log"
 elif [ "$AGE_H" -gt "$MAX_AGE_H" ]; then
   alert "Last backup is ${AGE_H}h old (> ${MAX_AGE_H}h). See ${STATE_DIR}/restic-backup.log"

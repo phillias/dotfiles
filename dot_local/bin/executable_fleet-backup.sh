@@ -100,9 +100,17 @@ if restic forget \
   --keep-weekly 4 \
   --keep-monthly 12 \
   --prune 2>&1 | tee -a "${LOG_FILE}"; then
+  FORGET_EXIT=0
   log "  forget OK"
 else
+  FORGET_EXIT=$?
   log "  forget FAILED"
+fi
+
+if [ "$RESTIC_EXIT" -eq 0 ] && [ "$FORGET_EXIT" -eq 0 ]; then
+  RESTIC_STATUS="success"
+else
+  RESTIC_STATUS="failed"
 fi
 
 # ── Step 3: Write status file ──────────────────────────────
@@ -125,11 +133,7 @@ d = json.load(sys.stdin)
 if d: print(d[-1].get('time','unknown')[:19])
 " 2>/dev/null || echo "unknown")
 
-if [ "${SNAP_COUNT:-0}" -gt 0 ]; then
-  LAST_STATUS="ok"
-else
-  LAST_STATUS="failed"
-fi
+LAST_STATUS="${RESTIC_STATUS}"
 
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%S")
 
@@ -157,7 +161,7 @@ log "--- Step 4: ntfy notification ---"
 
 NTFY_URL="${NTFY_URL:-https://ntfy.phillias.cc/SelfHostNetSec}"
 
-if [ "$LAST_STATUS" = "ok" ]; then
+if [ "$LAST_STATUS" = "success" ]; then
   NTFY_PRIORITY="min"
   NTFY_TITLE="Backup OK — agent state (${HOST_TAG})"
   NTFY_BODY="${SNAP_COUNT} snapshots | ${SNAP_TOTAL} | Retention: 7d/4w/12m"
@@ -181,3 +185,5 @@ if [ -n "${NTFY_TOKEN:-}" ]; then
 fi
 
 log "=== Fleet agent-state backup completed ==="
+
+exit "$(( RESTIC_EXIT != 0 ? RESTIC_EXIT : FORGET_EXIT ))"
