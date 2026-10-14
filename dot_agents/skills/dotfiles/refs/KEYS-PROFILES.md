@@ -49,7 +49,8 @@ implements today.
 
 Inside `dot_zshenv.tmpl` itself (migrated in PR #284):
 
-- `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` — Claude Code via CF AI Gateway.
+- `ANTHROPIC_BASE_URL` / `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` — explicit
+  Claude Code Vercel AI Gateway fallback; native Anthropic OAuth is the default.
 - `OPENAI_API_KEY` / `OPENAI_BASE_URL` — CF AI Gateway fallback route for
   firstmate worker harnesses (codex itself uses native OpenAI via ChatGPT
   sign-in, which ignores these).
