@@ -71,6 +71,19 @@ if [ -z "${BWS_BIN:-}" ] || [ ! -x "$BWS_BIN" ]; then
     fi
 fi
 
+# jq resolution — zshenv may run before ~/.local/bin is on PATH.
+JQ_BIN=""
+if command -v jq >/dev/null 2>&1; then
+    JQ_BIN="$(command -v jq)"
+else
+    for _keys_jq_candidate in "$HOME/.local/bin/jq" /usr/bin/jq /bin/jq; do
+        if [ -x "$_keys_jq_candidate" ]; then
+            JQ_BIN="$_keys_jq_candidate"
+            break
+        fi
+    done
+fi
+
 # --- bws project fetch -------------------------------------------------------
 # One secret-list call per shell. _keys_bws_json holds the raw JSON array;
 # _keys_bws_reason records why bws is unavailable when it is (empty when ok).
@@ -87,7 +100,7 @@ _keys_bws_project_id() {
     fi
     if [ -z "$_pid" ]; then
         _pid="$(timeout 5 "$BWS_BIN" project list -o json 2>/dev/null \
-            | jq -r --arg p "$_default_profile" '.[] | select(.name==$p) | .id' 2>/dev/null \
+            | "$JQ_BIN" -r --arg p "$_default_profile" '.[] | select(.name==$p) | .id' 2>/dev/null \
             | head -n 1)"
         if [ -n "$_pid" ]; then
             ( umask 077 && printf '%s\n' "$_pid" > "$_pid_cache" ) 2>/dev/null || true
@@ -106,7 +119,7 @@ if [ -z "${BWS_ACCESS_TOKEN:-}" ]; then
     _keys_bws_reason="bws-token-missing"
 elif [ -z "${BWS_BIN:-}" ] || [ ! -x "$BWS_BIN" ]; then
     _keys_bws_reason="bws-binary-missing"
-elif ! command -v jq >/dev/null 2>&1; then
+elif [ -z "$JQ_BIN" ]; then
     _keys_bws_reason="jq-missing"
 else
     _keys_project_id="$(_keys_bws_project_id)"
@@ -168,7 +181,7 @@ _keys_emit() {
     _ke_val=""
     if [ -n "$_keys_bws_json" ]; then
         _ke_val="$(printf '%s' "$_keys_bws_json" \
-            | jq -r --arg k "$_ke_name" '.[] | select(.key==$k) | .value' 2>/dev/null \
+            | "$JQ_BIN" -r --arg k "$_ke_name" '.[] | select(.key==$k) | .value' 2>/dev/null \
             | head -n 1)"
         if [ -n "$_ke_val" ]; then
             export "$_ke_var=$_ke_val"
@@ -245,7 +258,6 @@ _keys_map='
 .phoenixgrove-key:PHOENIXGROVE_API_KEY
 .telegram-key:TELEGRAM_API_KEY
 .github-models-key:GITHUB_MODELS_API_KEY
-.meta-key:META_API_KEY
 .anthropic-key:ANTHROPIC_API_KEY
 '
 
