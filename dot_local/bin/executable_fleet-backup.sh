@@ -88,7 +88,8 @@ if [ "$RESTIC_EXIT" -eq 10 ]; then
     RESTIC_EXIT=0
     restic backup --tag "${HOST_TAG}" "${EXCLUDES[@]}" "${EXISTING_PATHS[@]}" 2>&1 | tee -a "${LOG_FILE}" || RESTIC_EXIT=$?
   else
-    fail "restic init failed"
+    RESTIC_EXIT=$?
+    log "  restic init FAILED (exit ${RESTIC_EXIT})"
   fi
 fi
 
