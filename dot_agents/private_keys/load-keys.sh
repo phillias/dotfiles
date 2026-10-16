@@ -93,18 +93,25 @@ _keys_bws_reason=""
 _keys_bws_project_id() {
     # Resolve the bws project id for the default profile, cached at
     # ~/.agents/keys/.bws-project-<profile>.id (id is not a secret).
+    # Pinned ids ship here so vault project renames cannot break shell logins;
+    # dynamic name lookup stays the fallback for unpinned profiles.
     _pid_cache="$_keys_home/.bws-project-$_default_profile.id"
     _pid=""
     if [ -r "$_pid_cache" ]; then
         _pid="$(cat "$_pid_cache" 2>/dev/null)"
     fi
     if [ -z "$_pid" ]; then
+        case "$_default_profile" in
+            phillias) _pid="fe9eea09-9eaf-45e6-a72f-b45e0150b29d" ;;
+        esac
+    fi
+    if [ -z "$_pid" ]; then
         _pid="$(timeout 5 "$BWS_BIN" project list -o json 2>/dev/null \
             | "$JQ_BIN" -r --arg p "$_default_profile" '.[] | select(.name==$p) | .id' 2>/dev/null \
             | head -n 1)"
-        if [ -n "$_pid" ]; then
-            ( umask 077 && printf '%s\n' "$_pid" > "$_pid_cache" ) 2>/dev/null || true
-        fi
+    fi
+    if [ -n "$_pid" ]; then
+        ( umask 077 && printf '%s\n' "$_pid" > "$_pid_cache" ) 2>/dev/null || true
     fi
     printf '%s' "$_pid"
     unset _pid_cache _pid
