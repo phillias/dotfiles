@@ -219,8 +219,10 @@ _keys_emit() {
 }
 
 # --- exported key map (default profile) --------------------------------------
-# Format per line: <key-file-name>:<ENV_VAR> (45 exported keys; the other 11
+# Format per line: <key-file-name>:<ENV_VAR> (43 exported keys; the other 11
 # migrated keys have no exported var and stay recovery-only via age -d).
+# Decommissioned 2026-10-15: .google-client-id/.google-client-secret (vault
+# entries dropped; Google Workspace disengaged from hermes/opencode-serve).
 _keys_map='
 .cf-ai-gw:CF_AI_GATEWAY_TOKEN
 .treg-token:TREG_TOKEN
@@ -245,8 +247,6 @@ _keys_map='
 .intern-key:INTERN_API_KEY
 .openrouter-key:OPENROUTER_API_KEY
 .zai-key:ZHIPU_API_KEY
-.google-client-id:GOOGLE_CLIENT_ID
-.google-client-secret:GOOGLE_CLIENT_SECRET
 .fireworks-key:FIREWORKS_API_KEY
 .exa-key:EXA_API_KEY
 .composio-key:COMPOSIO_API_KEY
