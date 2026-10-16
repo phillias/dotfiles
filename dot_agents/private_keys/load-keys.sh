@@ -227,6 +227,8 @@ _keys_emit() {
 # --- exported key map (default profile) --------------------------------------
 # Format per line: <key-file-name>:<ENV_VAR> (43 exported keys; the other 11
 # migrated keys have no exported var and stay recovery-only via age -d).
+# Decommissioned 2026-10-15: .google-client-id/.google-client-secret (vault
+# entries dropped; Google Workspace disengaged from hermes/opencode-serve).
 _keys_map='
 .cf-ai-gw:CF_AI_GATEWAY_TOKEN
 .treg-token:TREG_TOKEN
