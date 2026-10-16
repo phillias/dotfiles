@@ -19,7 +19,7 @@ set -euo pipefail
 # Then enable: systemctl --user enable --now fleet-backup.timer fleet-backup-watchdog.timer
 #
 # Schedule: daily 03:30 via fleet-backup.timer (+ watchdog 06:00)
-# Retention: 7d/4w/12m. Notify: ntfy SelfHostNetSec (ok = min, fail = urgent)
+# Retention: 7d/4w/12m. Notify: ntfy SelfHostNetSec (success = min, fail = urgent)
 # ─────────────────────────────────────────────────────────────
 
 RESTIC_ENV="${RESTIC_ENV:-$HOME/.config/fleet-backup/restic-env}"
