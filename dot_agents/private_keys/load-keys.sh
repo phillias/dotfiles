@@ -2,14 +2,17 @@
 # Shared key loader for ~/.agents/keys/default profile
 # Sourced by .zshenv (all zsh shells) and .profile (login shells)
 #
-# bws-first loading (2026-10 retirement): the 56 migrated profile keys
-# (45 exported here, 11 consumed by explicit reference only) are read from
+# bws-first loading (2026-10 retirement): the 54 migrated profile keys
+# (43 exported here, 11 consumed by explicit reference only) are read from
 # the Bitwarden Secrets Manager project named like the default profile.
-# Auth comes from the ambient BWS_ACCESS_TOKEN or the per-profile
-# .bws-token file (exported below); the bws binary is resolved from
-# BWS_BIN, PATH, or the mise latest alias. One `bws secret list` call
-# fetches every secret in the project; the project id is cached at
-# ~/.agents/keys/.bws-project-<profile>.id (not a secret).
+# Auth comes from the per-profile .bws-token file (always re-read so a
+# stale ambient token in a long-running shell cannot shadow the current
+# fleet-managed token); the bws binary is resolved from BWS_BIN, PATH,
+# or the mise latest alias. All bws calls use -t (access-token flag) to
+# bypass the state-file session cache, which can go stale and shadow a
+# valid token. One `bws secret list` call fetches every secret in the
+# project; the project id is cached at ~/.agents/keys/.bws-project-
+# <profile>.id (not a secret).
 #
 # Fallback (loud by design): when bws cannot supply a key — daemon
 # unreachable, token missing/broken, or the secret absent — the loader
@@ -31,7 +34,7 @@
 #
 # Non-migrated keys are untouched: .bws-token (bws auth, stays on disk)
 # and .google-tasks-token (binary/non-UTF-8, stays chezmoi age-encrypted
-# in the active profile dir). Keys with no exported var (11 of 56) are
+# in the active profile dir). Keys with no exported var (11 of 54) are
 # recovery-only via age -d; consumers re-point to bws directly.
 
 # Load keys from the default profile only (~/.agents/keys/default symlink)
@@ -52,12 +55,12 @@ _keys_fallback_log="$_keys_home/.bws-fallback.log"
 # bw/bws login sessions). The token file stays live on disk post-retirement.
 # BWS_TOKEN_FILE is the bws-axi wrapper contract; BWS_ACCESS_TOKEN is what
 # the plain bws CLI reads (it ignores BWS_TOKEN_FILE, verified against bws
-# 2.1.0). An ambient BWS_ACCESS_TOKEN already in the environment wins.
+# 2.1.0). The file is always re-read so a stale ambient token in a
+# long-running shell (e.g. an agent session) is replaced by the current
+# fleet-managed token on every source.
 if [ -r "$_keys_profile_dir/.bws-token" ]; then
     BWS_TOKEN_FILE="$_keys_profile_dir/.bws-token" && export BWS_TOKEN_FILE
-    if [ -z "${BWS_ACCESS_TOKEN:-}" ]; then
-        BWS_ACCESS_TOKEN="$(cat "$BWS_TOKEN_FILE")" && export BWS_ACCESS_TOKEN
-    fi
+    BWS_ACCESS_TOKEN="$(cat "$BWS_TOKEN_FILE")" && export BWS_ACCESS_TOKEN
 fi
 
 # bws binary — resolution order per the retirement design: BWS_BIN, PATH,
@@ -106,7 +109,9 @@ _keys_bws_project_id() {
         esac
     fi
     if [ -z "$_pid" ]; then
-        _pid="$(timeout 5 "$BWS_BIN" project list -o json 2>/dev/null \
+        # -t bypasses the bws state-file session cache (state can go stale
+        # and shadow a valid token; verified against bws 2.1.0).
+        _pid="$(timeout 5 "$BWS_BIN" -t "$BWS_ACCESS_TOKEN" project list -o json 2>/dev/null \
             | "$JQ_BIN" -r --arg p "$_default_profile" '.[] | select(.name==$p) | .id' 2>/dev/null \
             | head -n 1)"
     fi
@@ -119,7 +124,8 @@ _keys_bws_project_id() {
 
 _keys_bws_fetch() {
     # $1 = project id; prints the secret-list JSON array on success.
-    timeout 5 "$BWS_BIN" secret list "$1" -o json 2>/dev/null
+    # -t bypasses the state-file session cache (see _keys_bws_project_id).
+    timeout 5 "$BWS_BIN" -t "$BWS_ACCESS_TOKEN" secret list "$1" -o json 2>/dev/null
 }
 
 if [ -z "${BWS_ACCESS_TOKEN:-}" ]; then
@@ -219,7 +225,7 @@ _keys_emit() {
 }
 
 # --- exported key map (default profile) --------------------------------------
-# Format per line: <key-file-name>:<ENV_VAR> (45 exported keys; the other 11
+# Format per line: <key-file-name>:<ENV_VAR> (43 exported keys; the other 11
 # migrated keys have no exported var and stay recovery-only via age -d).
 _keys_map='
 .cf-ai-gw:CF_AI_GATEWAY_TOKEN
@@ -245,8 +251,6 @@ _keys_map='
 .intern-key:INTERN_API_KEY
 .openrouter-key:OPENROUTER_API_KEY
 .zai-key:ZHIPU_API_KEY
-.google-client-id:GOOGLE_CLIENT_ID
-.google-client-secret:GOOGLE_CLIENT_SECRET
 .fireworks-key:FIREWORKS_API_KEY
 .exa-key:EXA_API_KEY
 .composio-key:COMPOSIO_API_KEY
