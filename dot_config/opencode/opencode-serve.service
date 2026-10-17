@@ -10,7 +10,7 @@
 #
 # Service expects:
 #   ~/.config/opencode/opencode.json    — global opencode config (referenced via OPENCODE_CONFIG)
-#   ~/.config/opencode/opencode-serve.env — API keys & OAuth secrets (EnvironmentFile)
+#   ~/.config/opencode/opencode-serve.env — web UI auth (EnvironmentFile; the gateway token is harvested from the bws-first login env via ExecStartPre -> opencode-serve-env-harvest.sh, same as the user unit)
 #   ~/.opencode/bin/opencode            — opencode binary
 #
 # Logs: journalctl -u opencode-serve -f
@@ -25,8 +25,12 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu
 
-# API keys and OAuth secrets
+# Web UI auth; the gateway token is harvested at start by opencode-serve-env-harvest.sh
 EnvironmentFile=/home/ubuntu/.config/opencode/opencode-serve.env
+EnvironmentFile=-/run/user/1000/opencode-serve.env
+
+# Harvest CF_AI_GATEWAY_TOKEN from the bws-first login env before start
+ExecStartPre=/home/ubuntu/.local/bin/opencode-serve-env-harvest.sh
 
 # Pin config file explicitly (idiomatic opencode env var)
 Environment=OPENCODE_CONFIG=/home/ubuntu/.config/opencode/opencode.json

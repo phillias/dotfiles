@@ -2,8 +2,9 @@
 # Shared key loader for ~/.agents/keys/default profile
 # Sourced by .zshenv (all zsh shells) and .profile (login shells)
 #
-# bws-first loading (2026-10 retirement): the 54 migrated profile keys
-# (43 exported here, 11 consumed by explicit reference only) are read from
+# bws-first loading (2026-10 retirement): the migrated profile keys
+# (41 exported here, 12 consumed by explicit reference only, 3
+# decommissioned) are read from
 # the Bitwarden Secrets Manager project named like the default profile.
 # Auth comes from the per-profile .bws-token file (always re-read so a
 # stale ambient token in a long-running shell cannot shadow the current
@@ -250,10 +251,12 @@ _keys_emit() {
 }
 
 # --- exported key map (default profile) --------------------------------------
-# Format per line: <key-file-name>:<ENV_VAR> (43 exported keys; the other 11
-# migrated keys have no exported var and stay recovery-only via age -d).
+# Format per line: <key-file-name>:<ENV_VAR> (41 exported keys; 12 migrated
+# keys have no exported var and stay recovery-only via age -d).
 # Decommissioned 2026-10-15: .google-client-id/.google-client-secret (vault
 # entries dropped; Google Workspace disengaged from hermes/opencode-serve).
+# Decommissioned 2026-10-17: .google-vision-key (GOOGLE_VISION_API_KEY had
+# zero consumers; vault entry dropped).
 _keys_map='
 .cf-ai-gw:CF_AI_GATEWAY_TOKEN
 .treg-token:TREG_TOKEN
@@ -266,7 +269,6 @@ _keys_map='
 .mistral-key:MISTRAL_API_KEY
 .sambanova-key:SAMBANOVA_API_KEY
 .google-key:GOOGLE_API_KEY
-.google-vision-key:GOOGLE_VISION_API_KEY
 .together-key:TOGETHER_API_KEY
 .zen-key:OPENCODE_ZEN_API_KEY
 .cloudflare-key:CLOUDFLARE_API_KEY
