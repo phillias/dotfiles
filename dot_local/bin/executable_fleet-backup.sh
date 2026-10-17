@@ -12,14 +12,14 @@ set -euo pipefail
 # BACKUP_PATHS, HOST_TAG, and EXCLUDES. Each host gets its own
 # repo subpath and password so snapshots never collide.
 #
-# One-time bootstrap per host (NOT done by this script):
+# One-time bootstrap per host:
 #   mkdir -p ~/.config/fleet-backup ~/.local/state/fleet-backup
 #   chezmoi apply   # deploys restic-env + shared-secrets + per-host password
-#   source "$HOME/.config/fleet-backup/restic-env" && restic init
+# Repository init is automatic: the script initializes it on first run.
 # Then enable: systemctl --user enable --now fleet-backup.timer fleet-backup-watchdog.timer
 #
 # Schedule: daily 03:30 via fleet-backup.timer (+ watchdog 06:00)
-# Retention: 7d/4w/12m. Notify: ntfy SelfHostNetSec (ok = min, fail = urgent)
+# Retention: 7d/4w/12m. Notify: ntfy SelfHostNetSec (success = min, fail = urgent)
 # ─────────────────────────────────────────────────────────────
 
 RESTIC_ENV="${RESTIC_ENV:-$HOME/.config/fleet-backup/restic-env}"
@@ -76,11 +76,22 @@ done
 # Optional excludes from the env file (default empty).
 EXCLUDES=("${EXCLUDES[@]:-}")
 
-# ── Step 1: Restic backup ──────────────────────────────────
+# ── Step 1: Restic backup (auto-init on exit 10, one retry) ─
 log "--- Step 1: restic backup ---"
 
 RESTIC_EXIT=0
 restic backup --tag "${HOST_TAG}" "${EXCLUDES[@]}" "${EXISTING_PATHS[@]}" 2>&1 | tee -a "${LOG_FILE}" || RESTIC_EXIT=$?
+
+if [ "$RESTIC_EXIT" -eq 10 ]; then
+  log "  repository missing (exit 10) — initializing, then retrying backup once"
+  if restic init 2>&1 | tee -a "${LOG_FILE}"; then
+    RESTIC_EXIT=0
+    restic backup --tag "${HOST_TAG}" "${EXCLUDES[@]}" "${EXISTING_PATHS[@]}" 2>&1 | tee -a "${LOG_FILE}" || RESTIC_EXIT=$?
+  else
+    RESTIC_EXIT=$?
+    log "  restic init FAILED (exit ${RESTIC_EXIT})"
+  fi
+fi
 
 if [ "$RESTIC_EXIT" -eq 0 ]; then
   log "  backup OK"
@@ -100,13 +111,41 @@ if restic forget \
   --keep-weekly 4 \
   --keep-monthly 12 \
   --prune 2>&1 | tee -a "${LOG_FILE}"; then
+  FORGET_EXIT=0
   log "  forget OK"
 else
+  FORGET_EXIT=$?
   log "  forget FAILED"
 fi
 
-# ── Step 3: Write status file ──────────────────────────────
-log "--- Step 3: write status ---"
+# ── Step 3: Verify repository & snapshots ──────────────────
+log "--- Step 3: verify repository ---"
+
+VERIFY_EXIT=0
+VERIFY_RESULT="unknown"
+
+if [ "$RESTIC_EXIT" -eq 0 ]; then
+  if restic check 2>&1 | tee -a "${LOG_FILE}"; then
+    VERIFY_RESULT="ok"
+    log "  verification passed (snapshot data is restorable)"
+  else
+    VERIFY_EXIT=$?
+    VERIFY_RESULT="failed"
+    log "  verification FAILED (exit ${VERIFY_EXIT})"
+  fi
+else
+  VERIFY_RESULT="skipped"
+  log "  verification skipped (backup exit ${RESTIC_EXIT})"
+fi
+
+if [ "$RESTIC_EXIT" -eq 0 ] && [ "$FORGET_EXIT" -eq 0 ] && [ "$VERIFY_EXIT" -eq 0 ]; then
+  RESTIC_STATUS="success"
+else
+  RESTIC_STATUS="failed"
+fi
+
+# ── Step 4: Write status file ──────────────────────────────
+log "--- Step 4: write status ---"
 
 SNAP_COUNT=$(restic snapshots --json 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 
@@ -125,11 +164,13 @@ d = json.load(sys.stdin)
 if d: print(d[-1].get('time','unknown')[:19])
 " 2>/dev/null || echo "unknown")
 
-if [ "${SNAP_COUNT:-0}" -gt 0 ]; then
-  LAST_STATUS="ok"
-else
-  LAST_STATUS="failed"
-fi
+SNAP_ID=$(restic snapshots --json 2>/dev/null | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+if d: print(d[-1].get('id','unknown'))
+" 2>/dev/null || echo "unknown")
+
+LAST_STATUS="${RESTIC_STATUS}"
 
 NOW=$(date -u +"%Y-%m-%dT%H:%M:%S")
 
@@ -141,6 +182,8 @@ data = {
     'total_size_human': '${SNAP_TOTAL}',
     'last_time': '${LAST_TIME}',
     'last_status': '${LAST_STATUS}',
+    'verification': '${VERIFY_RESULT}',
+    'snapshot_id': '${SNAP_ID}',
     'host': '${HOST_TAG}',
     'repo': '${RESTIC_REPOSITORY}',
 }
@@ -152,19 +195,19 @@ else
   log "  status write failed"
 fi
 
-# ── Step 4: ntfy notification ──────────────────────────────
-log "--- Step 4: ntfy notification ---"
+# ── Step 5: ntfy notification ──────────────────────────────
+log "--- Step 5: ntfy notification ---"
 
 NTFY_URL="${NTFY_URL:-https://ntfy.phillias.cc/SelfHostNetSec}"
 
-if [ "$LAST_STATUS" = "ok" ]; then
+if [ "$LAST_STATUS" = "success" ]; then
   NTFY_PRIORITY="min"
   NTFY_TITLE="Backup OK — agent state (${HOST_TAG})"
-  NTFY_BODY="${SNAP_COUNT} snapshots | ${SNAP_TOTAL} | Retention: 7d/4w/12m"
+  NTFY_BODY="${SNAP_COUNT} snapshots | ${SNAP_TOTAL} | Verify: OK | Snapshot: ${SNAP_ID:0:8} | Retention: 7d/4w/12m"
 else
   NTFY_PRIORITY="urgent"
   NTFY_TITLE="Backup FAILED — agent state (${HOST_TAG})"
-  NTFY_BODY="Snapshots: ${SNAP_COUNT} | Total: ${SNAP_TOTAL} | See ${LOG_FILE}"
+  NTFY_BODY="Snapshots: ${SNAP_COUNT} | Total: ${SNAP_TOTAL} | Verify: ${VERIFY_RESULT} | See ${LOG_FILE}"
 fi
 
 if [ -n "${NTFY_TOKEN:-}" ]; then
@@ -181,3 +224,5 @@ if [ -n "${NTFY_TOKEN:-}" ]; then
 fi
 
 log "=== Fleet agent-state backup completed ==="
+
+exit "$(( RESTIC_EXIT != 0 ? RESTIC_EXIT : FORGET_EXIT != 0 ? FORGET_EXIT : VERIFY_EXIT ))"
