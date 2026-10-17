@@ -14,13 +14,22 @@ installed_index="${package_dir}/dist/index.js"
 
 if [ ! -r "${package_json}" ]; then
   echo "pi-fallback-provider: installed package is missing: ${package_json}" >&2
-  exit 1
+  exit 0
 fi
 if [ ! -r "${vendor_version}" ] || [ "$(cat "${vendor_version}")" != "${expected_version}" ]; then
   echo "pi-fallback-provider: vendored version marker is invalid" >&2
   exit 1
 fi
-installed_version=$(node -p "require(process.argv[1]).version" "${package_json}")
+# Check for node availability
+if ! command -v node >/dev/null 2>&1; then
+  echo "pi-fallback-provider: node not found on PATH" >&2
+  exit 0
+fi
+# Read the version from package.json, if fails then exit 0
+installed_version=$(node -p "require(process.argv[1]).version" "${package_json}" 2>/dev/null) || {
+  echo "pi-fallback-provider: failed to read version from ${package_json}" >&2
+  exit 0
+}
 if [ "${installed_version}" != "${expected_version}" ]; then
   echo "pi-fallback-provider: refusing to patch version ${installed_version}; expected ${expected_version}" >&2
   exit 1
