@@ -88,10 +88,14 @@ else
 fi
 
 # --- bws project fetch -------------------------------------------------------
-# One secret-list call per shell. _keys_bws_json holds the raw JSON array;
-# _keys_bws_reason records why bws is unavailable when it is (empty when ok).
+# One secret-list call per shell, cached for 5 minutes at
+# ~/.agents/keys/.bws-cache-<profile>.json to avoid a network round-trip
+# on every non-interactive shell (ET terminals, scripts, daemons).
+# _keys_bws_json holds the raw JSON array; _keys_bws_reason records why bws
+# is unavailable when it is (empty when ok).
 _keys_bws_json=""
 _keys_bws_reason=""
+_keys_bws_cache="$_keys_home/.bws-cache-$_default_profile.json"
 
 _keys_bws_project_id() {
     # Resolve the bws project id for the default profile, cached at
@@ -135,28 +139,49 @@ elif [ -z "${BWS_BIN:-}" ] || [ ! -x "$BWS_BIN" ]; then
 elif [ -z "$JQ_BIN" ]; then
     _keys_bws_reason="jq-missing"
 else
-    _keys_project_id="$(_keys_bws_project_id)"
-    if [ -z "$_keys_project_id" ]; then
-        _keys_bws_reason="bws-project-unresolved"
-    else
-        _keys_bws_json="$(_keys_bws_fetch "$_keys_project_id")"
-        case "$_keys_bws_json" in
-            \[*) : ;;
-            *)
-                # Cached project id may be stale: refresh once and retry.
-                rm -f "$_keys_home/.bws-project-$_default_profile.id" 2>/dev/null || true
-                _keys_project_id="$(_keys_bws_project_id)"
-                if [ -n "$_keys_project_id" ]; then
-                    _keys_bws_json="$(_keys_bws_fetch "$_keys_project_id")"
-                fi
-                case "$_keys_bws_json" in
-                    \[*) : ;;
-                    *) _keys_bws_json=""; _keys_bws_reason="bws-fetch-failed" ;;
-                esac
-                ;;
-        esac
+    # Check cache freshness (5-minute TTL) before hitting the network.
+    # Cache avoids a 0.8s bws round-trip on every non-interactive shell
+    # (ET terminals, scripts, daemons) that sources .zshenv.
+    if [ -r "$_keys_bws_cache" ]; then
+        _keys_cache_age=$(( $(date +%s 2>/dev/null || echo 0) - $(stat -c %Y "$_keys_bws_cache" 2>/dev/null || stat -f %m "$_keys_bws_cache" 2>/dev/null || echo 0) ))
+        if [ "${_keys_cache_age:-999999}" -le 300 ]; then
+            _keys_bws_json="$(cat "$_keys_bws_cache" 2>/dev/null)"
+            case "$_keys_bws_json" in
+                \[*) : ;;
+                *) _keys_bws_json="" ;;
+            esac
+        fi
+        unset _keys_cache_age
     fi
-    unset _keys_project_id
+    # Live fetch only on cache miss
+    if [ -z "$_keys_bws_json" ]; then
+        _keys_project_id="$(_keys_bws_project_id)"
+        if [ -z "$_keys_project_id" ]; then
+            _keys_bws_reason="bws-project-unresolved"
+        else
+            _keys_bws_json="$(_keys_bws_fetch "$_keys_project_id")"
+            case "$_keys_bws_json" in
+                \[*) : ;;
+                *)
+                    # Cached project id may be stale: refresh once and retry.
+                    rm -f "$_keys_home/.bws-project-$_default_profile.id" 2>/dev/null || true
+                    _keys_project_id="$(_keys_bws_project_id)"
+                    if [ -n "$_keys_project_id" ]; then
+                        _keys_bws_json="$(_keys_bws_fetch "$_keys_project_id")"
+                    fi
+                    case "$_keys_bws_json" in
+                        \[*) : ;;
+                        *) _keys_bws_json=""; _keys_bws_reason="bws-fetch-failed" ;;
+                    esac
+                    ;;
+            esac
+        fi
+        unset _keys_project_id
+        # Write cache on successful live fetch
+        if [ -n "$_keys_bws_json" ]; then
+            ( umask 077 && printf '%s' "$_keys_bws_json" > "$_keys_bws_cache" ) 2>/dev/null || true
+        fi
+    fi
 fi
 
 # --- fallback decrypt ---------------------------------------------------------
@@ -287,6 +312,7 @@ $_keys_map
 EOF
 
 unset _default_profile _keys_home _keys_profile_dir _keys_retired_dir \
-    _keys_fallback_log _keys_bws_json _keys_bws_reason _keys_map _keys_line
+    _keys_fallback_log _keys_bws_json _keys_bws_reason _keys_bws_cache \
+    _keys_map _keys_line
 unset -f _keys_bws_project_id _keys_bws_fetch _keys_decrypt \
     _keys_log_fallback _keys_emit 2>/dev/null || true
