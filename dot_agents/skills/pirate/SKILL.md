@@ -108,9 +108,15 @@ All pirate services use the **locket-init** pattern (see `docker` skill
 §2): each service has a `*-init` container that runs `locket inject` to
 render secrets into a named volume.
 
-**Exception:** aios uses OCI vault-init (legacy). Its secrets are
-maintained separately, not through the locket pipeline. Do not attempt to
-convert aios to locket-init — this is intentional.
+**Exceptions:**
+- aios uses OCI vault-init (legacy). Its secrets are
+  maintained separately, not through the locket pipeline. Do not attempt to
+  convert aios to locket-init — this is intentional.
+- warp self-registers with Cloudflare on first start and stores the
+  registration in a named volume (`warp-secrets`). It has **no init service**
+  and no vault dependencies. Never reintroduce a warp secrets-init container:
+  locket's passthrough failure policy would overwrite the live registration
+  with literal `{{ }}` placeholders, breaking the container.
 
 **Re-initialize secrets for any service:**
 ```bash
@@ -462,27 +468,36 @@ docker logs proton | tail -10
 
 **Red flags:**
 - Connectivity issues from dependent services
-- Init container fails
 - SOCKS5 proxy not responding
+- `warp=off` in trace output
 
 **Health check:**
 ```bash
 docker compose --profile proxy ps warp
 # Container should show "Up" status
+curl -x socks5h://127.0.0.1:1080 https://www.cloudflare.com/cdn-cgi/trace
+# Expect: warp=on
 ```
 
 **Diagnosis roadmap:**
-1. Init failure → check secrets init ran successfully
+1. SOCKS5 not responding → verify the warp container is running and
+   the `warp-secrets` volume is intact
 2. Connectivity → verify dependent services can reach warp's SOCKS5 port
    (1080)
+3. `warp=off` → the registration in the `warp-secrets` volume may be stale;
+   stop warp, remove the volume, and restart to trigger fresh self-registration
 
 **Resolution paths:**
-- Init failure → `docker compose --profile proxy run --rm warp-init`
+- Stale registration → `docker volume rm pirate_warp-secrets` then
+  `docker compose --profile proxy up -d --force-recreate warp` (warp
+  self-registers on a fresh start)
 - Connectivity issues → check the proxy chain: dependent services use
   `network_mode: service:warp` or `container:warp`
 
 **Failed paths:**
-- (none documented yet)
+- Never reintroduce a warp secrets-init (locket-init) container. Warp
+  self-registers; a locket passthrough failure would write literal `{{ }}`
+  placeholders over the live registration and break the container.
 
 ---
 

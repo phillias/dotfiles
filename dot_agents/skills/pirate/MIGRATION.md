@@ -122,7 +122,7 @@ requires. Useful when re-provisioning or auditing.
 | grimmory | locket-init (bws) | DB password (`DATABASE_PASSWORD` in `.env`), app config |
 | storyteller | locket-init (bws) | App config |
 | proton | locket-init (bws) | VPN credentials (OpenVPN/WireGuard) |
-| warp | locket-init (bws) | Warp license/team token |
+| warp | self-registration (no init) | none — warp self-registers on first start |
 
 ---
 
