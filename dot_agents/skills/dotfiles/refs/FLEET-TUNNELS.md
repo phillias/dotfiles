@@ -112,6 +112,40 @@ remote node (pull + chezmoi apply + daemon-reload + restart serve).
 
 ## Agent-to-agent usage
 
-The opencode HTTP API is the transport: create a session on the remote serve,
-`POST /api/session/:id/prompt` to message the remote firstmate's agent.
-Password auth comes from `opencode-serve.env` (rendered by the chezmoi template `private_opencode-serve.env.tmpl`, which age-decrypts per-secret source files — the serve password is `.chezmoitemplates/opencode-serve-password.age`; OPENCODE_SERVER_USERNAME/PASSWORD).
+Use the small `fleet-chat` adapter for agent-to-agent prompts:
+
+```bash
+fleet-chat list-nodes
+fleet-chat send --node primary55522 --prompt "Please inspect the failing job"
+fleet-chat latest --node primary55522 --session <session-id>
+```
+
+`send` creates a remote session with `POST /api/session` unless an existing
+session is supplied, then sends the machine-readable admission request:
+
+```http
+POST /api/session/{id}/prompt
+Content-Type: application/json
+
+{"prompt":{"text":"..."},"resume":false}
+```
+
+The successful `200 application/json` response includes `admittedSeq`, the
+message id, `sessionID`, prompt, delivery, and `timeCreated`. For completion
+events use SSE `GET /api/event` or `GET /api/session/{id}/event`; for the V1
+message/parts representation read `GET /session/{id}/message`. `fleet-chat
+latest` returns the newest assistant response and truncates long text unless
+`--full` is supplied.
+
+For fire-and-forget delivery, the correct V1 route is
+`POST /session/{id}/prompt_async` (without `/api`), which returns `204 No
+Content`. `POST /api/session/{id}/prompt_async` is incorrect and is not a
+registered route: it falls through to the TUI SPA and returns `200 text/html`.
+This path distinction is the known source of the old HTML symptom.
+
+The adapter uses Basic auth only against these localhost/tunnel endpoints and
+loads `OPENCODE_SERVER_USERNAME/PASSWORD` from the mode-0600
+`~/.config/opencode/opencode-serve.env`. Credentials are never command-line
+arguments, output, logs, URLs, or committed files. Scratch sessions must be
+deleted after testing with `DELETE /session/{id}`; do not enumerate or mutate
+another agent's existing sessions without an ownership contract.

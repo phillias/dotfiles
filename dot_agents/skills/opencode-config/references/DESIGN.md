@@ -683,9 +683,32 @@ Cloudflare AI Gateway, independent from the interactive TUI config. The
 EnvironmentFile intentionally stays shared with the interactive tree (see the
 unit's comment).
 
-Transport for agent-to-agent messaging is the opencode HTTP API:
-create a session (`POST /api/session`), then `POST /api/session/:id/prompt`
-with message parts. The remote opencode agent receives it as a user message.
+Transport for agent-to-agent messaging is the opencode HTTP API. The tracked
+adapter is `fleet-chat` (installed as `~/.local/bin/fleet-chat`):
+
+```sh
+fleet-chat list-nodes
+fleet-chat send --node primary55522 --prompt "Run the requested task"
+fleet-chat latest --node primary55522 --session <session-id>
+```
+
+The adapter creates a session with `POST /api/session` unless `--session` is
+provided, then admits the prompt with `POST /api/session/{id}/prompt` and body
+`{"prompt":{"text":"..."},"resume":false}`. Its structured output includes
+the node, session id, and admission record (`admittedSeq`, message id,
+`sessionID`, prompt, delivery, and `timeCreated`). `latest` reads the V1
+message representation from `GET /session/{id}/message`, returning the latest
+assistant response with a bounded text preview (`--full` disables truncation).
+Use `GET /api/event` or `GET /api/session/{id}/event` when an integration
+needs SSE completion events.
+
+The fire-and-forget V1 route is `POST /session/{id}/prompt_async` (no `/api`),
+which returns `204 No Content`. `POST /api/session/{id}/prompt_async` is not a
+route: it falls through to the TUI SPA and returns HTML. Do not use that path.
+The adapter uses the JSON admission route so callers get a machine-readable
+acknowledgement. Basic auth is loaded from the mode-0600
+`~/.config/opencode/opencode-serve.env` and is never placed in command
+arguments or output.
 
 Each host applies only the tunnels to the OTHER nodes (hostname-gated via
 `.chezmoiignore`), so the endpoints a host sees depend on which node it is:
