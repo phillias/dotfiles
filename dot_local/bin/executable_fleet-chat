@@ -41,7 +41,8 @@ truncate_text() {
 }
 
 load_auth() {
-  [[ -r "$AUTH_ENV" ]] || die "auth environment file is not readable: ${AUTH_ENV/#$HOME/~}" "Fix the serve EnvironmentFile or set OPENCODE_SERVE_ENV"
+  [[ -r "$AUTH_ENV" ]] || \
+    die "auth environment file is not readable: ${AUTH_ENV/#$HOME/~}" "Fix the serve EnvironmentFile or set OPENCODE_SERVE_ENV"
   local mode
   mode=$(stat -c '%a' "$AUTH_ENV" 2>/dev/null || true)
   [[ "$mode" == 600 ]] || die "auth environment file must be mode 0600" "chmod 600 ${AUTH_ENV/#$HOME/~}"
@@ -49,7 +50,8 @@ load_auth() {
   # shellcheck disable=SC1090
   . "$AUTH_ENV"
   set +a
-  [[ -n "${OPENCODE_SERVER_USERNAME:-}" && -n "${OPENCODE_SERVER_PASSWORD:-}" ]] || die "serve credentials are missing from the auth environment file"
+  [[ -n "${OPENCODE_SERVER_USERNAME:-}" && -n "${OPENCODE_SERVER_PASSWORD:-}" ]] || \
+    die "serve credentials are missing from the auth environment file"
   USERNAME="$OPENCODE_SERVER_USERNAME"
   PASSWORD="$OPENCODE_SERVER_PASSWORD"
   unset OPENCODE_SERVER_USERNAME OPENCODE_SERVER_PASSWORD
@@ -139,7 +141,8 @@ latest() {
       *) die "unexpected argument: $1" "Use fleet-chat latest --help" 2;;
     esac
   done
-  [[ -n "$node" && -n "$session" ]] || die "--node and --session are required" "fleet-chat latest --node <name> --session <id>"
+  [[ -n "$node" && -n "$session" ]] || \
+    die "--node and --session are required" "fleet-chat latest --node <name> --session <id>"
   url=$(node_url "$node"); load_auth; body=$(mktemp)
   status=$(request GET "$url/api/session/$session/message" '' "$body")
   [[ "$status" == 2* ]] || die "message read failed (HTTP $status)" "Check the node and session id"
@@ -149,10 +152,15 @@ latest() {
     rm -f "$body"
     return 0
   fi
-  text=$(jq -r --arg id "$message_id" '[.data[]? | select(.id == $id) | .content[]? | select(.type == "text") | .text // empty] | join("\n")' "$body")
+  text=$(jq -r --arg id "$message_id" '[.data[]? | select(.id == $id) | .content[]? | select(.type == "text") | .text // empty] | join("\n")' \
+    "$body")
   echo "response:"
   printf '  node: %s\n  session: %s\n  message: %s\n' "$node" "$session" "$message_id"
-  if (( full )); then printf '  text: %s\n' "$(json_value "$text")"; else printf '  text: %s\n' "$(json_value "$(truncate_text "$text")")"; fi
+  if (( full )); then
+    printf '  text: %s\n' "$(json_value "$text")"
+  else
+    printf '  text: %s\n' "$(json_value "$(truncate_text "$text")")"
+  fi
   rm -f "$body"
 }
 
