@@ -143,13 +143,13 @@ latest() {
   url=$(node_url "$node"); load_auth; body=$(mktemp)
   status=$(request GET "$url/api/session/$session/message" '' "$body")
   [[ "$status" == 2* ]] || die "message read failed (HTTP $status)" "Check the node and session id"
-  message_id=$(jq -r '[.data[]? | select(.info.role == "assistant")] | last | .info.id // empty' "$body" 2>/dev/null || true)
+  message_id=$(jq -r '[.data[]? | select(.type == "assistant")] | last | .id // empty' "$body" 2>/dev/null || true)
   if [[ -z "$message_id" ]]; then
     echo "messages: 0 assistant responses found"
     rm -f "$body"
     return 0
   fi
-  text=$(jq -r --arg id "$message_id" '[.data[]? | select(.info.id == $id) | .parts[]?.text // empty] | join("\n")' "$body")
+  text=$(jq -r --arg id "$message_id" '[.data[]? | select(.id == $id) | .content[]? | select(.type == "text") | .text // empty] | join("\n")' "$body")
   echo "response:"
   printf '  node: %s\n  session: %s\n  message: %s\n' "$node" "$session" "$message_id"
   if (( full )); then printf '  text: %s\n' "$(json_value "$text")"; else printf '  text: %s\n' "$(json_value "$(truncate_text "$text")")"; fi
