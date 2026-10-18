@@ -3,7 +3,7 @@
 # Sourced by .zshenv (all zsh shells) and .profile (login shells)
 #
 # bws-first loading (2026-10 retirement): the migrated profile keys
-# (41 exported here, 12 consumed by explicit reference only, 3
+# (39 exported here, 12 consumed by explicit reference only, 5
 # decommissioned) are read from
 # the Bitwarden Secrets Manager project named like the default profile.
 # Auth comes from the per-profile .bws-token file (always re-read so a
@@ -251,15 +251,20 @@ _keys_emit() {
 }
 
 # --- exported key map (default profile) --------------------------------------
-# Format per line: <key-file-name>:<ENV_VAR> (41 exported keys; 12 migrated
+# Format per line: <key-file-name>:<ENV_VAR> (39 exported keys; 12 migrated
 # keys have no exported var and stay recovery-only via age -d).
 # Decommissioned 2026-10-15: .google-client-id/.google-client-secret (vault
 # entries dropped; Google Workspace disengaged from hermes/opencode-serve).
 # Decommissioned 2026-10-17: .google-vision-key (GOOGLE_VISION_API_KEY had
 # zero consumers; vault entry dropped).
+# Decommissioned 2026-10-18: .zen-key (OPENCODE_ZEN_API_KEY; zen surface
+# is served by .opencode-key; vault entry dropped) and .treg-token
+# (TREG_TOKEN; duplicate of .treg-key; vault entry dropped).
+# Renamed 2026-10-18: .composio-key -> .composio-platform-key (the
+# platform/SDK key; the For You ck_ key lives in .composio-for-you-key,
+# reference-only, no exported var).
 _keys_map='
 .cf-ai-gw:CF_AI_GATEWAY_TOKEN
-.treg-token:TREG_TOKEN
 .treg-key:TREG_KEY
 .abliteration-key:ABLITERATION_API_KEY
 .tsfm-key:TSFM_API_KEY
@@ -270,7 +275,6 @@ _keys_map='
 .sambanova-key:SAMBANOVA_API_KEY
 .google-key:GOOGLE_API_KEY
 .together-key:TOGETHER_API_KEY
-.zen-key:OPENCODE_ZEN_API_KEY
 .cloudflare-key:CLOUDFLARE_API_KEY
 .cloudflare-deploy-token:CLOUDFLARE_API_TOKEN
 .command-code-key:COMMAND_CODE_API_KEY
@@ -282,7 +286,7 @@ _keys_map='
 .zai-key:ZHIPU_API_KEY
 .fireworks-key:FIREWORKS_API_KEY
 .exa-key:EXA_API_KEY
-.composio-key:COMPOSIO_API_KEY
+.composio-platform-key:COMPOSIO_API_KEY
 .deepinfra-key:DEEPINFRA_API_KEY
 .friendli-key:FRIENDLI_API_KEY
 .greptile-key:GREPTILE_API_KEY
