@@ -3,7 +3,7 @@
 # Sourced by .zshenv (all zsh shells) and .profile (login shells)
 #
 # bws-first loading (2026-10 retirement): the migrated profile keys
-# (39 exported here, 12 consumed by explicit reference only, 5
+# (38 exported here, 12 consumed by explicit reference only, 6
 # decommissioned) are read from
 # the Bitwarden Secrets Manager project named like the default profile.
 # Auth comes from the per-profile .bws-token file (always re-read so a
@@ -251,7 +251,7 @@ _keys_emit() {
 }
 
 # --- exported key map (default profile) --------------------------------------
-# Format per line: <key-file-name>:<ENV_VAR> (39 exported keys; 12 migrated
+# Format per line: <key-file-name>:<ENV_VAR> (38 exported keys; 12 migrated
 # keys have no exported var and stay recovery-only via age -d).
 # Decommissioned 2026-10-15: .google-client-id/.google-client-secret (vault
 # entries dropped; Google Workspace disengaged from hermes/opencode-serve).
@@ -263,6 +263,9 @@ _keys_emit() {
 # Renamed 2026-10-18: .composio-key -> .composio-platform-key (the
 # platform/SDK key; the For You ck_ key lives in .composio-for-you-key,
 # reference-only, no exported var).
+# Decommissioned 2026-10-18: .greptile-key (GREPTILE_API_KEY had zero
+# dotfiles consumers; the rotated vault entry moved to the masculinecache
+# bws project, which the default-profile loader never reads).
 _keys_map='
 .cf-ai-gw:CF_AI_GATEWAY_TOKEN
 .treg-key:TREG_KEY
@@ -289,7 +292,6 @@ _keys_map='
 .composio-platform-key:COMPOSIO_API_KEY
 .deepinfra-key:DEEPINFRA_API_KEY
 .friendli-key:FRIENDLI_API_KEY
-.greptile-key:GREPTILE_API_KEY
 .qwen-key:QWEN_API_KEY
 .kenari-key:KENARI_API_KEY
 .synthetic-key:SYNTHETIC_API_KEY
