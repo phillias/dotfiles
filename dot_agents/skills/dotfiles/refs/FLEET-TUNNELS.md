@@ -127,7 +127,7 @@ session is supplied, then sends the machine-readable admission request:
 POST /api/session/{id}/prompt
 Content-Type: application/json
 
-{"prompt":{"text":"..."},"resume":false}
+{"prompt":{"text":"..."}}
 ```
 
 The successful `200 application/json` response includes `admittedSeq`, the

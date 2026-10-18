@@ -694,7 +694,7 @@ fleet-chat latest --node primary55522 --session <session-id>
 
 The adapter creates a session with `POST /api/session` unless `--session` is
 provided, then admits the prompt with `POST /api/session/{id}/prompt` and body
-`{"prompt":{"text":"..."},"resume":false}`. Its structured output includes
+`{"prompt":{"text":"..."}}`. Its structured output includes
 the node, session id, and admission record (`admittedSeq`, message id,
 `sessionID`, prompt, delivery, and `timeCreated`). `latest` reads the matching
 V2 projection from `GET /api/session/{id}/message`, returning the latest

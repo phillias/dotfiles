@@ -116,7 +116,7 @@ send_prompt() {
     [[ -n "$session" ]] || die "session creation returned no session id"
     rm -f "$response"
   fi
-  body=$(jq -cn --arg text "$prompt" '{prompt:{text:$text},resume:false}')
+  body=$(jq -cn --arg text "$prompt" '{prompt:{text:$text}}')
   response=$(mktemp); status=$(request POST "$url/api/session/$session/prompt" "$body" "$response")
   [[ "$status" == 2* ]] || die "prompt admission failed (HTTP $status)" "Check the node and session id"
   admitted=$(jq -r '.data.admittedSeq // .admittedSeq // empty' "$response" 2>/dev/null || true)
