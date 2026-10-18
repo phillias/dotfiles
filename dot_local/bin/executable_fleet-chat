@@ -21,7 +21,7 @@ fleet-chat — send and inspect agent messages across the localhost opencode ser
 
 Usage:
   fleet-chat list-nodes
-  fleet-chat send --node <name> --prompt <text> [--session <id>] [--title <text>]
+  fleet-chat send --node <name> --prompt <text> [--session <id>]
   fleet-chat latest --node <name> --session <id> [--full]
 
 send creates a session when --session is omitted and returns its id plus the
@@ -94,15 +94,14 @@ list_nodes() {
 }
 
 send_prompt() {
-  local node='' prompt='' session='' title='' url body create_body status response admitted
+  local node='' prompt='' session='' url body create_body status response admitted
   while (($#)); do
     case "$1" in
       --node) [[ $# -ge 2 ]] || die "--node requires a value"; node="$2"; shift 2;;
       --prompt) [[ $# -ge 2 ]] || die "--prompt requires a value"; prompt="$2"; shift 2;;
       --session) [[ $# -ge 2 ]] || die "--session requires a value"; session="$2"; shift 2;;
-      --title) [[ $# -ge 2 ]] || die "--title requires a value"; title="$2"; shift 2;;
       --help) usage; return;;
-      -*) die "unknown flag: $1" "Valid flags: --node, --prompt, --session, --title" 2;;
+      -*) die "unknown flag: $1" "Valid flags: --node, --prompt, --session" 2;;
       *) die "unexpected argument: $1" "Use fleet-chat send --help" 2;;
     esac
   done
@@ -111,7 +110,6 @@ send_prompt() {
   url=$(node_url "$node"); load_auth
   if [[ -z "$session" ]]; then
     create_body='{}'
-    [[ -n "$title" ]] && create_body=$(jq -cn --arg title "$title" '{title:$title}')
     response=$(mktemp); status=$(request POST "$url/api/session" "$create_body" "$response")
     [[ "$status" == 2* ]] || die "session creation failed (HTTP $status)" "Check fleet-chat list-nodes"
     session=$(jq -r '.data.id // .data.sessionID // .id // .sessionID // empty' "$response" 2>/dev/null || true)
@@ -143,15 +141,15 @@ latest() {
   done
   [[ -n "$node" && -n "$session" ]] || die "--node and --session are required" "fleet-chat latest --node <name> --session <id>"
   url=$(node_url "$node"); load_auth; body=$(mktemp)
-  status=$(request GET "$url/session/$session/message" '' "$body")
+  status=$(request GET "$url/api/session/$session/message" '' "$body")
   [[ "$status" == 2* ]] || die "message read failed (HTTP $status)" "Check the node and session id"
-  message_id=$(jq -r '[.[] | select(.info.role == "assistant")] | last | .info.id // empty' "$body" 2>/dev/null || true)
+  message_id=$(jq -r '[.data[]? | select(.info.role == "assistant")] | last | .info.id // empty' "$body" 2>/dev/null || true)
   if [[ -z "$message_id" ]]; then
     echo "messages: 0 assistant responses found"
     rm -f "$body"
     return 0
   fi
-  text=$(jq -r --arg id "$message_id" '[.[] | select(.info.id == $id) | .parts[]?.text // empty] | join("\n")' "$body")
+  text=$(jq -r --arg id "$message_id" '[.data[]? | select(.info.id == $id) | .parts[]?.text // empty] | join("\n")' "$body")
   echo "response:"
   printf '  node: %s\n  session: %s\n  message: %s\n' "$node" "$session" "$message_id"
   if (( full )); then printf '  text: %s\n' "$(json_value "$text")"; else printf '  text: %s\n' "$(json_value "$(truncate_text "$text")")"; fi

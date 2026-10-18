@@ -132,10 +132,12 @@ Content-Type: application/json
 
 The successful `200 application/json` response includes `admittedSeq`, the
 message id, `sessionID`, prompt, delivery, and `timeCreated`. For completion
-events use SSE `GET /api/event` or `GET /api/session/{id}/event`; for the V1
-message/parts representation read `GET /session/{id}/message`. `fleet-chat
-latest` returns the newest assistant response and truncates long text unless
-`--full` is supplied.
+events use SSE `GET /api/event` or `GET /api/session/{id}/event`.
+`fleet-chat latest` reads the matching V2 projection from
+`GET /api/session/{id}/message`, returns the newest assistant response, and
+truncates long text unless `--full` is supplied. The older V1
+`GET /session/{id}/message` representation remains available for callers that
+need raw message/parts data.
 
 For fire-and-forget delivery, the correct V1 route is
 `POST /session/{id}/prompt_async` (without `/api`), which returns `204 No

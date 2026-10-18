@@ -696,8 +696,8 @@ The adapter creates a session with `POST /api/session` unless `--session` is
 provided, then admits the prompt with `POST /api/session/{id}/prompt` and body
 `{"prompt":{"text":"..."},"resume":false}`. Its structured output includes
 the node, session id, and admission record (`admittedSeq`, message id,
-`sessionID`, prompt, delivery, and `timeCreated`). `latest` reads the V1
-message representation from `GET /session/{id}/message`, returning the latest
+`sessionID`, prompt, delivery, and `timeCreated`). `latest` reads the matching
+V2 projection from `GET /api/session/{id}/message`, returning the latest
 assistant response with a bounded text preview (`--full` disables truncation).
 Use `GET /api/event` or `GET /api/session/{id}/event` when an integration
 needs SSE completion events.
