@@ -110,6 +110,13 @@ is_systemd_unit() {
   esac
 }
 
+is_chezmoi_script() {
+  case "$1" in
+    run_*|*/run_*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 rendered_units=()
 apply_targets=()
 fail=0
@@ -141,6 +148,11 @@ done
 echo "== apply changed managed plain files to throwaway destination"
 for path in "${changed[@]}"; do
   if ! is_managed_source "$path"; then
+    continue
+  fi
+  # Script entries are executed by chezmoi and intentionally remain in its
+  # run-tracking state; a content-idempotency diff is not meaningful for them.
+  if is_chezmoi_script "$path"; then
     continue
   fi
   if is_encrypted_source "$path"; then

@@ -1,0 +1,53 @@
+#!/bin/sh
+set -eu
+
+# pi-fallback-provider is installed and refreshed by pi outside chezmoi. Keep
+# the live package patched, but refuse to overwrite a package version that was
+# not inspected and patched here.
+expected_version='0.0.1'
+package_dir="${HOME}/.pi/agent/npm/node_modules/pi-fallback-provider"
+package_json="${package_dir}/package.json"
+vendor_dir="${HOME}/.pi/agent/vendor/pi-fallback-provider/${expected_version}"
+vendor_version="${vendor_dir}/VERSION"
+vendor_index="${vendor_dir}/dist/index.js"
+installed_index="${package_dir}/dist/index.js"
+
+if [ ! -r "${package_json}" ]; then
+  echo "pi-fallback-provider: installed package is missing: ${package_json}" >&2
+  exit 0
+fi
+if [ ! -r "${vendor_version}" ] || [ "$(cat "${vendor_version}")" != "${expected_version}" ]; then
+  echo "pi-fallback-provider: vendored version marker is invalid" >&2
+  exit 1
+fi
+# Check for node availability
+if ! command -v node >/dev/null 2>&1; then
+  echo "pi-fallback-provider: node not found on PATH" >&2
+  exit 0
+fi
+# Read the version from package.json, if fails then exit 0
+installed_version=$(node -p "require(process.argv[1]).version" "${package_json}" 2>/dev/null) || {
+  echo "pi-fallback-provider: failed to read version from ${package_json}" >&2
+  exit 0
+}
+if [ "${installed_version}" != "${expected_version}" ]; then
+  echo "pi-fallback-provider: refusing to patch version ${installed_version}; expected ${expected_version}" >&2
+  exit 1
+fi
+if [ ! -r "${vendor_index}" ]; then
+  echo "pi-fallback-provider: vendored patch is missing: ${vendor_index}" >&2
+  exit 1
+fi
+if ! grep -q 'PI_FALLBACK_TTFB_MS' "${vendor_index}" || ! grep -q '120000' "${vendor_index}"; then
+  echo "pi-fallback-provider: vendored patch lacks the TTFB environment knob/default" >&2
+  exit 1
+fi
+retryable_block=$(sed -n '/const retryablePatterns = \[/,/^[[:space:]]*\];/p' "${vendor_index}")
+if printf '%s\n' "${retryable_block}" | grep -Eq '"aborted"|"abort"'; then
+  echo "pi-fallback-provider: vendored retryable patterns still include abort" >&2
+  exit 1
+fi
+
+if ! cmp -s "${vendor_index}" "${installed_index}"; then
+  install -m 0644 "${vendor_index}" "${installed_index}"
+fi

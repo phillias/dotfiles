@@ -1,0 +1,161 @@
+{
+  "findings": [],
+  "summary": "All scenarios passed as expected. The script correctly handles missing package/node as no-ops, applies the vendored patch when needed, and fails hard on version mismatch, missing/vendored patch, missing TTFB knob, and abort in retryablePatterns.",
+  "tested": [
+    "scripts/no-mistakes-test.sh",
+    "Scenario 1: Normal case",
+    "Scenario 2: Missing extension (package.json absent)",
+    "Scenario 3: Missing node",
+    "Scenario 4: Vendored patch missing",
+    "Scenario 5: Vendored patch lacks TTFB environment knob/default",
+    "Scenario 6: Vendored patch includes 'aborted' in retryablePatterns",
+    "Scenario 7: Version mismatch (installed version not 0.0.1)",
+    "Scenario 8a: Vendored version marker missing",
+    "Scenario 8b: Vendored version marker invalid (wrong version)",
+    "Scenario 9: Failed to read version from package.json (invalid JSON)",
+    "Scenario 10: Vendored patch and installed index.js identical"
+  ],
+  "testing_summary": "Drove 10 scenarios live against the product (the post-apply script) in disposable environments; all scenarios behaved as expected; configured test command passed.",
+  "artifacts": [
+    {
+      "kind": "command-output",
+      "label": "Configured test command output",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/test-output.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 1: Normal case",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario1.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 2: Missing extension",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario2.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 3: Missing node",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario3.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 4: Vendored patch missing",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario4.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 5: Missing TTFB knob",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario5.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 6: Abort in retryablePatterns",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario6.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 7: Version mismatch",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario7.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 8a: Missing version marker",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario8a.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 8b: Invalid version marker",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario8b.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 9: Invalid package.json version read",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario9.log"
+    },
+    {
+      "kind": "command-output",
+      "label": "Scenario 10: Identical files",
+      "path": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario10.log"
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "Normal case: extension present, node available, patch needs to be applied",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario1.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Missing extension (package.json absent)",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario2.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Missing node",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario3.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Vendored patch missing",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario4.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Vendored patch lacks TTFB environment knob/default",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario5.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Vendored patch includes 'aborted' in retryablePatterns",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario6.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Version mismatch (installed version not 0.0.1)",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario7.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Vendored version marker missing",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario8a.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Vendored version marker invalid (wrong version)",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario8b.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Failed to read version from package.json (invalid JSON)",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario9.log",
+      "reason": "N/A"
+    },
+    {
+      "name": "Vendored patch and installed index.js identical",
+      "result": "pass",
+      "live": true,
+      "evidence": "/home/phillias/.no-mistakes/evidence/01M56BDWH18MSXV41417QC7ET2/scenario10.log",
+      "reason": "N/A"
+    }
+  ],
+  "verdict": "go"
+}
