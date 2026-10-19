@@ -156,6 +156,14 @@ ci_timeout: "168h"
 # without converging; the trusted changed-path command and instructions make
 # 15m sufficient while still leaving ample headroom for the bounded evidence
 # turn.
+# (2026-10-13) test_agent_timeout 15m -> 30m (no-mistakes finding, agent-driven): CFOS
+# fork run 01M4VXZC8WJFXRV625JK2VN82E test drive cut at 15m while ACTIVELY working
+# (55 outputs, last output 9s before the cut). CFOS has no bounded Test contract like
+# dotfiles — the agent runs the package suite + build + evidence transcript, which
+# took >15m in the v1 run too (two pi invocations). Dotfiles keeps its bounded 15m-
+# sufficient script; this restores the 30m working budget for repos without a Test
+# contract. The test-agent-timeout finding itself recommends raising the budget when
+# drives are cut while producing.
 # (2026-10-18) review_agent_timeout 45m -> 60m (captain, option 1 of 3):
 # three consecutive reviews of the fleet-serve-agent-prompt PR burned the
 # flat 45m budget — burn 1 cut an actively-producing reviewer 2s after
@@ -180,10 +188,14 @@ ci_timeout: "168h"
 # blocked on a stable no-mistakes release carrying
 # review_agent_working_timeout (the v1.84.0 strict unmarshal still
 # rejects the field).
+# (2026-10-19, rebase resolution) upstream #452 raised review 40m -> 60m
+# (adopted); test_agent_timeout stays 30m per the 2026-10-13 captain-approved
+# finding for repos without a bounded Test contract (firstmate/CFOS lane) —
+# #452's "test keeps 15m" was authored before this unpushed 30m was visible.
 # Edit THIS template, not ~/.no-mistakes/config.yaml — the */30
 # chezmoi-axi sync cron overwrites the live file from here.
 review_agent_timeout: "60m"
-test_agent_timeout: "15m"
+test_agent_timeout: "30m"
 
 # AXI status marks a running/fixing step as quiet when no step log or native
 # agent lifecycle activity has appeared for this long. This is observability
