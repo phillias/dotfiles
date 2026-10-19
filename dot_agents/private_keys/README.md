@@ -134,37 +134,12 @@ Design invariants:
 
 ### Exported env-shaped keys (pattern-driven loader)
 
-<!-- 2026-10-19: load-keys.sh exports every env-shaped key from the vault; the
-     old local _keys_map and fallback no longer exist. The vault secret
-     META_KEY exports as META_KEY. Muse's native login is unaffected: it reads
-     META_API_KEY, not META_KEY. -->
-
-```
-.groq-key            GROQ_API_KEY            .cloudflare-key   CLOUDFLARE_API_KEY
-.cerebras-key        CEREBRAS_API_KEY        .command-code-key COMMAND_CODE_API_KEY
-.mistral-key         MISTRAL_API_KEY         .hf-key           HF_API_KEY
-.sambanova-key       SAMBANOVA_API_KEY       .nvidia-key       NVIDIA_API_KEY
-.google-key          GOOGLE_API_KEY          .baseten-key      BASETEN_API_KEY
-.together-key        TOGETHER_API_KEY        .intern-key       INTERN_API_KEY
-.zen-key             OPENCODE_ZEN_API_KEY    .openrouter-key   OPENROUTER_API_KEY
-.zai-key             ZHIPU_API_KEY           .exa-key          EXA_API_KEY
-.vercel-gateway-key  AI_GATEWAY_API_KEY
-.google-client-id    GOOGLE_CLIENT_ID        .composio-key     COMPOSIO_API_KEY
-.google-client-secret GOOGLE_CLIENT_SECRET   .qwen-key         QWEN_API_KEY
-.fireworks-key       FIREWORKS_API_KEY       .synthetic-key    SYNTHETIC_API_KEY
-                                             .kenari-key       KENARI_API_KEY
-                                             .seevio-key       SEEVIO_API_KEY
-.atlascloud-key      ATLASCLOUD_API_KEY      .deepinfra-key    DEEPINFRA_API_KEY
-.abliteration-key    ABLITERATION_API_KEY    .friendli-key     FRIENDLI_API_KEY
-.tsfm-key            TSFM_API_KEY            .greptile-key     GREPTILE_API_KEY
-.treg-token          TREG_TOKEN              .treg-key         TREG_KEY
-.cf-ai-gw            CF_AI_GATEWAY_TOKEN     .vercel-token     VERCEL_TOKEN
-.agnes-key           AGNES_API_KEY           .opencode-key     OPENCODE_API_KEY
-.phoenixgrove-key    PHOENIXGROVE_API_KEY    META_KEY          META_KEY
-.phoenixgrove-coding-plan-key PHOENIXGROVE_CODING_PLAN_API_KEY
-.telegram-key        TELEGRAM_API_KEY        .github-models-key GITHUB_MODELS_API_KEY
-.anthropic-key       ANTHROPIC_API_KEY       .cloudflare-deploy-token CLOUDFLARE_API_TOKEN
-```
+As of 2026-10-19, `load-keys.sh` exports every vault secret whose key matches
+`^[A-Z][A-Z0-9_]+$`, except keys beginning with `BWS_` or `BYS_`. It exports
+the vault key as-is; it does not translate dotfile names into environment
+variable names. For example, `.groq-key` is not env-shaped and is not exported,
+while the vault secret `META_KEY` is exported as `META_KEY`. Muse's native login
+is unaffected: it reads `META_API_KEY`, not `META_KEY`.
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
 sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
