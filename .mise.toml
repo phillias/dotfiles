@@ -3,3 +3,4 @@
 # this override applies only inside this working tree.
 [tools]
 node = "22"
+yamllint = "latest"
