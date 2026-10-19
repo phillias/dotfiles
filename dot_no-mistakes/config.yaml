@@ -10,7 +10,13 @@
 ---
 # Use acp:<target> to run an optional user-installed acpx target, for example
 # acp:gemini
-agent: pi
+# (2026-10-19) Native Codex subscription replaces pi for pipeline work:
+# Astra/high reviews; Luna/medium handles test, document, lint, and fixes.
+# Both passed bounded JSON probes; Luna also passed a two-file tool/schema
+# probe. Deep-review reliability remains subject to post-merge validation.
+# Vercel Claude now returns 402 (insufficient credit); CF Claude still 404s.
+# The historical pi routing and convergence notes below remain as evidence.
+agent: codex
 
 # opencode review step is broken for thinking-mode models: the adapter sends a
 # tool_choice that providers reject ("Thinking mode does not support this
@@ -67,6 +73,9 @@ agent: pi
 # → vercel/router/pr-reviewer rung-2 → CfAiGw/dynamic/pr-reviewer (NIM)
 # terminal rung, last resort only
 agent_config:
+  codex:
+    model: gpt-5.6-luna
+    effort: medium
   pi:
     # (2026-09-21; rung names refreshed 2026-09-28) Ride pi's fallback/gate
     # chain instead of directly pinning CfAiGw/dynamic/pr-gate; its
@@ -78,12 +87,22 @@ agent_config:
 # Ladder owner: ~/.pi/fallback-chains.json (`review` key); rendered in
 # provider-catalog references/ROUTING_TOPOLOGY.md flow-2.
 # Budget-ranked, JSON discipline first, stronger model pool than gate.
+# (2026-10-19) Overrides the historical fallback/review selection above.
+# Every independent review/rereview stays on the frontier GPT tier; fixes
+# explicitly use the cheaper subscription model, including later rounds.
 review_agents:
   reviewer:
-    agent: pi
+    agent: codex
     # Separate chain from gate; review needs the stronger pr-reviewer ladder
     # but must not bypass the Vercel fallback rung.
-    model: fallback/review
+    # (2026-10-19) The preceding pi-chain note is historical: the native
+    # subscription reviewer has no gateway fallback or weaker review rung.
+    model: gpt-6-astra
+    effort: high
+  fixer:
+    agent: codex
+    model: gpt-5.6-luna
+    effort: medium
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and
 # ACP aliases
@@ -171,6 +190,10 @@ ci_timeout: "168h"
 # The slow NIM lane stays as fallback rungs only.
 # Edit THIS template, not ~/.no-mistakes/config.yaml — the */30
 # chezmoi-axi sync cron overwrites the live file from here.
+# (2026-10-19) Keep the proven 40m review / 15m test caps during the
+# native-lane trial. Stable upstream is still 1.84.0; working-cap fields
+# remain unsupported. The approved 30m stall / 60m working split is deferred
+# until a stable release provides it (first introduced in prerelease 1.87.0).
 review_agent_timeout: "40m"
 test_agent_timeout: "15m"
 
@@ -244,6 +267,21 @@ log_level: info
 # hallucinations. Appending text does not pin a model, so it does not touch
 # the agent_config/review_agents model separation noted 2026-09-14 above.
 agent_args_override:
+  # (2026-10-19) Select native ChatGPT auth explicitly and keep interactive
+  # user profiles/hooks out of pipeline invocations. Auth still comes from
+  # CODEX_HOME; both exec and exec resume support --ignore-user-config.
+  # Model/effort stay in profiles above so reviewer overrides win. Project
+  # context suppression remains the trusted per-repo setting, as before.
+  codex:
+    - "--ignore-user-config"
+    - "-c"
+    - 'model_provider="openai"'
+    - "-c"
+    - 'forced_login_method="chatgpt"'
+    # Catalog max for both selected models is 872K (default 272K is below
+    # the historical 349K gate prompt). Allow the advertised larger window.
+    - "-c"
+    - "model_context_window=872000"
   pi:
     - "--append-system-prompt"
     - >-
