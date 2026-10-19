@@ -2,41 +2,45 @@
 # Shared key loader for ~/.agents/keys/default profile
 # Sourced by .zshenv (all zsh shells) and .profile (login shells)
 #
-# bws-first loading (2026-10 retirement): the migrated profile keys
-# (38 exported here, 12 consumed by explicit reference only, 6
-# decommissioned) are read from
-# the Bitwarden Secrets Manager project named like the default profile.
+# Pattern-driven vault export (2026-10 leak remediation): one `bws secret
+# list` call fetches every secret in the Bitwarden Secrets Manager project
+# named like the default profile, and the loader exports EVERY secret whose
+# key already looks like an environment variable name: ^[A-Z][A-Z0-9_]+$.
+# Adding a vault secret with an env-shaped key auto-exports it on the next
+# source; decommissioning a key is a vault-side action. There is no
+# hardcoded map and no per-key knowledge in this file (58 env-var-named
+# keys today).
+#
+# Excluded namespaces (never exported here):
+#   BWS_* — selfhost compose stack secrets, consumed by docker-compose and
+#     bws-axi at deploy time; never shell-exported.
+#   BYS_* — typo-guard: BYS_MYLAR3_HTTP_PASSWORD is a known typo'd selfhost
+#     secret (MYLAR3 with a Y) guarded here until the vault key is
+#     corrected; its pirate-box consumer is untouched by this loader.
+#
 # Auth comes from the per-profile .bws-token file (always re-read so a
 # stale ambient token in a long-running shell cannot shadow the current
-# fleet-managed token); the bws binary is resolved from BWS_BIN, PATH,
-# or the mise latest alias. All bws calls use -t (access-token flag) to
-# bypass the state-file session cache, which can go stale and shadow a
-# valid token. One `bws secret list` call fetches every secret in the
-# project; the project id is cached at ~/.agents/keys/.bws-project-
-# <profile>.id (not a secret).
+# fleet-managed token); the bws binary is resolved from BWS_BIN, PATH, or
+# the mise latest alias. All bws calls use -t (access-token flag) to bypass
+# the state-file session cache, which can go stale and shadow a valid
+# token. The project id is cached at ~/.agents/keys/.bws-project-<profile>.id
+# (not a secret).
 #
-# Fallback (loud by design): when bws cannot supply a key — daemon
-# unreachable, token missing/broken, or the secret absent — the loader
-# age-decrypts the retired local copy at
-# ~/.agents/keys/retired/<profile>/<key>.age (via `chezmoi decrypt`, or
-# `age -d` with the chezmoi identity) and exports that instead. EVERY
-# fallback appends one greppable line naming the exact key to
-# ~/.agents/keys/.bws-fallback.log AND writes the same line to stderr:
-#   BWS-FALLBACK <utc> profile=<p> key=<name> var=<VAR> reason=<why>
-# A retired file that exists but will not decrypt logs the louder
-#   BWS-FALLBACK-FAILED <utc> profile=<p> key=<name> var=<VAR> reason=retired-decrypt-failed
-# The fallback is a tripwire that shows where references still need
-# re-pointing to bws; it is never silent cover. Secret values are never
-# printed or logged — key names and events only. A node whose bws token
-# is missing or broken still boots a working environment via fallback.
+# Fail-soft, no local fallback: values from the retired .age files are
+# BURNED (2026-10-15 leak) — this loader never reads, decrypts, or
+# exports them. When bws is unreachable and no fresh cache exists, the
+# loader prints ONE warning naming the reason and leaves the vault env
+# vars unset; shells still boot. A fresh (<= 5 min) fetch cache at
+# ~/.agents/keys/.bws-cache-<profile>.json is honored without contacting
+# bws. A fetch that yields zero env-shaped keys is an anomaly and also
+# warns once. In every failure mode, at most ONE warning line per source.
 #
-# Recovery with age alone (no bws): age -d -i ~/.config/chezmoi/key.txt
-# ~/.agents/keys/retired/<profile>/<key>.age
+# Secret values are never printed or logged — key names and events only.
 #
-# Non-migrated keys are untouched: .bws-token (bws auth, stays on disk)
-# and .google-tasks-token (binary/non-UTF-8, stays chezmoi age-encrypted
-# in the active profile dir). Keys with no exported var (11 of 54) are
-# recovery-only via age -d; consumers re-point to bws directly.
+# Non-migrated keys are untouched: .bws-token (bws auth, stays on disk) and
+# .google-tasks-token (binary/non-UTF-8, stays chezmoi age-encrypted in the
+# active profile dir). Dot-prefixed and other non-env-shaped vault keys are
+# not exported by this loader; consumers reference them via bws directly.
 
 # Load keys from the default profile only (~/.agents/keys/default symlink)
 # Non-default profiles are selected by consumers via explicit path, never auto-loaded.
@@ -44,13 +48,13 @@ _default_profile="$(readlink "$HOME/.agents/keys/default" 2>/dev/null)" || _defa
 if [ -z "$_default_profile" ] || [ ! -d "$HOME/.agents/keys/$_default_profile" ]; then
     # Silently skip if no default profile - non-interactive shells must not emit noise
     unset _default_profile
+    # Dual-mode file: return when sourced, exit when executed.
+    # shellcheck disable=SC2317
     return 0 2>/dev/null || exit 0
 fi
 
 _keys_home="$HOME/.agents/keys"
 _keys_profile_dir="$_keys_home/$_default_profile"
-_keys_retired_dir="$_keys_home/retired/$_default_profile"
-_keys_fallback_log="$_keys_home/.bws-fallback.log"
 
 # Bitwarden Secrets Manager — machine-account token (never locks, unlike
 # bw/bws login sessions). The token file stays live on disk post-retirement.
@@ -116,6 +120,7 @@ _keys_bws_project_id() {
     if [ -z "$_pid" ]; then
         # -t bypasses the bws state-file session cache (state can go stale
         # and shadow a valid token; verified against bws 2.1.0).
+        # shellcheck disable=SC2016  # jq program: $p is a jq variable, not shell
         _pid="$(timeout 5 "$BWS_BIN" -t "$BWS_ACCESS_TOKEN" project list -o json 2>/dev/null \
             | "$JQ_BIN" -r --arg p "$_default_profile" '.[] | select(.name==$p) | .id' 2>/dev/null \
             | head -n 1)"
@@ -185,142 +190,39 @@ else
     fi
 fi
 
-# --- fallback decrypt ---------------------------------------------------------
-_keys_decrypt() {
-    # $1 = retired .age file; prints decrypted value. chezmoi decrypt first
-    # (uses the configured chezmoi age identity), then raw age as backstop.
-    if command -v chezmoi >/dev/null 2>&1; then
-        chezmoi decrypt "$1" 2>/dev/null && return 0
-    elif [ -x "$HOME/.local/share/mise/installs/chezmoi/latest/chezmoi" ]; then
-        "$HOME/.local/share/mise/installs/chezmoi/latest/chezmoi" decrypt "$1" 2>/dev/null && return 0
-    fi
-    if [ -r "$HOME/.config/chezmoi/key.txt" ]; then
-        if [ -x "$HOME/.local/share/mise/installs/age/latest/age/age" ]; then
-            "$HOME/.local/share/mise/installs/age/latest/age/age" -d -i "$HOME/.config/chezmoi/key.txt" "$1" 2>/dev/null
-        elif command -v age >/dev/null 2>&1; then
-            age -d -i "$HOME/.config/chezmoi/key.txt" "$1" 2>/dev/null
-        fi
-    fi
-}
-
-_keys_log_fallback() {
-    # $1 = key name, $2 = env var, $3 = reason. Loud and greppable; values
-    # are never logged. Appends to the durable log and mirrors to stderr.
-    _lf_line="BWS-FALLBACK $(date -u +%Y-%m-%dT%H:%M:%SZ) profile=$_default_profile key=$1 var=$2 reason=$3"
-    printf '%s\n' "$_lf_line" >> "$_keys_fallback_log" 2>/dev/null || true
-    printf '%s\n' "$_lf_line" >&2
-    unset _lf_line
-}
-
-# _keys_emit <key-name> <ENV_VAR>: export from bws, else from the retired
-# age file with a loud fallback log line, else skip (graceful degradation).
-_keys_emit() {
-    _ke_name="$1"
-    _ke_var="$2"
-    _ke_val=""
-    if [ -n "$_keys_bws_json" ]; then
-        _ke_val="$(printf '%s' "$_keys_bws_json" \
-            | "$JQ_BIN" -r --arg k "$_ke_name" '.[] | select(.key==$k) | .value' 2>/dev/null \
-            | head -n 1)"
-        if [ -n "$_ke_val" ]; then
-            export "$_ke_var=$_ke_val"
-            unset _ke_name _ke_var _ke_val
-            return 0
-        fi
-        _ke_reason="bws-secret-missing"
+# --- pattern export loop ------------------------------------------------------
+# One jq pass turns the fetched JSON array into `export NAME='value'` lines
+# for every env-shaped key, excluding the BWS_/BYS_ namespaces (see header).
+#   - key names are filtered to the strict charset ^[A-Z][A-Z0-9_]+$, so no
+#     shell metacharacter can appear in an exported name;
+#   - values are @sh-quoted by jq, so the generated text is fully quoted;
+#   - eval therefore only ever sees a controlled, well-quoted export list.
+# eval runs in the sourcing shell (no pipeline subshell) so exports land
+# here; multi-line values are preserved and the last entry wins on
+# duplicate keys.
+if [ -n "$_keys_bws_json" ]; then
+    _keys_export_lines="$(printf '%s' "$_keys_bws_json" \
+        | "$JQ_BIN" -r '.[]
+            | select((.key // "") | test("^[A-Z][A-Z0-9_]+$"))
+            | select(((.key | startswith("BWS_")) or (.key | startswith("BYS_"))) | not)
+            | "export \(.key)=\((.value // "") | @sh)"' 2>/dev/null)"
+    if [ -n "$_keys_export_lines" ]; then
+        # Safe by construction: key names are charset-validated
+        # (^[A-Z][A-Z0-9_]+$) and values are jq-@sh-quoted above, so eval
+        # only sees a controlled, fully-quoted export list.
+        eval "$_keys_export_lines"
     else
-        _ke_reason="$_keys_bws_reason"
+        # Healthy fetch that exports nothing: fail loud once, never silent.
+        printf '%s\n' "load-keys: bws fetch carried no env-shaped keys (reason=no-env-shaped-keys); nothing exported" >&2
     fi
-    if [ -r "$_keys_retired_dir/$_ke_name.age" ]; then
-        _ke_val="$(_keys_decrypt "$_keys_retired_dir/$_ke_name.age")"
-        if [ -n "$_ke_val" ]; then
-            export "$_ke_var=$_ke_val"
-            _keys_log_fallback "$_ke_name" "$_ke_var" "$_ke_reason"
-            unset _ke_name _ke_var _ke_val _ke_reason
-            return 0
-        fi
-        # Retired file exists but will not decrypt (missing identity/age/
-        # chezmoi or corrupt file) — louder than a fallback, never silent.
-        _lf_line="BWS-FALLBACK-FAILED $(date -u +%Y-%m-%dT%H:%M:%SZ) profile=$_default_profile key=$_ke_name var=$_ke_var reason=retired-decrypt-failed"
-        printf '%s\n' "$_lf_line" >> "$_keys_fallback_log" 2>/dev/null || true
-        printf '%s\n' "$_lf_line" >&2
-        unset _lf_line
-    fi
-    unset _ke_name _ke_var _ke_val _ke_reason
-    return 0
-}
+else
+    # Fail-soft: bws unavailable and no fresh cache. ONE warning; vault env
+    # vars stay unset. The retired .age fallback is GONE — those values are
+    # burned and must never resurface through this loader.
+    printf '%s\n' "load-keys: bws unavailable (reason=${_keys_bws_reason:-bws-unavailable}); vault env keys not exported; no local fallback exists" >&2
+fi
 
-# --- exported key map (default profile) --------------------------------------
-# Format per line: <key-file-name>:<ENV_VAR> (38 exported keys; 12 migrated
-# keys have no exported var and stay recovery-only via age -d).
-# Decommissioned 2026-10-15: .google-client-id/.google-client-secret (vault
-# entries dropped; Google Workspace disengaged from hermes/opencode-serve).
-# Decommissioned 2026-10-17: .google-vision-key (GOOGLE_VISION_API_KEY had
-# zero consumers; vault entry dropped).
-# Decommissioned 2026-10-18: .zen-key (OPENCODE_ZEN_API_KEY; zen surface
-# is served by .opencode-key; vault entry dropped) and .treg-token
-# (TREG_TOKEN; duplicate of .treg-key; vault entry dropped).
-# Renamed 2026-10-18: .composio-key -> .composio-platform-key (the
-# platform/SDK key; the For You ck_ key lives in .composio-for-you-key,
-# reference-only, no exported var).
-# Decommissioned 2026-10-18: .greptile-key (GREPTILE_API_KEY had zero
-# dotfiles consumers; the rotated vault entry moved to the masculinecache
-# bws project, which the default-profile loader never reads).
-_keys_map='
-.cf-ai-gw:CF_AI_GATEWAY_TOKEN
-.treg-key:TREG_KEY
-.abliteration-key:ABLITERATION_API_KEY
-.tsfm-key:TSFM_API_KEY
-.phoenixgrove-coding-plan-key:PHOENIXGROVE_CODING_PLAN_API_KEY
-.groq-key:GROQ_API_KEY
-.cerebras-key:CEREBRAS_API_KEY
-.mistral-key:MISTRAL_API_KEY
-.sambanova-key:SAMBANOVA_API_KEY
-.google-key:GOOGLE_API_KEY
-.together-key:TOGETHER_API_KEY
-.cloudflare-key:CLOUDFLARE_API_KEY
-.cloudflare-deploy-token:CLOUDFLARE_API_TOKEN
-.command-code-key:COMMAND_CODE_API_KEY
-.hf-key:HF_API_KEY
-.nvidia-key:NVIDIA_API_KEY
-.baseten-key:BASETEN_API_KEY
-.intern-key:INTERN_API_KEY
-.openrouter-key:OPENROUTER_API_KEY
-.zai-key:ZHIPU_API_KEY
-.fireworks-key:FIREWORKS_API_KEY
-.exa-key:EXA_API_KEY
-.composio-platform-key:COMPOSIO_API_KEY
-.deepinfra-key:DEEPINFRA_API_KEY
-.friendli-key:FRIENDLI_API_KEY
-.qwen-key:QWEN_API_KEY
-.kenari-key:KENARI_API_KEY
-.synthetic-key:SYNTHETIC_API_KEY
-.seevio-key:SEEVIO_API_KEY
-.atlascloud-key:ATLASCLOUD_API_KEY
-.vercel-gateway-key:AI_GATEWAY_API_KEY
-.vercel-token:VERCEL_TOKEN
-.agnes-key:AGNES_API_KEY
-.opencode-key:OPENCODE_API_KEY
-.phoenixgrove-key:PHOENIXGROVE_API_KEY
-.telegram-key:TELEGRAM_API_KEY
-.github-models-key:GITHUB_MODELS_API_KEY
-.anthropic-key:ANTHROPIC_API_KEY
-'
-
-# Iterate the "name:var" map in the CURRENT shell (heredoc stdin, not a
-# pipeline subshell) so the exports land in the sourcing shell.
-while IFS= read -r _keys_line; do
-    case "$_keys_line" in
-        .*:*)
-            _keys_emit "${_keys_line%%:*}" "${_keys_line#*:}"
-            ;;
-    esac
-done <<EOF
-$_keys_map
-EOF
-
-unset _default_profile _keys_home _keys_profile_dir _keys_retired_dir \
-    _keys_fallback_log _keys_bws_json _keys_bws_reason _keys_bws_cache \
-    _keys_map _keys_line
-unset -f _keys_bws_project_id _keys_bws_fetch _keys_decrypt \
-    _keys_log_fallback _keys_emit 2>/dev/null || true
+unset _default_profile _keys_home _keys_profile_dir \
+    _keys_bws_json _keys_bws_reason _keys_bws_cache _keys_export_lines \
+    _keys_jq_candidate
+unset -f _keys_bws_project_id _keys_bws_fetch 2>/dev/null || true
