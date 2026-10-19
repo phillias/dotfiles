@@ -169,9 +169,20 @@ ci_timeout: "168h"
 # review in 31.8m (1906338ms) including its fix round; the budget is
 # that claude run time's ceiling rounded up to the next 10 minutes.
 # The slow NIM lane stays as fallback rungs only.
+# (2026-10-19) review_agent_timeout 40m -> 60m (captain): four
+# validation runs on a sibling task's branch
+# (fm/leak-remediation-endgame-c2) were killed at the 45m/40m caps
+# ("reached its absolute wall-clock limit after 40m0s") while the
+# review agent was healthy and actively producing output each time —
+# the caps, not the code under review, were the infrastructure
+# problem. Restores the 2026-10-08 60m ceiling for reviews only;
+# test keeps 15m. The 30m-stall/60m-working split-cap design stays
+# blocked on a stable no-mistakes release carrying
+# review_agent_working_timeout (the v1.84.0 strict unmarshal still
+# rejects the field).
 # Edit THIS template, not ~/.no-mistakes/config.yaml — the */30
 # chezmoi-axi sync cron overwrites the live file from here.
-review_agent_timeout: "40m"
+review_agent_timeout: "60m"
 test_agent_timeout: "15m"
 
 # AXI status marks a running/fixing step as quiet when no step log or native
@@ -247,7 +258,15 @@ agent_args_override:
   pi:
     - "--append-system-prompt"
     - >-
-      Convergence contract: complete your assigned step, then produce your final output exactly once and stop. Never re-derive, re-verify, re-emit, or append commentary to output you already produced; a completed result is final and re-emitting it is a failure, not diligence. Emit JSON as raw text without markdown code fences, with no prose after it. When you are about to double-check your own finished output, stop instead: the pipeline validates it and will ask again if it is wrong. Always end your turn with a final assistant message containing your output or a one-paragraph summary of what you did; never end on an empty or tool-only message.
+      Convergence contract: complete your assigned step, then produce your final
+      output exactly once and stop. Never re-derive, re-verify, re-emit, or
+      append commentary to output you already produced; a completed result is
+      final and re-emitting it is a failure, not diligence. Emit JSON as raw
+      text without markdown code fences, with no prose after it. When you are
+      about to double-check your own finished output, stop instead: the pipeline
+      validates it and will ask again if it is wrong. Always end your turn with
+      a final assistant message containing your output or a one-paragraph
+      summary of what you did; never end on an empty or tool-only message.
 
 # Maximum follow-up auto-fix attempts per step (0 = disabled after the initial
 # pass)

@@ -15,7 +15,7 @@ Deep log: axi-memory `f-2026-10-04-no-mistakes-test-step-json-failures-stal`.
 | `~/.no-mistakes/config.yaml` | `agent: pi`                                                                                             | every pipeline step runs on the pi harness                                                                                                                                                                                                                                                                          |
 |                              | `agent_config.pi.model: fallback/gate`                                                                  | generic steps (test, document, lint, rebase-repair, PR drafting, CI repair) ride pi's `fallback/gate` chain                                                                                                                                                                                                         |
 |                              | `review_agents.reviewer.model: fallback/review`                                                         | reviewer/fixer steps ride the separate `fallback/review` chain                                                                                                                                                                                                                                                      |
-|                              | `review_agent_timeout: 40m` / `test_agent_timeout: 25m`                                                 | budget kills (step_quiet_warning 10m is observability only)                                                                                                                                                                                                                                                         |
+|                              | `review_agent_timeout: 60m` / `test_agent_timeout: 15m`                                                 | budget kills (step_quiet_warning 10m is observability only)                                                                                                                                                                                                                                                         |
 |                              | `auto_fix.{rebase,lint,test,document,ci}: 3`, `auto_fix.review: 0`                                      | follow-up fix attempts per step                                                                                                                                                                                                                                                                                     |
 |                              | `session_reuse: true`                                                                                   | one durable fixer session per run across review-fix turns (claude/codex)                                                                                                                                                                                                                                            |
 |                              | `intent.enabled: false`                                                                                 | user-intent extraction disabled fleet-wide (2026-09-02 incident)                                                                                                                                                                                                                                                    |
@@ -101,12 +101,14 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)
 
-`review_agent_timeout`: **40m**; `test_agent_timeout`: **25m** (both were 60m
-until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m → 60m → 40m across
-2026-10-10 to 2026-10-18 as the pi convergence contract landed and the v1.84.0 config
-marshal rejected the working-cap knob; test raised 12m → 25m after two
+`review_agent_timeout`: **60m**; `test_agent_timeout`: **15m** (both were 60m
+until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m → 60m → 40m → 60m
+across 2026-10-10 to 2026-10-19 as the pi convergence contract landed, the v1.84.0 config
+marshal rejected the working-cap knob, and four actively-producing review runs were
+killed at the 45m/40m caps; test moved 12m → 25m after two
 glm-headed test drives were cut at 12m while actively working — provider
-slowness under the free lane, not stalls). Observed legitimate durations: review 36s–434s;
+slowness under the free lane, not stalls — then 25m → 15m once the bounded
+Test contract landed 2026-10-12). Observed legitimate durations: review 36s–434s;
 test 2.5m–7.7m clean, worst ~19.8m with two fix rounds.
 `step_quiet_warning: 10m` is observability only — it never cancels; the budget
 kill is the stop.
