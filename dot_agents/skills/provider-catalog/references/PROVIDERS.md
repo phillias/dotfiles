@@ -486,7 +486,7 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   the route's success edge passes the error body verbatim, killing runs
   exactly when the pool is loaded.   2026-10-19 status: **no-mistakes generic steps use the codex harness with model `gpt-5.6-luna` at medium effort; the review agent uses the codex harness with model `gpt-6-astra` at high effort.**
   (The pi fallback/chains are no longer used for review; the review agent now uses the codex harness with a direct model.) The route serves
-  gate, probe, and external traffic.
+  probes and external traffic.
   Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
   free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
   plus the insert — verified via versions API
@@ -520,22 +520,7 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   Worker chain position: middle layer of
   `opencode-go → CfAiGw/dynamic/antigravity → vmc/antigravity`
   (opencode-go rides the harness directly, never a route node).
-- `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
-  rides `CfAiGw/dynamic/pr-reviewer` via `review_agents.reviewer`
-  (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14;
-  head swapped 2026-09-28 version `469aa66c` after the NIM EOL of
-  `deepseek-v4-flash-0731`, captain-ordered):
-  `custom-nvidia-nim/z-ai/glm-5.3` (free head, probe 200/5s) →
-  `custom-nvidia-nim/deepseek-ai/deepseek-v4.1-flash` (successor lane,
-  overloaded at deploy time) →
-  `openrouter/openai/gpt-5.6-luna` →
-  `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
-  `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
-  the separate `fallback/review` chain (pi fallback-chains.json); current order
-  (captain 2026-10-10): `openrouter-direct/z-ai/glm-5.2` PAYG head →
-  `opencode-go-gw/deepseek-v4-flash` rung-1 → `vercel/router/pr-reviewer`
-  rung-2 → `CfAiGw/dynamic/pr-reviewer` terminal rung (last resort only;
-  account-independent of CF/zen budget walls).
+- `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the review agent uses the codex harness directly with model `gpt-6-astra` at high effort (see `dot_no-mistakes/config.yaml`). The `pr-reviewer` route on the opencode gateway is still defined but is not used by no-mistakes review.
 - Harness family routes (2026-09-19 build, captain directive — house models
   per family across providers, openrouter PAYG + plan lanes). 2026-09-20
   less-wrong pass (captain order, route versions deployed and probed 200):

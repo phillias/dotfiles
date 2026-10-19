@@ -28,14 +28,14 @@ pi-internal cache — configuration lives in the two named files.
 
 ## Chain → route → model flowcharts
 
-### gate chain (generic + test steps)
+### historical gate chain
 
 ```mermaid
 flowchart LR
     step["no-mistakes step<br/>(test/document/lint/rebase/PR/CI)"] --> c1["opencode-go-gw<br/>deepseek-v4-flash<br/>proven-JSON head (captain 2026-10-10)"] --> c2["CfAiGw/dynamic/pr-gate<br/>(12-rung ladder:<br/>GOAT/PGS GLM head →<br/>NIM nemotron → tail)"] --> c3["vercel/router/pr-gate<br/>(vmc/pr-gate 7-rung)"] --> done[done]
 ```
 
-### review chain (reviewer/fixer steps)
+### historical review chain
 
 ```mermaid
 flowchart LR
@@ -99,8 +99,8 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)
 
-`review_agent_timeout`: **60m**; `test_agent_timeout`: **15m** (both were 60m
-until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m → 60m → 40m → 60m
+`review_agent_timeout`: **40m**; `test_agent_timeout`: **15m** (both were 60m
+until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m → 60m → 40m
 across 2026-10-10 to 2026-10-19 as the pi convergence contract landed, the v1.84.0 config
 marshal rejected the working-cap knob, and four actively-producing review runs were
 killed at the 45m/40m caps; test moved 12m → 25m after two

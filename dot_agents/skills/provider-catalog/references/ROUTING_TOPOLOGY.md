@@ -186,7 +186,7 @@ flowchart TD
     codex -->|"review_agents.reviewer.model:<br/>gpt-6-astra"| model2["gpt-6-astra (reviewer)"]
     codex -->|"review_agents.fixer.model:<br/>gpt-5.6-luna"| model3["gpt-5.6-luna (fixer)"]
 ```
-The codex harness uses direct model specification in the configuration. The global agent is set to codex with model gpt-5.6-luna for generic steps, while reviewer and fixer override to gpt-6-astra and gpt-5.6-luna respectively. The model resolution is handled by the codex configuration file (~/.codex/config.toml) and its fallback profiles.
+The codex harness uses direct model specification in the no-mistakes configuration. The global agent is set to codex with model gpt-5.6-luna for generic steps, while reviewer and fixer override to gpt-6-astra and gpt-5.6-luna respectively. Pipeline invocations use native ChatGPT authentication with user Codex configuration ignored.
 
 Step-role details, model verdicts, and budgets: `references/d1/NO_MISTAKES_MODELS.md`.
 
