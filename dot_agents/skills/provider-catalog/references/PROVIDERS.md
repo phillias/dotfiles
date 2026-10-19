@@ -12,7 +12,7 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** the pi model pin lives in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`) — `agent_config.pi.model` for all steps and `review_agents.reviewer.model` for the reviewer pin the `fallback/gate` / `fallback/review` chains respectively. As of the 2026-10-10 captain re-head, gate leads with `opencode-go-gw/deepseek-v4-flash` (the proven-JSON safety net: 1M context, session-gated subsidized pool, riding pi via the opencode-go-gw static header) and review leads with the PAYG `openrouter-direct/z-ai/glm-5.2`, falling to `opencode-go-gw/deepseek-v4-flash` and then the router rungs; the NIM `CfAiGw/dynamic/pr-reviewer` route is the review terminal rung, last resort only. Owner: `~/.pi/fallback-chains.json`, rendered in `references/ROUTING_TOPOLOGY.md` flow-2. The pin moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which silently nullified the reviewer pin and left review riding `fallback/gate` → dynamic/pr-gate (see the config's prose). The `fallback/gate` 1M ladder string in `~/.pi/fallback-chains.json` remains for manual pi use; pi-fallback-provider semantics there: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
+**no-mistakes configuration (deterministic):** the agent is set to `codex` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`). Generic steps use `agent_config.codex.model: gpt-5.6-luna`, while the reviewer uses `review_agents.reviewer.model: gpt-6-astra` and the fixer uses `review_agents.fixer.model: gpt-5.6-luna`. All models are direct models, not chains. The pin for the reviewer model moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which previously nullified the reviewer pin (see the config's prose).
 
 ## Cheapest-qualified-lane dispatch rule (spawn selection)
 
@@ -484,8 +484,8 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `91701376`** after three no-mistakes run deaths): openrouter free lanes
   200-wrap Nvidia-pool overload errors ("Service temporarily overloaded") —
   the route's success edge passes the error body verbatim, killing runs
-  exactly when the pool is loaded.   2026-09-20 status: **no-mistakes gate agent rides this route via pi
-  `fallback/gate` chain** (dotfiles PR #343 restored the chain, previously
+  exactly when the pool is loaded.   2026-09-20 status: **no-mistakes generic steps use the codex harness with model `gpt-5.6-luna`**
+  (dotfiles PR #343 restored the chain, previously
   pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
   200-wrapped overload errors 6/6 nights runs). Review agent rides the
   separate `fallback/review` chain (order owned by

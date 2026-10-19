@@ -12,7 +12,7 @@ Deep log: axi-memory `f-2026-10-04-no-mistakes-test-step-json-failures-stal`.
 
 | File                         | Owner tags                                                                                              | Effect                                                                                                                                                                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `~/.no-mistakes/config.yaml` | `agent: pi`                                                                                             | every pipeline step runs on the pi harness                                                                                                                                                                                                                                                                          |
+| `~/.no-mistakes/config.yaml` | `agent: codex`                                                                                          | every pipeline step runs on the codex harness                                                                                                                                                                                                                                                                       |
 |                              | `agent_config.pi.model: fallback/gate`                                                                  | generic steps (test, document, lint, rebase-repair, PR drafting, CI repair) ride pi's `fallback/gate` chain                                                                                                                                                                                                         |
 |                              | `review_agents.reviewer.model: fallback/review`                                                         | reviewer/fixer steps ride the separate `fallback/review` chain                                                                                                                                                                                                                                                      |
 |                              | `review_agent_timeout: 40m` / `test_agent_timeout: 25m`                                                 | budget kills (step_quiet_warning 10m is observability only)                                                                                                                                                                                                                                                         |
@@ -83,12 +83,12 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 
 - `review_agents` (global config) covers reviewer/fixer roles ONLY — it does
   NOT select the agents for test, document, lint, or CI repair.
-- Test steps ride the global `agent` on `agent_config.<harness>.model` — the
-  gate chain. There is no `test_agents` role (verified against no-mistakes
-  v1.84.0 global-config reference).
-- Reviewer/fixer ride `fallback/review`.
+- Test steps ride the global `agent` on `agent_config.codex.model` — the
+  model is set to `gpt-5.6-luna` (direct model, not a chain).
+- Reviewer rides `review_agents.reviewer` with model `gpt-6-astra` (direct model);
+  fixer rides `review_agents.fixer` with model `gpt-5.6-luna` (direct model).
 - Generic steps (document, lint, rebase-repair, PR drafting) ride the global
-  agent with the generic `agent_timeout`.
+  agent with the generic `agent_timeout` (model `gpt-5.6-luna`).
 
 ## Verdict table (2026-10-04 forensics)
 

@@ -177,31 +177,16 @@ seed before the daily refresh discovers it.
 `vmc/<slug>`, `router` answers ONLY to `router/<slug>`. Pi chains use the
 correct `vercel/router/*` form.
 
-## Flow 2 — no-mistakes → pi → chains → routes → models
+## Flow 2 — no-mistakes → codex → model → ...
 
 ```mermaid
 flowchart TD
-    nm["no-mistakes axi run<br/>intent → rebase → review → test → document → lint → push → pr → ci"] -->|"~/.no-mistakes/config.yaml<br/>agent: pi"| pi[pi harness]
-    pi -->|"agent_config.pi.model:<br/>fallback/gate — generic + test steps"| GATE["~/.pi/fallback-chains.json gate"]
-    pi -->|"review_agents.reviewer.model:<br/>fallback/review — reviewer/fixer only"| REV["~/.pi/fallback-chains.json review"]
-    pi -->|"~/.pi/agent/settings.json<br/>defaultModel: fallback/default"| DEF["~/.pi/fallback-chains.json default"]
-    GATE -->|"rung 1"| ogw["opencode-go-gw<br/>deepseek-v4-flash<br/>(head, captain 2026-10-10)"]
-    GATE -->|"rung 2"| pg["CfAiGw/dynamic/pr-gate<br/>(ladder above)"]
-    GATE -->|"rung 3"| vpg["vercel/router/pr-gate<br/>(ladder above)"]
-    REV -->|"rung 1"| payg["openrouter-direct<br/>z-ai/glm-5.2 PAYG<br/>(head, captain 2026-10-10)"]
-    REV -->|"rung 2"| ogw
-    REV -->|"rung 3"| vprr["vercel/router/pr-reviewer<br/>(ladder above)"]
-    REV -->|"rung 4"| prr["CfAiGw/dynamic/pr-reviewer<br/>(ladder above) — terminal rung, last resort"]
-    DEF -->|"rung 1"| tui["CfAiGw/dynamic/TUI<br/>(ladder above)"]
-    DEF -->|"rung 2"| vtui["vercel/router/tui<br/>(ladder above)"]
+    nm["no-mistakes axi run<br/>intent → rebase → review → test → document → lint → push → pr → ci"] -->|"~/.no-mistakes/config.yaml<br/>agent: codex"| codex[codex harness]
+    codex -->|"agent_config.codex.model:<br/>gpt-5.6-luna"| model1["gpt-5.6-luna (generic steps: test, document, lint, CI)"]
+    codex -->|"review_agents.reviewer.model:<br/>gpt-6-astra"| model2["gpt-6-astra (reviewer)"]
+    codex -->|"review_agents.fixer.model:<br/>gpt-5.6-luna"| model3["gpt-5.6-luna (fixer)"]
 ```
-pi chain heads re-pointed 2026-10-10 (captain): gate → `opencode-go-gw/deepseek-v4-flash`
-head (proven-JSON lane, after three document-step no-text strikes under the
-nemotron-effective `CfAiGw/dynamic/pr-gate` head — now rung-2); review →
-`openrouter-direct/z-ai/glm-5.2` PAYG head (after three NIM free-lane
-cancellations), with the NIM `CfAiGw/dynamic/pr-reviewer` route demoted to the
-terminal rung, last resort only. The chain arrays themselves are owned by
-`private_dot_pi/fallback-chains.json`.
+The codex harness uses direct model specification in the configuration. The global agent is set to codex with model gpt-5.6-luna for generic steps, while reviewer and fixer override to gpt-6-astra and gpt-5.6-luna respectively. The model resolution is handled by the codex configuration file (~/.codex/config.toml) and its fallback profiles.
 
 Step-role details, model verdicts, and budgets: `references/d1/NO_MISTAKES_MODELS.md`.
 
