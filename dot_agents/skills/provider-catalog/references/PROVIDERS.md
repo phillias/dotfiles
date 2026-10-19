@@ -485,15 +485,7 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   200-wrap Nvidia-pool overload errors ("Service temporarily overloaded") —
   the route's success edge passes the error body verbatim, killing runs
   exactly when the pool is loaded.   2026-10-19 status: **no-mistakes generic steps use the codex harness with model `gpt-5.6-luna` at medium effort; the review agent uses the codex harness with model `gpt-6-astra` at high effort.**
-  (dotfiles PR #343 restored the chain, previously
-  pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
-  200-wrapped overload errors 6/6 nights runs). Review agent rides the
-  separate `fallback/review` chain (order owned by
-  `private_dot_pi/fallback-chains.json`, rendered in
-  `references/ROUTING_TOPOLOGY.md` flow-2 — 2026-10-10 captain re-head:
-  `openrouter-direct/z-ai/glm-5.2` PAYG head → `opencode-go-gw/deepseek-v4-flash`
-  → `vercel/router/pr-reviewer` → `CfAiGw/dynamic/pr-reviewer` terminal rung,
-  last resort only). The route serves
+  (The pi fallback/chains are no longer used for review; the review agent now uses the codex harness with a direct model.) The reviewer and fixer steps use the codex harness with models gpt-6-astra and gpt-5.6-luna respectively, at high and medium effort. The route serves
   gate, probe, and external traffic.
   Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
   free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
