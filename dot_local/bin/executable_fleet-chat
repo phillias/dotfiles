@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+# fleet-chat — small, secret-safe adapter for the local opencode serve mesh.
+set -euo pipefail
+
+BIN_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
+DESCRIPTION="Send and inspect agent messages across the localhost opencode serve mesh"
+AUTH_ENV="${OPENCODE_SERVE_ENV:-${HOME}/.config/opencode/opencode-serve.env}"
+MAX_TEXT=1200
+
+declare -A NODE_URL=(
+  [local]="http://127.0.0.1:4096"
+  [primary55522]="http://127.0.0.1:14001"
+  [kali]="http://127.0.0.1:14002"
+  [kalione]="http://127.0.0.1:14003"
+)
+
+die() { echo "error: $1"; [[ -n "${2:-}" ]] && echo "help: $2"; exit "${3:-1}"; }
+usage() {
+  cat <<'EOF'
+fleet-chat — send and inspect agent messages across the localhost opencode serve mesh
+
+Usage:
+  fleet-chat list-nodes
+  fleet-chat send --node <name> --prompt <text> [--session <id>]
+  fleet-chat latest --node <name> --session <id> [--full]
+
+send creates a session when --session is omitted and returns its id plus the
+machine-readable prompt admission. It does not delete sessions.
+EOF
+}
+
+json_value() { jq -rn --arg value "$1" '$value|@json'; }
+truncate_text() {
+  local text="$1" length=${#1}
+  if (( length > MAX_TEXT )); then
+    printf '%s' "${text:0:MAX_TEXT}"
+    printf '\n... (truncated, %d chars total)' "$length"
+  else
+    printf '%s' "$text"
+  fi
+}
+
+load_auth() {
+  [[ -r "$AUTH_ENV" ]] || \
+    die "auth environment file is not readable: ${AUTH_ENV/#$HOME/~}" "Fix the serve EnvironmentFile or set OPENCODE_SERVE_ENV"
+  local mode
+  mode=$(stat -c '%a' "$AUTH_ENV" 2>/dev/null || true)
+  [[ "$mode" == 600 ]] || die "auth environment file must be mode 0600" "chmod 600 ${AUTH_ENV/#$HOME/~}"
+  set -a
+  # shellcheck disable=SC1090
+  . "$AUTH_ENV"
+  set +a
+  [[ -n "${OPENCODE_SERVER_USERNAME:-}" && -n "${OPENCODE_SERVER_PASSWORD:-}" ]] || \
+    die "serve credentials are missing from the auth environment file"
+  USERNAME="$OPENCODE_SERVER_USERNAME"
+  PASSWORD="$OPENCODE_SERVER_PASSWORD"
+  unset OPENCODE_SERVER_USERNAME OPENCODE_SERVER_PASSWORD
+}
+
+request() {
+  local method="$1" url="$2" body="${3:-}" output="$4" status
+  if [[ -n "$body" ]]; then
+    status=$(curl --silent --show-error --config <(printf 'user = "%s:%s"\n' "$USERNAME" "$PASSWORD") \
+      --connect-timeout 5 --max-time 30 -X "$method" -H 'content-type: application/json' \
+      --data-binary "$body" -o "$output" -w '%{http_code}' "$url" 2>/dev/null) || status="000"
+  else
+    status=$(curl --silent --show-error --config <(printf 'user = "%s:%s"\n' "$USERNAME" "$PASSWORD") \
+      --connect-timeout 5 --max-time 30 -X "$method" -o "$output" -w '%{http_code}' "$url" 2>/dev/null) || status="000"
+  fi
+  printf '%s' "$status"
+}
+
+node_url() {
+  local node="$1"
+  [[ -n "${NODE_URL[$node]+yes}" ]] || die "unknown node: $node" "Valid nodes: local, primary55522, kali, kalione" 2
+  printf '%s' "${NODE_URL[$node]}"
+}
+
+list_nodes() {
+  local node url body status version
+  load_auth
+  printf 'bin: %s\ndescription: %s\n' "${BIN_PATH/#$HOME/~}" "$DESCRIPTION"
+  echo "nodes[${#NODE_URL[@]}]{name,url,status,version}:"
+  for node in local primary55522 kali kalione; do
+    url="${NODE_URL[$node]}"
+    body=$(mktemp)
+    status=$(request GET "$url/global/health" '' "$body")
+    if [[ "$status" == 2* ]]; then
+      version=$(jq -r '.version // "unknown"' "$body" 2>/dev/null || printf 'unknown')
+      printf '  %s,%s,healthy,%s\n' "$node" "$url" "$version"
+    else
+      printf '  %s,%s,unreachable,%s\n' "$node" "$url" "$status"
+    fi
+    rm -f "$body"
+  done
+}
+
+send_prompt() {
+  local node='' prompt='' session='' url body create_body status response admitted
+  while (($#)); do
+    case "$1" in
+      --node) [[ $# -ge 2 ]] || die "--node requires a value"; node="$2"; shift 2;;
+      --prompt) [[ $# -ge 2 ]] || die "--prompt requires a value"; prompt="$2"; shift 2;;
+      --session) [[ $# -ge 2 ]] || die "--session requires a value"; session="$2"; shift 2;;
+      --help) usage; return;;
+      -*) die "unknown flag: $1" "Valid flags: --node, --prompt, --session" 2;;
+      *) die "unexpected argument: $1" "Use fleet-chat send --help" 2;;
+    esac
+  done
+  [[ -n "$node" ]] || die "--node is required" "fleet-chat send --node <name> --prompt <text>"
+  [[ -n "$prompt" ]] || die "--prompt is required" "fleet-chat send --node <name> --prompt <text>"
+  url=$(node_url "$node"); load_auth
+  if [[ -z "$session" ]]; then
+    create_body='{}'
+    response=$(mktemp); status=$(request POST "$url/api/session" "$create_body" "$response")
+    [[ "$status" == 2* ]] || die "session creation failed (HTTP $status)" "Check fleet-chat list-nodes"
+    session=$(jq -r '.data.id // .data.sessionID // .id // .sessionID // empty' "$response" 2>/dev/null || true)
+    [[ -n "$session" ]] || die "session creation returned no session id"
+    rm -f "$response"
+  fi
+  body=$(jq -cn --arg text "$prompt" '{prompt:{text:$text}}')
+  response=$(mktemp); status=$(request POST "$url/api/session/$session/prompt" "$body" "$response")
+  [[ "$status" == 2* ]] || die "prompt admission failed (HTTP $status)" "Check the node and session id"
+  admitted=$(jq -r '.data.admittedSeq // .admittedSeq // empty' "$response" 2>/dev/null || true)
+  echo "message:"
+  printf '  node: %s\n  session: %s\n  status: admitted\n' "$node" "$session"
+  [[ -n "$admitted" ]] && printf '  admittedSeq: %s\n' "$admitted"
+  echo "  admission: $(jq -c '.' "$response" 2>/dev/null || printf '{}')"
+  rm -f "$response"
+}
+
+latest() {
+  local node='' session='' full=0 url body status text message_id
+  while (($#)); do
+    case "$1" in
+      --node) [[ $# -ge 2 ]] || die "--node requires a value"; node="$2"; shift 2;;
+      --session) [[ $# -ge 2 ]] || die "--session requires a value"; session="$2"; shift 2;;
+      --full) full=1; shift;;
+      --help) usage; return;;
+      -*) die "unknown flag: $1" "Valid flags: --node, --session, --full" 2;;
+      *) die "unexpected argument: $1" "Use fleet-chat latest --help" 2;;
+    esac
+  done
+  [[ -n "$node" && -n "$session" ]] || \
+    die "--node and --session are required" "fleet-chat latest --node <name> --session <id>"
+  url=$(node_url "$node"); load_auth; body=$(mktemp)
+  status=$(request GET "$url/api/session/$session/message" '' "$body")
+  [[ "$status" == 2* ]] || die "message read failed (HTTP $status)" "Check the node and session id"
+  message_id=$(jq -r '[.data[]? | select(.type == "assistant")] | last | .id // empty' "$body" 2>/dev/null || true)
+  if [[ -z "$message_id" ]]; then
+    echo "messages: 0 assistant responses found"
+    rm -f "$body"
+    return 0
+  fi
+  text=$(jq -r --arg id "$message_id" '[.data[]? | select(.id == $id) | .content[]? | select(.type == "text") | .text // empty] | join("\n")' \
+    "$body")
+  echo "response:"
+  printf '  node: %s\n  session: %s\n  message: %s\n' "$node" "$session" "$message_id"
+  if (( full )); then
+    printf '  text: %s\n' "$(json_value "$text")"
+  else
+    printf '  text: %s\n' "$(json_value "$(truncate_text "$text")")"
+  fi
+  rm -f "$body"
+}
+
+command="${1:-list-nodes}"; [[ $# -gt 0 ]] && shift
+case "$command" in
+  list-nodes) (($# == 0)) || die "list-nodes takes no arguments" "fleet-chat list-nodes" 2; list_nodes;;
+  send) send_prompt "$@";;
+  latest) latest "$@";;
+  --help|-h) usage;;
+  *) die "unknown command: $command" "Valid commands: list-nodes, send, latest" 2;;
+esac
