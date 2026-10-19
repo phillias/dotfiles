@@ -484,7 +484,7 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `91701376`** after three no-mistakes run deaths): openrouter free lanes
   200-wrap Nvidia-pool overload errors ("Service temporarily overloaded") —
   the route's success edge passes the error body verbatim, killing runs
-  exactly when the pool is loaded.   2026-09-20 status: **no-mistakes generic steps use the codex harness with model `gpt-5.6-luna`**
+  exactly when the pool is loaded.   2026-10-19 status: **no-mistakes generic steps use the codex harness with model `gpt-5.6-luna` at medium effort; the review agent uses the codex harness with model `gpt-6-astra` at high effort.**
   (dotfiles PR #343 restored the chain, previously
   pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
   200-wrapped overload errors 6/6 nights runs). Review agent rides the
