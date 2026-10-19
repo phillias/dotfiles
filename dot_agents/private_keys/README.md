@@ -132,7 +132,12 @@ Design invariants:
    directly at start (see `tokentelemetry.service`, the no-mistakes daemon
    drop-in, `glm-free-lane-scan.sh`) — local age never depends on bws reachability.
 
-### Exported key → env var mapping (45 keys)
+### Exported env-shaped keys (pattern-driven loader)
+
+<!-- 2026-10-19: load-keys.sh exports every env-shaped key from the vault; the
+     old local _keys_map and fallback no longer exist. The vault secret
+     META_KEY exports as META_KEY. Muse's native login is unaffected: it reads
+     META_API_KEY, not META_KEY. -->
 
 ```
 .groq-key            GROQ_API_KEY            .cloudflare-key   CLOUDFLARE_API_KEY
@@ -155,7 +160,7 @@ Design invariants:
 .treg-token          TREG_TOKEN              .treg-key         TREG_KEY
 .cf-ai-gw            CF_AI_GATEWAY_TOKEN     .vercel-token     VERCEL_TOKEN
 .agnes-key           AGNES_API_KEY           .opencode-key     OPENCODE_API_KEY
-.phoenixgrove-key    PHOENIXGROVE_API_KEY    .meta-key         META_API_KEY
+.phoenixgrove-key    PHOENIXGROVE_API_KEY    META_KEY          META_KEY
 .phoenixgrove-coding-plan-key PHOENIXGROVE_CODING_PLAN_API_KEY
 .telegram-key        TELEGRAM_API_KEY        .github-models-key GITHUB_MODELS_API_KEY
 .anthropic-key       ANTHROPIC_API_KEY       .cloudflare-deploy-token CLOUDFLARE_API_TOKEN
