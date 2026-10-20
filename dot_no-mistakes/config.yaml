@@ -233,7 +233,10 @@ ci_timeout: "168h"
 # (2026-10-19, rebase resolution over #453/#454/#455) local 90m (captain,
 # same day, after the agy drift-refresh review ran 40m+) supersedes the
 # 60m line above; codex agent switch kept as merged. Test stays 30m.
-review_agent_timeout: "90m"
+# (2026-10-19, later) review_agent_timeout 90m -> 120m (captain): the
+# selfhost BWS rework's validation review must run through unhindered;
+# 120m is the outer bound he named. Reviews only; test stays 30m.
+review_agent_timeout: "120m"
 test_agent_timeout: "30m"
 
 # AXI status marks a running/fixing step as quiet when no step log or native
