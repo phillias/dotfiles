@@ -1,3 +1,8 @@
+---
+name: masculinecache-repo-identity
+description: How GitHub and npm operations on masculinecache/* repos route to the masculinecache account, never ambient phillias credentials. Load whenever pushing, PRing, releasing, or calling gh/gh-axi on a masculinecache/* repo, on a 403 or auth error there, or before wiring a new masc repo into the fleet.
+---
+
 # masculinecache repo identity
 
 How every GitHub and npm operation on `masculinecache/*` repositories routes to the **masculinecache** account and never the global phillias personal credentials. Load this skill whenever touching a `masculinecache/*` repo (push, PR, release, gh/gh-axi API calls), when a gh call fails with a 403/auth error there, or before wiring a new masc repo into the fleet.
