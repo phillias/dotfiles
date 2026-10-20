@@ -25,19 +25,22 @@ agent: codex
 #
 # Gate reserves the model's full output budget for structured review output, so
 # a 1M-context model is required for large diffs.
-# (2026-09-21; rung names refreshed 2026-09-28) Gate rides pi's
+# Historical pi routing (no longer selected by no-mistakes): (2026-09-21;
+# rung names refreshed 2026-09-28) Gate rides pi's
 # `fallback/gate` chain in ~/.pi/fallback-chains.json: opencode-go-gw
 # deepseek head → CfAiGw/dynamic/pr-gate → vercel/router/pr-gate
 # (exact ladder: provider-catalog references/ROUTING_TOPOLOGY.md flow-2).
 # The CF dynamic route stays mid-chain while Vercel remains the outage
 # fallthrough.
-# (2026-10-04) longcat-2.5-preview-free removed from the gate chain entirely:
+# (Historical pi routing, 2026-10-04) longcat-2.5-preview-free removed from
+# the gate chain entirely:
 # as gate/test chain head it emitted unparseable findings JSON twice in one
 # day (bare ${...} template outside strings; JSON object followed by
 # trailing prose) and stalled silently to the 60m budget kill. deepseek-v4-flash
 # (same rung the review chain leads with) produced clean structured output
 # all day with zero stalls. Gate and review now share the deepseek head.
-# (2026-10-04, later) glm-5.2:free positioned at the HEAD of both gate and
+# (Historical pi routing, 2026-10-04, later) glm-5.2:free positioned at the
+# HEAD of both gate and
 # review chains (captain directive: every JSON-bearing stage — reviewer, test,
 # document, lint, rebase-repair, PR-drafting, CI-fix — should try the free
 # glm lane first; deepseek-v4-flash stays rung-2 as the proven-JSON safety
@@ -49,7 +52,8 @@ agent: codex
 # historically rate-limit aggressively (2026-09-01 trio removed after run
 # deaths; 2026-09-15 inkling 403 funnel + TM logging) — 429/403 invocations
 # DO fall through to deepseek rung-2, which is the designed safety net.
-# (2026-09-13) The pi args no longer carry the `-nc` (no repo context files)
+# (Historical pi routing, 2026-09-13) The pi args no longer carry the `-nc`
+# (no repo context files)
 # harness flag. That flag only stops AGENTS.md /
 # CLAUDE.md discovery and loading — plugins and skills are separate surfaces it
 # never suppressed (verified against pi 0.84.2 --help) — so it was a poor
@@ -57,13 +61,15 @@ agent: codex
 # trusted per-repo `disable_project_settings` option: the dotfiles repo sets it
 # true (suppressed posture; its apply target is the entire home directory), all
 # other repos leave it unset/false so repo AGENTS.md review guides flow.
-# (2026-09-14) The global pi model pin moved from agent_args_override into
+# (Historical pi routing, 2026-09-14) The global pi model pin moved from
+# agent_args_override into
 # agent_config: agent_args_override native argv always wins over the same
 # knob, which silently nullified review_agents.reviewer.model (review steps
 # kept riding fallback/gate head dynamic/pr-gate). Profile-level model lets
 # review_agents.reviewer.model win for review steps only; all other steps
 # keep the profile pin.
-# (2026-10-10, captain) pi chain heads (see ~/.pi/fallback-chains.json):
+# (Historical pi routing, 2026-10-10, captain) pi chain heads (see
+# ~/.pi/fallback-chains.json):
 # gate = opencode-go-gw/deepseek-v4-flash head (proven-JSON lane,
 # captain-approved fallback after three document no-text strikes under the
 # nemotron-headed pr-gate) → CfAiGw/dynamic/pr-gate rung-1 (nemotron answers
@@ -77,26 +83,24 @@ agent_config:
     model: gpt-5.6-luna
     effort: medium
   pi:
-    # (2026-09-21; rung names refreshed 2026-09-28) Ride pi's fallback/gate
+    # Historical pi setting (2026-09-21; rung names refreshed 2026-09-28):
+    # ride pi's fallback/gate
     # chain instead of directly pinning CfAiGw/dynamic/pr-gate; its
     # vercel/router/pr-gate rung is the CF-gateway-outage fallthrough.
     model: fallback/gate
 
-# Review rides the separate `fallback/review` chain so the second-set-of-eyes
-# exercises the pr-reviewer ladder rather than the cheaper gate ladder.
+# Historical pi review setting: review rode the separate `fallback/review`
+# chain so the second-set-of-eyes exercised the pr-reviewer ladder rather than
+# the cheaper gate ladder. The 2026-10-19 codex selection below supersedes it.
 # Ladder owner: ~/.pi/fallback-chains.json (`review` key); rendered in
 # provider-catalog references/ROUTING_TOPOLOGY.md flow-2.
-# Budget-ranked, JSON discipline first, stronger model pool than gate.
 # (2026-10-19) Overrides the historical fallback/review selection above.
 # Every independent review/rereview stays on the frontier GPT tier; fixes
 # explicitly use the cheaper subscription model, including later rounds.
 review_agents:
   reviewer:
     agent: codex
-    # Separate chain from gate; review needs the stronger pr-reviewer ladder
-    # but must not bypass the Vercel fallback rung.
-    # (2026-10-19) The preceding pi-chain note is historical: the native
-    # subscription reviewer has no gateway fallback or weaker review rung.
+    # Native subscription reviewer: no gateway fallback or weaker review rung.
     model: gpt-6-astra
     effort: high
   fixer:
@@ -175,14 +179,15 @@ ci_timeout: "168h"
 # without converging; the trusted changed-path command and instructions make
 # 15m sufficient while still leaving ample headroom for the bounded evidence
 # turn.
-# (2026-10-13) test_agent_timeout 15m -> 30m (no-mistakes finding, agent-driven): CFOS
-# fork run 01M4VXZC8WJFXRV625JK2VN82E test drive cut at 15m while ACTIVELY working
-# (55 outputs, last output 9s before the cut). CFOS has no bounded Test contract like
-# dotfiles — the agent runs the package suite + build + evidence transcript, which
-# took >15m in the v1 run too (two pi invocations). Dotfiles keeps its bounded 15m-
-# sufficient script; this restores the 30m working budget for repos without a Test
-# contract. The test-agent-timeout finding itself recommends raising the budget when
-# drives are cut while producing.
+# (2026-10-13) test_agent_timeout 15m -> 30m (no-mistakes finding,
+# agent-driven): CFOS fork run 01M4VXZC8WJFXRV625JK2VN82E test drive cut at
+# 15m while ACTIVELY working (55 outputs, last output 9s before the cut). CFOS
+# has no bounded Test contract like dotfiles — the agent runs the package suite
+# + build + evidence transcript, which took >15m in the v1 run too (two pi
+# invocations). Dotfiles keeps its bounded 15m-sufficient script; this restores
+# the 30m working budget for repos without a Test contract. The
+# test-agent-timeout finding itself recommends raising the budget when drives
+# are cut while producing.
 # (2026-10-18) review_agent_timeout 45m -> 60m (captain, option 1 of 3):
 # three consecutive reviews of the fleet-serve-agent-prompt PR burned the
 # flat 45m budget — burn 1 cut an actively-producing reviewer 2s after
