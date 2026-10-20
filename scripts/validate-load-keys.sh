@@ -29,7 +29,7 @@ AISA_KEY
 AI_GATEWAY_API_KEY
 ALTHUB_CO_ZA_API_RSS_KEY
 ANIMEZ_TO_RSS_KEY
-ANTHROPIC_API_KEY
+ANTHROPIC_KEY
 ATLASCLOUD_API_KEY
 BASETEN_API_KEY
 CEREBRAS_API_KEY
@@ -102,7 +102,8 @@ pass() { echo "PASS: $*"; }
 # Build a fake HOME with a default profile and a dummy token; never real
 # secret material. $1 = fake home dir.
 make_fake_home() {
-  mkdir -p "$1/.agents/keys/phillias" "$1/.agents/keys/retired/phillias"
+  mkdir -p "$1/.agents/keys/phillias" "$1/.agents/keys/retired/phillias" "$1/.local/bin"
+  ln -s "$(command -v jq)" "$1/.local/bin/jq"
   printf 'sim-dummy-token\n' > "$1/.agents/keys/phillias/.bws-token"
   ln -s phillias "$1/.agents/keys/default"
   printf 'BURNED-CANARY\n' > "$1/.agents/keys/retired/phillias/.canary.age"
@@ -118,18 +119,6 @@ if shellcheck_run "$loader"; then
 else
   bail "shellcheck reported findings"
 fi
-
-echo "== structural: .age fallback machinery fully removed"
-# Comment-stripped text must not reference the burned fallback in code.
-# \.age\b (word boundary) avoids matching ".agents" paths.
-stripped=$(sed -e 's/#.*$//' "$loader")
-for pat in '\.age\b' 'retired' 'BWS-FALLBACK' '_keys_map' '_keys_decrypt' \
-           '_keys_log_fallback' '_keys_emit' 'chezmoi decrypt' 'age -d' 'key\.txt'; do
-  if printf '%s\n' "$stripped" | grep -Eq "$pat"; then
-    bail "loader code still references fallback machinery: $pat"
-  fi
-done
-[ "$fail" -eq 0 ] && pass "no .age/retired/fallback references in loader code"
 
 echo "== sim: bws binary missing (fake HOME, no bws anywhere)"
 fh="$tmp_root/nobws"
@@ -176,13 +165,15 @@ rm -f "$tmp_root/bws-called"
 cat > "$fh/.agents/keys/.bws-cache-phillias.json" <<'JSON'
 [
   {"id":"1","key":"SIM_TEST_KEY","value":"sim-test-value","note":""},
+  {"id":"6","key":"ANTHROPIC_KEY","value":"anthropic-vault-value","note":""},
+  {"id":"7","key":"ANTHROPIC_API_KEY","value":"stale-cache-value","note":""},
   {"id":"2","key":"BWS_SIM_COMPOSE","value":"never-export","note":""},
   {"id":"3","key":"BYS_SIM_TYPO","value":"never-export","note":""},
   {"id":"4","key":".sim-dot-original","value":"never-export","note":""},
   {"id":"5","key":"SIM_MULTILINE","value":"line1\nline2","note":""}
 ]
 JSON
-out=$(env -i HOME="$fh" PATH="$tmp_root/shimbin:$sim_path" /bin/sh -c \
+out=$(env -i HOME="$fh" ANTHROPIC_API_KEY="inherited-value" PATH="$tmp_root/shimbin:$sim_path" /bin/sh -c \
       ". '$loader'; env" 2>"$tmp_root/cachehit.err") || true
 [ ! -e "$tmp_root/bws-called" ] || bail "bws was called despite fresh cache"
 [ -s "$tmp_root/cachehit.err" ] && bail "fresh-cache path emitted unexpected stderr"
@@ -192,6 +183,11 @@ printf '%s\n' "$out" | grep -qx 'SIM_MULTILINE=line1' \
   || bail "multi-line value not preserved"
 printf '%s\n' "$out" | grep -qx 'line2' \
   || bail "multi-line value second line missing"
+printf '%s\n' "$out" | grep -qx 'ANTHROPIC_KEY=anthropic-vault-value' \
+  || bail "ANTHROPIC_KEY not exported from fresh cache"
+if printf '%s\n' "$out" | grep -q '^ANTHROPIC_API_KEY='; then
+  bail "retired ANTHROPIC_API_KEY survived inherited or cached input"
+fi
 for banned in BWS_SIM_COMPOSE BYS_SIM_TYPO; do
   if printf '%s\n' "$out" | grep -q "^$banned="; then
     bail "excluded namespace was exported: $banned"

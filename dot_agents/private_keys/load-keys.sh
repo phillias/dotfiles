@@ -42,6 +42,10 @@
 # active profile dir). Dot-prefixed and other non-env-shaped vault keys are
 # not exported by this loader; consumers reference them via bws directly.
 
+# Clear the retired name before any early return so inherited sessions cannot
+# override Claude's native login (2026-10-19).
+unset ANTHROPIC_API_KEY
+
 # Load keys from the default profile only (~/.agents/keys/default symlink)
 # Non-default profiles are selected by consumers via explicit path, never auto-loaded.
 _default_profile="$(readlink "$HOME/.agents/keys/default" 2>/dev/null)" || _default_profile=""
@@ -221,6 +225,10 @@ else
     # burned and must never resurface through this loader.
     printf '%s\n' "load-keys: bws unavailable (reason=${_keys_bws_reason:-bws-unavailable}); vault env keys not exported; no local fallback exists" >&2
 fi
+
+# Clear the retired name after every export attempt so stale cache entries
+# cannot override Claude's native login.
+unset ANTHROPIC_API_KEY
 
 unset _default_profile _keys_home _keys_profile_dir \
     _keys_bws_json _keys_bws_reason _keys_bws_cache _keys_export_lines \
