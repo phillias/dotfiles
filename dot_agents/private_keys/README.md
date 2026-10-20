@@ -128,9 +128,13 @@ Design invariants:
 2. Loaders are additive and idempotent: a partially provisioned node degrades
    gracefully to fewer exported vars.
 3. Non-default profiles are opt-in via explicit path, never auto-loaded.
-4. systemd units and other shell-less consumers age-decrypt the retired file
-   directly at start (see `tokentelemetry.service`, the no-mistakes daemon
-   drop-in, `glm-free-lane-scan.sh`) — local age never depends on bws reachability.
+4. systemd units and other shell-less consumers get their secrets at start,
+   through one of two patterns: age-decrypting the retired file directly
+   (see `tokentelemetry.service`, `glm-free-lane-scan.sh` — local age never
+   depends on bws reachability), or harvesting the live vault value through a
+   login shell and writing a `/run` credential file (the no-mistakes daemon
+   drop-in, `cloudflare-ddns-harvest.service` — preferred for values that
+   rotate in the vault, because retired age copies go stale after rotation).
 
 ### Exported env-shaped keys (pattern-driven loader)
 
@@ -143,6 +147,21 @@ is unaffected: it reads `META_API_KEY`, not `META_KEY`.
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
 sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
+
+`CLOUDFLARE_DDNS_API_TOKEN` (added 2026-10-19) feeds the `cloudflare-ddns`
+systemd units on cabinkali: `cloudflare-ddns-harvest.service` (root,
+sandbox-free, patterned on `nm-daemon-env-harvest.sh`) harvests it via
+`runuser -u phillias -- zsh -lc` at each start, clearing the shared five-minute
+loader cache first, and writes
+`/run/cloudflare-ddns/config.ini` (0640 root:cloudflare-ddns); both DDNS
+units then run `/usr/bin/cloudflare-ddns --config /run/cloudflare-ddns/config.ini`,
+so no token ever sits on a unit command line or in `/etc`.
+The live-host unit files are not chezmoi-managed; rotating the token is a
+bws secret update alone — the harvest re-reads the vault at each unit start,
+so no retired age copy exists or is needed.
+Zone-scoped Cloudflare tokens return 401 on `/user/tokens/verify` even when
+valid — use a `zones?name=<zone>` lookup as the liveness probe (the harvest
+script's fail-fast does exactly that).
 
 ## Repo mapping (chezmoi)
 
