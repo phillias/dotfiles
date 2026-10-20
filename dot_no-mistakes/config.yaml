@@ -16,7 +16,7 @@
 # probe. Deep-review reliability remains subject to post-merge validation.
 # Vercel Claude now returns 402 (insufficient credit); CF Claude still 404s.
 # The historical pi routing and convergence notes below remain as evidence.
-agent: codex
+agent: pi
 
 # opencode review step is broken for thinking-mode models: the adapter sends a
 # tool_choice that providers reject ("Thinking mode does not support this
