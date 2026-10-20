@@ -151,7 +151,8 @@ sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
 `CLOUDFLARE_DDNS_API_TOKEN` (added 2026-10-19) feeds the `cloudflare-ddns`
 systemd units on cabinkali: `cloudflare-ddns-harvest.service` (root,
 sandbox-free, patterned on `nm-daemon-env-harvest.sh`) harvests it via
-`runuser -u phillias -- zsh -lc` at each start and writes
+`runuser -u phillias -- zsh -lc` at each start, clearing the shared five-minute
+loader cache first, and writes
 `/run/cloudflare-ddns/config.ini` (0640 root:cloudflare-ddns); both DDNS
 units then run `/usr/bin/cloudflare-ddns --config /run/cloudflare-ddns/config.ini`,
 so no token ever sits on a unit command line or in `/etc`.

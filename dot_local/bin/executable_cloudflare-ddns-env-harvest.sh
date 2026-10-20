@@ -14,8 +14,8 @@ set -eu
 umask 077
 conf_dir=/run/cloudflare-ddns
 conf_file="$conf_dir/config.ini"
-record_name="${CLOUDFLARE_DDNS_RECORD:-*.phillias.us}"
-harvest="$(runuser -u phillias -- zsh -lc 'printf "CLOUDFLARE_DDNS_API_TOKEN=%s\n" "$CLOUDFLARE_DDNS_API_TOKEN"')"
+record_name='*.phillias.us'
+harvest="$(runuser -u phillias -- zsh -lc 'rm -f "$HOME/.agents/keys/.bws-cache-phillias.json"; printf "CLOUDFLARE_DDNS_API_TOKEN=%s\n" "$CLOUDFLARE_DDNS_API_TOKEN"')"
 token="$(printf '%s\n' "$harvest" | sed -n 's/^CLOUDFLARE_DDNS_API_TOKEN=//p')"
 if [ -z "$token" ]; then
   echo "cloudflare-ddns-env-harvest: empty harvest (load-keys.sh exported nothing - check bws)" >&2
@@ -33,7 +33,9 @@ chmod 0640 "$conf_file"
 zone="${record_name#*.}"
 code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
   "https://api.cloudflare.com/client/v4/zones?name=$zone" \
-  -H "Authorization: Bearer $token" \
+  --config - <<EOF
+header = "Authorization: Bearer $token"
+EOF
   )" || code=000
 if [ "$code" = "401" ] || [ "$code" = "403" ]; then
   echo "cloudflare-ddns-env-harvest: Cloudflare rejected token ($code)" >&2
