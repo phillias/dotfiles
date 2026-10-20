@@ -1,7 +1,8 @@
 ---
 name: pirate
 description: >
-  Runbook for the Pirate media suite at $HOME/docker/pirate/ — Stremio
+  Runbook for the Pirate media suite at
+  $HOME/firstmate/projects/pirate/ — Stremio
   (AIostreams), ARR indexers (Prowlarr/Jackett/NZB Hydra2), VPN proxies
   (Proton/Warp), ebook/audiobook services (Shelfmark/Grimmory/Storyteller),
   and Decypharr. Covers stack health assessment, architecture, per-service
@@ -12,7 +13,7 @@ compatibility: opencode
 metadata:
   stacks: pirate
   services: aios,decypharr,prowlarr,jackett,nzbhydra2,shelfmark,grimmory,storyteller,proton,warp
-  tools: docker compose,locket,sqlite3,restic
+  tools: docker compose,sqlite3,restic
   profiles: all,stremio,arrs,proxy,books
   replaces: pirate-infra-mgmt, pirate-stack
 ---
@@ -25,11 +26,11 @@ current environment using `docker` commands, and provides the
 non-discoverable knowledge: topology relationships, failure archetypes,
 triage roadmaps, and a register of known-failed troubleshooting paths.
 
-Base path: `$HOME/docker/pirate/`
+Base path: `$HOME/firstmate/projects/pirate/`
 
-For cross-stack patterns (locket-init secret injection, Godoxy reverse
-proxy, socket-proxy, OCI Vault, restic backup architecture), see the
-`docker` skill. For Godoxy-specific routing, see the `selfhost` skill.
+For cross-stack patterns (Godoxy reverse proxy, socket-proxy, OCI Vault,
+restic backup architecture), see the `docker` skill. For Godoxy-specific
+routing, see the `selfhost` skill.
 
 ---
 
@@ -102,41 +103,42 @@ docker inspect <service> -f '{{json .HostConfig.NetworkMode}}'
 The response shows either `container:<proxy>` (shares proxy's network stack)
 or `service:<proxy>` (Docker DNS through the proxy service).
 
-### 1.3 Secrets (locket-init)
+### 1.3 Secrets (vault-fed compose env)
 
-All pirate services use the **locket-init** pattern (see `docker` skill
-§2): each service has a `*-init` container that runs `locket inject` to
-render secrets into a named volume.
+Locket and the `*-init` containers are retired. Secrets flow via the
+dotfiles-managed environment and the **phillias vault**: a fresh login
+shell auto-loads the env, and docker compose passes the variables to
+each service.
 
-**Exceptions:**
-- aios uses OCI vault-init (legacy). Its secrets are
-  maintained separately, not through the locket pipeline. Do not attempt to
-  convert aios to locket-init — this is intentional.
-- warp self-registers with Cloudflare on first start and stores the
-  registration in a named volume (`warp-secrets`). It has **no init service**
-  and no vault dependencies. Never reintroduce a warp secrets-init container:
-  locket's passthrough failure policy would overwrite the live registration
-  with literal `{{ }}` placeholders, breaking the container.
+**Exception:** warp self-registers with Cloudflare on first start and
+stores the registration in a named volume (`warp-secrets`). It has no
+vault dependencies. Never reintroduce a warp secrets-init container: an
+init-rendered secrets volume would overwrite the live registration and
+break the container.
 
-**Re-initialize secrets for any service:**
+**Re-initialize / recover secrets for any service:**
+1. Open a fresh login shell — the vault-fed env auto-loads.
+2. From the project dir, recreate the service:
+   ```bash
+   docker compose up -d --force-recreate <service>
+   ```
+3. For proton, stop the proxy variant containers first, then recreate
+   proton, then start the variants (see §2 proton failed paths).
+
+**To check the env a service actually received:**
 ```bash
-docker compose run --rm <service>-init
+docker inspect <service> -f '{{json .Config.Env}}'
 ```
 
-**To check if an init ran successfully:** verify the corresponding named
-volume exists (`docker volume ls | grep <service>`) and check the init
-container's exit code in `docker compose ps --all`.
+**When a container fails with a missing or blank variable,** common
+causes:
+- The shell that started it predates the vault load → open a fresh
+  login shell and recreate
+- Variable genuinely missing → it belongs in `.env`, not in
+  `compose.yaml`
 
-**When an init container fails,** common causes:
-- `bwstoken` file missing or expired → check `~/.config/bwsh/token`
-- Template files incorrect → check `./templates/<service>/`
-- Named volume missing → init recreates it automatically on re-run
-- locket binary or backing secrets service unreachable → check the
-  locket service (see `docker` skill)
-
-Most compose environment variables live in `./.env`. Secrets are never
-committed to git. If a container fails with "variable not set" on startup,
-the missing variable likely belongs in `.env`, not in `compose.yaml`.
+Most compose environment variables live in `./.env`, fed from the
+phillias vault. Secrets are never committed to git.
 
 ### 1.4 Data Storage Patterns
 
@@ -147,8 +149,10 @@ the missing variable likely belongs in `.env`, not in `compose.yaml`.
 | SQLite DBs | Check mounts — if a `.db` file path appears, that's the DB |
 | MariaDB (grimmory) | Host database via `host.docker.internal:3306` |
 
-Config and secrets are always in named volumes. App data may be on bind
-mounts (varies per service — discover via inspect).
+Config data lives in named volumes; secrets are not stored there —
+they arrive via compose environment variables fed from the phillias
+vault (see §1.3). App data may be on bind mounts (varies per service —
+discover via inspect).
 
 ### 1.5 Startup Dependencies
 
@@ -158,9 +162,9 @@ Order matters during recovery:
    Verify: `docker exec <mariadb-container> mariadb-admin ping`
 2. **Proxy base containers** (proton, warp) must start before their chain
    variants (protonflare, protonbyparr, warpflare, warpbyparr).
-3. **aios init** needs OCI vault secrets to exist before init runs.
-4. **locket-init** containers need `locket` binary functional and the
-   backing secrets service reachable.
+3. **Secrets-bearing services** need the vault-fed env present in the
+   shell that runs compose — a fresh login shell guarantees this
+   (see §1.3).
 
 After full-stack restart: wait for base containers (proton, warp, DB) to
 report healthy before starting dependent services.
@@ -183,7 +187,6 @@ Each service follows the same format:
 
 **Red flags:**
 - Provider key errors in logs (real-debrid, etc.)
-- Init container exits non-zero
 
 **Health check:**
 ```bash
@@ -192,17 +195,18 @@ docker compose --profile stremio ps aios
 ```
 
 **Diagnosis roadmap:**
-1. Init failure → check OCI vault secrets exist and permissions
-2. Runtime errors → check `AIOS.env` for missing or expired provider keys
-3. Container not starting → verify `AIOS.env` has the required keys
+1. Provider key errors → check the live env:
+   `docker inspect aios -f '{{json .Config.Env}}'`
+2. Missing/expired key → open a fresh login shell so the vault-fed env
+   reloads (see §1.3), then verify again
 
 **Resolution paths:**
-- Expired/missing provider key → update `AIOS.env` and recreate
-- Init failure → check OCI vault — this service does NOT use locket-init
+- Expired/missing provider key → update it in the phillias vault, open a
+  fresh login shell, then
+  `docker compose --profile stremio up -d --force-recreate aios`
 
 **Failed paths:**
-- Do NOT attempt to convert aios to locket-init. It intentionally remains
-  on OCI vault-init for legacy reasons.
+- (none documented yet)
 
 ---
 
@@ -210,7 +214,6 @@ docker compose --profile stremio ps aios
 
 **Red flags:**
 - FUSE errors in logs ("Permission denied", "fusermount")
-- Init container fails (bws/locket token issue)
 - Encrypted filesystem layer not available
 
 **Health check:**
@@ -222,14 +225,15 @@ docker compose --profile arrs ps decypharr
 **Diagnosis roadmap:**
 1. FUSE errors → verify `SYS_ADMIN` capability and `/dev/fuse` device in
    the compose service definition
-2. Init failure → check `~/.config/bwsh/token` or locket connectivity
-3. Volume missing → `docker volume ls | grep decypharr` (expects 5 volumes)
+2. Volume missing → `docker volume ls | grep decypharr` (expects 5 volumes)
+3. Missing/blank secret at startup → fresh login shell + recreate (see §1.3)
 
 **Resolution paths:**
 - FUSE errors → ensure compose has `cap_add: SYS_ADMIN` and
   `devices: [/dev/fuse]`
-- Init failure → `docker compose --profile arrs run --rm decypharr-init`
-- Missing volume → init recreates it automatically
+- Missing/blank secret → fresh login shell, then
+  `docker compose --profile arrs up -d --force-recreate decypharr`
+- Missing volume → restore from backup (see §3.3)
 
 **Failed paths:**
 - Removing FUSE requirements is not possible — encrypted filesystem is
@@ -242,7 +246,6 @@ docker compose --profile arrs ps decypharr
 **Red flags:**
 - DB corruption errors on startup ("SQL logic error", migration failures)
 - Indexers not showing in UI
-- Init container fails
 
 **Health check:**
 ```bash
@@ -253,8 +256,7 @@ docker compose --profile arrs logs --tail=30 prowlarr
 
 **Diagnosis roadmap:**
 1. Startup crash → check logs for SQLite corruption messages
-2. Init failure → verify template files render correctly
-3. Indexer issues → check if prowlarr can reach indexers through its
+2. Indexer issues → check if prowlarr can reach indexers through its
    proxy layer
 
 **Resolution paths:**
@@ -265,7 +267,8 @@ docker compose --profile arrs logs --tail=30 prowlarr
   3. `docker compose --profile arrs start prowlarr`
   4. If that fails: restore from restic —
      `./restore.sh -a prowlarr -t "12h"`
-- Init failure → `docker compose --profile arrs run --rm prowlarr-init`
+- Missing/blank config value → fresh login shell (vault-fed env, see §1.3),
+  then `docker compose --profile arrs up -d --force-recreate prowlarr`
 
 **Failed paths:**
 - Do not attempt in-place SQLite repair on a corrupted DB. Always restore
@@ -277,7 +280,6 @@ docker compose --profile arrs logs --tail=30 prowlarr
 
 **Red flags:**
 - No indexers responding in UI
-- Init container fails
 - Config errors in logs
 
 **Health check:**
@@ -287,13 +289,13 @@ docker compose --profile arrs ps jackett
 ```
 
 **Diagnosis roadmap:**
-1. Init failure → check template JSON files are valid
-2. Runtime issues → verify proxy routing is correct
+1. Runtime issues → verify proxy routing is correct
    (`docker inspect jackett -f '{{json .HostConfig.NetworkMode}}'`)
-3. Config issues → template rendering may have produced invalid config
+2. Config issues → inspect the named config volume contents
 
 **Resolution paths:**
-- Init failure → `docker compose --profile arrs run --rm jackett-init`
+- Missing/blank config value → fresh login shell (see §1.3), then
+  `docker compose --profile arrs up -d --force-recreate jackett`
 - Proxy issues → check the base proxy container (proton or warp) is healthy
 
 **Failed paths:**
@@ -305,7 +307,6 @@ docker compose --profile arrs ps jackett
 
 **Red flags:**
 - Not reachable via reverse proxy
-- Init container fails
 - Proxy connectivity errors
 
 **Health check:**
@@ -315,12 +316,12 @@ docker compose --profile arrs ps nzbhydra2
 ```
 
 **Diagnosis roadmap:**
-1. Init failure → check template files
-2. Not reachable → check service is running and Godoxy config routes to it
-3. Proxy issues → verify network mode matches expected proxy chain
+1. Not reachable → check service is running and Godoxy config routes to it
+2. Proxy issues → verify network mode matches expected proxy chain
 
 **Resolution paths:**
-- Init failure → `docker compose --profile arrs run --rm nzbhydra2-init`
+- Missing/blank config value → fresh login shell (see §1.3), then
+  `docker compose --profile arrs up -d --force-recreate nzbhydra2`
 - Proxy connectivity → check Godoxy routing (see `selfhost` skill)
 
 **Failed paths:**
@@ -332,8 +333,6 @@ docker compose --profile arrs ps nzbhydra2
 
 **Red flags:**
 - Users/groups not loading
-- Init container fails
-- Two template directories: `shelfmark/` and `shelfmark-plugins/`
 
 **Health check:**
 ```bash
@@ -343,15 +342,15 @@ docker compose --profile books ps shelfmark
 **Diagnosis roadmap:**
 1. Users not loading → check `users.db` inside the `shelfmark-secrets`
    named volume
-2. Init failure → check **both** template directories exist and have valid
-   content: `ls ./templates/shelfmark/ ./templates/shelfmark-plugins/`
+2. Missing/blank config value → fresh login shell + recreate (see §1.3)
 
 **Resolution paths:**
 - Users/groups not loading → restore from hot backup:
   1. `docker compose --profile books stop shelfmark`
   2. Copy `shelfmark/users.db` back into the named volume mount path
   3. `docker compose --profile books start shelfmark`
-- Init failure → `docker compose --profile books run --rm shelfmark-init`
+- Missing/blank config value → fresh login shell, then
+  `docker compose --profile books up -d --force-recreate shelfmark`
 
 **Failed paths:**
 - (none documented yet)
@@ -407,7 +406,6 @@ curl http://localhost:6760/api/v1/healthcheck
 ### storyteller (Audiobook Server)
 
 **Red flags:**
-- Init container fails
 - DB corruption or data loss
 - Audiobooks not showing in UI
 
@@ -417,13 +415,13 @@ docker compose --profile books ps storyteller
 ```
 
 **Diagnosis roadmap:**
-1. Init failure → check template files in `./templates/storyteller/`
-2. Data missing → check the bind mount at `./storyteller/`
-3. DB issues → the SQLite DB (`storyteller.db`) is on the bind mount,
+1. Data missing → check the bind mount at `./storyteller/`
+2. DB issues → the SQLite DB (`storyteller.db`) is on the bind mount,
    not inside a named volume
 
 **Resolution paths:**
-- Init failure → `docker compose --profile books run --rm storyteller-init`
+- Missing/blank config value → fresh login shell, then
+  `docker compose --profile books up -d --force-recreate storyteller`
 - DB/data corruption → restore from restic snapshot (the data dir is on a
   bind mount, so restic captures it directly)
 - DB-specific recovery → copy `storyteller.db` hot backup from backup dir
@@ -453,8 +451,10 @@ docker logs proton | tail -10
 3. Check Proton VPN service status (external — may be an upstream outage)
 
 **Resolution paths:**
-- Auth errors → stale VPN credentials. Re-init secrets:
-  `docker compose --profile proxy run --rm proton-init`
+- Auth errors → stale VPN credentials. Open a fresh login shell so the
+  vault-fed env reloads, stop the proxy variant containers, then
+  `docker compose --profile proxy up -d --force-recreate proton`
+  — then start the variants again (see failed paths below)
 - VPN dropped but auto-reconnecting → gluetun handles this; wait 30s
 - Persistent failure → check upstream Proton VPN service status
 
@@ -495,15 +495,15 @@ curl -x socks5h://127.0.0.1:1080 https://www.cloudflare.com/cdn-cgi/trace
   `network_mode: service:warp` or `container:warp`
 
 **Failed paths:**
-- Never reintroduce a warp secrets-init (locket-init) container. Warp
-  self-registers; a locket passthrough failure would write literal `{{ }}`
-  placeholders over the live registration and break the container.
+- Never reintroduce a warp secrets-init container. Warp self-registers;
+  an init-rendered secrets volume would overwrite the live registration
+  and break the container.
 
 ---
 
 ## 3. Backup & Restore
 
-All scripts live at `$HOME/docker/pirate/`.
+All scripts live at `$HOME/firstmate/projects/pirate/`.
 
 ### 3.1 Database Backups (`db-backup.sh`)
 
@@ -575,28 +575,19 @@ docker run --rm -v pirate_<volume>:/source:ro alpine tar tzf - /source
 ```
 
 If the volume doesn't exist (was removed), the script skips it
-gracefully. Recreate with `docker compose run --rm <service>-init`.
+gracefully. Recover it from a restic snapshot with `./restore.sh`
+(see §3.3) — the retired init containers no longer recreate volumes.
 
 ---
 
 ## 4. Migration Notes
 
-See also `MIGRATION.md` in this directory for detailed migration
-procedures, OCI vault configuration, and legacy volume cleanup.
+See also `MIGRATION.md` in this directory — a historical record of the
+retired locket-init/bws-init era, kept for context only (its paths and
+procedures predate the firstmate migration). The current secret flow is
+§1.3: dotfiles + phillias vault, no init containers.
 
-### 4.1 Bind Mount → Named Volume (init-locket pattern)
-
-See `docker` skill §2 for the general cross-stack pattern. Pirate-specific
-steps:
-
-1. Create template files in `./templates/<service>/`
-2. Add `*-init` service and named volume in `compose.yaml`
-3. Update the service to use the named volume
-4. Add to the volume export loop in `restic-backup.sh`
-5. Add `docker cp` snippet to `db-backup.sh` if SQLite
-6. After validation: migrate old data and remove bind-mount paths
-
-### 4.2 Legacy Data Volumes
+### 4.1 Legacy Data Volumes
 
 Stale named volumes from earlier compose revisions:
 
@@ -629,7 +620,6 @@ check here before exploring these paths to avoid wasted effort.
 
 | Service | Failed path | Reason |
 |---------|-------------|--------|
-| aios | Converting to locket-init | Intentionally remains on OCI vault-init (legacy). Do not migrate. |
 | grimmory | Tuning HikariCP via env vars | Not supported by this container image. Requires app rebuild or external config file. |
 | grimmory | Setting DATABASE_PASSWORD in compose.yaml | Must be in `.env` — compose values don't survive `--force-recreate` during config drift. |
 | grimmory | Fixing pool exhaustion without restart | Stuck Tomcat threads cannot be cleared without container restart. No graceful drain path. |
@@ -638,3 +628,4 @@ check here before exploring these paths to avoid wasted effort.
 | proxy | Starting proxy variants before base containers | protonflare/protonbyparr need proton up first. warpflare/warpbyparr need warp up first. |
 | general | Filesystem-level copy on live SQLite DBs | Use `sqlite3 .backup` (as `db-backup.sh` does). cp on a live DB produces inconsistent snapshots. |
 | general | Removing legacy `*-data` volumes before verification | Always compare contents with replacement `*-secrets` volumes first. Data loss risk. |
+| general | Reintroducing locket/bws `*-init` containers | Retired — secrets flow via dotfiles + phillias vault into compose env (§1.3). Recover with a fresh login shell + `--force-recreate`. |
