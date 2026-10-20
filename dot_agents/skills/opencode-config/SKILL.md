@@ -1,3 +1,8 @@
+---
+name: opencode-config
+description: Architecture, decisions, and maintenance of the OpenCode config — provider stack, model catalog, fallback chains, drift pipeline, plugins, and the firstmate distro built on it. Load when editing opencode.json or fallback routing, wiring providers or keys, or debugging model routing.
+---
+
 # OpenCode Configuration Skill
 
 Purpose: architecture, decisions, and maintenance of the OpenCode config — provider stack, model catalog, fallback system, drift pipeline, per-provider gotchas, and the firstmate distro built on it.

@@ -1,3 +1,8 @@
+---
+name: mywebapp-design
+description: Design patterns, gotchas, and best practices for Go + HTMX web apps — html/template traps, Templ vs html/template, HTMX architecture, project structure, form handling, security, testing, and Docker gotchas. Load when starting a Go + HTMX project, adding pages to one, or debugging template rendering.
+---
+
 # MyWebApp Design Lessons
 
 Design patterns, gotchas, and best practices for Go + HTMX web applications. Load when starting a new web project, adding pages to an existing Go+HTMX app, or debugging template rendering issues.
