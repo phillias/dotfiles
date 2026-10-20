@@ -88,7 +88,7 @@ Offloaded rc-block consolidation note: `dot_zshenv.tmpl` and the shared loader h
 | Loader | When | Behavior |
 |---|---|---|
 | `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Reads the 45 exported migrated keys from the **bws project named like the default profile** (one `bws secret list` call; project id cached at `~/.agents/keys/.bws-project-<profile>.id`). On any bws failure, falls back per key to age-decrypting the retired file — loudly. |
-| `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Sources `load-keys.sh`, then derives gateway routing vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) from the exported values. |
+| `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Sources `load-keys.sh`, then derives gateway routing vars (`OPENAI_API_KEY`, etc.) from the exported values; clears `ANTHROPIC_API_KEY` (vault exports `ANTHROPIC_KEY`). |
 | `~/.profile` | login shells | Sources `load-keys.sh` for bash login shells and SSH sessions. |
 | `~/.zshrc` / `~/.bashrc` | interactive shells | Source `load-keys.sh` (redundant but harmless). |
 
