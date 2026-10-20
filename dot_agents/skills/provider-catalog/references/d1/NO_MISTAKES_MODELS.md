@@ -12,10 +12,8 @@ Deep log: axi-memory `f-2026-10-04-no-mistakes-test-step-json-failures-stal`.
 
 | File                         | Owner tags                                                                                              | Effect                                                                                                                                                                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `~/.no-mistakes/config.yaml` | `agent: pi`                                                                                             | every pipeline step runs on the pi harness                                                                                                                                                                                                                                                                          |
-|                              | `agent_config.pi.model: fallback/gate`                                                                  | generic steps (test, document, lint, rebase-repair, PR drafting, CI repair) ride pi's `fallback/gate` chain                                                                                                                                                                                                         |
-|                              | `review_agents.reviewer.model: fallback/review`                                                         | reviewer/fixer steps ride the separate `fallback/review` chain                                                                                                                                                                                                                                                      |
-|                              | `review_agent_timeout: 60m` / `test_agent_timeout: 15m`                                                 | budget kills (step_quiet_warning 10m is observability only)                                                                                                                                                                                                                                                         |
+| `~/.no-mistakes/config.yaml` | `agent: codex`                                                                                          | every pipeline step runs on the codex harness                                                                                                                                                                                                                                                                       |
+|                              | `review_agent_timeout: 60m` / `test_agent_timeout: 30m`                                                 | budget kills (step_quiet_warning 10m is observability only)                                                                                                                                                                                                                                                         |
 |                              | `auto_fix.{rebase,lint,test,document,ci}: 3`, `auto_fix.review: 0`                                      | follow-up fix attempts per step                                                                                                                                                                                                                                                                                     |
 |                              | `session_reuse: true`                                                                                   | one durable fixer session per run across review-fix turns (claude/codex)                                                                                                                                                                                                                                            |
 |                              | `intent.enabled: false`                                                                                 | user-intent extraction disabled fleet-wide (2026-09-02 incident)                                                                                                                                                                                                                                                    |
@@ -30,14 +28,14 @@ pi-internal cache — configuration lives in the two named files.
 
 ## Chain → route → model flowcharts
 
-### gate chain (generic + test steps)
+### historical gate chain
 
 ```mermaid
 flowchart LR
     step["no-mistakes step<br/>(test/document/lint/rebase/PR/CI)"] --> c1["opencode-go-gw<br/>deepseek-v4-flash<br/>proven-JSON head (captain 2026-10-10)"] --> c2["CfAiGw/dynamic/pr-gate<br/>(12-rung ladder:<br/>GOAT/PGS GLM head →<br/>NIM nemotron → tail)"] --> c3["vercel/router/pr-gate<br/>(vmc/pr-gate 7-rung)"] --> done[done]
 ```
 
-### review chain (reviewer/fixer steps)
+### historical review chain
 
 ```mermaid
 flowchart LR
@@ -83,12 +81,12 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 
 - `review_agents` (global config) covers reviewer/fixer roles ONLY — it does
   NOT select the agents for test, document, lint, or CI repair.
-- Test steps ride the global `agent` on `agent_config.<harness>.model` — the
-  gate chain. There is no `test_agents` role (verified against no-mistakes
-  v1.84.0 global-config reference).
-- Reviewer/fixer ride `fallback/review`.
+- Test steps ride the global `agent` on `agent_config.codex.model` — the
+  model is set to `gpt-5.6-luna` (direct model, not a chain).
+- Reviewer rides `review_agents.reviewer` with model `gpt-6-astra` (direct model);
+  fixer rides `review_agents.fixer` with model `gpt-5.6-luna` (direct model).
 - Generic steps (document, lint, rebase-repair, PR drafting) ride the global
-  agent with the generic `agent_timeout`.
+  agent with the generic `agent_timeout` (model `gpt-5.6-luna`).
 
 ## Verdict table (2026-10-04 forensics)
 
@@ -101,14 +99,15 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)
 
-`review_agent_timeout`: **60m**; `test_agent_timeout`: **15m** (both were 60m
-until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m → 60m → 40m → 60m
-across 2026-10-10 to 2026-10-19 as the pi convergence contract landed, the v1.84.0 config
-marshal rejected the working-cap knob, and four actively-producing review runs were
-killed at the 45m/40m caps; test moved 12m → 25m after two
-glm-headed test drives were cut at 12m while actively working — provider
-slowness under the free lane, not stalls — then 25m → 15m once the bounded
-Test contract landed 2026-10-12). Observed legitimate durations: review 36s–434s;
+`review_agent_timeout`: **60m**; `test_agent_timeout`: **30m** (both were 60m
+until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m → 60m → 40m
+→ 60m across 2026-10-10 to 2026-10-19 as the pi convergence contract landed, the
+v1.84.0 config marshal rejected the working-cap knob, four actively-producing review
+runs were killed at the 45m/40m caps, and the later rebase adopted the 60m ceiling;
+test moved 12m → 25m after two glm-headed test drives were cut at 12m while actively
+working — provider slowness under the free lane, not stalls — then 25m → 15m once
+the bounded Test contract landed 2026-10-12, and 15m → 30m for repos without that
+contract). Observed legitimate durations: review 36s–434s;
 test 2.5m–7.7m clean, worst ~19.8m with two fix rounds.
 `step_quiet_warning: 10m` is observability only — it never cancels; the budget
 kill is the stop.

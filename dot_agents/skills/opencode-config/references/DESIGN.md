@@ -215,7 +215,7 @@ opencode-go can never be a gateway route node (it requires the `x-opencode-sessi
 **Automatic failover (CF → Vercel → opencode-go):**
 - **OpenCode** (`opencode-fallback.jsonc`): global/agent/category ladders insert `vercel/vmc/tui` as stage 1. Provider-qualified IDs (`CfAiGw/dynamic/TUI`, `vercel/vmc/tui`) so the fallback plugin swaps correctly on retryable session errors.
 - **Pi** (`~/.pi/fallback-chains.json`): `fallback/gate` and `fallback/default` chains carry Vercel `router/*` rungs so CF-gateway outage falls through to Vercel. Current ladders live in that file; they are drawn in provider-catalog `references/ROUTING_TOPOLOGY.md` flow-2 (regenerated from the file 2026-10-10).
-- **No-mistakes** (`config.yaml`): `agent_config.pi.model` and `review_agents.reviewer.model` ride `fallback/gate` instead of directly pinning `CfAiGw/dynamic/pr-gate`, so automated validation also falls through to Vercel.
+- **No-mistakes** (`config.yaml`): agent is set to `codex` with `agent_config.codex.model: gpt-5.6-luna` for generic steps, while `review_agents.reviewer.model: gpt-6-astra` and `review_agents.fixer.model: gpt-5.6-luna` use direct models, so automated validation uses the codex harness.
 
 **Manual profile switching (no automatic failover — tool limitation):**
 - **Codex**: native OpenAI default (`model = "gpt-5.6-luna"`, no `model_provider`) via ChatGPT sign-in; the `vercel-aig` provider definition stays in `config.toml.tmpl` and the Vercel profile (`model_provider = "vercel-aig"`, `model = "router/codex"`) lives in the separate `vercel.config.toml.tmpl` (Codex 0.153.4+ deprecated `[profiles.*]` in config.toml). Switch to it with `codex --profile vercel`. No ordered retry/failover configuration.

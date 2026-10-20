@@ -12,7 +12,7 @@ The historical "Lead PGS free band → paid-first through zen → go → GOAT �
 
 Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes review/fix steps); high reasoning is reserved for ambiguous investigation or design.
 
-**no-mistakes reviewer pin (deterministic):** the pi model pin lives in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`) — `agent_config.pi.model` for all steps and `review_agents.reviewer.model` for the reviewer pin the `fallback/gate` / `fallback/review` chains respectively. As of the 2026-10-10 captain re-head, gate leads with `opencode-go-gw/deepseek-v4-flash` (the proven-JSON safety net: 1M context, session-gated subsidized pool, riding pi via the opencode-go-gw static header) and review leads with the PAYG `openrouter-direct/z-ai/glm-5.2`, falling to `opencode-go-gw/deepseek-v4-flash` and then the router rungs; the NIM `CfAiGw/dynamic/pr-reviewer` route is the review terminal rung, last resort only. Owner: `~/.pi/fallback-chains.json`, rendered in `references/ROUTING_TOPOLOGY.md` flow-2. The pin moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which silently nullified the reviewer pin and left review riding `fallback/gate` → dynamic/pr-gate (see the config's prose). The `fallback/gate` 1M ladder string in `~/.pi/fallback-chains.json` remains for manual pi use; pi-fallback-provider semantics there: 429/5xx/timeout retryable, 400/401/403 non-retryable with 5-min provider cooldown.
+**no-mistakes configuration (deterministic):** the agent is set to `codex` in `~/.no-mistakes/config.yaml` (tracked here as `dot_no-mistakes/config.yaml`). Generic steps use `agent_config.codex.model: gpt-5.6-luna`, while the reviewer uses `review_agents.reviewer.model: gpt-6-astra` and the fixer uses `review_agents.fixer.model: gpt-5.6-luna`. All models are direct models, not chains. The pin for the reviewer model moved out of `agent_args_override` on 2026-09-14: native argv always wins over the same knob, which previously nullified the reviewer pin (see the config's prose).
 
 ## Cheapest-qualified-lane dispatch rule (spawn selection)
 
@@ -452,7 +452,7 @@ Chain order is owned by `private_dot_pi/fallback-chains.json` and summarized in 
 
 2026-10-04 repositioning (captain directive, JSON-chain positioning): `openrouter-direct/z-ai/glm-5.2:free` headed both the gate and review chains — every JSON-bearing no-mistakes stage (reviewer, test, document, lint, rebase-repair, PR-drafting, CI-fix) tried the free glm lane first; `opencode-go-gw/deepseek-v4-flash` is rung-2 (the proven-JSON safety net — 429/403 invocations fall through to it; silent stalls do NOT, since pi fallback fires on invocation failure only); virtual routers demoted behind it; the PAYG `z-ai/glm-5.2` terminal rung was KEPT on the review chain (captain 2026-10-04 — the gate chain never carried it). Longcat is light-work/scout-class only. The 2026-09-15 inkling-403 lesson applies to all OpenRouter :free lanes: watch for funnel rejections of pi-shaped requests; if glm:free 403s, the chain self-heals to deepseek rung-2. 2026-10-06: glm-5.2:free went dead upstream ("This model is unavailable for free. The paid version is available now - use this slug instead: z-ai/glm-5.2") — same self-heal applies (verified live: gate probe fell through to rung-2 OK), at the cost of one failed hop per call until the head is re-pointed.
 
-2026-10-10 (captain re-head): gate leads with `opencode-go-gw/deepseek-v4-flash` (proven-JSON lane, after three document-step no-text strikes under the nemotron-effective pr-gate head) → `CfAiGw/dynamic/pr-gate` → `vercel/router/pr-gate`; review leads with the PAYG `openrouter-direct/z-ai/glm-5.2` → `opencode-go-gw/deepseek-v4-flash` → `vercel/router/pr-reviewer` → NIM `CfAiGw/dynamic/pr-reviewer` terminal rung (last resort only). This is the current shape; the JSON file and `references/ROUTING_TOPOLOGY.md` flow-2 are the ladders.
+2026-10-10 (captain re-head, historical pi routing): gate led with `opencode-go-gw/deepseek-v4-flash` (proven-JSON lane, after three document-step no-text strikes under the nemotron-effective pr-gate head) → `CfAiGw/dynamic/pr-gate` → `vercel/router/pr-gate`; review led with the PAYG `openrouter-direct/z-ai/glm-5.2` → `opencode-go-gw/deepseek-v4-flash` → `vercel/router/pr-reviewer` → NIM `CfAiGw/dynamic/pr-reviewer` terminal rung (last resort only). The 2026-10-19 codex configuration supersedes this historical shape for no-mistakes; the JSON file remains the owner of the pi chains.
 
 ## Dynamic routes on the `opencode` gateway (2026-09-04)
 
@@ -484,17 +484,9 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   `91701376`** after three no-mistakes run deaths): openrouter free lanes
   200-wrap Nvidia-pool overload errors ("Service temporarily overloaded") —
   the route's success edge passes the error body verbatim, killing runs
-  exactly when the pool is loaded.   2026-09-20 status: **no-mistakes gate agent rides this route via pi
-  `fallback/gate` chain** (dotfiles PR #343 restored the chain, previously
-  pinned opencode-go-gw/deepseek-v4-flash directly after free NEMO head
-  200-wrapped overload errors 6/6 nights runs). Review agent rides the
-  separate `fallback/review` chain (order owned by
-  `private_dot_pi/fallback-chains.json`, rendered in
-  `references/ROUTING_TOPOLOGY.md` flow-2 — 2026-10-10 captain re-head:
-  `openrouter-direct/z-ai/glm-5.2` PAYG head → `opencode-go-gw/deepseek-v4-flash`
-  → `vercel/router/pr-reviewer` → `CfAiGw/dynamic/pr-reviewer` terminal rung,
-  last resort only). The route serves
-  gate, probe, and external traffic.
+  exactly when the pool is loaded.   2026-10-19 status: **no-mistakes generic steps use the codex harness with model `gpt-5.6-luna` at medium effort; the review agent uses the codex harness with model `gpt-6-astra` at high effort.**
+  (The pi fallback/chains are no longer used for review; the review agent now uses the codex harness with a direct model.) The route serves
+  probes and external traffic.
   Actual active ladder (version `778615d1`, deployed 2026-09-28 with the
   free-NIM Kimi-K3 redundancy rung, captain-ordered; earlier `91701376` shape
   plus the insert — verified via versions API
@@ -528,22 +520,7 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   Worker chain position: middle layer of
   `opencode-go → CfAiGw/dynamic/antigravity → vmc/antigravity`
   (opencode-go rides the harness directly, never a route node).
-- `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the pi reviewer
-  rides `CfAiGw/dynamic/pr-reviewer` via `review_agents.reviewer`
-  (dotfiles PR #297). Budget-ranked, JSON discipline first (rebuilt 2026-09-14;
-  head swapped 2026-09-28 version `469aa66c` after the NIM EOL of
-  `deepseek-v4-flash-0731`, captain-ordered):
-  `custom-nvidia-nim/z-ai/glm-5.3` (free head, probe 200/5s) →
-  `custom-nvidia-nim/deepseek-ai/deepseek-v4.1-flash` (successor lane,
-  overloaded at deploy time) →
-  `openrouter/openai/gpt-5.6-luna` →
-  `openrouter/nvidia/nemotron-3-ultra-550b-a55b:free` →
-  `custom-opencode-zen/glm-5.2`. 2026-09-22: review rides this route again via
-  the separate `fallback/review` chain (pi fallback-chains.json); current order
-  (captain 2026-10-10): `openrouter-direct/z-ai/glm-5.2` PAYG head →
-  `opencode-go-gw/deepseek-v4-flash` rung-1 → `vercel/router/pr-reviewer`
-  rung-2 → `CfAiGw/dynamic/pr-reviewer` terminal rung (last resort only;
-  account-independent of CF/zen budget walls).
+- `pr-reviewer` — no-mistakes review second-set-of-eyes ladder; the review agent uses the codex harness directly with model `gpt-6-astra` at high effort (see `dot_no-mistakes/config.yaml`). The `pr-reviewer` route on the opencode gateway is still defined but is not used by no-mistakes review.
 - Harness family routes (2026-09-19 build, captain directive — house models
   per family across providers, openrouter PAYG + plan lanes). 2026-09-20
   less-wrong pass (captain order, route versions deployed and probed 200):
