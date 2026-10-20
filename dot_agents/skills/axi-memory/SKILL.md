@@ -158,8 +158,23 @@ tunnel hostname `ssh://primary55522.phillias.cc/~/mem-bare.git`. The anchor
 syncing to its own tunnel hairpins through Cloudflare edge:22, which times
 out (sshd listens on localhost:55522 behind the tunnel, served on 443 via
 `cloudflared access ssh`). If `mem sync` reports the remote unreachable on
-the anchor, check `git -C ~/memories remote -v` first. Other machines keep
-the tunnel URL + `primary55522` ssh alias (ProxyCommand path works).
+the anchor, check `git -C ~/memories remote -v` first.
+
+**Sync target and per-machine routes:** `mem sync` targets the anchor's bare
+repo `/home/ubuntu/mem-bare.git` (user `ubuntu`). Each non-anchor machine uses
+its authorized tunnel route to that repo:
+
+- **cabinkali**: remote URL `fleet-primary55522:mem-bare.git` — ssh alias
+  `fleet-primary55522` (`chezmoi-deploy-key`, `cloudflared access ssh`
+  ProxyCommand). The plain `primary55522` alias is NOT authorized on the anchor
+  from this box (its `id_ed25519_inspironkali` key is rejected: publickey).
+- **kalione**: remote URL `primary55522:mem-bare.git` — the `primary55522`
+  tunnel alias (ProxyCommand path works from there).
+
+A store born local (never cloned from the anchor) has unrelated history:
+`git pull --rebase` refuses, so the first sync needs explicit reconciliation —
+fetch, review both stores, merge with `--allow-unrelated-histories` (or re-clone
+and re-add local memories) — before routine `mem sync` works.
 
 `mem sync` runs `git pull --rebase && git push`. Conflicts are git conflicts —
 user resolves by opening the file, merging by hand, `git add` + `git commit`.
@@ -223,10 +238,10 @@ first, prove the literal-search ceiling before paying the embedding tax.
 `~/memories` is backed up directly by the restic fleet backup (systemd user
 unit `fleet-backup.timer`, daily 03:30 local, retention 7d/4w/12m, offsite
 repository configured in `~/.config/fleet-backup/restic-env`; path list
-verified 2026-10-11). The git store has no configured remote (`mem status`
-shows `remote: none`), so `mem sync` is a local no-op — offsite protection
-comes from restic, not git. Loss of the host = recoverable from the last
-offsite snapshot.
+verified 2026-10-11). The git store also syncs to the anchor bare repo
+(see "Cross-machine sync model") via `mem sync`, adding cross-machine
+redundancy; restic remains the offsite backstop. Loss of the host =
+recoverable from the last offsite snapshot and the anchor's store.
 
 ## Sample memory file
 
