@@ -15,7 +15,8 @@ umask 077
 conf_dir=/run/cloudflare-ddns
 conf_file="$conf_dir/config.ini"
 record_name='*.phillias.us'
-harvest="$(runuser -u phillias -- zsh -lc 'rm -f "$HOME/.agents/keys/.bws-cache-phillias.json"; printf "CLOUDFLARE_DDNS_API_TOKEN=%s\n" "$CLOUDFLARE_DDNS_API_TOKEN"')"
+runuser -u phillias -- rm -f /home/phillias/.agents/keys/.bws-cache-phillias.json
+harvest="$(runuser -u phillias -- zsh -lc 'printf "CLOUDFLARE_DDNS_API_TOKEN=%s\n" "$CLOUDFLARE_DDNS_API_TOKEN"')"
 token="$(printf '%s\n' "$harvest" | sed -n 's/^CLOUDFLARE_DDNS_API_TOKEN=//p')"
 if [ -z "$token" ]; then
   echo "cloudflare-ddns-env-harvest: empty harvest (load-keys.sh exported nothing - check bws)" >&2
