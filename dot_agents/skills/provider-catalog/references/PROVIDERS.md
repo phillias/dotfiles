@@ -1329,6 +1329,12 @@ Vercel has **native Anthropic Messages API** support — no compat layer needed.
 Dedicated Claude Code surface at `https://ai-gateway.vercel.sh/claude-code`.
 The Anthropic SDK appends `/v1/messages` itself, so the base URL has no `/v1`.
 
+(2026-10-20) Claude native OAuth can be overridden by `ANTHROPIC_API_KEY`,
+`ANTHROPIC_AUTH_TOKEN`, or `ANTHROPIC_BASE_URL` in the environment; bash login
+shells loaded vault keys without zsh's API-key clear. The vault now stores
+`ANTHROPIC_KEY`, which does not select Claude authentication. Gateway routing
+variables remain explicit opt-in; zsh retains its defensive API-key clear.
+
 16 Anthropic models available (2026-09-20), including:
 - `anthropic/claude-sonnet-5` — 1M ctx, $2/$10 MTok
 - `anthropic/claude-opus-5` — 1M ctx, $5/$25 MTok

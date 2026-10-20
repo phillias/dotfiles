@@ -26,10 +26,11 @@ fi
 export KIMI_CODE_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"kimi-code","host":"{{ .chezmoi.hostname }}","agent":"primary"}'
 
 # Claude Code uses its native Anthropic OAuth login by default.
-# Explicit Vercel AI Gateway fallback (uncomment the two commented
-# ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN exports that follow if needed;
-# keep the ANTHROPIC_API_KEY="" clear below active so claude falls back to native
-# Anthropic OAuth rather than a real key routed direct to Anthropic):
+# (2026-10-20) The vault exports ANTHROPIC_KEY, not ANTHROPIC_API_KEY,
+# so loading keys does not override native login in bash or zsh.
+# Keep the ANTHROPIC_API_KEY="" clear as defense in depth against inherited keys.
+# Gateway routing remains explicit opt-in: uncomment the two exports below
+# only when selecting the Vercel fallback instead of native OAuth.
 # export ANTHROPIC_BASE_URL="https://ai-gateway.vercel.sh"
 # export ANTHROPIC_AUTH_TOKEN="$AI_GATEWAY_API_KEY"
 export ANTHROPIC_API_KEY=""
