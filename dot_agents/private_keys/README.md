@@ -145,9 +145,10 @@ variable names. For example, `.groq-key` is not env-shaped and is not exported,
 while the vault secret `META_KEY` is exported as `META_KEY`. Muse's native login
 is unaffected: it reads `META_API_KEY`, not `META_KEY`.
 
-(2026-10-20) The Anthropic vault secret is `ANTHROPIC_KEY`, exported as-is;
-it no longer sets Claude's `ANTHROPIC_API_KEY` login override. The legacy
-`.anthropic-key` name is filtered by the pattern loader and remains inert.
+(2026-10-19) The Anthropic vault secret is `ANTHROPIC_KEY`, exported as-is;
+the shared loader also clears inherited or cached `ANTHROPIC_API_KEY` values,
+so it cannot override Claude's native login. The legacy `.anthropic-key` name
+is filtered by the pattern loader and remains inert.
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
 sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
