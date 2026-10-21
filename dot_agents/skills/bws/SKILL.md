@@ -152,7 +152,8 @@ bws -t "$(cat ~/.agents/keys/default/.bws-token)" project list -o json
 
 The token file, the loader, and this skill all live in the dotfiles chezmoi
 source under `dot_agents/` and deploy to every fleet server via `chezmoi
-apply`. Changes ship through a dotfiles PR; direct-PR per the 2026-09-02
-captain order (no no-mistakes pipeline on the dotfiles repo). After merging,
+apply`. Changes ship through a dotfiles PR via the no-mistakes pipeline
+(revised 2026-09-02 workflow: no-mistakes PR to phillias/dotfiles, base master;
+merge is the captain gate). After merging,
 each server converges on the 15-minute crontab, or immediately with a manual
 `chezmoi apply`.
