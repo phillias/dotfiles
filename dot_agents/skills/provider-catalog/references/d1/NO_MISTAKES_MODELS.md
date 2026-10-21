@@ -13,7 +13,7 @@ Deep log: axi-memory `f-2026-10-04-no-mistakes-test-step-json-failures-stal`.
 | File                         | Owner tags                                                                                              | Effect                                                                                                                                                                                                                                                                                                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `~/.no-mistakes/config.yaml` | `agent: codex`                                                                                          | every pipeline step runs on the codex harness                                                                                                                                                                                                                                                                       |
-|                              | `review_agent_timeout: 60m` / `test_agent_timeout: 30m`                                                 | budget kills (step_quiet_warning 10m is observability only)                                                                                                                                                                                                                                                         |
+|                              | `review_agent_timeout: 120m` / `test_agent_timeout: 30m`                                                | budget kills (step_quiet_warning 10m is observability only)                                                                                                                                                                                                                                                         |
 |                              | `auto_fix.{rebase,lint,test,document,ci}: 3`, `auto_fix.review: 0`                                      | follow-up fix attempts per step                                                                                                                                                                                                                                                                                     |
 |                              | `session_reuse: true`                                                                                   | one durable fixer session per run across review-fix turns (claude/codex)                                                                                                                                                                                                                                            |
 |                              | `intent.enabled: false`                                                                                 | user-intent extraction disabled fleet-wide (2026-09-02 incident)                                                                                                                                                                                                                                                    |
@@ -99,11 +99,12 @@ cross-provider hops already handle whole-gateway outages (CF → Vercel).
 
 ## Budgets (dot_no-mistakes/config.yaml, PR #392)
 
-`review_agent_timeout`: **60m**; `test_agent_timeout`: **30m** (both were 60m
+`review_agent_timeout`: **120m**; `test_agent_timeout`: **30m** (both were 60m
 until the 2026-10-04 tightening; review moved 60m → 20m → 30m → 45m → 60m → 40m
-→ 60m across 2026-10-10 to 2026-10-19 as the pi convergence contract landed, the
+→ 60m → 90m → 120m across 2026-10-10 to 2026-10-19 as the pi convergence contract landed, the
 v1.84.0 config marshal rejected the working-cap knob, four actively-producing review
-runs were killed at the 45m/40m caps, and the later rebase adopted the 60m ceiling;
+runs were killed at the 45m/40m caps, the later rebase adopted the 60m ceiling,
+and the 2026-10-19 raise to 120m accommodated the longest convergence runs;
 test moved 12m → 25m after two glm-headed test drives were cut at 12m while actively
 working — provider slowness under the free lane, not stalls — then 25m → 15m once
 the bounded Test contract landed 2026-10-12, and 15m → 30m for repos without that
