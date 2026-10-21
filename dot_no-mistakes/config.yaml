@@ -324,6 +324,12 @@ agent_args_override:
     # the historical 349K gate prompt). Allow the advertised larger window.
     - "-c"
     - "model_context_window=872000"
+  # (2026-10-20) Timeout no-redrive policy: instructs every pi-invoked step
+  # that a time-budget kill is a stop signal, never grounds to request or
+  # accept a larger budget. Prompt-level complement to the firstmate interim
+  # policy of 2026-10-12 (first test-timeout on a repo lacking a test
+  # contract aborts and routes to add-contract); the upstream timeout-finding
+  # template change stays deferred per the 2026-10-17 no-PRs constraint.
   pi:
     - "--append-system-prompt"
     - >-
@@ -336,6 +342,13 @@ agent_args_override:
       validates it and will ask again if it is wrong. Always end your turn with
       a final assistant message containing your output or a one-paragraph
       summary of what you did; never end on an empty or tool-only message.
+
+      Timeout policy: a step killed by its time budget is a stop signal, never
+      a reason to spend another budget. If the timed-out step is a test step
+      and the repo has no bounded test contract (commands.test plus trusted
+      test.instructions), say so and recommend aborting to add the contract;
+      do not ask for or accept a larger budget to continue the same attempt.
+      A fresh re-drive happens only on explicit operator action on a new run.
 
 # Maximum follow-up auto-fix attempts per step (0 = disabled after the initial
 # pass)
