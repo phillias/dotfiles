@@ -423,6 +423,36 @@ NIM nodes now on live routes: 4 (pr-gate head nemotron, pr-gate kimi-k3,
 pr-reviewer glm-5.3 + deepseek-v4.1-flash, high glm-5.3) — the shared pool
 is the binding constraint; do not add more without retiring one.
 
+## FCC free-lane probe (2026-10-20, keyless re-probe + signup-gated)
+
+Six candidates from the free-claude-code (FCC) provider catalog investigation,
+probed keylessly 2026-10-20; five require human signup (Google OAuth or email).
+Full report: `data/free-lane-fcc-probe/report.md` in the firstmate home.
+
+| Lane | Free envelope | Signup | GLM | Claude | Verdict |
+|---|---|---|---|---|---|
+| **NaraRoute** | 7M tok/day, 15 RPM | Google OAuth only | paid freemium | none | **Best free envelope** — 1M-ctx models advertised; needs signup + served-context probe |
+| **TokenRouter** | $0/1K req/mo | email signup | none (promo rotated) | none | Key-gated catalog; verify 1M-ctx model post-signup |
+| **llm7.io** | 100K tok/day (collapsed from 1M) | none (anonymous) | GLM-5.3-Flash 400K ctx | `pro` (paid) | **Aux-only** — envelope collapsed 10× in 7 weeks; anonymous near-dead |
+| **ZenMux** | subscription-gated ($0≠free) | email | paid ($0.075/$0.25 flash) | all paid | Dead end — no true free tier |
+| **W&B Inference** | trial-credit (131K) | email | none | none | Trial only, not recurring free |
+| **Chutes** | **no free tier** (confirmed dead) | — | paid only | none | Eliminated |
+
+**GLM sweep across all providers:** cheapest metered = OpenRouter `z-ai/glm-5.3-flash`
+$0.0472/M in. Free GLM only on llm7 turbo (400K ctx, 100K/day collapsed) +
+ZenMux 200K promo flashes. No free GLM on OpenRouter/Chutes/W&B/NaraRoute-free.
+NIM `z-ai/glm-5.3` (2026-09-27 wave) remains the primary free GLM-5.3 lane,
+subject to the ~40 RPM shared-pool constraint.
+
+**Claude sweep:** NO free Claude on any FCC candidate. Every `anthropic/*` model
+sits behind a paid tier. OpenRouter has 17 `:free` models, zero anthropic.
+Free Claude access remains limited to native subscription lanes (claude Pro
+native OAuth, codex ChatGPT native).
+
+**Signup keys now in BWS vault:** `NARAROUTER_API_KEY` and
+`TOKENROUTER_API_KEY` (phillias project, 2026-10-20). Wire as CF AI Gateway
+custom providers once signup completes and keys are validated.
+
 ## Fledge Alpha free preview (2026-10-04, live-verified)
 
 `opencode-zen/fledge-alpha-free` — present in the 82-model zen `/models` list (verified live via the house gateway 2026-10-04), NOT on the opencode-go lane. Free-tier stealth preview released 2026-10-01: **$0 in/out**, ~1M context (1,048,576) / ~130k output, adjustable reasoning effort (low/high/max), tool use + vision, limited-time listing, strict free-tier rate limits. Anonymous lab — the captain describes it as inkling-class; community speculation says DeepSeek V4.1 Pro (unconfirmed). Early anecdotal executable-code checks: 61/61 vs LongCat 59/61, 4/4 logic, 12/12 hidden-key retrieval from ~1M-char inputs. Inkling lineage note: unlike the OpenRouter free inkling lane (dropped from gate chains 2026-09-15 for 403 funnel rejection of pi-shaped gate requests + TM training logging), fledge rides the opencode-zen free tier. Verdict: **TRIAL for interactive primary use ONLY — NOT for no-mistakes pipeline roles** (JSON discipline unproven, anonymous identity, limited-time listing = unstable for fleet config; `opencode-go-gw/deepseek-v4-flash` keeps gate/review). Fit analysis 2026-10-04: best fit = interactive primary model trial (same class as longcat-2.5-preview-free — free, 1M ctx — with better early code results + reasoning-effort control + vision); second fit = long-context retrieval sessions.
