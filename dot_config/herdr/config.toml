@@ -164,7 +164,7 @@ description = "Open flow kanban pane"
 
 # Token Dashboard — per-agent cost/tokens (Davidcreador/herdr-token-dashboard)
 [[keys.command]]
-key = "alt+$"
+key = "alt+4"
 type = "plugin_action"
 command = "dave.token-dashboard.open-dashboard"
 description = "Open agent token dashboard"
