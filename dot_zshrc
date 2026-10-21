@@ -266,7 +266,23 @@ fi
 # opencode
 export PATH=$HOME/.npm-global/bin:$PATH
 export PATH=$HOME/.opencode/bin:$PATH
-oc() { command opencode "$@"; }
+# oc: attach to the local opencode serve using the chezmoi-rendered
+# basic-auth env file; fall back to a plain opencode run.
+oc() {
+  local env_file="$HOME/.config/opencode/opencode-serve.env"
+  local url="http://127.0.0.1:${OPENCODE_SERVE_PORT:-4096}"
+  if [[ -r "$env_file" ]] \
+    && grep -q '^OPENCODE_SERVER_USERNAME=' "$env_file" \
+    && grep -q '^OPENCODE_SERVER_PASSWORD=' "$env_file"; then
+    local user pass
+    user="$(grep '^OPENCODE_SERVER_USERNAME=' "$env_file" | head -n1 | cut -d= -f2-)"
+    pass="$(grep '^OPENCODE_SERVER_PASSWORD=' "$env_file" | head -n1 | cut -d= -f2-)"
+    if command opencode attach "$url" -u "$user" -p "$pass" "$@" 2>/dev/null; then
+      return
+    fi
+  fi
+  command opencode "$@"
+}
 
 # bun completions
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
