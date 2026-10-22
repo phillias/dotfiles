@@ -7,5 +7,7 @@ encryption = "age"
 {{- $dnsDomain := "phillias.org" }}
 {{- if eq .chezmoi.hostname "primary" }}
 {{-   $dnsDomain = "phillias.cc" }}
+{{- else if eq .chezmoi.hostname "InspironOne" }}
+{{-   $dnsDomain = "phillias.us" }}
 {{- end }}
     dnsDomain = "{{ $dnsDomain }}"
