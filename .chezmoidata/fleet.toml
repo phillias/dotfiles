@@ -3,7 +3,9 @@
 # Per-machine override: add [data.fleet] to the local ~/.config/chezmoi/chezmoi.toml
 # (config data takes precedence over .chezmoidata files).
 [fleet]
-    # This server's Cloudflare DNS zone; referenced by firstmate/data/captain.md.tmpl
+    # Fleet-wide default DNS zone; overridden per-machine by .chezmoi.toml.tmpl
+    # (config data takes precedence over .chezmoidata). Referenced by
+    # firstmate/data/captain.md.tmpl and lavish-axi server launch.
     dnsDomain = "phillias.org"
 
     # Fleet node registry — maps chezmoi hostname to fleet node identity.
