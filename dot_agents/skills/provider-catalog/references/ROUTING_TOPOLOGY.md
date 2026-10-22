@@ -1,7 +1,7 @@
 # Routing topology (live gateway snapshot)
 
 Ladder truth is the gateway API; this document is its flowchart rendering.
-Live route + element data verified 2026-10-06 (route version ids inline).
+Live route + element data verified 2026-10-22 (route version ids inline).
 The D1 `provider-catalog` registry mirrors the gateway and refreshes daily at
 05:00 ET via `d1-registry-refresh.mjs`; regenerate this page after structural
 route changes. Live quota truth is always `quota-axi`, never this file.
@@ -27,6 +27,11 @@ Recent structural changes:
   provider config is repaired). `dynamic/test` was retired 2026-10-06
   (captain order — its single rung was a locked zen free model, 403 for
   every route consumer).
+- **2026-10-22 (captain-ordered): NIM `z-ai/glm-5.3-flash` removed from
+  dynamic/TUI** (v`166ba467`). Dead lane — >120s timeouts since Sep 28,
+  probes never served (see PROVIDERS.md NIM wave table). Ladder rewired
+  NIM glm-5.3 head → commandcode GLM-5.1 directly. NIM-backed route nodes
+  now 5; NIM `z-ai/glm-5.3` (full, reasoning-on) remains the TUI head.
 
 ## How to read the flowcharts
 
@@ -55,11 +60,11 @@ flowchart TD
     harnesses -.->|stage 2 fallback| VG[Vercel AI Gateway vmc/*]
 ```
 
-### dynamic/TUI — daily driver (v9e1b829d, 2026-10-05)
+### dynamic/TUI — daily driver (v166ba467, 2026-10-22)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide)"] --> n1["nvidia-nim<br/>z-ai/glm-5.3-flash"] --> n2["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n3["phoenixgrove PGS<br/>glm-5.2"] --> n4["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n5["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n6["phoenixgrove PGS<br/>glm-5.3-flash"] --> n7["openrouter<br/>z-ai/glm-5.1"] --> done[done]
+    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide)"] --> n1["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n2["phoenixgrove PGS<br/>glm-5.2"] --> n3["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n4["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n5["phoenixgrove PGS<br/>glm-5.3-flash"] --> n6["openrouter<br/>z-ai/glm-5.1"] --> done[done]
 ```
 
 ### dynamic/high — GLM-5.3-class + fable (v a066dc4b)
@@ -201,7 +206,7 @@ Live values: run `quota-axi`. Dated observations below are snapshots, not state.
 | Provider / plane | Plan or auth | Free lane models | Notes |
 |---|---|---|---|
 | opencode (zen + go) | OpenCode account | zen -free models are in-app-only (client-gated); go pool session-gated | monthly window reset 2026-09-30; 5h/weekly 100% (2026-09-27 snapshot) |
-| nvidia-nim (route) | NIM trial key | z-ai/glm-5.3, glm-5.3-flash, nemotron-3-super-120b, kimi-k3, deepseek-v4.1-flash | ~40 RPM account-wide shared across ALL NIM route nodes |
+| nvidia-nim (route) | NIM trial key | z-ai/glm-5.3, nemotron-3-super-120b, kimi-k3, deepseek-v4.1-flash | ~40 RPM account-wide shared across ALL NIM route nodes; glm-5.3-flash dead since Sep 28 (removed from TUI 2026-10-22) |
 | commandcode (GOAT) | individual-goat subscription | — | **insufficient credits 2026-10-06** — route rungs 400-fall-through until topped up |
 | phoenixgrove (PGS) | PGS subscription | — | **insufficient_quota 2026-10-06** — same fall-through behavior |
 | zai-coding | Z.AI Coding Plan Lite | — | provider path 404s at the gateway (2026-10-06) — unusable as a route element until repaired |

@@ -401,6 +401,9 @@ version `b10b4878-a241-4fcb-9b02-cf18abba89cb`): START → `custom-nvidia-nim/z-
 → `custom-nvidia-nim/z-ai/glm-5.3-flash` → downstream non-NIM rungs. Count of
 NIM-backed nodes on CF gateway routes is now 6 (was 4), all sharing the same
 ~40 RPM account-wide pool — do not add more without retiring one.
+**Superseded 2026-10-22:** the TUI glm-5.3-flash rung was removed (dead lane
+since Sep 28 — timeouts, never served; version `166ba467`). NIM-backed route
+nodes now 5, still sharing the ~40 RPM pool.
 
 **Terms and limits (the catch):** NVIDIA API Trial ToS restricts free use to
 "internal testing and evaluation purposes, not in production" (personal/fleet
@@ -502,7 +505,11 @@ Route contents will churn — this catalog records *purpose*, not lane lists:
   insufficient-credits (plan window) — they fall through until the plan
   resets; the ladder stays correct either way. Supersedes the 2026-09-09
   phoenixgrove-head order and the aihubmix tail (bare-name nodes were
-  dead anyway).
+  dead anyway). **Updated 2026-10-22** (v`166ba467`, captain-ordered): the
+  NIM `z-ai/glm-5.3-flash` rung is removed (dead lane — see the NIM wave
+  section); current head block is `custom-nvidia-nim/z-ai/glm-5.3` →
+  `custom-commandcode/zai-org/GLM-5.1` directly. Live ladder rendering:
+  ROUTING_TOPOLOGY.md.
 - `high` — latest-version models (`GLM-5.3` class, fable, astra when a lane
   appears) from reliable providers. Free NIM GLM-5.3 head added 2026-09-28
   (version `a066dc4b`, probe 200): `custom-nvidia-nim/z-ai/glm-5.3` →
