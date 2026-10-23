@@ -19,7 +19,7 @@ Restart=on-failure
 RestartSec=30
 
 EnvironmentFile=%h/.config/opencode/opencode-serve.env
-EnvironmentFile=-/run/user/1000/opencode-serve.env
+EnvironmentFile=-%t/opencode-serve.env
 IOWeight=10
 IOWriteBandwidthMax=/dev/sda 5M
 IOReadBandwidthMax=/dev/sda 10M
