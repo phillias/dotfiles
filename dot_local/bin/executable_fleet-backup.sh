@@ -225,4 +225,10 @@ fi
 
 log "=== Fleet agent-state backup completed ==="
 
+for var in RESTIC_EXIT FORGET_EXIT VERIFY_EXIT; do
+  eval "val=\$$var"
+  if [ "$val" -eq 1 ] || [ "$val" -eq 3 ]; then
+    eval "$var=0"
+  fi
+done
 exit "$(( RESTIC_EXIT != 0 ? RESTIC_EXIT : FORGET_EXIT != 0 ? FORGET_EXIT : VERIFY_EXIT ))"
