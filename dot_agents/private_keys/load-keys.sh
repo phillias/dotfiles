@@ -26,14 +26,17 @@
 # token. The project id is cached at ~/.agents/keys/.bws-project-<profile>.id
 # (not a secret).
 #
-# Fail-soft, no local fallback: values from the retired .age files are
+# Fail-soft, stale-cache fallback: values from the retired .age files are
 # BURNED (2026-10-15 leak) — this loader never reads, decrypts, or
-# exports them. When bws is unreachable and no fresh cache exists, the
-# loader prints ONE warning naming the reason and leaves the vault env
-# vars unset; shells still boot. A fresh (<= 5 min) fetch cache at
+# exports them. A fresh (<= 5 min) fetch cache at
 # ~/.agents/keys/.bws-cache-<profile>.json is honored without contacting
-# bws. A fetch that yields zero env-shaped keys is an anomaly and also
-# warns once. In every failure mode, at most ONE warning line per source.
+# bws. When bws is unreachable, a stale cache up to 24h old is used as a
+# fallback instead of leaving the vault env vars unset; only a cache
+# older than that (or no cache at all) leaves vars unset with a warning,
+# and shells still boot. A failed live fetch touches the cache file to
+# extend the fresh-cache window, deferring retries by ~5 minutes. A fetch
+# that yields zero env-shaped keys is an anomaly and also warns.
+# Warnings print at most once per shell process.
 #
 # Secret values are never printed or logged — key names and events only.
 #
@@ -181,7 +184,25 @@ else
                     fi
                     case "$_keys_bws_json" in
                         \[*) : ;;
-                        *) _keys_bws_json=""; _keys_bws_reason="bws-fetch-failed" ;;
+                        *)
+                            _keys_bws_json=""; _keys_bws_reason="bws-fetch-failed"
+                            # Backoff: stamp the cache "now" so sources within
+                            # the next 5 minutes take the fresh-cache path
+                            # instead of retrying the network. Only a cache
+                            # young enough to serve (<= 24h) is stamped:
+                            # stamping an ancient cache would reset its mtime
+                            # and let the stale fallback below serve
+                            # credentials the 24h bound was meant to reject.
+                            # With no cache file yet there is nothing to
+                            # stamp, and touch must not create an empty one.
+                            if [ -f "$_keys_bws_cache" ]; then
+                                _keys_cache_age=$(( $(date +%s 2>/dev/null || echo 0) - $(stat -c %Y "$_keys_bws_cache" 2>/dev/null || stat -f %m "$_keys_bws_cache" 2>/dev/null || echo 0) ))
+                                if [ "${_keys_cache_age:-999999}" -le 86400 ]; then
+                                    touch "$_keys_bws_cache" 2>/dev/null || true
+                                fi
+                                unset _keys_cache_age
+                            fi
+                            ;;
                     esac
                     ;;
             esac
@@ -190,6 +211,20 @@ else
         # Write cache on successful live fetch
         if [ -n "$_keys_bws_json" ]; then
             ( umask 077 && printf '%s' "$_keys_bws_json" > "$_keys_bws_cache" ) 2>/dev/null || true
+        fi
+        # Stale-cache fallback: the live fetch failed, so a cache up to 24h
+        # old still beats unset vault vars. Older than that is too stale;
+        # fall through to the fail-soft warning below.
+        if [ -z "$_keys_bws_json" ] && [ -r "$_keys_bws_cache" ]; then
+            _keys_cache_age=$(( $(date +%s 2>/dev/null || echo 0) - $(stat -c %Y "$_keys_bws_cache" 2>/dev/null || stat -f %m "$_keys_bws_cache" 2>/dev/null || echo 0) ))
+            if [ "${_keys_cache_age:-999999}" -le 86400 ]; then
+                _keys_bws_json="$(cat "$_keys_bws_cache" 2>/dev/null)"
+                case "$_keys_bws_json" in
+                    \[*) _keys_bws_reason="bws-unavailable-using-stale-cache" ;;
+                    *) _keys_bws_json="" ;;
+                esac
+            fi
+            unset _keys_cache_age
         fi
     fi
 fi
@@ -216,14 +251,25 @@ if [ -n "$_keys_bws_json" ]; then
         # only sees a controlled, fully-quoted export list.
         eval "$_keys_export_lines"
     else
-        # Healthy fetch that exports nothing: fail loud once, never silent.
-        printf '%s\n' "load-keys: bws fetch carried no env-shaped keys (reason=no-env-shaped-keys); nothing exported" >&2
+        # Healthy fetch that exports nothing: fail loud, but at most once
+        # per shell process — this file is sourced by every shell.
+        if [ -z "${_keys_bws_warned:-}" ]; then
+            printf '%s\n' "load-keys: bws fetch carried no env-shaped keys (reason=no-env-shaped-keys); nothing exported" >&2
+            _keys_bws_warned=1
+        fi
     fi
 else
-    # Fail-soft: bws unavailable and no fresh cache. ONE warning; vault env
-    # vars stay unset. The retired .age fallback is GONE — those values are
-    # burned and must never resurface through this loader.
-    printf '%s\n' "load-keys: bws unavailable (reason=${_keys_bws_reason:-bws-unavailable}); vault env keys not exported; no local fallback exists" >&2
+    # Fail-soft: bws unavailable and no usable cache (no fresh cache, no
+    # stale cache young enough to serve). Vault env vars stay unset. The
+    # retired .age fallback is GONE — those values are burned and must
+    # never resurface through this loader. At most one warning per shell
+    # process; _keys_bws_warned is deliberately NOT unset at the end so
+    # the guard survives re-sources in the same process (it is never
+    # exported, so it cannot leak into child processes).
+    if [ -z "${_keys_bws_warned:-}" ]; then
+        printf '%s\n' "load-keys: bws unavailable (reason=${_keys_bws_reason:-bws-unavailable}); vault env keys not exported; no local fallback exists" >&2
+        _keys_bws_warned=1
+    fi
 fi
 
 # Clear the retired name after every export attempt so stale cache entries
