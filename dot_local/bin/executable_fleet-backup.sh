@@ -95,10 +95,9 @@ fi
 
 if [ "$RESTIC_EXIT" -eq 0 ]; then
   log "  backup OK"
-elif [ "$RESTIC_EXIT" -eq 1 ] || [ "$RESTIC_EXIT" -eq 3 ]; then
-  # restic: 1 = warnings, 3 = snapshot saved but some source files unread.
-  # In both cases the snapshot exists and is restorable.
+elif [ "$RESTIC_EXIT" -eq 3 ]; then
   log "  backup OK with warnings (exit ${RESTIC_EXIT} — snapshot saved)"
+  RESTIC_EXIT=0
 else
   log "  backup FAILED (exit code: ${RESTIC_EXIT})"
 fi
@@ -225,10 +224,4 @@ fi
 
 log "=== Fleet agent-state backup completed ==="
 
-for var in RESTIC_EXIT FORGET_EXIT VERIFY_EXIT; do
-  eval "val=\$$var"
-  if [ "$val" -eq 1 ] || [ "$val" -eq 3 ]; then
-    eval "$var=0"
-  fi
-done
 exit "$(( RESTIC_EXIT != 0 ? RESTIC_EXIT : FORGET_EXIT != 0 ? FORGET_EXIT : VERIFY_EXIT ))"
