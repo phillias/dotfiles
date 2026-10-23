@@ -70,7 +70,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/tokentelemetry
-ExecStart=/bin/bash -c 'export ANTHROPIC_API_KEY="$(%h/.local/share/mise/installs/age/latest/age/age -d -i %h/.config/chezmoi/key.txt "%h/.agents/keys/retired/phillias/.anthropic-key.age")"; export NEXT_PUBLIC_API_BASE=""; exec %h/.local/share/mise/shims/node %h/tokentelemetry/bin/cli.js --port 13000 --api-port 18000 --host 127.0.0.1 --no-open'
+ExecStart=/bin/bash -c 'export ANTHROPIC_API_KEY="$(%h/.local/share/mise/installs/age/latest/age/age -d -i %h/.config/chezmoi/key.txt "%h/.agents/keys/retired/phillias/.anthropic-key.age")"; export NEXT_PUBLIC_API_BASE=""; exec /usr/bin/node %h/tokentelemetry/bin/cli.js --port 13000 --api-port 18000 --host 127.0.0.1 --no-open'
 Restart=on-failure
 RestartSec=5
 Environment=TOKENTELEMETRY_DATA_DIR=%h/.tokentelemetry
@@ -91,10 +91,9 @@ WantedBy=default.target
 
 Key points:
 
-- The service runs the mise-shim `node` (via `%h/.local/share/mise/shims/node`)
-  against `~/tokentelemetry/bin/cli.js` with `--port 13000 --api-port 18000
-  --host 127.0.0.1 --no-open`. The fork checkout is at `~/tokentelemetry` on
-  `fork-main`.
+- The service runs `/usr/bin/node` against `~/tokentelemetry/bin/cli.js` with
+  `--port 13000 --api-port 18000 --host 127.0.0.1 --no-open`. The fork
+  checkout is at `~/tokentelemetry` on `fork-main`.
 - The Tokens API key is decrypted at start from the retired age file
   `~/.agents/keys/retired/phillias/.anthropic-key.age` into `ANTHROPIC_API_KEY`
   (age -d with the chezmoi identity; post-BWS-migration the key retired from

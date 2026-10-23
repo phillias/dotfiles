@@ -603,11 +603,10 @@ invent structure.
 ## 7. Architecture Overview — Single-Root Config System
 
 The OpenCode config is a single-root layer with no profiles (`OPENCODE_CONFIG_DIR`
-unset) and no environment switching. The one exception is the headless serve
-process: `opencode-serve.service` sets `Environment=XDG_CONFIG_HOME=%h/.config/opencode-serve`,
-so the serve reads its own config tree (pinned model/provider, see §9) instead of
-the interactive one — the rest of the fleet remains single-root. Machine diffs are
-handled via chezmoi `.tmpl`; no symlinks. OmO-era material is archived in `ARCHIVE-OMO.md`.
+unset) and no environment switching. The headless serve process reads the same
+config tree as the interactive TUI; its systemd unit does not override
+`XDG_CONFIG_HOME`. Machine diffs are handled via chezmoi `.tmpl`; no symlinks.
+OmO-era material is archived in `ARCHIVE-OMO.md`.
 
 ### 7.1 `~/.config/opencode/` tree (live)
 
@@ -623,7 +622,7 @@ Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.tx
 
 ### 7.2 Critical rules
 
-1. One config, no profiles, `OPENCODE_CONFIG_DIR` unset (serve exception: `XDG_CONFIG_HOME` isolated tree, §9).
+1. One config, no profiles, `OPENCODE_CONFIG_DIR` unset; the serve unit reads the same tree.
 2. `opencode.json` defines the live providers + MCPs.
 3. Routing is owned by `opencode-fallback.jsonc` (agents/categories/global); the legacy `oh-my-openagent.jsonc` orphan is never read.
 4. `opencode-fallback.jsonc` is the global default fallback — project > global first-match-wins.
@@ -675,13 +674,9 @@ password lives in `.chezmoitemplates/opencode-serve-password.age` and appears
 in no plaintext source, shell history, or process args.
 Unauthenticated `GET /doc` returns 401 — that is the healthy signal.
 
-Config: the unit sets `Environment=XDG_CONFIG_HOME=%h/.config/opencode-serve`, so
-serve reads `~/.config/opencode-serve/opencode/opencode.json` (chezmoi source
-`dot_config/opencode-serve/opencode/opencode.json.tmpl`) — an isolated tree that
-pins the headless process to the `CfAiGw/dynamic/TUI` provider route through
-Cloudflare AI Gateway, independent from the interactive TUI config. The
-EnvironmentFile intentionally stays shared with the interactive tree (see the
-unit's comment).
+Config: the unit reads the shared `~/.config/opencode/opencode.json` tree, so
+headless serve and the interactive TUI use the same provider and routing config.
+The EnvironmentFile is shared with that config tree (see the unit's comment).
 
 Transport for agent-to-agent messaging is the opencode HTTP API. The tracked
 adapter is `fleet-chat` (installed as `~/.local/bin/fleet-chat`):

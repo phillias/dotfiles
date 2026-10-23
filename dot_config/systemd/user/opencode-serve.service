@@ -23,7 +23,7 @@ EnvironmentFile=-/run/user/1000/opencode-serve.env
 IOWeight=10
 IOWriteBandwidthMax=/dev/sda 5M
 IOReadBandwidthMax=/dev/sda 10M
-# Envelope sized for the pure headless role
+# Envelope sized for the headless role
 CPUQuota=100%
 MemoryMax=768M
 Nice=10
