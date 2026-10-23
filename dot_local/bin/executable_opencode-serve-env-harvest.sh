@@ -2,7 +2,7 @@
 # opencode-serve token harvest (2026-10-17).
 # Source the bws-first login environment (zsh -l -> .zshenv -> load-keys.sh)
 # and write CF_AI_GATEWAY_TOKEN to the serve runtime env file. The serve
-# config tree (XDG_CONFIG_HOME=~/.config/opencode-serve) references only
+# shared opencode config tree references only
 # this token ({env:CF_AI_GATEWAY_TOKEN}); the five direct provider keys the
 # old static env file carried (GOOGLE, CEREBRAS, MISTRAL, SAMBANOVA,
 # TOGETHER) were dead lanes rendered from retired age files - dropped, not

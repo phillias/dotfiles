@@ -95,10 +95,9 @@ fi
 
 if [ "$RESTIC_EXIT" -eq 0 ]; then
   log "  backup OK"
-elif [ "$RESTIC_EXIT" -eq 1 ] || [ "$RESTIC_EXIT" -eq 3 ]; then
-  # restic: 1 = warnings, 3 = snapshot saved but some source files unread.
-  # In both cases the snapshot exists and is restorable.
+elif [ "$RESTIC_EXIT" -eq 3 ]; then
   log "  backup OK with warnings (exit ${RESTIC_EXIT} — snapshot saved)"
+  RESTIC_EXIT=0
 else
   log "  backup FAILED (exit code: ${RESTIC_EXIT})"
 fi

@@ -25,12 +25,12 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 
 ## Critical rules
 
-1. One config, no profiles; `OPENCODE_CONFIG_DIR` unset. Exception: the headless serve process isolates its own config tree via `Environment=XDG_CONFIG_HOME=%h/.config/opencode-serve` in `opencode-serve.service` — its pinned model/provider live there, not here.
+1. One config, no profiles; `OPENCODE_CONFIG_DIR` unset. The headless serve process reads the same `~/.config/opencode` tree as the TUI; its systemd unit does not override `XDG_CONFIG_HOME`.
 2. `~/.config/opencode/opencode.json` defines live providers + MCPs (interactive TUI + headless runs without the serve unit).
 3. `opencode-fallback.jsonc` owns agent/category/global routing; `oh-my-openagent.jsonc` is a legacy orphan never read.
 4. Global default fallback — project > global first-match-wins.
 5. Plugins auto-load; retired plugins enforced-removed.
-6. No symlinks, machine diffs via chezmoi `.tmpl`, paths always `$HOME`/`%h` (never `/home/<user>`). Env switching is limited to the serve exception in rule 1.
+6. No symlinks, machine diffs via chezmoi `.tmpl`, paths always `$HOME`/`%h` (never `/home/<user>`).
 
 ## Chain at a glance (paid-first, 2026-08-29)
 
