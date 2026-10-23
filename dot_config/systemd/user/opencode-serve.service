@@ -13,7 +13,13 @@ Type=simple
 # Web UI auth (username/password) comes from the static env file below; the
 # gateway token comes from the bws-first login env via the ExecStartPre
 # harvest (2026-10-17) - same treatment as the no-mistakes daemon (PR #442).
+# Config resolve (2026-10-23): opencode 1.19.0 serve mode does not resolve
+# {env:VAR} interpolation in provider apiKey fields. This pre-start script
+# resolves {env:VAR} and {file:path} patterns from opencode.json.tmpl into
+# opencode.json before serve starts. TUI mode is unaffected (it resolves
+# patterns natively).
 ExecStartPre=%h/.local/bin/opencode-serve-env-harvest.sh
+ExecStartPre=%h/.local/bin/opencode-serve-config-resolve.sh
 ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 127.0.0.1 --log-level WARN
 Restart=on-failure
 RestartSec=30
