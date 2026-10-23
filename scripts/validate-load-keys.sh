@@ -200,6 +200,73 @@ fi
   || bail ".age canary was modified"
 [ "$fail" -eq 0 ] && pass "cache honored offline, exclusions enforced, multiline safe"
 
+echo "== sim: stale cache (1h old) served when bws fetch fails; backoff stamps cache"
+fh="$tmp_root/stalehit"
+make_fake_home "$fh"
+rm -f "$tmp_root/bws-called"
+cat > "$fh/.agents/keys/.bws-cache-phillias.json" <<'JSON'
+[
+  {"id":"1","key":"SIM_TEST_KEY","value":"sim-test-value","note":""},
+  {"id":"2","key":"BWS_SIM_COMPOSE","value":"never-export","note":""}
+]
+JSON
+touch -d '1 hour ago' "$fh/.agents/keys/.bws-cache-phillias.json"
+m1=$(stat -c %Y "$fh/.agents/keys/.bws-cache-phillias.json")
+out=$(env -i HOME="$fh" PATH="$tmp_root/shimbin:$sim_path" /bin/sh -c \
+      ". '$loader'; env" 2>"$tmp_root/stalehit.err") || true
+[ -f "$tmp_root/bws-called" ] || bail "stale sim never attempted a live fetch"
+[ -s "$tmp_root/stalehit.err" ] && bail "stale-cache fallback emitted unexpected stderr: $(cat "$tmp_root/stalehit.err")"
+printf '%s\n' "$out" | grep -qx 'SIM_TEST_KEY=sim-test-value' \
+  || bail "SIM_TEST_KEY not exported from stale cache"
+if printf '%s\n' "$out" | grep -q '^BWS_SIM_COMPOSE='; then
+  bail "excluded namespace was exported from stale cache"
+fi
+m2=$(stat -c %Y "$fh/.agents/keys/.bws-cache-phillias.json")
+[ "$m2" -gt "$m1" ] || bail "failed fetch did not touch the cache (no backoff stamp)"
+[ "$fail" -eq 0 ] && pass "stale cache serves exports silently and stamps backoff"
+
+echo "== sim: backoff — next source stays silent without retrying bws"
+rm -f "$tmp_root/bws-called"
+out=$(env -i HOME="$fh" PATH="$tmp_root/shimbin:$sim_path" /bin/sh -c \
+      ". '$loader'; env" 2>"$tmp_root/backoff.err") || true
+[ -e "$tmp_root/bws-called" ] && bail "bws retried inside the backoff window"
+[ -s "$tmp_root/backoff.err" ] && bail "backoff-window source emitted stderr: $(cat "$tmp_root/backoff.err")"
+printf '%s\n' "$out" | grep -qx 'SIM_TEST_KEY=sim-test-value' \
+  || bail "SIM_TEST_KEY not exported inside backoff window"
+[ "$fail" -eq 0 ] && pass "post-failure sources stay silent for ~5 minutes"
+
+echo "== sim: too-stale cache (25h old) warns once, exports nothing, stays unstamped"
+fh="$tmp_root/toostale"
+make_fake_home "$fh"
+cat > "$fh/.agents/keys/.bws-cache-phillias.json" <<'JSON'
+[
+  {"id":"1","key":"SIM_TEST_KEY","value":"sim-test-value","note":""}
+]
+JSON
+touch -d '25 hours ago' "$fh/.agents/keys/.bws-cache-phillias.json"
+m1=$(stat -c %Y "$fh/.agents/keys/.bws-cache-phillias.json")
+out=$(env -i HOME="$fh" PATH="$tmp_root/shimbin:$sim_path" /bin/sh -c \
+      ". '$loader'; env" 2>"$tmp_root/toostale.err") || true
+warn_count=$(grep -c '^load-keys:' "$tmp_root/toostale.err" || true)
+[ "$warn_count" -eq 1 ] || bail "expected exactly 1 warning, got $warn_count"
+grep -q 'reason=bws-fetch-failed' "$tmp_root/toostale.err" \
+  || bail "warning does not name reason=bws-fetch-failed"
+if printf '%s\n' "$out" | grep -q '^SIM_TEST_KEY='; then
+  bail "exported a key from a too-stale cache"
+fi
+m2=$(stat -c %Y "$fh/.agents/keys/.bws-cache-phillias.json")
+[ "$m2" -eq "$m1" ] || bail "too-stale cache was stamped (24h bound defeated)"
+[ "$fail" -eq 0 ] && pass "ancient cache rejected loudly and left unstamped"
+
+echo "== sim: same-process double source warns only once"
+fh="$tmp_root/doublewarn"
+make_fake_home "$fh"
+env -i HOME="$fh" PATH="$tmp_root/shimbin:$sim_path" /bin/sh -c \
+      ". '$loader'; . '$loader'; env" 2>"$tmp_root/doublewarn.err" >/dev/null || true
+warn_count=$(grep -c '^load-keys:' "$tmp_root/doublewarn.err" || true)
+[ "$warn_count" -eq 1 ] || bail "expected exactly 1 warning across 2 sources, got $warn_count"
+[ "$fail" -eq 0 ] && pass "warning suppressed on re-source within one process"
+
 if [ "${1:-}" = "--live" ]; then
   echo "== live: env -i source exports every expected env name (real vault)"
   exports_file="$tmp_root/exports.txt"
