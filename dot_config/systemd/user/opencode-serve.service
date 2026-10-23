@@ -17,7 +17,13 @@ Type=simple
 # removed it as collateral in a fleet-backup review): hosted-serve sessions
 # root at the firstmate project. Do not remove without a fleet decision.
 WorkingDirectory=%h/firstmate
+# Config resolve (2026-10-23): opencode 1.19.0 serve mode does not resolve
+# {env:VAR} interpolation in provider apiKey fields. The pre-start resolve
+# script below resolves {env:VAR} and {file:path} patterns from
+# opencode.json.tmpl into opencode.json before serve starts. TUI mode is
+# unaffected (it resolves patterns natively).
 ExecStartPre=%h/.local/bin/opencode-serve-env-harvest.sh
+ExecStartPre=%h/.local/bin/opencode-serve-config-resolve.sh
 ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 127.0.0.1 --log-level WARN
 Restart=on-failure
 RestartSec=30
