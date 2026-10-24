@@ -1678,26 +1678,48 @@
           },
           "temperature": true
         },
-        "glm-5.2": {
-          "name": "GLM-5.2",
+        "glm-5.3-flash": {
+          "name": "GLM-5.3 Flash",
+          "limit": {
+            "context": 1000000,
+            "output": 8192
+          },
+          "temperature": true
+        }
+      }
+    },
+    "zai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Z.AI Standard API (AI Gateway)",
+      "options": {
+        "baseURL": "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/custom-zai-std/paas/v4",
+        "apiKey": "{env:CF_AI_GATEWAY_TOKEN}",
+        "headers": {
+          "cf-aig-gateway-id": "opencode",
+          "cf-aig-metadata": "{\"harness\":\"opencode\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}"
+        }
+      },
+      "models": {
+        "glm-5.3": {
+          "name": "GLM-5.3 (Standard)",
           "limit": {
             "context": 262000,
             "output": 8192
           },
           "temperature": true
         },
-        "glm-5-turbo": {
-          "name": "GLM-5-Turbo",
+        "glm-5.3-flash": {
+          "name": "GLM-5.3 Flash (Standard)",
           "limit": {
-            "context": 262000,
+            "context": 1000000,
             "output": 8192
           },
           "temperature": true
         },
         "glm-4.7": {
-          "name": "GLM-4.7",
+          "name": "GLM-4.7 (Standard)",
           "limit": {
-            "context": 131000,
+            "context": 131072,
             "output": 8192
           },
           "temperature": true
