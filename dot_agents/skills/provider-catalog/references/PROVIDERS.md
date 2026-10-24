@@ -39,7 +39,8 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | opencode-zen | `custom-opencode-zen/v1` | primary quality (big-pickle) + free tier; free tier gated to in-app use (see § "OpenCode zen free-tier client gating") |
 | opencode-go | `custom-opencode-go/v1` | subsidized pool (kimi-k2.6, deepseek-v4-flash). **Session-gated 2026-09-08**: requests require a per-conversation `x-opencode-session` header; a static config header cannot satisfy it. Direct-client use only (opencode/pi send it natively) — EXCLUDES opencode-go models from gateway dynamic routes and any static-header custom-provider hop. Clean 400 `MissingSessionID` otherwise. |
 | commandcode | `custom-commandcode/v1` | GOAT paid pool (Kimi-K2.6, DS-V4-Flash) |
-| zai-coding | `custom-zai-coding/v4` | Z.AI Coding Plan Lite; **`/v4`, not `/v1`** |
+| zai-coding | `custom-zai-coding/paas/v4` | Z.AI Coding Plan Lite; client path `/paas/v4` over route base `https://api.z.ai/api/coding` (2026-10-24 repair); plan serves glm-5.3 + glm-5.3-flash only |
+| zai-std | `custom-zai-std/paas/v4` | Z.AI Standard API (pay-as-you-go); route pending creation — provider block present but disabled in opencode until the route exists |
 | phoenixgrove | `custom-phoenixgrove/v1` | GLM-5.3-flash, deepseek-v4-flash |
 | openrouter | `openrouter/v1` | native passthrough slug, **NOT `custom-`** |
 | cloudflare | `custom-cloudflare/v1` | @cf lane (Workers AI, free tier) |
@@ -54,7 +55,7 @@ All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c
 | opencode-zen | primary quality (big-pickle) + free tier | free ~200/day / paid |
 | opencode-go | subsidized pool | $5 first mo → $10/mo |
 | commandcode (GOAT) | paid pool | $10/mo → usage |
-| zai-coding | Z.AI Coding Plan Lite, credits-based | $18/mo |
+| zai-coding | Z.AI Coding Plan Lite, credits-based (2000/5h + 10000/wk) | $151.20/yr |
 | phoenixgrove | GLM-5.3 exclusive band, free + paid tiers | $4–$195/mo / $5+ per-token |
 | cloudflare | Workers AI @cf lane, free tier | $0 |
 | openrouter | GLM-5 overflow + free ladder | $0 / pay |
@@ -335,7 +336,7 @@ Chronos (6), Cisco TSM (1), Granite FlowState (2), Granite PatchTST (2), Granite
 
 ## Known quirks
 
-- `zai-coding` uses `/v4` in the gateway URL (all others `/v1`).
+- `zai-coding` and `zai-std` use `/paas/v4` in the gateway URL (all others `/v1`); the Z.AI coding endpoint is reached via route base `https://api.z.ai/api/coding` (regular API: base `https://api.z.ai/api`), per the 2026-10-24 repair.
 - `openrouter` keeps the native passthrough slug (`openrouter/`, not `custom-openrouter/`).
 - GPT routing (opencode): `opencode/gpt-5.x` works · `opencode-go/gpt-5.x` fails "Model not supported" · `opencode-zen/gpt-5.x` historically returned HTTP 400 (chat/completions, not `/v1/responses`); re-verified 2026-09-14 via `custom-opencode-zen/v1` compat: `gpt-5.6-luna` and `gpt-5.5` fail with HTTP 500 "Internal server error" — still broken; gateway dynamic routes ride `openrouter/openai/gpt-5.x` (or GOAT `custom-commandcode/gpt-5.x`) instead.
 
@@ -346,6 +347,7 @@ Non-retryable: 400/401/403. Retryable: 429/5xx/timeout. Provider cooldown after 
 ## Live statuses (dated; verify with quota-axi)
 
 - 2026-08-30: big-pickle → FreeUsageLimitError (falls through); zai-coding → 429, weekly reset 2026-09-02.
+- 2026-10-24: zai-coding restored live (glm-5.3 + glm-5.3-flash probe 200 through the gateway). Root cause of the long 429 window: Z.AI's 2026-10-16 key-type split reclassified the pre-split key as Standard (pay-as-you-go) — $0 balance returned error 1113 "insufficient balance" on every endpoint while the Coding Plan sat at 0% used. Fix: fresh Personal Coding Plan key (bws `ZHIPU_API_KEY_PLAN`) + route base re-pointed to `https://api.z.ai/api/coding`. Key type is set by which dashboard tab created it; the endpoint alone does not change billing type. Plan serves glm-5.3 + glm-5.3-flash only (older GLM ids auto-route); Lite window: 2000 credits/5h, 10000/week.
 - 2026-09-14 (corrected same day, captain-confirmed): PGS is **Coding-Plan-only — the PAYG balance is intentionally exhausted**. Any phoenixgrove request outside plan coverage (model not on the plan list at that moment, or plan window exhausted) returns 402 `insufficient_quota` and falls through; that fallthrough is expected, not a fault. The plan key serves `glm-5.3-flash` and `deepseek-v4-flash-0731` (200) while plan-covered, and the gateway BYOK key IS the plan key — no dashboard swap needed. Phoenixgrove lanes therefore breathe: plan-covered periods serve, otherwise the ladder falls through one hop (~4 s tax). Watch coverage via `/v1/usage` percent windows (weekly 17.9%, daily 59.6% at 2026-09-14 morning).
 
 ## PGS coding tester plan (2026-09-01)
@@ -634,7 +636,7 @@ dashboard-edited**, not token-manageable. URL segment beats shared rules:
 URL (e.g. `custom-zai-coding/v4`) — the gateway strips trailing version-like
 segments from the base_url. Confirmed segments: `custom-aihubmix/v1`,
 `custom-together/v1`, `custom-deepinfra/v1` (upstream 404s on all shapes — base
-URL suspect), `custom-friendli/v1`, `custom-zai-coding/(v4 or /api/coding)`,
+URL suspect), `custom-friendli/v1`, `custom-zai-coding/paas/v4`,
 `custom-commandcode/v1`, `custom-nvidia-nim/v1`, `custom-phoenixgrove/v1`,
 `custom-opencode-zen/v1`, plus native `openrouter/` + `google-ai-studio/`.
 DYNAMIC-route caveat: model nodes naming bare custom-provider names
@@ -773,6 +775,14 @@ The zen FREE tier is locked to the OpenCode client identity; paid zen is open BY
   vendor dashboard / quota-axi, not this file). In-app zen also serves only
   `glm-5.1` of the paid GLM trio — `glm-5.2`/`glm-5.3-flash` server-error
   in-app while serving fine on the gateway-token path.
+- **zai-coding repair (2026-10-24):** superseding the 2026-10-06 404 finding
+  above — the route's base URL was mis-pointed and its key reclassified
+  Standard by Z.AI's Oct-16 key-type split; the route now carries base
+  `https://api.z.ai/api/coding` + a Personal Coding Plan key and serves
+  glm-5.3 + glm-5.3-flash (200s verified through the gateway). A `zai`
+  Standard-API provider block (route `custom-zai-std`) is added to opencode
+  config but kept in `disabled_providers` pending the captain creating that
+  dashboard route.
 
 ## StepFun Step-5-Preview (2026-10-08, live-verified)
 
