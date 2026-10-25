@@ -32,6 +32,17 @@ Recent structural changes:
   probes never served (see PROVIDERS.md NIM wave table). Ladder rewired
   NIM glm-5.3 head → commandcode GLM-5.1 directly. NIM-backed route nodes
   now 5; NIM `z-ai/glm-5.3` (full, reasoning-on) remains the TUI head.
+- **2026-10-25: Z.AI gateway lane closed; Coding Plan goes direct.** The
+  CF custom providers `zai-coding`/`zai-std` were deleted from the account
+  during the TUI hang postmortem. Z.AI Coding Plan is permanently
+  route-element ineligible: its upstream path (`/api/coding/paas/v4/...`)
+  is non-standard, while the gateway unified API and route elements append
+  a canonical `/chat/completions` — mismatch returns Z.AI 404 wrapped in
+  HTTP 200, which the route treats as success (the 2026-10-24 hang
+  mechanism). The Coding Plan subscription is restored as a DIRECT
+  opencode provider (`zai-coding` → `https://api.z.ai/api/coding/paas/v4`,
+  key `{env:ZHIPU_API_KEY_PLAN}`; dotfiles PR #478). The Standard-API key
+  has no balance — the `zai` provider block stays dead.
 
 ## How to read the flowcharts
 
@@ -85,7 +96,8 @@ GLM head rungs are the captain-ordered subscription-utility block
 (2026-10-05); while GOAT/PGS credits are dry they 400-fall-through to the
 free NIM nemotron rung, which is the verified serving head (2026-10-06).
 The zen `nemotron-3-ultra-free` rung and the `custom-zai-coding` element were
-excluded (locked free lane / gateway provider-path 404).
+excluded (locked free lane / route-element ineligible — see the 2026-10-25
+changelog entry).
 
 ### dynamic/pr-reviewer — no-mistakes review route (v 469aa66c)
 
@@ -209,7 +221,7 @@ Live values: run `quota-axi`. Dated observations below are snapshots, not state.
 | nvidia-nim (route) | NIM trial key | z-ai/glm-5.3, nemotron-3-super-120b, kimi-k3, deepseek-v4.1-flash | ~40 RPM account-wide shared across ALL NIM route nodes; glm-5.3-flash dead since Sep 28 (removed from TUI 2026-10-22) |
 | commandcode (GOAT) | individual-goat subscription | — | **insufficient credits 2026-10-06** — route rungs 400-fall-through until topped up |
 | phoenixgrove (PGS) | PGS subscription | — | **insufficient_quota 2026-10-06** — same fall-through behavior |
-| zai-coding | Z.AI Coding Plan Lite | — | provider path 404s at the gateway (2026-10-06) — unusable as a route element until repaired |
+| zai-coding | Z.AI Coding Plan | — | NOT a route element, ever (non-standard `/paas/v4` path vs unified-API canonical append → 404-in-200 false success). CF custom provider deleted 2026-10-25; subscription restored as the DIRECT opencode `zai-coding` provider (PR #478) |
 | openrouter | credit balance + :free lanes | nemotron-3-super-120b-a12b:free, nemotron-3-ultra-550b:free, z-ai/glm-5.2:free (direct; lane DEAD 2026-10-06 — paid slug only) | balance ~6% (2026-09-27) |
 | google-ai-studio | $5 min → flash pricing | gemini-2.5/3.8-flash | vision/pr-gate/vision tails |
 
