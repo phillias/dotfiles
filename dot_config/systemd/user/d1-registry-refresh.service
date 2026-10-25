@@ -1,8 +1,11 @@
 [Unit]
-# Requires CF_AI_GATEWAY_TOKEN and VERCEL_TOKEN. For interactive shells these
-# live in ~/.zshenv; for timer-driven runs copy them once into
-# ~/.config/opencode/provider-catalog.env (KEY=VALUE lines, no export, file
-# user-readable only) on each fleet node.
+# Secrets (CF_AI_GATEWAY_TOKEN, VERCEL_TOKEN, CLOUDFLARE_DEPLOY_TOKEN) are
+# resolved at runtime by bws-exec.sh via the shared BWS loader
+# (~/.agents/keys/load-keys.sh, fail-soft 5min→24h cache). provider-catalog.env
+# remains as a fallback for nodes without BWS; do NOT put a static
+# CF_AI_GATEWAY_TOKEN there — a stale copy shadows the vault token and causes
+# silent 401s (the 2026-10-15 → 10-24 monitoring blind spot).
+# bws-exec.sh maps CLOUDFLARE_DEPLOY_TOKEN → CLOUDFLARE_API_TOKEN for wrangler.
 Description=Provider-catalog D1 registry refresh — pull live CF/Vercel route ladders into D1
 
 [Service]
@@ -10,4 +13,4 @@ Type=oneshot
 EnvironmentFile=-%h/.config/opencode/provider-catalog.env
 Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 SuccessExitStatus=1
-ExecStart=%h/.local/share/mise/shims/node %h/.config/opencode/scripts/d1-registry-refresh.mjs
+ExecStart=%h/.config/opencode/scripts/bws-exec.sh %h/.config/opencode/scripts/d1-registry-refresh.mjs
