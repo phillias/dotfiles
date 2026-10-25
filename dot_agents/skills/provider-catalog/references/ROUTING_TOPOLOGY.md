@@ -1,10 +1,12 @@
 # Routing topology (live gateway snapshot)
 
 Ladder truth is the gateway API; this document is its flowchart rendering.
-Live route + element data verified 2026-10-22 (route version ids inline).
-The D1 `provider-catalog` registry mirrors the gateway and refreshes daily at
-05:00 ET via `d1-registry-refresh.mjs`; regenerate this page after structural
-route changes. Live quota truth is always `quota-axi`, never this file.
+Live route + element data verified 2026-10-25 (route version ids inline).
+The D1 `provider-catalog` registry is intended to mirror the gateway daily at
+05:00 ET via `d1-registry-refresh.mjs` — currently BROKEN (no vault token has
+D1 scopes; d1_mirror fails since 2026-10-13). Regenerate this page after
+structural route changes. Live quota truth is always `quota-axi`, never this
+file.
 
 Recent structural changes:
 
@@ -32,6 +34,26 @@ Recent structural changes:
   probes never served (see PROVIDERS.md NIM wave table). Ladder rewired
   NIM glm-5.3 head → commandcode GLM-5.1 directly. NIM-backed route nodes
   now 5; NIM `z-ai/glm-5.3` (full, reasoning-on) remains the TUI head.
+- **2026-10-25: Z.AI gateway lane closed; Coding Plan goes direct.** The
+  CF custom providers `zai-coding`/`zai-std` were deleted from the account
+  during the TUI hang postmortem. Z.AI Coding Plan is permanently
+  route-element ineligible: its upstream path (`/api/coding/paas/v4/...`)
+  is non-standard, while the gateway unified API and route elements append
+  a canonical `/chat/completions` — mismatch returns Z.AI 404 wrapped in
+  HTTP 200, which the route treats as success (the 2026-10-24 hang
+  mechanism). The Coding Plan subscription is restored as a DIRECT
+  opencode provider (`zai-coding` → `https://api.z.ai/api/coding/paas/v4`,
+  key `{env:ZHIPU_API_KEY_PLAN}`; dotfiles PR #478). The Standard-API key
+  has no balance — the `zai` provider block stays dead.
+- **2026-10-25 (captain-ordered): Vercel indirection rungs.** The dead
+  `custom-zai-coding` elements in dynamic/TUI and dynamic/high were replaced
+  with `custom-vercel` elements targeting the Vercel AI Gateway routers
+  `router/tui` / `router/high` (custom provider slug `vercel`, base
+  `https://ai-gateway.vercel.sh/v1`, BYOK). TUI v`51c8a2d1` gained the
+  vercel rung second-to-last (before the openrouter PAYG tail); high
+  v`a7bc6428` patched its dead m8 in place. Both vercel elements: 60s
+  timeout, 2 retries. `router/tui` was trimmed GLM-only (captain order —
+  keep TUI GLM-only); all Vercel gateway spend is PAYG from credits.
 
 ## How to read the flowcharts
 
@@ -55,23 +77,23 @@ flowchart TD
         MU["muse<br/>~/.config/muse/settings.json<br/>model: muse-spark-1.3 (native)"]
         AGY["agy (Antigravity)<br/>worker chain: opencode-go<br/>→ CfAiGw/dynamic/antigravity<br/>→ router/antigravity"]
     end
-    harnesses -->|gateway token + cf-aig headers| GW["Cloudflare AI Gateway `opencode`<br/>13 dynamic routes"]
+    harnesses -->|gateway token + cf-aig headers| GW["Cloudflare AI Gateway `opencode`<br/>12 dynamic routes"]
     GW --> models[upstream providers - ladders below]
     harnesses -.->|stage 2 fallback| VG[Vercel AI Gateway vmc/*]
 ```
 
-### dynamic/TUI — daily driver (v166ba467, 2026-10-22)
+### dynamic/TUI — daily driver (v51c8a2d1, 2026-10-25)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide)"] --> n1["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n2["phoenixgrove PGS<br/>glm-5.2"] --> n3["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n4["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n5["phoenixgrove PGS<br/>glm-5.3-flash"] --> n6["openrouter<br/>z-ai/glm-5.1"] --> done[done]
+    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide)"] --> n1["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n2["phoenixgrove PGS<br/>glm-5.2"] --> n3["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n4["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n5["phoenixgrove PGS<br/>glm-5.3-flash"] --> n6["vercel gateway<br/>router/tui (GLM-only)<br/>(60s, 2 retries)"] --> n7["openrouter<br/>z-ai/glm-5.1<br/>(PAYG tail)"] --> done[done]
 ```
 
-### dynamic/high — GLM-5.3-class + fable (v a066dc4b)
+### dynamic/high — GLM-5.3-class (v a7bc6428, 2026-10-25)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/high"] --> h0["nvidia-nim<br/>z-ai/glm-5.3"] --> h1["aihubmix<br/>coding-glm-5.3"] --> h2["aihubmix<br/>claude-fable-5-1"] --> h3["aihubmix<br/>glm-5.3"] --> h4["together<br/>zai-org/GLM-5.3"] --> h5["openrouter<br/>z-ai/glm-5.3"] --> h6["phoenixgrove<br/>glm-5.3"] --> h7["friendli<br/>zai-org/GLM-5.3"] --> h8["deepinfra<br/>zai-org/GLM-5.3"] --> done[done]
+    in["model: dynamic/high"] --> h0["nvidia-nim<br/>z-ai/glm-5.3<br/>(60s)"] --> h1["aihubmix<br/>coding-glm-5.3"] --> h2["aihubmix<br/>claude-fable-5-1"] --> h3["aihubmix<br/>glm-5.3"] --> h4["together<br/>zai-org/GLM-5.3"] --> h5["phoenixgrove<br/>glm-5.3"] --> h6["friendli<br/>zai-org/GLM-5.3"] --> h7["deepinfra<br/>zai-org/GLM-5.3"] --> h8["vercel gateway<br/>router/high<br/>(60s, 2 retries)"] --> h9["openrouter<br/>z-ai/glm-5.3<br/>(60s)"] --> done[done]
 ```
 
 ### dynamic/pr-gate — no-mistakes gate route (v b7002724, 2026-10-05)
@@ -85,7 +107,8 @@ GLM head rungs are the captain-ordered subscription-utility block
 (2026-10-05); while GOAT/PGS credits are dry they 400-fall-through to the
 free NIM nemotron rung, which is the verified serving head (2026-10-06).
 The zen `nemotron-3-ultra-free` rung and the `custom-zai-coding` element were
-excluded (locked free lane / gateway provider-path 404).
+excluded (locked free lane / route-element ineligible — see the 2026-10-25
+changelog entry).
 
 ### dynamic/pr-reviewer — no-mistakes review route (v 469aa66c)
 
@@ -153,7 +176,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    vt0["vmc/tui<br/>(callable router/tui)"] --> vt1["alibaba/qwen3.7-flash"] --> vt2["deepseek/deepseek-v4-flash-0731"] --> vt3["zai/glm-5.3-flash"] --> vt4["openai/gpt-5-nano"] --> vt5["google/gemini-2.5-flash-lite"] --> vt6["openai/gpt-4o-mini"] --> done
+    vt0["vmc/tui<br/>(callable router/tui)<br/>GLM-only (captain order)"] --> vt1["zai/glm-5.3-flash"] --> done
+```
+
+```mermaid
+flowchart LR
+    vh0["vmc/high<br/>(callable router/high)"] --> vh1["zai/glm-5.3"] --> vh2["openai/gpt-5.6-terra"] --> vh3["anthropic/claude-fable-5"] --> vh4["deepseek/deepseek-v4-pro"] --> vh5["alibaba/qwen3.7-plus"] --> vh6["openai/gpt-6-astra"] --> done
 ```
 
 ```mermaid
@@ -182,6 +210,13 @@ seed before the daily refresh discovers it.
 `vmc/<slug>`, `router` answers ONLY to `router/<slug>`. Pi chains use the
 correct `vercel/router/*` form.
 
+**CF indirection (2026-10-25):** the CF custom provider `vercel` (base
+`https://ai-gateway.vercel.sh/v1`, BYOK) lets CF dynamic-route elements call
+Vercel routers — `custom-vercel/router/tui` is TUI rung 7, `custom-vercel/router/high`
+is high rung 9. Route elements reach the Vercel unified API, which appends
+`/chat/completions` to the base — a real upstream path, so this pairing is
+route-element safe (unlike Z.AI).
+
 ## Flow 2 — no-mistakes → codex → model → ...
 
 ```mermaid
@@ -209,7 +244,7 @@ Live values: run `quota-axi`. Dated observations below are snapshots, not state.
 | nvidia-nim (route) | NIM trial key | z-ai/glm-5.3, nemotron-3-super-120b, kimi-k3, deepseek-v4.1-flash | ~40 RPM account-wide shared across ALL NIM route nodes; glm-5.3-flash dead since Sep 28 (removed from TUI 2026-10-22) |
 | commandcode (GOAT) | individual-goat subscription | — | **insufficient credits 2026-10-06** — route rungs 400-fall-through until topped up |
 | phoenixgrove (PGS) | PGS subscription | — | **insufficient_quota 2026-10-06** — same fall-through behavior |
-| zai-coding | Z.AI Coding Plan Lite | — | provider path 404s at the gateway (2026-10-06) — unusable as a route element until repaired |
+| zai-coding | Z.AI Coding Plan | — | NOT a route element, ever (non-standard `/paas/v4` path vs unified-API canonical append → 404-in-200 false success). CF custom provider deleted 2026-10-25; subscription restored as the DIRECT opencode `zai-coding` provider (PR #478) |
 | openrouter | credit balance + :free lanes | nemotron-3-super-120b-a12b:free, nemotron-3-ultra-550b:free, z-ai/glm-5.2:free (direct; lane DEAD 2026-10-06 — paid slug only) | balance ~6% (2026-09-27) |
 | google-ai-studio | $5 min → flash pricing | gemini-2.5/3.8-flash | vision/pr-gate/vision tails |
 
