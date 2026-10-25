@@ -31,6 +31,11 @@ For cross-stack patterns (locket-init secret injection, Godoxy reverse
 proxy, socket-proxy, OCI Vault, restic backup architecture), see the
 `docker` skill. For Godoxy-specific routing, see the `selfhost` skill.
 
+Deeper references in `references/`: [aios-rekey.md](references/aios-rekey.md)
+(SECRET_KEY rotation re-key) and
+[migration-bws.md](references/migration-bws.md) (BWS secrets-migration
+runbook: render mechanics, nzbhydra2 overwrite hazard, rotation chains).
+
 ---
 
 ## 0. Stack Health Primer
@@ -266,6 +271,9 @@ docker compose --profile arrs logs --tail=30 prowlarr
   4. If that fails: restore from restic —
      `./restore.sh -a prowlarr -t "12h"`
 - Init failure → `docker compose --profile arrs run --rm prowlarr-init`
+- Downstream consumers (e.g. the AIOS Prowlarr addon) returning 401 after
+  a Prowlarr API-key rotation: expected — update the stored API key in each
+  consumer (AIOS dashboard → extensions) after rotating.
 
 **Failed paths:**
 - Do not attempt in-place SQLite repair on a corrupted DB. Always restore
@@ -324,7 +332,13 @@ docker compose --profile arrs ps nzbhydra2
 - Proxy connectivity → check Godoxy routing (see `selfhost` skill)
 
 **Failed paths:**
-- (none documented yet)
+- Do NOT run `render_nzbhydra()` / setup.sh config write expecting a clean
+  overwrite: `nzbhydra.yml` is app-managed (NZBHydra2 rewrites it in place on
+  every UI change), so the static template drifts from live config. The
+  2026-10 BWS migration overwrite broke live indexers and had to be restored
+  from the premigration backup. Until `pirate-nzbhydra-template-complete`
+  lands, restore the premigration backup after any setup.sh run, or inject
+  only secret values into the live file instead of rewriting structure.
 
 ---
 
@@ -498,6 +512,9 @@ curl -x socks5h://127.0.0.1:1080 https://www.cloudflare.com/cdn-cgi/trace
 - Never reintroduce a warp secrets-init (locket-init) container. Warp
   self-registers; a locket passthrough failure would write literal `{{ }}`
   placeholders over the live registration and break the container.
+- Degraded masque tunnel: dependent services show HTTPS stalls while HTTP
+  still flows (socks5 proxy up, TLS requests hang). Do not debug the
+  dependent service — `docker restart warp` heals it in ~25s.
 
 ---
 
