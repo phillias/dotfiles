@@ -268,16 +268,17 @@ export PATH=$HOME/.npm-global/bin:$PATH
 export PATH=$HOME/.opencode/bin:$PATH
 # oc: attach to the local opencode serve using the chezmoi-rendered
 # basic-auth env file; fall back to a plain opencode run.
+# Credentials are exported as env vars, never passed as CLI flags:
+# -u/-p land in argv, which is world-readable via ps/procps.
 oc() {
   local env_file="$HOME/.config/opencode/opencode-serve.env"
   local url="http://127.0.0.1:${OPENCODE_SERVE_PORT:-4096}"
   if [[ -r "$env_file" ]] \
     && grep -q '^OPENCODE_SERVER_USERNAME=' "$env_file" \
     && grep -q '^OPENCODE_SERVER_PASSWORD=' "$env_file"; then
-    local user pass
-    user="$(grep '^OPENCODE_SERVER_USERNAME=' "$env_file" | head -n1 | cut -d= -f2-)"
-    pass="$(grep '^OPENCODE_SERVER_PASSWORD=' "$env_file" | head -n1 | cut -d= -f2-)"
-    if command opencode attach "$url" -u "$user" -p "$pass" "$@" 2>/dev/null; then
+    export OPENCODE_SERVER_USERNAME="$(grep '^OPENCODE_SERVER_USERNAME=' "$env_file" | head -n1 | cut -d= -f2-)"
+    export OPENCODE_SERVER_PASSWORD="$(grep '^OPENCODE_SERVER_PASSWORD=' "$env_file" | head -n1 | cut -d= -f2-)"
+    if command opencode attach "$url" "$@" 2>/dev/null; then
       return
     fi
   fi
