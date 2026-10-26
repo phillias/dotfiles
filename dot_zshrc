@@ -276,9 +276,9 @@ oc() {
   if [[ -r "$env_file" ]] \
     && grep -q '^OPENCODE_SERVER_USERNAME=' "$env_file" \
     && grep -q '^OPENCODE_SERVER_PASSWORD=' "$env_file"; then
-    export OPENCODE_SERVER_USERNAME="$(grep '^OPENCODE_SERVER_USERNAME=' "$env_file" | head -n1 | cut -d= -f2-)"
-    export OPENCODE_SERVER_PASSWORD="$(grep '^OPENCODE_SERVER_PASSWORD=' "$env_file" | head -n1 | cut -d= -f2-)"
-    if command opencode attach "$url" "$@" 2>/dev/null; then
+    if OPENCODE_SERVER_USERNAME="$(grep '^OPENCODE_SERVER_USERNAME=' "$env_file" | head -n1 | cut -d= -f2-)" \
+      OPENCODE_SERVER_PASSWORD="$(grep '^OPENCODE_SERVER_PASSWORD=' "$env_file" | head -n1 | cut -d= -f2-)" \
+      command opencode attach "$url" "$@" 2>/dev/null; then
       return
     fi
   fi
