@@ -6,7 +6,7 @@ The OpenCode config and the firstmate distro rely on a set of host tools. All pa
 
 | Tool | Role | Location |
 |---|---|---|
-| opencode | the runtime itself; `oc` alias launches `opencode --port 42069` (bare TUI only serves `/`; attach fails without port) | system |
+| opencode | the runtime itself; the `oc` shell function attaches to the local serve endpoint using credentials scoped to that command, then falls back to a plain `opencode` run | system |
 | chezmoi | dotfiles source-of-truth (`~/.local/share/chezmoi`); configs are chezmoi-tracked, machine diffs via `.tmpl` | system |
 | gh | GitHub (issues/PRs/checks/releases); `gh-axi` skill wraps it; identity router at `~/.local/bin/gh` (shipped via chezmoi) wraps the mise-managed gh | mise-managed (`mise` shim → `~/.local/share/mise/installs/gh/*`) |
 | bw | Bitwarden CLI (`@bitwarden/cli`); `bws-axi` skill wraps BWS | mise-managed (`npm:@bitwarden/cli`) |
