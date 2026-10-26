@@ -13,6 +13,10 @@ Type=simple
 # Web UI auth (username/password) comes from the static env file below; the
 # gateway token comes from the bws-first login env via the ExecStartPre
 # harvest (2026-10-17) - same treatment as the no-mistakes daemon (PR #442).
+# INTENTIONAL fleet convention (PR #449, restored 2026-10-26 after b921fdf
+# removed it as collateral in a fleet-backup review): hosted-serve sessions
+# root at the firstmate project. Do not remove without a fleet decision.
+WorkingDirectory=%h/firstmate
 ExecStartPre=%h/.local/bin/opencode-serve-env-harvest.sh
 ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 127.0.0.1 --log-level WARN
 Restart=on-failure
