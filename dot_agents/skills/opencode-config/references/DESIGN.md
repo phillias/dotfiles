@@ -656,7 +656,8 @@ facts.
 
 Fleet nodes (kalione, primary55522, kali) each run `opencode serve --port 4096
 --hostname 127.0.0.1` as a systemd --user unit (`opencode-serve.service`,
-chezmoi-managed in dotfiles). Nodes reach each other's serve through
+chezmoi-managed in dotfiles), rooted at `~/firstmate` for hosted sessions.
+Nodes reach each other's serve through
 persistent autossh SSH tunnels (`opencode-tunnel-<node>.service`), so a
 firstmate's opencode agent reaches a remote node's agent at a localhost port:
 
