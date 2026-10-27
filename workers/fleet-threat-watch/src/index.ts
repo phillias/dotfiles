@@ -175,7 +175,9 @@ export function normalizeTarget(
     }
     const certRec = asRecord(asRecord(e["ssl"])["cert"]);
     const issuer = asRecord(certRec["issuer"]);
-    const fingerprint = asString(certRec["fingerprint_sha256"]) || asString(certRec["fingerprint"]);
+    const fingerprint = asString(certRec["fingerprint_sha256"])
+      || asString(asRecord(certRec["fingerprint"])["sha256"])
+      || asString(certRec["fingerprint"]);
     if (fingerprint) {
       const serviceCerts = certs[serviceKey] || {};
       serviceCerts.shodan = {
@@ -304,7 +306,14 @@ export function diffFingerprints(
       for (const provider of new Set([...Object.keys(oldProviders), ...Object.keys(newProviders)])) {
         const oldCert = oldProviders[provider];
         const newCert = newProviders[provider];
-        if (newCert && JSON.stringify(oldCert) !== JSON.stringify(newCert)) {
+        if (oldCert && !newCert) {
+          findings.push({
+            kind: "cert-change",
+            ip,
+            detail: `${service} ${provider}: certificate removed`,
+            summary: `cert removed on ${cur.label} ${service} (${provider})`,
+          });
+        } else if (newCert && JSON.stringify(oldCert) !== JSON.stringify(newCert)) {
           findings.push({
             kind: "cert-change",
             ip,
