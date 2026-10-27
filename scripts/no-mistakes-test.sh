@@ -6,6 +6,7 @@ repo=$(git rev-parse --show-toplevel)
 cd "$repo"
 
 tmp_root=$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-no-mistakes.XXXXXXXXXX")
+# shellcheck disable=SC2329  # invoked indirectly via the EXIT trap below
 cleanup() {
   case "${tmp_root:-}" in
     /tmp/dotfiles-no-mistakes.*|/var/tmp/dotfiles-no-mistakes.*)
@@ -208,7 +209,17 @@ done
 
 if [ "${#rendered_units[@]}" -gt 0 ]; then
   for unit in "${rendered_units[@]}"; do
-    if ! systemd-analyze verify --user "$unit"; then
+    # Verify against the throwaway chezmoi destination: systemd expands %h
+    # from HOME, not from the repository containing the unit under test.
+    while IFS= read -r reference; do
+      [ -n "$reference" ] || continue
+      target="${reference/#%h/$dest}"
+      if [ ! -f "$target" ] || [ ! -x "$target" ]; then
+        echo "FAIL: %h executable is missing or not executable in throwaway destination: $target"
+        fail=1
+      fi
+    done < <(grep -oE "%h/[^[:space:]\\\"]+" "$unit" | grep -F '/.local/bin/' || true)
+    if ! HOME="$dest" systemd-analyze verify --user "$unit"; then
       echo "FAIL: systemd-analyze verify failed: $unit"
       fail=1
     fi

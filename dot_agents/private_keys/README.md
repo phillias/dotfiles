@@ -30,7 +30,7 @@ loader (map below) plus 11 recovery-only keys with no exported var:
 ├── README.md              # this file
 ├── load-keys.sh           # shared loader sourced by zshenv and profile
 ├── default -> <profile>   # RELATIVE symlink naming the default key profile
-├── .bws-fallback.log      # durable tripwire log: one line per fallback event
+├── .bws-fallback.log      # historical; no current writer
 ├── .bws-project-<profile>.id  # cached bws project id (not a secret)
 ├── <profile>/             # ACTIVE profile dirs: only never-migrated keys
 │   ├── .bws-token         # BWS machine-account token for this profile
@@ -83,11 +83,11 @@ sourcing conventions:
 
 Offloaded rc-block consolidation note: `dot_zshenv.tmpl` and the shared loader handle all provider keys. The only exception is `HARBOR_API_KEY` (zshrc-only, sourced from `$HOME/firstmate/projects/mybiz/.harbor-key`). The loader silently skips missing default profiles to avoid noise in non-interactive shells.
 
-## Loader contract (bws-first, loud fallback)
+## Loader contract (bws-first, cache-or-warning)
 
 | Loader | When | Behavior |
 |---|---|---|
-| `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Reads the 45 exported migrated keys from the **bws project named like the default profile** (one `bws secret list` call; project id cached at `~/.agents/keys/.bws-project-<profile>.id`). On any bws failure, falls back per key to age-decrypting the retired file — loudly. |
+| `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Reads the 45 exported migrated keys from the **bws project named like the default profile** (one `bws secret list` call; project id cached at `~/.agents/keys/.bws-project-<profile>.id`). On bws failure, uses a <=24h vault cache when available; it never age-decrypts retired files. |
 | `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Sources `load-keys.sh`, then derives gateway routing vars (`OPENAI_API_KEY`, etc.) from the exported values; clears `ANTHROPIC_API_KEY` (vault exports `ANTHROPIC_KEY`). |
 | `~/.profile` | login shells | Sources `load-keys.sh` for bash login shells and SSH sessions. |
 | `~/.zshrc` / `~/.bashrc` | interactive shells | Source `load-keys.sh` (redundant but harmless). |
@@ -104,23 +104,20 @@ cached to disk (that would defeat keeping secrets off disk) and non-interactive
 shells are not skipped (that would permanently consume the retired recovery
 path). Each bws call is bounded by a 5s timeout, so a shell where bws is
 unreachable waits at most ~10s (initial secret list, then one project-list
-re-resolve) before the loud age fallback fires.
+   re-resolve) before the loader fails soft if no usable cache exists.
 
-**Fallback tripwire.** When bws cannot supply a key — daemon unreachable,
-token missing/broken, secret absent — the loader age-decrypts
-`~/.agents/keys/retired/<profile>/<key>.age` and exports that. EVERY fallback
-appends one greppable line to `~/.agents/keys/.bws-fallback.log` AND writes
-the same line to stderr:
+**Unavailable-vault behavior.** When bws cannot supply a key, `load-keys.sh`
+uses a fresh cache (<=5 minutes) or a stale cache (<=24 hours) when available;
+otherwise it emits a warning to stderr, leaves vault-only exports unset, and
+continues. It never reads or decrypts retired age files and does not write a
+fallback log.
 
-```
-BWS-FALLBACK 2026-10-13T22:30:00Z profile=phillias key=.groq-key var=GROQ_API_KEY reason=bws-fetch-failed
-```
-
-The fallback is a tripwire that shows where references still need re-pointing
-to bws; it is never silent cover. Secret values are never printed or logged —
-key names and events only. A node whose bws token is missing or broken still
-boots a working environment via fallback + log. **Watch the log**: every line
-is a place that still depends on the retired files.
+Direct harvesters (`tokentelemetry-env-harvest.sh` and
+`glm-free-lane-scan.sh`) silently use their retired age copy only when the
+vault fetch fails; a successful fetch missing its key fails loudly and never
+falls back. Secret values are never printed or logged — key names and events
+only. To find remaining retired-file dependencies, grep consumers for
+`.age` and `.agents/keys` references; retired-file usage is not logged.
 
 Design invariants:
 
@@ -128,13 +125,15 @@ Design invariants:
 2. Loaders are additive and idempotent: a partially provisioned node degrades
    gracefully to fewer exported vars.
 3. Non-default profiles are opt-in via explicit path, never auto-loaded.
-4. systemd units and other shell-less consumers get their secrets at start,
-   through one of two patterns: age-decrypting the retired file directly
-   (see `tokentelemetry.service`, `glm-free-lane-scan.sh` — local age never
-   depends on bws reachability), or harvesting the live vault value through a
-   login shell and writing a `/run` credential file (the no-mistakes daemon
-   drop-in, `cloudflare-ddns-harvest.service` — preferred for values that
-   rotate in the vault, because retired age copies go stale after rotation).
+4. systemd units and other shell-less consumers get their secrets at start by
+   harvesting the live vault value (bws or the login-env loader) and writing
+   a `/run` credential file: the no-mistakes daemon drop-in
+   (`nm-daemon-env-harvest.sh`), `tokentelemetry-env-harvest.sh`, and
+   `cloudflare-ddns-harvest.service`. Direct harvest scripts re-read the vault
+   every start and use retired age copies only when the vault fetch fails; a
+   successful fetch missing its key is an error. The daemon login-env loader
+   never touches age: it may use its <=24h vault cache when bws is unavailable,
+   then fails soft. Do not add new consumers that age-decrypt directly.
 
 ### Exported env-shaped keys (pattern-driven loader)
 
@@ -148,7 +147,11 @@ is unaffected: it reads `META_API_KEY`, not `META_KEY`.
 (2026-10-19) The Anthropic vault secret is `ANTHROPIC_KEY`, exported as-is;
 the shared loader also clears inherited or cached `ANTHROPIC_API_KEY` values,
 so it cannot override Claude's native login. The legacy `.anthropic-key` name
-is filtered by the pattern loader and remains inert.
+is filtered by the pattern loader and remains inert. (2026-10-27, Wave A2)
+`tokentelemetry.service` harvests `ANTHROPIC_KEY` directly with bws+jq at
+unit start (`tokentelemetry-env-harvest.sh` -> `%t/tokentelemetry.env`) and
+maps it to `ANTHROPIC_API_KEY`; the direct read is required precisely because
+the loader never exports `ANTHROPIC_API_KEY`.
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
 sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.
@@ -231,19 +234,17 @@ migration script `scripts/bws-migrate-keys.sh` is kept for reference.
 
 ## Troubleshooting
 
-- **Fallback events appearing**: `grep BWS-FALLBACK ~/.agents/keys/.bws-fallback.log`.
-  Each line names a key the loader could not get from bws — fix the cause
-  (bws token, network, missing secret) or re-point the consumer named by the
-  var; the log is the re-pointing work list, not noise to suppress.
+- **bws unavailable**: check stderr for the `load-keys` warning, then fix the
+  bws token or network; the loader uses only its <=24h cache and has no local
+  age fallback.
 - **bws down and a var is empty but the retired file exists**: check
-  `chezmoi decrypt ~/.agents/keys/retired/<profile>/.<name>.age` works; the
-  loader tries `chezmoi decrypt` then raw `age -d` with the chezmoi identity.
+  the bws project contents and cache age; the loader never reads the retired
+  file, which is available only to direct harvesters on fetch failure.
 - **zshenv warns about a missing default symlink** (interactive shells only):
   `ln -s <profile> ~/.agents/keys/default`, then verify
   `source ~/.zshenv && echo "set: ${CF_AI_GATEWAY_TOKEN:+yes}"`.
 - **Stale bws project id**: delete `~/.agents/keys/.bws-project-<profile>.id`;
   the loader re-resolves and re-caches on next shell (it also self-heals once
   automatically after a fetch failure).
-- **Provider var empty and no fallback line**: the key exists in neither bws
-  nor the retired tree — check the bws project contents and the key status
-  map above.
+- **Provider var empty**: the key exists in neither the usable bws response
+  nor cache — check the bws project contents and the key status map above.
