@@ -5,7 +5,14 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=%h/tokentelemetry
-ExecStart=/bin/bash -c 'export ANTHROPIC_API_KEY="$(%h/.local/share/mise/installs/age/latest/age/age -d -i %h/.config/chezmoi/key.txt "%h/.agents/keys/retired/phillias/.anthropic-key.age")"; export NEXT_PUBLIC_API_BASE=""; exec /usr/bin/node %h/tokentelemetry/bin/cli.js --port 13000 --api-port 18000 --host 127.0.0.1 --no-open'
+# Token source (Wave A2, 2026-10-27): harvest the live Anthropic key from the
+# bws vault (ANTHROPIC_KEY -> ANTHROPIC_API_KEY) at every start so rotations
+# propagate; the retired on-disk age copy is fallback-only inside the harvest
+# script. NEXT_PUBLIC_API_BASE must stay exported as empty (the app treats
+# unset differently from empty, so it stays in ExecStart, not Environment).
+ExecStartPre=%h/.local/bin/tokentelemetry-env-harvest.sh %t/tokentelemetry.env
+EnvironmentFile=-%t/tokentelemetry.env
+ExecStart=/bin/bash -c 'export NEXT_PUBLIC_API_BASE=""; exec /usr/bin/node %h/tokentelemetry/bin/cli.js --port 13000 --api-port 18000 --host 127.0.0.1 --no-open'
 Restart=on-failure
 RestartSec=5
 Environment=TOKENTELEMETRY_DATA_DIR=%h/.tokentelemetry

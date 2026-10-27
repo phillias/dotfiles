@@ -128,13 +128,17 @@ Design invariants:
 2. Loaders are additive and idempotent: a partially provisioned node degrades
    gracefully to fewer exported vars.
 3. Non-default profiles are opt-in via explicit path, never auto-loaded.
-4. systemd units and other shell-less consumers get their secrets at start,
-   through one of two patterns: age-decrypting the retired file directly
-   (see `tokentelemetry.service`, `glm-free-lane-scan.sh` — local age never
-   depends on bws reachability), or harvesting the live vault value through a
-   login shell and writing a `/run` credential file (the no-mistakes daemon
-   drop-in, `cloudflare-ddns-harvest.service` — preferred for values that
-   rotate in the vault, because retired age copies go stale after rotation).
+4. systemd units and other shell-less consumers get their secrets at start by
+   harvesting the live vault value (bws or the login-env loader) and writing
+   a `/run` credential file: the no-mistakes daemon drop-in
+   (`nm-daemon-env-harvest.sh`), `tokentelemetry-env-harvest.sh`, and
+   `cloudflare-ddns-harvest.service`. Harvest re-reads the vault every start
+   so rotations propagate. Since Wave A2 (2026-10-27) this is the only
+   primary pattern — the retired age copies
+   (`~/.agents/keys/retired/<profile>/<name>.age`) are fallback-only, used
+   by the harvest scripts when bws is unreachable (`glm-free-lane-scan.sh`
+   resolves its gateway token the same way: env override, then bws, then
+   age). Do not add new consumers that age-decrypt directly.
 
 ### Exported env-shaped keys (pattern-driven loader)
 
@@ -148,7 +152,11 @@ is unaffected: it reads `META_API_KEY`, not `META_KEY`.
 (2026-10-19) The Anthropic vault secret is `ANTHROPIC_KEY`, exported as-is;
 the shared loader also clears inherited or cached `ANTHROPIC_API_KEY` values,
 so it cannot override Claude's native login. The legacy `.anthropic-key` name
-is filtered by the pattern loader and remains inert.
+is filtered by the pattern loader and remains inert. (2026-10-27, Wave A2)
+`tokentelemetry.service` harvests `ANTHROPIC_KEY` directly with bws+jq at
+unit start (`tokentelemetry-env-harvest.sh` -> `%t/tokentelemetry.env`) and
+maps it to `ANTHROPIC_API_KEY`; the direct read is required precisely because
+the loader never exports `ANTHROPIC_API_KEY`.
 
 `CLOUDFLARE_ACCOUNT_ID` is hardcoded in the rc (not a secret). `HARBOR_API_KEY`
 sources from `$HOME/firstmate/projects/mybiz/.harbor-key`, outside this scheme.

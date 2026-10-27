@@ -15,7 +15,27 @@ set -uo pipefail
 STATE_DIR="$HOME/.local/state/opencode-fleet"
 STATE="$STATE_DIR/glm-free-scan.state"
 NTFY_ENV="$HOME/.config/opencode/glm-scan.ntfy.env"
-GW="${CF_AI_GATEWAY_TOKEN:-$("$HOME/.local/share/mise/installs/age/latest/age/age" -d -i "$HOME/.config/chezmoi/key.txt" "$HOME/.agents/keys/retired/phillias/.cf-ai-gw.age" 2>/dev/null || true)}"
+# CF AI gateway token (Wave A2, 2026-10-27): explicit env override, then a
+# direct bws vault read of the env-shaped CF_AI_GATEWAY_TOKEN (phillias),
+# then the retired on-disk age copy as unreachable-vault fallback.
+GW="${CF_AI_GATEWAY_TOKEN:-}"
+if [ -z "$GW" ]; then
+  bws_bin="${BWS_BIN:-}"
+  if [ -z "$bws_bin" ] || [ ! -x "$bws_bin" ]; then
+    bws_bin="$(command -v bws 2>/dev/null || true)"
+  fi
+  if [ -z "$bws_bin" ] || [ ! -x "$bws_bin" ]; then
+    bws_bin="$HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws"
+  fi
+  if [ -x "$bws_bin" ] && command -v jq >/dev/null 2>&1 \
+    && [ -r "$HOME/.agents/keys/default/.bws-token" ]; then
+    GW="$(timeout 10 "$bws_bin" -t "$(cat "$HOME/.agents/keys/default/.bws-token")" secret list fe9eea09-9eaf-45e6-a72f-b45e0150b29d -o json 2>/dev/null \
+      | jq -r '.[] | select(.key=="CF_AI_GATEWAY_TOKEN") | .value' 2>/dev/null || true)"
+  fi
+fi
+if [ -z "$GW" ]; then
+  GW="$("$HOME/.local/share/mise/installs/age/latest/age/age" -d -i "$HOME/.config/chezmoi/key.txt" "$HOME/.agents/keys/retired/phillias/.cf-ai-gw.age" 2>/dev/null || true)"
+fi
 BASE="https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode"
 
 mkdir -p "$STATE_DIR"

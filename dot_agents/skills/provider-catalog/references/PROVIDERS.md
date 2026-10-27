@@ -32,7 +32,7 @@ Reasoning effort stays low for targeted, well-understood work (e.g. no-mistakes 
 
 All baseUrls sit under `https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/…` with header `cf-aig-gateway-id: opencode` and the gateway token.
 
-**Token:** `$CF_AI_GATEWAY_TOKEN` (exported from `~/.zshenv`, reading `.cf-ai-gw` from the default keys profile — `~/.agents/keys/$(readlink ~/.agents/keys/default)/.cf-ai-gw`). The token covers both the `/ai/*` (Workers AI REST) and `/ai-gateway/*` planes. BYOK upstream keys live in the gateway dashboard (alias `default`); clients authenticate with the gateway token only, which the gateway does not forward upstream.
+**Token:** `$CF_AI_GATEWAY_TOKEN` (exported by `~/.agents/keys/load-keys.sh` from the phillias bws vault — env-shaped vault key `CF_AI_GATEWAY_TOKEN`; since Wave A2 2026-10-27, shell-less consumers harvest it directly from the vault and the retired age copy `~/.agents/keys/retired/phillias/.cf-ai-gw.age` is fallback-only). The token covers both the `/ai/*` (Workers AI REST) and `/ai-gateway/*` planes. BYOK upstream keys live in the gateway dashboard (alias `default`); clients authenticate with the gateway token only, which the gateway does not forward upstream.
 
 | Provider | URL segment | Notes |
 |---|---|---|

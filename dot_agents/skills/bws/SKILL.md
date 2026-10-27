@@ -60,6 +60,11 @@ bws secret list <project-id> -o json
 # Read one secret by key from the JSON array
 bws secret list <project-id> -o json | jq -r '.[] | select(.key==".cf-ai-gw") | .value'
 
+# Since Wave A2 (2026-10-27), shell-less consumers read the ENV-SHAPED keys
+# (e.g. CF_AI_GATEWAY_TOKEN, ANTHROPIC_KEY — they stay in phillias); the
+# dot-prefixed keys (.cf-ai-gw, .anthropic-key, …) and their on-disk age
+# copies are fallback-only for when bws is unreachable.
+
 # Use a specific token for a one-off call (bypasses env + state)
 bws -t "$(cat ~/.agents/keys/default/.bws-token)" project list -o json
 ```
