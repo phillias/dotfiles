@@ -136,6 +136,40 @@ function asFingerprints(value: unknown): Record<string, TargetFingerprint> {
   return out;
 }
 
+function asProviderFingerprints(value: unknown): Record<string, Record<string, TargetFingerprint>> {
+  const out: Record<string, Record<string, TargetFingerprint>> = {};
+  for (const [provider, targets] of Object.entries(asRecord(value))) {
+    out[provider] = asFingerprints(targets);
+  }
+  return out;
+}
+
+function mergeFingerprints(
+  label: string,
+  sources: Array<TargetFingerprint | undefined>,
+): TargetFingerprint {
+  const ports = new Set<number>();
+  const services = new Set<string>();
+  const vulns = new Set<string>();
+  const certs: TargetFingerprint["certs"] = {};
+  for (const source of sources) {
+    if (!source) continue;
+    for (const port of source.ports) ports.add(port);
+    for (const service of source.services) services.add(service);
+    for (const vuln of source.vulns) vulns.add(vuln);
+    for (const [service, providers] of Object.entries(source.certs)) {
+      certs[service] = { ...(certs[service] || {}), ...providers };
+    }
+  }
+  return {
+    label,
+    ports: [...ports].sort((a, b) => a - b),
+    services: [...services].sort(),
+    vulns: [...vulns].sort(),
+    certs: Object.fromEntries(Object.entries(certs).sort(([a], [b]) => a.localeCompare(b))),
+  };
+}
+
 // Normalize one target's raw API payloads into a comparable fingerprint.
 // Every access is defensive: unknown shapes degrade to empty, never throw.
 export function normalizeTarget(
@@ -175,9 +209,7 @@ export function normalizeTarget(
     }
     const certRec = asRecord(asRecord(e["ssl"])["cert"]);
     const issuer = asRecord(certRec["issuer"]);
-    const fingerprint = asString(certRec["fingerprint_sha256"])
-      || asString(asRecord(certRec["fingerprint"])["sha256"])
-      || asString(certRec["fingerprint"]);
+    const fingerprint = asString(asRecord(certRec["fingerprint"])["sha256"]);
     if (fingerprint) {
       const serviceCerts = certs[serviceKey] || {};
       serviceCerts.shodan = {
@@ -233,7 +265,7 @@ export function normalizeTarget(
       }
     }
     const parsed = asRecord(asRecord(s["cert"])["parsed"]);
-    const fingerprint = asString(parsed["fingerprint_sha256"]) || asString(asRecord(s["cert"])["fingerprint_sha256"]);
+    const fingerprint = asString(asRecord(s["cert"])["fingerprint_sha256"]);
     if (fingerprint) {
       const serviceCerts = certs[servicePrefix] || {};
       serviceCerts.censys = {
@@ -424,24 +456,51 @@ export async function runPoll(env: Env): Promise<string> {
     Accept: "application/vnd.censys.api.v3.host.v1+json",
   };
   if (censysOrgId) censysHeaders["X-Organization-ID"] = censysOrgId;
-  const current: Record<string, TargetFingerprint> = {};
+  const shodanCurrent: Record<string, TargetFingerprint> = {};
+  const censysCurrent: Record<string, TargetFingerprint> = {};
+  let censysObserved = Boolean(censysPat);
   for (const [ip, label] of [...targets.entries()].sort()) {
     const shodan = await fetchJson(`https://api.shodan.io/shodan/host/${ip}?key=${shodanKey}`, undefined, true);
     const internetdb = await fetchJson(`https://internetdb.shodan.io/${ip}`, undefined, true);
+    shodanCurrent[ip] = normalizeTarget(label, shodan.json, internetdb.json, {});
     // Platform host lookup (per-IP GET; free tier includes host lookup).
     // Unseen hosts 404 into empty exposure via fetchJson, like other legs.
-    const censys = censysPat
-      ? await fetchJson(`https://api.platform.censys.io/v3/global/asset/host/${ip}`, {
-        headers: censysHeaders,
-      }, true)
-      : { status: 0, json: {} };
-    current[ip] = normalizeTarget(label, shodan.json, internetdb.json, censys.json);
+    if (censysObserved) {
+      try {
+        const censys = await fetchJson(`https://api.platform.censys.io/v3/global/asset/host/${ip}`, {
+          headers: censysHeaders,
+        }, true);
+        censysCurrent[ip] = normalizeTarget(label, {}, {}, censys.json);
+      } catch {
+        censysObserved = false;
+        console.log("fleet-threat-watch skip: Censys poll failed; retaining last-seen Censys inventory");
+      }
+    }
   }
 
   const stored = await env.FLEET_THREAT_STATE.get(STATE_KEY, "json");
   const firstRun = stored === null;
-  const old = firstRun ? {} : asFingerprints(asRecord(stored)["targets"]);
-  const findings = diffFingerprints(old, current);
+  const storedRecord = asRecord(stored);
+  const oldProviders = firstRun
+    ? {}
+    : asProviderFingerprints(storedRecord["providers"]);
+  if (!firstRun && Object.keys(oldProviders).length === 0) {
+    oldProviders.shodan = asFingerprints(storedRecord["targets"]);
+  }
+  const currentProviders: Record<string, Record<string, TargetFingerprint>> = {
+    shodan: shodanCurrent,
+  };
+  if (censysObserved) currentProviders.censys = censysCurrent;
+  const current: Record<string, TargetFingerprint> = {};
+  for (const [ip, label] of [...targets.entries()].sort()) {
+    current[ip] = mergeFingerprints(label, [shodanCurrent[ip], censysObserved ? censysCurrent[ip] : undefined]);
+  }
+  const findings = Object.entries(currentProviders).flatMap(([provider, providerCurrent]) =>
+    diffFingerprints(oldProviders[provider] || {}, providerCurrent),
+  );
+  const nextProviders = censysObserved
+    ? currentProviders
+    : { ...oldProviders, shodan: shodanCurrent };
 
   if (firstRun) {
     await pushNtfy(
@@ -449,12 +508,12 @@ export async function runPoll(env: Env): Promise<string> {
       findings.map((finding) => ({ ...finding, summary: `current ${finding.summary.replace(/^NEW /, "")}` })),
       true,
     );
-    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current }));
+    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current, providers: nextProviders }));
     return `pushed initial baseline inventory for ${Object.keys(current).length} target(s)`;
   }
 
   if (findings.length === 0) {
-    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current }));
+    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current, providers: nextProviders }));
     const summary = "no changes; no push sent";
     console.log(summary);
     return summary;
@@ -464,7 +523,7 @@ export async function runPoll(env: Env): Promise<string> {
     await fileIssues(repo, required(env.GH_ISSUE_TOKEN, "GH_ISSUE_TOKEN"), findings);
   }
   await pushNtfy(required(env.GODOXY_NTFY_TOKEN, "GODOXY_NTFY_TOKEN"), findings);
-  await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current }));
+  await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current, providers: nextProviders }));
   return `pushed ${findings.length} finding(s)`;
 }
 
