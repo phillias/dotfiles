@@ -5,7 +5,7 @@
 // watch-list targets, diffs observed exposure against the last-seen
 // fingerprint in KV, pushes new/changed findings to ntfy, and optionally
 // files phillias/selfhost issues for NEW weaknesses via the GitHub REST API.
-// The Censys leg needs CENSYS_PAT; when it is unset the leg is skipped with
+// The Censys leg needs CENSYS_API_TOKEN; when it is unset the leg is skipped with
 // one structured skip line and the run continues on Shodan + InternetDB.
 //
 // Passive by construction: no nmap, no port probes, no banners grabbed from
@@ -25,6 +25,7 @@ import { WATCH_DOMAINS, WATCH_IPS } from "./watch-list.ts";
 export interface Env {
   FLEET_THREAT_STATE: KVNamespace;
   SHODAN_API_KEY: string;
+  CENSYS_API_TOKEN?: string;
   CENSYS_PAT?: string;
   CENSYS_ORG_ID?: string;
   GODOXY_NTFY_TOKEN: string;
@@ -142,32 +143,6 @@ function asProviderFingerprints(value: unknown): Record<string, Record<string, T
     out[provider] = asFingerprints(targets);
   }
   return out;
-}
-
-function mergeFingerprints(
-  label: string,
-  sources: Array<TargetFingerprint | undefined>,
-): TargetFingerprint {
-  const ports = new Set<number>();
-  const services = new Set<string>();
-  const vulns = new Set<string>();
-  const certs: TargetFingerprint["certs"] = {};
-  for (const source of sources) {
-    if (!source) continue;
-    for (const port of source.ports) ports.add(port);
-    for (const service of source.services) services.add(service);
-    for (const vuln of source.vulns) vulns.add(vuln);
-    for (const [service, providers] of Object.entries(source.certs)) {
-      certs[service] = { ...(certs[service] || {}), ...providers };
-    }
-  }
-  return {
-    label,
-    ports: [...ports].sort((a, b) => a - b),
-    services: [...services].sort(),
-    vulns: [...vulns].sort(),
-    certs: Object.fromEntries(Object.entries(certs).sort(([a], [b]) => a.localeCompare(b))),
-  };
 }
 
 // Normalize one target's raw API payloads into a comparable fingerprint.
@@ -304,6 +279,19 @@ export function diffFingerprints(
       for (const v of cur.vulns) {
         findings.push({ kind: "new-vuln", ip, detail: v, summary: `NEW vulnerability ${v} on ${cur.label}` });
       }
+      for (const service of cur.services) {
+        findings.push({ kind: "new-service", ip, detail: service, summary: `NEW service ${service} on ${cur.label}` });
+      }
+      for (const [service, providers] of Object.entries(cur.certs)) {
+        for (const [provider, cert] of Object.entries(providers)) {
+          findings.push({
+            kind: "cert-change",
+            ip,
+            detail: `${service} ${provider}: ${cert.fingerprint}`,
+            summary: `NEW certificate on ${cur.label} ${service} (${provider})`,
+          });
+        }
+      }
       continue;
     }
     const oldPorts = new Set(prev.ports);
@@ -422,11 +410,11 @@ export async function runPoll(env: Env): Promise<string> {
   const shodanKey = required(env.SHODAN_API_KEY, "SHODAN_API_KEY");
   // Censys Platform leg degrades gracefully: without a PAT the run continues
   // on Shodan + InternetDB instead of failing as a whole.
-  const censysPat = env.CENSYS_PAT || "";
+  const censysPat = env.CENSYS_PAT || env.CENSYS_API_TOKEN || "";
   const censysOrgId = env.CENSYS_ORG_ID || "";
   if (!censysPat) {
     console.log(
-      "fleet-threat-watch skip: Censys leg skipped (CENSYS_PAT unset); continuing with Shodan + InternetDB",
+      "fleet-threat-watch skip: Censys leg skipped (CENSYS_API_TOKEN unset); continuing with Shodan + InternetDB",
     );
   }
   const repo = "phillias/selfhost";
@@ -480,21 +468,11 @@ export async function runPoll(env: Env): Promise<string> {
 
   const stored = await env.FLEET_THREAT_STATE.get(STATE_KEY, "json");
   const firstRun = stored === null;
-  const storedRecord = asRecord(stored);
-  const oldProviders = firstRun
-    ? {}
-    : asProviderFingerprints(storedRecord["providers"]);
-  if (!firstRun && Object.keys(oldProviders).length === 0) {
-    oldProviders.shodan = asFingerprints(storedRecord["targets"]);
-  }
+  const oldProviders = firstRun ? {} : asProviderFingerprints(asRecord(stored)["providers"]);
   const currentProviders: Record<string, Record<string, TargetFingerprint>> = {
     shodan: shodanCurrent,
   };
   if (censysObserved) currentProviders.censys = censysCurrent;
-  const current: Record<string, TargetFingerprint> = {};
-  for (const [ip, label] of [...targets.entries()].sort()) {
-    current[ip] = mergeFingerprints(label, [shodanCurrent[ip], censysObserved ? censysCurrent[ip] : undefined]);
-  }
   const findings = Object.entries(currentProviders).flatMap(([provider, providerCurrent]) =>
     diffFingerprints(oldProviders[provider] || {}, providerCurrent),
   );
@@ -508,12 +486,12 @@ export async function runPoll(env: Env): Promise<string> {
       findings.map((finding) => ({ ...finding, summary: `current ${finding.summary.replace(/^NEW /, "")}` })),
       true,
     );
-    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current, providers: nextProviders }));
-    return `pushed initial baseline inventory for ${Object.keys(current).length} target(s)`;
+    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ providers: nextProviders }));
+    return `pushed initial baseline inventory for ${targets.size} target(s)`;
   }
 
   if (findings.length === 0) {
-    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current, providers: nextProviders }));
+    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ providers: nextProviders }));
     const summary = "no changes; no push sent";
     console.log(summary);
     return summary;
@@ -523,7 +501,7 @@ export async function runPoll(env: Env): Promise<string> {
     await fileIssues(repo, required(env.GH_ISSUE_TOKEN, "GH_ISSUE_TOKEN"), findings);
   }
   await pushNtfy(required(env.GODOXY_NTFY_TOKEN, "GODOXY_NTFY_TOKEN"), findings);
-  await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current, providers: nextProviders }));
+  await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ providers: nextProviders }));
   return `pushed ${findings.length} finding(s)`;
 }
 
