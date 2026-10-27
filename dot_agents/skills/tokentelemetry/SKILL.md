@@ -109,7 +109,8 @@ Key points:
   `EnvironmentFile`. Vault key name → env name mapping:
   `ANTHROPIC_KEY` → `ANTHROPIC_API_KEY`. The retired age file
   `~/.agents/keys/retired/phillias/.anthropic-key.age` is fallback-only,
-  used when bws is unreachable. The key value itself is never committed or
+  used only when the vault fetch fails; a successful response missing
+  `ANTHROPIC_KEY` fails loudly. The key value itself is never committed or
   logged; only file paths are.
 - Data dir: `TOKENTELEMETRY_DATA_DIR` and `TOKENTELEMETRY_HOME` both point at
   `%h/.tokentelemetry` (data extracted from the retired Docker volume).
@@ -124,9 +125,10 @@ Key points:
   which godoxy routes to `:18000` via the rules block.
 - **No godoxy restart after config:** `hostapps.yml` requires a `godoxy-proxy`
   restart before edits take effect (unless godoxy gains hot-reload).
-- **Key must be harvestable:** the unit fails fast at `ExecStartPre` when
-  BOTH the bws vault (ANTHROPIC_KEY) and the retired age fallback
-  `~/.agents/keys/retired/phillias/.anthropic-key.age` are unavailable.
+- **Key must be harvestable:** the unit fails fast at `ExecStartPre` when the
+  bws vault fetch fails and the retired age fallback
+  `~/.agents/keys/retired/phillias/.anthropic-key.age` is unavailable; a
+  successful vault fetch missing `ANTHROPIC_KEY` also fails fast.
 - **Resource envelope:** do not lower `MemoryMax` below 2G; the Next.js
   production server starves under tighter limits.
 

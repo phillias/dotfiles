@@ -63,7 +63,8 @@ bws secret list <project-id> -o json | jq -r '.[] | select(.key==".cf-ai-gw") | 
 # Since Wave A2 (2026-10-27), shell-less consumers read the ENV-SHAPED keys
 # (e.g. CF_AI_GATEWAY_TOKEN, ANTHROPIC_KEY — they stay in phillias); the
 # dot-prefixed keys (.cf-ai-gw, .anthropic-key, …) and their on-disk age
-# copies are fallback-only for when bws is unreachable.
+# copies are fallback-only for direct harvesters when the bws fetch fails;
+# the shared login-env loader never touches age and uses only its <=24h cache.
 
 # Use a specific token for a one-off call (bypasses env + state)
 bws -t "$(cat ~/.agents/keys/default/.bws-token)" project list -o json

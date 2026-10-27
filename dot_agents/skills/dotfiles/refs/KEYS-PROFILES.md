@@ -103,9 +103,10 @@ tools that now read the env var instead.
 - (2026-10-27, Wave A2) The source of `CF_AI_GATEWAY_TOKEN` is now the phillias
   bws vault (env-shaped `CF_AI_GATEWAY_TOKEN`, exported by `load-keys.sh`);
   the plaintext profile-file mechanism described above is superseded, and the
-  dot-key `.cf-ai-gw` plus its retired age copy are fallback-only. Shell-less
-  consumers harvest from the vault at start and fall back to age only when
-  bws is unreachable.
+  dot-key `.cf-ai-gw` plus its retired age copy are fallback-only. Direct
+  shell-less harvesters fall back to age only when bws is unreachable; the
+  daemon login-env loader never touches age and uses only its <=24h vault
+  cache when bws is unavailable.
 - Keep files `0600`, directories `0700` — secrets never leave the profile
   dir unencrypted in tracked state.
 - Never commit any key file. Nothing under `~/.agents/keys` is managed by

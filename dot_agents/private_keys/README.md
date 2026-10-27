@@ -87,7 +87,7 @@ Offloaded rc-block consolidation note: `dot_zshenv.tmpl` and the shared loader h
 
 | Loader | When | Behavior |
 |---|---|---|
-| `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Reads the 45 exported migrated keys from the **bws project named like the default profile** (one `bws secret list` call; project id cached at `~/.agents/keys/.bws-project-<profile>.id`). On any bws failure, falls back per key to age-decrypting the retired file — loudly. |
+| `~/.agents/keys/load-keys.sh` | sourced by zshenv and profile | Reads the 45 exported migrated keys from the **bws project named like the default profile** (one `bws secret list` call; project id cached at `~/.agents/keys/.bws-project-<profile>.id`). On bws failure, uses a <=24h vault cache when available; it never age-decrypts retired files. |
 | `~/.zshenv` (dot_zshenv.tmpl) | every zsh, interactive + non-interactive | Sources `load-keys.sh`, then derives gateway routing vars (`OPENAI_API_KEY`, etc.) from the exported values; clears `ANTHROPIC_API_KEY` (vault exports `ANTHROPIC_KEY`). |
 | `~/.profile` | login shells | Sources `load-keys.sh` for bash login shells and SSH sessions. |
 | `~/.zshrc` / `~/.bashrc` | interactive shells | Source `load-keys.sh` (redundant but harmless). |
@@ -104,13 +104,14 @@ cached to disk (that would defeat keeping secrets off disk) and non-interactive
 shells are not skipped (that would permanently consume the retired recovery
 path). Each bws call is bounded by a 5s timeout, so a shell where bws is
 unreachable waits at most ~10s (initial secret list, then one project-list
-re-resolve) before the loud age fallback fires.
+   re-resolve) before the loader fails soft if no usable cache exists.
 
-**Fallback tripwire.** When bws cannot supply a key — daemon unreachable,
-token missing/broken, secret absent — the loader age-decrypts
-`~/.agents/keys/retired/<profile>/<key>.age` and exports that. EVERY fallback
-appends one greppable line to `~/.agents/keys/.bws-fallback.log` AND writes
-the same line to stderr:
+**Fallback tripwire.** When bws cannot supply a key — daemon unreachable or
+token missing/broken — direct harvest scripts may use
+`~/.agents/keys/retired/<profile>/<key>.age`; the shared loader instead uses
+only its <=24h vault cache and fails soft without one. EVERY direct-harvest
+age fallback appends one greppable line to `~/.agents/keys/.bws-fallback.log`
+AND writes the same line to stderr:
 
 ```
 BWS-FALLBACK 2026-10-13T22:30:00Z profile=phillias key=.groq-key var=GROQ_API_KEY reason=bws-fetch-failed
@@ -132,13 +133,11 @@ Design invariants:
    harvesting the live vault value (bws or the login-env loader) and writing
    a `/run` credential file: the no-mistakes daemon drop-in
    (`nm-daemon-env-harvest.sh`), `tokentelemetry-env-harvest.sh`, and
-   `cloudflare-ddns-harvest.service`. Harvest re-reads the vault every start
-   so rotations propagate. Since Wave A2 (2026-10-27) this is the only
-   primary pattern — the retired age copies
-   (`~/.agents/keys/retired/<profile>/<name>.age`) are fallback-only, used
-   by the harvest scripts when bws is unreachable (`glm-free-lane-scan.sh`
-   resolves its gateway token the same way: env override, then bws, then
-   age). Do not add new consumers that age-decrypt directly.
+   `cloudflare-ddns-harvest.service`. Direct harvest scripts re-read the vault
+   every start and use retired age copies only when the vault fetch fails; a
+   successful fetch missing its key is an error. The daemon login-env loader
+   never touches age: it may use its <=24h vault cache when bws is unavailable,
+   then fails soft. Do not add new consumers that age-decrypt directly.
 
 ### Exported env-shaped keys (pattern-driven loader)
 

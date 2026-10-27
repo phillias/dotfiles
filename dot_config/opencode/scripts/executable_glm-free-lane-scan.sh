@@ -17,10 +17,12 @@ STATE="$STATE_DIR/glm-free-scan.state"
 NTFY_ENV="$HOME/.config/opencode/glm-scan.ntfy.env"
 # CF AI gateway token (Wave A2, 2026-10-27): explicit env override, then a
 # direct bws vault read of the env-shaped CF_AI_GATEWAY_TOKEN (phillias),
-# then the retired on-disk age copy as unreachable-vault fallback.
+# then the retired on-disk age copy only when the vault fetch fails.
 GW="${CF_AI_GATEWAY_TOKEN:-}"
 if [ -z "$GW" ]; then
   bws_bin="${BWS_BIN:-}"
+  vault_output=""
+  vault_fetch_succeeded=0
   if [ -z "$bws_bin" ] || [ ! -x "$bws_bin" ]; then
     bws_bin="$(command -v bws 2>/dev/null || true)"
   fi
@@ -29,9 +31,18 @@ if [ -z "$GW" ]; then
   fi
   if [ -x "$bws_bin" ] && command -v jq >/dev/null 2>&1 \
     && [ -r "$HOME/.agents/keys/default/.bws-token" ]; then
-    GW="$(timeout 10 "$bws_bin" -t "$(cat "$HOME/.agents/keys/default/.bws-token")" secret list fe9eea09-9eaf-45e6-a72f-b45e0150b29d -o json 2>/dev/null \
-      | jq -r '.[] | select(.key=="CF_AI_GATEWAY_TOKEN") | .value' 2>/dev/null || true)"
+    vault_output="$(timeout 10 "$bws_bin" -t "$(cat "$HOME/.agents/keys/default/.bws-token")" secret list fe9eea09-9eaf-45e6-a72f-b45e0150b29d -o json 2>/dev/null || true)"
+    case "$vault_output" in
+      \[*)
+        vault_fetch_succeeded=1
+        GW="$(printf '%s' "$vault_output" | jq -r '.[] | select(.key=="CF_AI_GATEWAY_TOKEN" and (.value // "") != "") | .value' 2>/dev/null || true)"
+        ;;
+    esac
   fi
+fi
+if [ "${vault_fetch_succeeded:-0}" -eq 1 ] && [ -z "$GW" ]; then
+  echo "glm-free-lane-scan: CF_AI_GATEWAY_TOKEN missing from successful vault response" >&2
+  exit 1
 fi
 if [ -z "$GW" ]; then
   GW="$("$HOME/.local/share/mise/installs/age/latest/age/age" -d -i "$HOME/.config/chezmoi/key.txt" "$HOME/.agents/keys/retired/phillias/.cf-ai-gw.age" 2>/dev/null || true)"
