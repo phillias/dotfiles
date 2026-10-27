@@ -25,7 +25,7 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 
 ## Critical rules
 
-1. One config, no profiles; `OPENCODE_CONFIG_DIR` unset. The headless serve process reads the same `~/.config/opencode` tree as the TUI; its systemd unit does not override `XDG_CONFIG_HOME`.
+1. The config-root and serve-layering contract is owned by `references/DESIGN.md` §7; follow it when changing headless or TUI configuration.
 2. `~/.config/opencode/opencode.json` defines live providers + MCPs (interactive TUI + headless runs without the serve unit).
 3. `opencode-fallback.jsonc` owns agent/category/global routing; `oh-my-openagent.jsonc` is a legacy orphan never read.
 4. Global default fallback — project > global first-match-wins.

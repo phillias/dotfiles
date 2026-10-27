@@ -604,8 +604,12 @@ invent structure.
 
 The OpenCode config is a single-root layer with no profiles (`OPENCODE_CONFIG_DIR`
 unset) and no environment switching. The headless serve process reads the same
-config tree as the interactive TUI; its systemd unit does not override
-`XDG_CONFIG_HOME`. Machine diffs are handled via chezmoi `.tmpl`; no symlinks.
+config tree as the interactive TUI, then applies the serve-only
+`~/.config/opencode/opencode-serve.json` overlay through `OPENCODE_CONFIG`.
+The systemd unit does not override `XDG_CONFIG_HOME`; machine diffs are handled
+via chezmoi `.tmpl`, with no symlinks. The overlay pins the headless `build`
+agent to `kilocode/kilo-auto/free` with a 50-step limit and is not loaded by
+TUI runs.
 OmO-era material is archived in `ARCHIVE-OMO.md`.
 
 ### 7.1 `~/.config/opencode/` tree (live)
@@ -622,7 +626,7 @@ Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.tx
 
 ### 7.2 Critical rules
 
-1. One config, no profiles, `OPENCODE_CONFIG_DIR` unset; the serve unit reads the same tree.
+1. One config root, no profiles, `OPENCODE_CONFIG_DIR` unset; the serve unit reads the same tree and applies its `OPENCODE_CONFIG` overlay.
 2. `opencode.json` defines the live providers + MCPs.
 3. Routing is owned by `opencode-fallback.jsonc` (agents/categories/global); the legacy `oh-my-openagent.jsonc` orphan is never read.
 4. `opencode-fallback.jsonc` is the global default fallback — project > global first-match-wins.
@@ -675,9 +679,11 @@ password lives in `.chezmoitemplates/opencode-serve-password.age` and appears
 in no plaintext source, shell history, or process args.
 Unauthenticated `GET /doc` returns 401 — that is the healthy signal.
 
-Config: the unit reads the shared `~/.config/opencode/opencode.json` tree, so
-headless serve and the interactive TUI use the same provider and routing config.
-The EnvironmentFile is shared with that config tree (see the unit's comment).
+Config: the unit reads the shared `~/.config/opencode/opencode.json` tree and
+applies `~/.config/opencode/opencode-serve.json` through `OPENCODE_CONFIG`, so
+headless serve and the interactive TUI share provider and routing config while
+serve-only agent defaults remain scoped to headless sessions. The EnvironmentFile
+is shared with that config tree (see the unit's comment).
 
 Transport for agent-to-agent messaging is the opencode HTTP API. The tracked
 adapter is `fleet-chat` (installed as `~/.local/bin/fleet-chat`):

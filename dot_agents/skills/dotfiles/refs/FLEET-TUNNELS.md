@@ -28,7 +28,7 @@ Every node runs:
 
 | Unit | Purpose |
 |---|---|
-| `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1`, rooted at `~/firstmate` for hosted sessions and using the shared `~/.config/opencode` config tree; EnvironmentFile reads `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) — rendered by chezmoi template `private_opencode-serve.env.tmpl`, age-decrypting each secret from its own age file (serve password in `.chezmoitemplates/opencode-serve-password.age`) |
+| `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1`, rooted at `~/firstmate` for hosted sessions and using the shared `~/.config/opencode` config tree plus the serve-only `~/.config/opencode/opencode-serve.json` `OPENCODE_CONFIG` overlay; EnvironmentFile reads `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) — rendered by chezmoi template `private_opencode-serve.env.tmpl`, age-decrypting each secret from its own age file (serve password in `.chezmoitemplates/opencode-serve-password.age`) |
 | `opencode-tunnel-primary55522.service` | autossh `-L 14001:127.0.0.1:4096 primary55522` |
 | `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 kali` |
 | `opencode-tunnel-kalione.service` | autossh `-L 14003:127.0.0.1:4096 kalione` |
