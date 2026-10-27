@@ -107,21 +107,20 @@ unreachable waits at most ~10s (initial secret list, then one project-list
    re-resolve) before the loader fails soft if no usable cache exists.
 
 **Fallback tripwire.** When bws cannot supply a key — daemon unreachable or
-token missing/broken — direct harvest scripts may use
-`~/.agents/keys/retired/<profile>/<key>.age`; the shared loader instead uses
-only its <=24h vault cache and fails soft without one. EVERY direct-harvest
-age fallback appends one greppable line to `~/.agents/keys/.bws-fallback.log`
-AND writes the same line to stderr:
+token missing/broken — `load-keys.sh` uses its <=24h vault cache when available
+and otherwise fails soft; it emits one greppable `BWS-FALLBACK` line per age
+fallback to `~/.agents/keys/.bws-fallback.log` and stderr:
 
 ```
 BWS-FALLBACK 2026-10-13T22:30:00Z profile=phillias key=.groq-key var=GROQ_API_KEY reason=bws-fetch-failed
 ```
 
-The fallback is a tripwire that shows where references still need re-pointing
-to bws; it is never silent cover. Secret values are never printed or logged —
-key names and events only. A node whose bws token is missing or broken still
-boots a working environment via fallback + log. **Watch the log**: every line
-is a place that still depends on the retired files.
+Direct harvesters (`tokentelemetry-env-harvest.sh` and
+`glm-free-lane-scan.sh`) silently use their retired age copy only when the
+vault fetch fails; a successful fetch missing its key fails loudly and never
+falls back. Secret values are never printed or logged — key names and events
+only. **Watch the loader log**: every line is a place that still depends on
+the retired files.
 
 Design invariants:
 
