@@ -170,3 +170,6 @@ go = "1.25"
 # tools-registry[proxy]; pipx backend (uv tool under the hood). AXI-compliant
 # TOON output: catalog search, call, balance. $1.00 free credit, pay-per-call.
 "pipx:tools-registry" = "0.20.0"
+# shodan — Python library and command-line utility for Shodan (PyPI package
+# shodan); pipx backend (uv tool under the hood). API key via SHODAN_API_KEY.
+"pipx:shodan" = "1.31.0"
