@@ -30,7 +30,7 @@ loader (map below) plus 11 recovery-only keys with no exported var:
 ├── README.md              # this file
 ├── load-keys.sh           # shared loader sourced by zshenv and profile
 ├── default -> <profile>   # RELATIVE symlink naming the default key profile
-├── .bws-fallback.log      # durable tripwire log: one line per fallback event
+├── .bws-fallback.log      # historical; no current writer
 ├── .bws-project-<profile>.id  # cached bws project id (not a secret)
 ├── <profile>/             # ACTIVE profile dirs: only never-migrated keys
 │   ├── .bws-token         # BWS machine-account token for this profile
@@ -83,7 +83,7 @@ sourcing conventions:
 
 Offloaded rc-block consolidation note: `dot_zshenv.tmpl` and the shared loader handle all provider keys. The only exception is `HARBOR_API_KEY` (zshrc-only, sourced from `$HOME/firstmate/projects/mybiz/.harbor-key`). The loader silently skips missing default profiles to avoid noise in non-interactive shells.
 
-## Loader contract (bws-first, loud fallback)
+## Loader contract (bws-first, cache-or-warning)
 
 | Loader | When | Behavior |
 |---|---|---|
@@ -106,14 +106,11 @@ path). Each bws call is bounded by a 5s timeout, so a shell where bws is
 unreachable waits at most ~10s (initial secret list, then one project-list
    re-resolve) before the loader fails soft if no usable cache exists.
 
-**Fallback tripwire.** When bws cannot supply a key — daemon unreachable or
-token missing/broken — `load-keys.sh` uses its <=24h vault cache when available
-and otherwise fails soft; it emits one greppable `BWS-FALLBACK` line per age
-fallback to `~/.agents/keys/.bws-fallback.log` and stderr:
-
-```
-BWS-FALLBACK 2026-10-13T22:30:00Z profile=phillias key=.groq-key var=GROQ_API_KEY reason=bws-fetch-failed
-```
+**Unavailable-vault behavior.** When bws cannot supply a key, `load-keys.sh`
+uses a fresh cache (<=5 minutes) or a stale cache (<=24 hours) when available;
+otherwise it emits a warning to stderr, leaves vault-only exports unset, and
+continues. It never reads or decrypts retired age files and does not write a
+fallback log.
 
 Direct harvesters (`tokentelemetry-env-harvest.sh` and
 `glm-free-lane-scan.sh`) silently use their retired age copy only when the
@@ -237,19 +234,17 @@ migration script `scripts/bws-migrate-keys.sh` is kept for reference.
 
 ## Troubleshooting
 
-- **Fallback events appearing**: `grep BWS-FALLBACK ~/.agents/keys/.bws-fallback.log`.
-  Each line names a key the loader could not get from bws — fix the cause
-  (bws token, network, missing secret) or re-point the consumer named by the
-  var; the log is the re-pointing work list, not noise to suppress.
+- **bws unavailable**: check stderr for the `load-keys` warning, then fix the
+  bws token or network; the loader uses only its <=24h cache and has no local
+  age fallback.
 - **bws down and a var is empty but the retired file exists**: check
-  `chezmoi decrypt ~/.agents/keys/retired/<profile>/.<name>.age` works; the
-  loader tries `chezmoi decrypt` then raw `age -d` with the chezmoi identity.
+  the bws project contents and cache age; the loader never reads the retired
+  file, which is available only to direct harvesters on fetch failure.
 - **zshenv warns about a missing default symlink** (interactive shells only):
   `ln -s <profile> ~/.agents/keys/default`, then verify
   `source ~/.zshenv && echo "set: ${CF_AI_GATEWAY_TOKEN:+yes}"`.
 - **Stale bws project id**: delete `~/.agents/keys/.bws-project-<profile>.id`;
   the loader re-resolves and re-caches on next shell (it also self-heals once
   automatically after a fetch failure).
-- **Provider var empty and no fallback line**: the key exists in neither bws
-  nor the retired tree — check the bws project contents and the key status
-  map above.
+- **Provider var empty**: the key exists in neither the usable bws response
+  nor cache — check the bws project contents and the key status map above.
