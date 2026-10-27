@@ -8,42 +8,36 @@ codified in this repo.
 
 ```
 ~/.agents/keys/
-  <profile>/          # per-identity subdir, e.g. masculinecache/, phillias/
-    .cf-ai-gw         # plain file: contents become CF_AI_GATEWAY_TOKEN
-  default             # symlink -> the DEFAULT profile dir (may be absent)
+  <profile>/.bws-token       # machine-account token for the profile
+  default                     # symlink -> the active profile dir
+  retired/<profile>/<key>.age # retired copies; direct-harvester fallback only
+  load-keys.sh                # shared vault loader
 ```
 
-- Profiles are plain directories named after a GitHub/host identity
-  (`masculinecache/`, `phillias/` on this host as of writing).
-- The `default` symlink selects which profile the shell environment
-  auto-loads. It is optional: only exports happen through it, nothing else
-  reads it.
+Profiles are directories named after a GitHub/host identity. The `default`
+symlink selects the profile token and cached vault state used by
+`load-keys.sh`; it does not make retired files active. The loader exports
+matching env-shaped vault keys, including `CF_AI_GATEWAY_TOKEN` and
+`ANTHROPIC_KEY`, and never decrypts retired age files. Direct shell-less
+harvesters may use their corresponding retired age copy only after a failed
+vault fetch; a successful fetch missing its key is an error.
 
-## Symlink semantics and load order (dot_zshenv.tmpl)
+## Loader semantics (dot_zshenv.tmpl)
 
-1. `readlink ~/.agents/keys/default` — `||` swallows a missing symlink
-   (`_default_profile=""`, readlink exit ignored).
-2. If it is unset, empty, or does not name an existing directory under
-   `~/.agents/keys/`: nothing is exported. In interactive shells (`[ -t 0 ]`)
-   one stderr line warns once
-   (`zshenv: ~/.agents/keys/default symlink missing; not exporting key profile vars`).
-3. If the target dir is valid and `-r ~/.agents/keys/$profile/.cf-ai-gw`:
-   `CF_AI_GATEWAY_TOKEN="$(cat …)"` is exported.
-4. If `.cf-ai-gw` is missing/unreadable: nothing exported; single stderr warn
-   (interactive only) naming the exact path.
-5. `_default_profile` is unset; only `CF_AI_GATEWAY_TOKEN` is exposed to the
-   rest of zshenv (and indirectly to every consumer below).
-
-Hardened behavior (PR #284): any failure mode exports nothing — no empty
-token is ever exported.
+`dot_zshenv.tmpl` sources `~/.agents/keys/load-keys.sh` for every shell. The
+loader reads the profile's `.bws-token`, calls bws with `-t`, and exports the
+matching vault keys. On vault failure it uses a fresh (<=5 minute) or stale
+(<=24 hour) vault cache when available; otherwise it warns to stderr and
+leaves vault-only exports unset. It never reads or decrypts retired age files.
 
 Non-default profiles are never auto-loaded. A consumer that needs a specific
-profile reads the file by explicit path; it does not appear in zshenv.
+profile reads it by explicit path; it does not appear in zshenv.
 
 ## Filename -> env var mapping
 
-`.cf-ai-gw` -> `CF_AI_GATEWAY_TOKEN`. That is the only mapping the loader
-implements today.
+The loader uses env-shaped vault keys directly (for example,
+`CF_AI_GATEWAY_TOKEN` and `ANTHROPIC_KEY`). Dot-prefixed files such as
+`.cf-ai-gw` are retired compatibility copies, not the current loader source.
 
 ## Consumers of CF_AI_GATEWAY_TOKEN (after zshenv)
 
@@ -72,10 +66,10 @@ consuming daemon/script).
 
 ## Fresh-machine behavior
 
-- Without `~/.agents/keys` or the `default` symlink: shells stay
-  key-less; Claude/Codex zshenv exports receive an empty token, and the two
-  direct consumers degrade gracefully (watch logs missing; audit exits with
-  `audit_error`). Interactive zsh prints one stderr warning per shell.
+- Without `~/.agents/keys`, the `default` symlink, or a usable vault/cache,
+  shells stay key-less and the loader warns or fails soft. Direct harvesters
+  fail unless their explicit env override or fetch-failure age fallback is
+  available.
 - The `~/.agents/keys` tree is a local secret store — never committed; it is
   provisioned per machine, not by chezmoi.
 
@@ -85,12 +79,11 @@ The pre-#284 location was a single file,
 `~/.config/opencode/.cf-ai-gw-token`, holding the gateway token and read by
 tools that now read the env var instead.
 
-- New source of truth: `~/.agents/keys/<profile>/.cf-ai-gw`, selected by
-  `~/.agents/keys/default`.
-- Migrate by copying the legacy file to
-  `~/.agents/keys/<profile>/.cf-ai-gw`, pointing `default` at that profile,
-  and verifying in a fresh shell: `echo ${#CF_AI_GATEWAY_TOKEN}` is
-  non-zero and consumers (e.g. `big-pickle-watch.sh`) find it.
+- The current source of truth is the phillias bws vault's env-shaped
+  `CF_AI_GATEWAY_TOKEN`, selected by the profile token and `default` symlink.
+- Migrate by placing the bws token in the selected profile and verifying in a
+  fresh shell: `echo ${#CF_AI_GATEWAY_TOKEN}` is non-zero. The old `.cf-ai-gw`
+  file is retained only as a direct-harvester fallback copy.
 - Consumers were migrated in #284 from reading the file path to reading
   `CF_AI_GATEWAY_TOKEN` from the environment; they must not keep any legacy
   file-path fallback.

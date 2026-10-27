@@ -6,6 +6,7 @@ repo=$(git rev-parse --show-toplevel)
 cd "$repo"
 
 tmp_root=$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-no-mistakes.XXXXXXXXXX")
+# shellcheck disable=SC2329  # invoked indirectly via the EXIT trap below
 cleanup() {
   case "${tmp_root:-}" in
     /tmp/dotfiles-no-mistakes.*|/var/tmp/dotfiles-no-mistakes.*)
