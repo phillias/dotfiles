@@ -1,10 +1,12 @@
 // Fleet external threat-awareness watch — passive third-party lookups only.
 //
 // Cron-scheduled Worker: polls Shodan (hosted api.shodan.io lookups plus the
-// keyless InternetDB) and the Censys v2 search API for the watch-list
-// targets, diffs observed exposure against the last-seen fingerprint in KV,
-// pushes new/changed findings to ntfy, and optionally files
-// phillias/selfhost issues for NEW weaknesses via the GitHub REST API.
+// keyless InternetDB) and the Censys Platform host-lookup API for the
+// watch-list targets, diffs observed exposure against the last-seen
+// fingerprint in KV, pushes new/changed findings to ntfy, and optionally
+// files phillias/selfhost issues for NEW weaknesses via the GitHub REST API.
+// The Censys leg needs CENSYS_PAT; when it is unset the leg is skipped with
+// one structured skip line and the run continues on Shodan + InternetDB.
 //
 // Passive by construction: no nmap, no port probes, no banners grabbed from
 // the fleet itself — only what Shodan/Censys already observe from outside.
@@ -23,8 +25,8 @@ import { WATCH_DOMAINS, WATCH_IPS } from "./watch-list.ts";
 export interface Env {
   FLEET_THREAT_STATE: KVNamespace;
   SHODAN_API_KEY: string;
-  CENSYS_API_ID: string;
-  CENSYS_API_TOKEN: string;
+  CENSYS_PAT?: string;
+  CENSYS_ORG_ID?: string;
   GODOXY_NTFY_TOKEN: string;
   GH_ISSUE_TOKEN: string;
   FILE_ISSUES?: string;
@@ -156,20 +158,30 @@ export function normalizeTarget(
   }
   for (const id of asArray(idb["vulns"])) vulns.add(String(id));
 
-  const hits = asArray(asRecord(ce["result"])["hits"]);
-  for (const hit of hits) {
-    for (const svc of asArray(asRecord(hit)["services"])) {
-      const s = asRecord(svc);
-      const port = asNumber(s["port"]);
-      if (port === null) continue;
-      ports.add(port);
-      const name = asString(s["service_name"]) || asString(s["transport_protocol"]) || "tcp";
-      services.add(`${port}/${name}`);
-      if (!certIssuer) {
-        const leaf = asRecord(asRecord(asRecord(s["tls"])["certificates"])["leaf"]);
-        certIssuer = asString(leaf["issuer_dn"]);
-        certExpires = certExpires || asString(asRecord(leaf["validity"])["end"]);
+  // Censys Platform host asset: result.resource.services[] with port,
+  // transport_protocol, software[] (product/vendor/version), cert.parsed
+  // (issuer_dn, validity_period.not_after), and compromises[]/exposures[]
+  // risk ids. Every access stays defensive; unknown shapes degrade to empty.
+  const resource = asRecord(asRecord(ce["result"])["resource"]);
+  for (const svc of asArray(resource["services"])) {
+    const s = asRecord(svc);
+    const port = asNumber(s["port"]);
+    if (port === null) continue;
+    ports.add(port);
+    const proto = asString(s["transport_protocol"]) || "tcp";
+    const software = asArray(s["software"]);
+    const product = asString(asRecord(software[0])["product"]).trim();
+    services.add(product ? `${port}/${proto} ${product}` : `${port}/${proto}`);
+    for (const list of [asArray(s["compromises"]), asArray(s["exposures"])]) {
+      for (const risk of list) {
+        const id = asString(asRecord(risk)["id"]) || asString(asRecord(risk)["name"]);
+        if (id) vulns.add(id);
       }
+    }
+    if (!certIssuer) {
+      const parsed = asRecord(asRecord(s["cert"])["parsed"]);
+      certIssuer = asString(parsed["issuer_dn"]);
+      certExpires = certExpires || asString(asRecord(parsed["validity_period"])["not_after"]);
     }
   }
 
@@ -294,8 +306,15 @@ async function pushNtfy(url: string, topic: string, token: string, findings: Fin
 
 export async function runPoll(env: Env): Promise<string> {
   const shodanKey = required(env.SHODAN_API_KEY, "SHODAN_API_KEY");
-  const censysId = required(env.CENSYS_API_ID, "CENSYS_API_ID");
-  const censysToken = required(env.CENSYS_API_TOKEN, "CENSYS_API_TOKEN");
+  // Censys Platform leg degrades gracefully: without a PAT the run continues
+  // on Shodan + InternetDB instead of failing as a whole.
+  const censysPat = env.CENSYS_PAT || "";
+  const censysOrgId = env.CENSYS_ORG_ID || "";
+  if (!censysPat) {
+    console.log(
+      "fleet-threat-watch skip: Censys leg skipped (CENSYS_PAT unset); continuing with Shodan + InternetDB",
+    );
+  }
   const ntfyUrl = env.NTFY_URL || "https://ntfy.phillias.cc";
   const ntfyTopic = env.NTFY_TOPIC || "fleet-threat";
   const repo = env.SELFHOST_REPO || "phillias/selfhost";
@@ -318,16 +337,22 @@ export async function runPoll(env: Env): Promise<string> {
     if (!targets.has(ip)) targets.set(ip, ip);
   }
 
-  const censysAuth = `Basic ${btoa(`${censysId}:${censysToken}`)}`;
+  const censysHeaders: Record<string, string> = {
+    Authorization: `Bearer ${censysPat}`,
+    Accept: "application/vnd.censys.api.v3.host.v1+json",
+  };
+  if (censysOrgId) censysHeaders["X-Organization-ID"] = censysOrgId;
   const current: Record<string, TargetFingerprint> = {};
   for (const [ip, label] of [...targets.entries()].sort()) {
     const shodan = await fetchJson(`https://api.shodan.io/shodan/host/${ip}?key=${shodanKey}`);
     const internetdb = await fetchJson(`https://internetdb.shodan.io/${ip}`);
-    const censys = await fetchJson("https://search.censys.io/api/v2/hosts/search", {
-      method: "POST",
-      headers: { Authorization: censysAuth, "Content-Type": "application/json" },
-      body: JSON.stringify({ q: `ip: ${ip}`, per_page: 5 }),
-    });
+    // Platform host lookup (per-IP GET; free tier includes host lookup).
+    // Unseen hosts 404 into empty exposure via fetchJson, like other legs.
+    const censys = censysPat
+      ? await fetchJson(`https://api.platform.censys.io/v3/global/asset/host/${ip}`, {
+        headers: censysHeaders,
+      })
+      : { status: 0, json: {} };
     current[ip] = normalizeTarget(label, shodan.json, internetdb.json, censys.json);
   }
 
