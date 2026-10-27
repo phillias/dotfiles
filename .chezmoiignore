@@ -4,6 +4,10 @@
 .chezmoi-inventory.json
 age-key.txt.age
 
+# Cloudflare Workers source — deployed with wrangler, never installed to home.
+workers
+workers/**
+
 # Literal .config/ path (chezmoi uses dot_config/ prefix convention instead)
 # .config  - Disabled to allow dot_config/ prefix convention for ~/.config/
 

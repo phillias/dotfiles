@@ -1,9 +1,0 @@
-[Unit]
-Description=Fleet threat watch poll (6h cadence: Shodan/Censys free tiers are quota-limited, and external exposure changes slowly enough that 6h catches NEW ports/vulns same-day without burning quota)
-
-[Timer]
-OnCalendar=*-*-* 00/6:00:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target

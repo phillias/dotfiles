@@ -1,0 +1,24 @@
+{
+  // Fleet external threat-awareness watch — passive Shodan/Censys poll.
+  // Deploy-only source: workers/ is chezmoi-ignored, never installed to home.
+  // Deploy steps live in DEPLOY.md. Never commit secret values here.
+  "name": "fleet-threat-watch",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-27",
+  // 6h cadence: Shodan/Censys free tiers are quota-limited, and external
+  // exposure changes slowly enough that 6h catches NEW ports/vulns same-day
+  // without burning quota. Workers need no on-boot catch-up: one cron suffices.
+  "triggers": { "crons": ["0 */6 * * *"] },
+  // Deployer-created binding: wrangler kv namespace create FLEET_THREAT_STATE,
+  // then paste the returned id below (namespace ids are not secrets).
+  "kv_namespaces": [{ "binding": "FLEET_THREAT_STATE", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }],
+  "vars": {
+    "NTFY_URL": "https://ntfy.phillias.cc",
+    "NTFY_TOPIC": "fleet-threat",
+    "SELFHOST_REPO": "phillias/selfhost",
+    // "1" (default) files a phillias/selfhost issue per NEW weakness;
+    // set to "0" to disable issue filing.
+    "FILE_ISSUES": "1"
+  },
+  "observability": { "enabled": true, "traces": { "enabled": true } }
+}
