@@ -116,8 +116,8 @@ Direct harvesters (`tokentelemetry-env-harvest.sh` and
 `glm-free-lane-scan.sh`) silently use their retired age copy only when the
 vault fetch fails; a successful fetch missing its key fails loudly and never
 falls back. Secret values are never printed or logged — key names and events
-only. **Watch the loader log**: every line is a place that still depends on
-the retired files.
+only. To find remaining retired-file dependencies, grep consumers for
+`.age` and `.agents/keys` references; retired-file usage is not logged.
 
 Design invariants:
 
