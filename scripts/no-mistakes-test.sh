@@ -208,7 +208,17 @@ done
 
 if [ "${#rendered_units[@]}" -gt 0 ]; then
   for unit in "${rendered_units[@]}"; do
-    if ! systemd-analyze verify --user "$unit"; then
+    # Verify against the throwaway chezmoi destination: systemd expands %h
+    # from HOME, not from the repository containing the unit under test.
+    while IFS= read -r reference; do
+      [ -n "$reference" ] || continue
+      target="${reference/#%h/$dest}"
+      if [ ! -f "$target" ] || [ ! -x "$target" ]; then
+        echo "FAIL: %h executable is missing or not executable in throwaway destination: $target"
+        fail=1
+      fi
+    done < <(grep -oE "%h/[^[:space:]\\\"]+" "$unit" | grep -F '/.local/bin/' || true)
+    if ! HOME="$dest" systemd-analyze verify --user "$unit"; then
       echo "FAIL: systemd-analyze verify failed: $unit"
       fail=1
     fi
