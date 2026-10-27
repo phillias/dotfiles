@@ -15,7 +15,6 @@
   "vars": {
     "NTFY_URL": "https://ntfy.phillias.cc",
     "NTFY_TOPIC": "fleet-threat",
-    "SELFHOST_REPO": "phillias/selfhost",
     // "1" (default) files a phillias/selfhost issue per NEW weakness;
     // set to "0" to disable issue filing.
     "FILE_ISSUES": "1"

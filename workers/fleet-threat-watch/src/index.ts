@@ -11,7 +11,7 @@
 // Passive by construction: no nmap, no port probes, no banners grabbed from
 // the fleet itself — only what Shodan/Censys already observe from outside.
 // Keys arrive as wrangler secrets (see DEPLOY.md) and are never logged.
-// No finding means no push (silentok). First run stores a baseline silently.
+// No finding means no push after the initial baseline inventory.
 // State advances only after successful delivery, so a failed push or issue
 // call re-reports on the next run instead of dropping findings.
 //
@@ -32,7 +32,11 @@ export interface Env {
   FILE_ISSUES?: string;
   NTFY_URL?: string;
   NTFY_TOPIC?: string;
-  SELFHOST_REPO?: string;
+}
+
+export interface CertificateFingerprint {
+  issuer: string;
+  expires: string;
 }
 
 export interface TargetFingerprint {
@@ -40,11 +44,10 @@ export interface TargetFingerprint {
   ports: number[];
   services: string[];
   vulns: string[];
-  cert_issuer: string;
-  cert_expires: string;
+  certs: Record<string, CertificateFingerprint>;
 }
 
-export type FindingKind = "new-target" | "new-port" | "new-vuln" | "cert-change" | "removed-port";
+export type FindingKind = "new-target" | "new-port" | "new-vuln" | "cert-change" | "removed-port" | "service-change";
 
 export interface Finding {
   kind: FindingKind;
@@ -64,19 +67,27 @@ function required(value: string | undefined, name: string): string {
   return value as string;
 }
 
-async function fetchJson(url: string, init?: RequestInit): Promise<{ status: number; json: unknown }> {
+function safeUrl(url: string): string {
+  return url.replace(/([?&]key=)[^&]*/g, "$1[REDACTED]");
+}
+
+async function fetchJson(
+  url: string,
+  init?: RequestInit,
+  allowNotFound = false,
+): Promise<{ status: number; json: unknown; headers: Headers }> {
   let res: Response;
   try {
     res = await fetch(url, init);
   } catch {
-    fail(`request failed: ${url}`);
+    fail(`request failed: ${safeUrl(url)}`);
   }
-  if (res.status === 404) return { status: 404, json: {} };
-  if (!res.ok) fail(`API call failed: ${url} (HTTP ${res.status})`);
+  if (res.status === 404 && allowNotFound) return { status: 404, json: {}, headers: res.headers };
+  if (!res.ok) fail(`API call failed: ${safeUrl(url)} (HTTP ${res.status})`);
   try {
-    return { status: res.status, json: await res.json() };
+    return { status: res.status, json: await res.json(), headers: res.headers };
   } catch {
-    fail(`non-JSON response: ${url} (HTTP ${res.status})`);
+    fail(`non-JSON response: ${safeUrl(url)} (HTTP ${res.status})`);
   }
 }
 
@@ -108,8 +119,12 @@ function asFingerprints(value: unknown): Record<string, TargetFingerprint> {
       ports: r["ports"].filter((p): p is number => typeof p === "number"),
       services: asArray(r["services"]).map(String),
       vulns: asArray(r["vulns"]).map(String),
-      cert_issuer: asString(r["cert_issuer"]),
-      cert_expires: asString(r["cert_expires"]),
+      certs: Object.fromEntries(Object.entries(asRecord(r["certs"])).flatMap(([port, cert]) => {
+        const c = asRecord(cert);
+        return typeof c["issuer"] === "string" || typeof c["expires"] === "string"
+          ? [[port, { issuer: asString(c["issuer"]), expires: asString(c["expires"]) }]]
+          : [];
+      })),
     };
   }
   return out;
@@ -129,8 +144,7 @@ export function normalizeTarget(
   const ports = new Set<number>();
   const services = new Set<string>();
   const vulns = new Set<string>();
-  let certIssuer = "";
-  let certExpires = "";
+  const certs: Record<string, CertificateFingerprint> = {};
 
   for (const entry of asArray(sh["data"])) {
     const e = asRecord(entry);
@@ -148,8 +162,13 @@ export function normalizeTarget(
     }
     const certRec = asRecord(asRecord(e["ssl"])["cert"]);
     const issuer = asRecord(certRec["issuer"]);
-    if (!certIssuer) certIssuer = asString(issuer["O"]) || asString(issuer["CN"]);
-    if (!certExpires) certExpires = asString(certRec["expires"]);
+    if (!certs[String(port)]) {
+      const certificate = {
+        issuer: asString(issuer["O"]) || asString(issuer["CN"]),
+        expires: asString(certRec["expires"]),
+      };
+      if (certificate.issuer || certificate.expires) certs[String(port)] = certificate;
+    }
   }
   for (const id of asArray(sh["vulns"])) vulns.add(String(id));
   for (const port of asArray(idb["ports"])) {
@@ -172,16 +191,24 @@ export function normalizeTarget(
     const software = asArray(s["software"]);
     const product = asString(asRecord(software[0])["product"]).trim();
     services.add(product ? `${port}/${proto} ${product}` : `${port}/${proto}`);
-    for (const list of [asArray(s["compromises"]), asArray(s["exposures"])]) {
+    for (const list of [
+      asArray(s["compromises"]),
+      asArray(s["exposures"]),
+      asArray(s["vulns"]),
+      asArray(s["threats"]),
+    ]) {
       for (const risk of list) {
-        const id = asString(asRecord(risk)["id"]) || asString(asRecord(risk)["name"]);
+        const id = asString(risk) || asString(asRecord(risk)["id"]) || asString(asRecord(risk)["name"]);
         if (id) vulns.add(id);
       }
     }
-    if (!certIssuer) {
+    if (!certs[String(port)]) {
       const parsed = asRecord(asRecord(s["cert"])["parsed"]);
-      certIssuer = asString(parsed["issuer_dn"]);
-      certExpires = certExpires || asString(asRecord(parsed["validity_period"])["not_after"]);
+      const certificate = {
+        issuer: asString(parsed["issuer_dn"]),
+        expires: asString(asRecord(parsed["validity_period"])["not_after"]),
+      };
+      if (certificate.issuer || certificate.expires) certs[String(port)] = certificate;
     }
   }
 
@@ -190,8 +217,7 @@ export function normalizeTarget(
     ports: [...ports].sort((a, b) => a - b),
     services: [...services].sort(),
     vulns: [...vulns].sort(),
-    cert_issuer: certIssuer,
-    cert_expires: certExpires,
+    certs: Object.fromEntries(Object.entries(certs).sort(([a], [b]) => Number(a) - Number(b))),
   };
 }
 
@@ -199,7 +225,6 @@ export function normalizeTarget(
 export function diffFingerprints(
   old: Record<string, TargetFingerprint>,
   current: Record<string, TargetFingerprint>,
-  firstRun: boolean,
 ): Finding[] {
   const findings: Finding[] = [];
   for (const ip of Object.keys(current).sort()) {
@@ -207,14 +232,12 @@ export function diffFingerprints(
     const prev = old[ip];
     if (prev && JSON.stringify(prev) === JSON.stringify(cur)) continue;
     if (!prev) {
-      if (!firstRun) {
-        findings.push({ kind: "new-target", ip, detail: ip, summary: `target ${cur.label} is newly watched` });
-        for (const p of cur.ports) {
-          findings.push({ kind: "new-port", ip, detail: String(p), summary: `NEW port ${p} on ${cur.label}` });
-        }
-        for (const v of cur.vulns) {
-          findings.push({ kind: "new-vuln", ip, detail: v, summary: `NEW vulnerability ${v} on ${cur.label}` });
-        }
+      findings.push({ kind: "new-target", ip, detail: ip, summary: `target ${cur.label} is newly watched` });
+      for (const p of cur.ports) {
+        findings.push({ kind: "new-port", ip, detail: String(p), summary: `NEW port ${p} on ${cur.label}` });
+      }
+      for (const v of cur.vulns) {
+        findings.push({ kind: "new-vuln", ip, detail: v, summary: `NEW vulnerability ${v} on ${cur.label}` });
       }
       continue;
     }
@@ -236,16 +259,25 @@ export function diffFingerprints(
         findings.push({ kind: "new-vuln", ip, detail: v, summary: `NEW vulnerability ${v} on ${cur.label}` });
       }
     }
-    if (
-      (cur.cert_issuer || cur.cert_expires) &&
-      (cur.cert_issuer !== prev.cert_issuer || cur.cert_expires !== prev.cert_expires)
-    ) {
-      findings.push({
-        kind: "cert-change",
-        ip,
-        detail: `${cur.cert_issuer}/${cur.cert_expires}`,
-        summary: `cert change on ${cur.label}: issuer=${cur.cert_issuer} expiry=${cur.cert_expires}`,
-      });
+    const oldServices = new Set(prev.services);
+    const newServices = new Set(cur.services);
+    for (const service of cur.services) {
+      if (!oldServices.has(service)) findings.push({ kind: "service-change", ip, detail: service, summary: `NEW service ${service} on ${cur.label}` });
+    }
+    for (const service of prev.services) {
+      if (!newServices.has(service)) findings.push({ kind: "service-change", ip, detail: service, summary: `service removed: ${service} on ${cur.label}` });
+    }
+    for (const port of new Set([...Object.keys(prev.certs), ...Object.keys(cur.certs)])) {
+      const oldCert = prev.certs[port];
+      const newCert = cur.certs[port];
+      if (newCert && JSON.stringify(oldCert) !== JSON.stringify(newCert)) {
+        findings.push({
+          kind: "cert-change",
+          ip,
+          detail: `${port}: ${newCert.issuer}/${newCert.expires}`,
+          summary: `cert change on ${cur.label} port ${port}: issuer=${newCert.issuer} expiry=${newCert.expires}`,
+        });
+      }
     }
   }
   return findings;
@@ -261,12 +293,15 @@ async function fileIssues(
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
     "Content-Type": "application/json",
+    "User-Agent": "fleet-threat-watch",
   };
-  const listed = await fetchJson(
-    `https://api.github.com/repos/${repo}/issues?state=open&per_page=100`,
-    { headers },
-  );
-  const openTitles = new Set(asArray(listed.json).map((i) => asString(asRecord(i)["title"])));
+  const openTitles = new Set<string>();
+  let nextUrl: string | null = `https://api.github.com/repos/${repo}/issues?state=open&per_page=100`;
+  while (nextUrl) {
+    const listed = await fetchJson(nextUrl, { headers });
+    for (const issue of asArray(listed.json)) openTitles.add(asString(asRecord(issue)["title"]));
+    nextUrl = listed.headers.get("Link")?.match(/<([^>]+)>;\s*rel="next"/)?.[1] || null;
+  }
   for (const f of findings) {
     if (f.kind !== "new-port" && f.kind !== "new-vuln") continue;
     const title = `[fleet-threat] ${f.summary}`;
@@ -287,9 +322,9 @@ async function fileIssues(
   }
 }
 
-async function pushNtfy(url: string, topic: string, token: string, findings: Finding[]): Promise<void> {
-  const body = findings.map((f) => `- ${f.summary}`).join("\n");
-  const title = `fleet-threat-watch: ${findings.length} new/changed finding(s)`;
+async function pushNtfy(url: string, topic: string, token: string, findings: Finding[], baseline = false): Promise<void> {
+  const body = findings.length ? findings.map((f) => `- ${f.summary}`).join("\n") : "- no current ports or vulnerabilities observed";
+  const title = baseline ? "fleet-threat-watch: initial baseline inventory" : `fleet-threat-watch: ${findings.length} new/changed finding(s)`;
   let res: Response;
   try {
     res = await fetch(`${url}/${topic}`, {
@@ -317,7 +352,7 @@ export async function runPoll(env: Env): Promise<string> {
   }
   const ntfyUrl = env.NTFY_URL || "https://ntfy.phillias.cc";
   const ntfyTopic = env.NTFY_TOPIC || "fleet-threat";
-  const repo = env.SELFHOST_REPO || "phillias/selfhost";
+  const repo = "phillias/selfhost";
   const filingEnabled = (env.FILE_ISSUES ?? "1") !== "0";
 
   if (WATCH_DOMAINS.length === 0 && WATCH_IPS.length === 0) fail("watch list is empty");
@@ -344,14 +379,14 @@ export async function runPoll(env: Env): Promise<string> {
   if (censysOrgId) censysHeaders["X-Organization-ID"] = censysOrgId;
   const current: Record<string, TargetFingerprint> = {};
   for (const [ip, label] of [...targets.entries()].sort()) {
-    const shodan = await fetchJson(`https://api.shodan.io/shodan/host/${ip}?key=${shodanKey}`);
-    const internetdb = await fetchJson(`https://internetdb.shodan.io/${ip}`);
+    const shodan = await fetchJson(`https://api.shodan.io/shodan/host/${ip}?key=${shodanKey}`, undefined, true);
+    const internetdb = await fetchJson(`https://internetdb.shodan.io/${ip}`, undefined, true);
     // Platform host lookup (per-IP GET; free tier includes host lookup).
     // Unseen hosts 404 into empty exposure via fetchJson, like other legs.
     const censys = censysPat
       ? await fetchJson(`https://api.platform.censys.io/v3/global/asset/host/${ip}`, {
         headers: censysHeaders,
-      })
+      }, true)
       : { status: 0, json: {} };
     current[ip] = normalizeTarget(label, shodan.json, internetdb.json, censys.json);
   }
@@ -359,13 +394,23 @@ export async function runPoll(env: Env): Promise<string> {
   const stored = await env.FLEET_THREAT_STATE.get(STATE_KEY, "json");
   const firstRun = stored === null;
   const old = firstRun ? {} : asFingerprints(asRecord(stored)["targets"]);
-  const findings = diffFingerprints(old, current, firstRun);
+  const findings = diffFingerprints(old, current);
+
+  if (firstRun) {
+    await pushNtfy(
+      ntfyUrl,
+      ntfyTopic,
+      required(env.GODOXY_NTFY_TOKEN, "GODOXY_NTFY_TOKEN"),
+      findings,
+      true,
+    );
+    await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current }));
+    return `pushed initial baseline inventory for ${Object.keys(current).length} target(s)`;
+  }
 
   if (findings.length === 0) {
     await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current }));
-    const summary = firstRun
-      ? `baseline established for ${Object.keys(current).length} target(s); no push sent (first run)`
-      : "no changes; no push sent";
+    const summary = "no changes; no push sent";
     console.log(summary);
     return summary;
   }

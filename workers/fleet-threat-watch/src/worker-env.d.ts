@@ -31,7 +31,12 @@ interface RequestInit {
 interface Response {
   readonly status: number;
   readonly ok: boolean;
+  readonly headers: Headers;
   json(): Promise<unknown>;
+}
+
+interface Headers {
+  get(name: string): string | null;
 }
 
 declare function btoa(data: string): string;
