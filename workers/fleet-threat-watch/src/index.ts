@@ -33,6 +33,7 @@ export interface Env {
 }
 
 export interface CertificateFingerprint {
+  fingerprint: string;
   issuer: string;
   expires: string;
 }
@@ -42,7 +43,7 @@ export interface TargetFingerprint {
   ports: number[];
   services: string[];
   vulns: string[];
-  certs: Record<string, CertificateFingerprint>;
+  certs: Record<string, Record<string, CertificateFingerprint>>;
 }
 
 export type FindingKind = "new-target" | "new-port" | "new-vuln" | "cert-change" | "removed-port" | "new-service" | "service-removed";
@@ -117,11 +118,18 @@ function asFingerprints(value: unknown): Record<string, TargetFingerprint> {
       ports: r["ports"].filter((p): p is number => typeof p === "number"),
       services: asArray(r["services"]).map(String),
       vulns: asArray(r["vulns"]).map(String),
-      certs: Object.fromEntries(Object.entries(asRecord(r["certs"])).flatMap(([port, cert]) => {
-        const c = asRecord(cert);
-        return typeof c["issuer"] === "string" || typeof c["expires"] === "string"
-          ? [[port, { issuer: asString(c["issuer"]), expires: asString(c["expires"]) }]]
-          : [];
+      certs: Object.fromEntries(Object.entries(asRecord(r["certs"])).flatMap(([service, providers]) => {
+        const parsedProviders = Object.fromEntries(Object.entries(asRecord(providers)).flatMap(([provider, cert]) => {
+          const c = asRecord(cert);
+          return typeof c["fingerprint"] === "string"
+            ? [[provider, {
+              fingerprint: asString(c["fingerprint"]),
+              issuer: asString(c["issuer"]),
+              expires: asString(c["expires"]),
+            }]]
+            : [];
+        }));
+        return Object.keys(parsedProviders).length ? [[service, parsedProviders]] : [];
       })),
     };
   }
@@ -142,16 +150,23 @@ export function normalizeTarget(
   const ports = new Set<number>();
   const services = new Set<string>();
   const vulns = new Set<string>();
-  const certs: Record<string, CertificateFingerprint> = {};
+  const certs: Record<string, Record<string, CertificateFingerprint>> = {};
 
   for (const entry of asArray(sh["data"])) {
     const e = asRecord(entry);
     const port = asNumber(e["port"]);
     if (port === null) continue;
     ports.add(port);
-    const mod = asString(asRecord(e["_shodan"])["module"]) || "tcp";
-    const product = asString(e["product"]).trim();
-    services.add(product ? `${port}/${mod} ${product}` : `${port}/${mod}`);
+    const shodan = asRecord(e["_shodan"]);
+    const transport = asString(e["transport"]) || "tcp";
+    const application = asString(shodan["module"]) || asString(asRecord(e["http"])["protocol"]);
+    const software = [
+      asString(e["vendor"]),
+      asString(e["product"]),
+      asString(e["version"]),
+    ].map((value) => value.trim()).filter(Boolean).join(" ");
+    const serviceKey = [port, transport, application].filter(Boolean).join("/");
+    services.add(software ? `${serviceKey}/${software}` : serviceKey);
     const v = e["vulns"];
     if (Array.isArray(v)) {
       for (const id of v) vulns.add(String(id));
@@ -160,12 +175,15 @@ export function normalizeTarget(
     }
     const certRec = asRecord(asRecord(e["ssl"])["cert"]);
     const issuer = asRecord(certRec["issuer"]);
-    if (!certs[String(port)]) {
-      const certificate = {
+    const fingerprint = asString(certRec["fingerprint_sha256"]) || asString(certRec["fingerprint"]);
+    if (fingerprint) {
+      const serviceCerts = certs[serviceKey] || {};
+      serviceCerts.shodan = {
+        fingerprint,
         issuer: asString(issuer["O"]) || asString(issuer["CN"]),
         expires: asString(certRec["expires"]),
       };
-      if (certificate.issuer || certificate.expires) certs[String(port)] = certificate;
+      certs[serviceKey] = serviceCerts;
     }
   }
   for (const id of asArray(sh["vulns"])) vulns.add(String(id));
@@ -185,7 +203,8 @@ export function normalizeTarget(
     const port = asNumber(s["port"]);
     if (port === null) continue;
     ports.add(port);
-    const proto = asString(s["protocol"]) || asString(s["transport_protocol"]) || "tcp";
+    const transport = asString(s["transport_protocol"]) || "tcp";
+    const application = asString(s["protocol"]);
     const software = asArray(s["software"]);
     const serviceNames = software.map((item) => {
       const softwareRecord = asRecord(item);
@@ -194,10 +213,11 @@ export function normalizeTarget(
         .filter(Boolean)
         .join(" ");
     }).filter(Boolean);
+    const servicePrefix = [port, transport, application].filter(Boolean).join("/");
     if (serviceNames.length === 0) {
-      services.add(`${port}/${proto}`);
+      services.add(servicePrefix);
     } else {
-      for (const serviceName of serviceNames) services.add(`${port}/${proto} ${serviceName}`);
+      for (const serviceName of serviceNames) services.add(`${servicePrefix}/${serviceName}`);
     }
     for (const list of [
       asArray(s["compromises"]),
@@ -210,13 +230,16 @@ export function normalizeTarget(
         if (id) vulns.add(id);
       }
     }
-    if (!certs[String(port)]) {
-      const parsed = asRecord(asRecord(s["cert"])["parsed"]);
-      const certificate = {
+    const parsed = asRecord(asRecord(s["cert"])["parsed"]);
+    const fingerprint = asString(parsed["fingerprint_sha256"]) || asString(asRecord(s["cert"])["fingerprint_sha256"]);
+    if (fingerprint) {
+      const serviceCerts = certs[servicePrefix] || {};
+      serviceCerts.censys = {
+        fingerprint,
         issuer: asString(parsed["issuer_dn"]),
         expires: asString(asRecord(parsed["validity_period"])["not_after"]),
       };
-      if (certificate.issuer || certificate.expires) certs[String(port)] = certificate;
+      certs[servicePrefix] = serviceCerts;
     }
   }
 
@@ -225,7 +248,7 @@ export function normalizeTarget(
     ports: [...ports].sort((a, b) => a - b),
     services: [...services].sort(),
     vulns: [...vulns].sort(),
-    certs: Object.fromEntries(Object.entries(certs).sort(([a], [b]) => Number(a) - Number(b))),
+    certs: Object.fromEntries(Object.entries(certs).sort(([a], [b]) => a.localeCompare(b))),
   };
 }
 
@@ -275,16 +298,20 @@ export function diffFingerprints(
     for (const service of prev.services) {
       if (!newServices.has(service)) findings.push({ kind: "service-removed", ip, detail: service, summary: `service removed: ${service} on ${cur.label}` });
     }
-    for (const port of new Set([...Object.keys(prev.certs), ...Object.keys(cur.certs)])) {
-      const oldCert = prev.certs[port];
-      const newCert = cur.certs[port];
-      if (newCert && JSON.stringify(oldCert) !== JSON.stringify(newCert)) {
-        findings.push({
-          kind: "cert-change",
-          ip,
-          detail: `${port}: ${newCert.issuer}/${newCert.expires}`,
-          summary: `cert change on ${cur.label} port ${port}: issuer=${newCert.issuer} expiry=${newCert.expires}`,
-        });
+    for (const service of new Set([...Object.keys(prev.certs), ...Object.keys(cur.certs)])) {
+      const oldProviders = prev.certs[service] || {};
+      const newProviders = cur.certs[service] || {};
+      for (const provider of new Set([...Object.keys(oldProviders), ...Object.keys(newProviders)])) {
+        const oldCert = oldProviders[provider];
+        const newCert = newProviders[provider];
+        if (newCert && JSON.stringify(oldCert) !== JSON.stringify(newCert)) {
+          findings.push({
+            kind: "cert-change",
+            ip,
+            detail: `${service} ${provider}: ${newCert.fingerprint}`,
+            summary: `cert change on ${cur.label} ${service} (${provider})`,
+          });
+        }
       }
     }
   }
@@ -367,15 +394,17 @@ export async function runPoll(env: Env): Promise<string> {
   if (WATCH_DOMAINS.length === 0 && WATCH_IPS.length === 0) fail("watch list is empty");
 
   // Resolve domains passively through Shodan's hosted DNS API (one call).
-  const dns = await fetchJson(
-    `https://api.shodan.io/dns/resolve?hostnames=${WATCH_DOMAINS.join(",")}&key=${shodanKey}`,
-  );
-  const dnsRec = asRecord(dns.json);
   const targets = new Map<string, string>();
-  for (const domain of WATCH_DOMAINS) {
-    const ip = asString(dnsRec[domain]);
-    if (!ip) fail(`watch domain does not resolve via Shodan: ${domain}`);
-    targets.set(ip, `${domain} (${ip})`);
+  if (WATCH_DOMAINS.length > 0) {
+    const dns = await fetchJson(
+      `https://api.shodan.io/dns/resolve?hostnames=${WATCH_DOMAINS.join(",")}&key=${shodanKey}`,
+    );
+    const dnsRec = asRecord(dns.json);
+    for (const domain of WATCH_DOMAINS) {
+      const ip = asString(dnsRec[domain]);
+      if (!ip) fail(`watch domain does not resolve via Shodan: ${domain}`);
+      targets.set(ip, `${domain} (${ip})`);
+    }
   }
   for (const ip of WATCH_IPS) {
     if (!targets.has(ip)) targets.set(ip, ip);
