@@ -30,8 +30,6 @@ export interface Env {
   GODOXY_NTFY_TOKEN: string;
   GH_ISSUE_TOKEN: string;
   FILE_ISSUES?: string;
-  NTFY_URL?: string;
-  NTFY_TOPIC?: string;
 }
 
 export interface CertificateFingerprint {
@@ -47,7 +45,7 @@ export interface TargetFingerprint {
   certs: Record<string, CertificateFingerprint>;
 }
 
-export type FindingKind = "new-target" | "new-port" | "new-vuln" | "cert-change" | "removed-port" | "service-change";
+export type FindingKind = "new-target" | "new-port" | "new-vuln" | "cert-change" | "removed-port" | "new-service" | "service-removed";
 
 export interface Finding {
   kind: FindingKind;
@@ -187,10 +185,20 @@ export function normalizeTarget(
     const port = asNumber(s["port"]);
     if (port === null) continue;
     ports.add(port);
-    const proto = asString(s["transport_protocol"]) || "tcp";
+    const proto = asString(s["protocol"]) || asString(s["transport_protocol"]) || "tcp";
     const software = asArray(s["software"]);
-    const product = asString(asRecord(software[0])["product"]).trim();
-    services.add(product ? `${port}/${proto} ${product}` : `${port}/${proto}`);
+    const serviceNames = software.map((item) => {
+      const softwareRecord = asRecord(item);
+      return ["product", "vendor", "version"]
+        .map((field) => asString(softwareRecord[field]).trim())
+        .filter(Boolean)
+        .join(" ");
+    }).filter(Boolean);
+    if (serviceNames.length === 0) {
+      services.add(`${port}/${proto}`);
+    } else {
+      for (const serviceName of serviceNames) services.add(`${port}/${proto} ${serviceName}`);
+    }
     for (const list of [
       asArray(s["compromises"]),
       asArray(s["exposures"]),
@@ -262,10 +270,10 @@ export function diffFingerprints(
     const oldServices = new Set(prev.services);
     const newServices = new Set(cur.services);
     for (const service of cur.services) {
-      if (!oldServices.has(service)) findings.push({ kind: "service-change", ip, detail: service, summary: `NEW service ${service} on ${cur.label}` });
+      if (!oldServices.has(service)) findings.push({ kind: "new-service", ip, detail: service, summary: `NEW service ${service} on ${cur.label}` });
     }
     for (const service of prev.services) {
-      if (!newServices.has(service)) findings.push({ kind: "service-change", ip, detail: service, summary: `service removed: ${service} on ${cur.label}` });
+      if (!newServices.has(service)) findings.push({ kind: "service-removed", ip, detail: service, summary: `service removed: ${service} on ${cur.label}` });
     }
     for (const port of new Set([...Object.keys(prev.certs), ...Object.keys(cur.certs)])) {
       const oldCert = prev.certs[port];
@@ -303,7 +311,7 @@ async function fileIssues(
     nextUrl = listed.headers.get("Link")?.match(/<([^>]+)>;\s*rel="next"/)?.[1] || null;
   }
   for (const f of findings) {
-    if (f.kind !== "new-port" && f.kind !== "new-vuln") continue;
+    if (f.kind !== "new-port" && f.kind !== "new-vuln" && f.kind !== "new-service") continue;
     const title = `[fleet-threat] ${f.summary}`;
     if (openTitles.has(title)) {
       console.log(`issue already open: ${title}`);
@@ -322,21 +330,24 @@ async function fileIssues(
   }
 }
 
-async function pushNtfy(url: string, topic: string, token: string, findings: Finding[], baseline = false): Promise<void> {
+const NTFY_URL = "https://ntfy.phillias.cc";
+const NTFY_TOPIC = "fleet-threat";
+
+async function pushNtfy(token: string, findings: Finding[], baseline = false): Promise<void> {
   const body = findings.length ? findings.map((f) => `- ${f.summary}`).join("\n") : "- no current ports or vulnerabilities observed";
   const title = baseline ? "fleet-threat-watch: initial baseline inventory" : `fleet-threat-watch: ${findings.length} new/changed finding(s)`;
   let res: Response;
   try {
-    res = await fetch(`${url}/${topic}`, {
+    res = await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, Title: title, Priority: "high" },
       body,
     });
   } catch {
-    fail(`ntfy push failed: ${url}/${topic}`);
+    fail(`ntfy push failed: ${NTFY_URL}/${NTFY_TOPIC}`);
   }
-  if (!res.ok) fail(`ntfy push failed: ${url}/${topic} (HTTP ${res.status})`);
-  console.log(`pushed ${findings.length} finding(s) to ${url}/${topic}`);
+  if (!res.ok) fail(`ntfy push failed: ${NTFY_URL}/${NTFY_TOPIC} (HTTP ${res.status})`);
+  console.log(`pushed ${findings.length} finding(s) to ${NTFY_URL}/${NTFY_TOPIC}`);
 }
 
 export async function runPoll(env: Env): Promise<string> {
@@ -350,8 +361,6 @@ export async function runPoll(env: Env): Promise<string> {
       "fleet-threat-watch skip: Censys leg skipped (CENSYS_PAT unset); continuing with Shodan + InternetDB",
     );
   }
-  const ntfyUrl = env.NTFY_URL || "https://ntfy.phillias.cc";
-  const ntfyTopic = env.NTFY_TOPIC || "fleet-threat";
   const repo = "phillias/selfhost";
   const filingEnabled = (env.FILE_ISSUES ?? "1") !== "0";
 
@@ -398,10 +407,8 @@ export async function runPoll(env: Env): Promise<string> {
 
   if (firstRun) {
     await pushNtfy(
-      ntfyUrl,
-      ntfyTopic,
       required(env.GODOXY_NTFY_TOKEN, "GODOXY_NTFY_TOKEN"),
-      findings,
+      findings.map((finding) => ({ ...finding, summary: `current ${finding.summary.replace(/^NEW /, "")}` })),
       true,
     );
     await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current }));
@@ -418,7 +425,7 @@ export async function runPoll(env: Env): Promise<string> {
   if (filingEnabled) {
     await fileIssues(repo, required(env.GH_ISSUE_TOKEN, "GH_ISSUE_TOKEN"), findings);
   }
-  await pushNtfy(ntfyUrl, ntfyTopic, required(env.GODOXY_NTFY_TOKEN, "GODOXY_NTFY_TOKEN"), findings);
+  await pushNtfy(required(env.GODOXY_NTFY_TOKEN, "GODOXY_NTFY_TOKEN"), findings);
   await env.FLEET_THREAT_STATE.put(STATE_KEY, JSON.stringify({ targets: current }));
   return `pushed ${findings.length} finding(s)`;
 }

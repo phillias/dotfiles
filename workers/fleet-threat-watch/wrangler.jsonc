@@ -13,11 +13,9 @@
   // then paste the returned id below (namespace ids are not secrets).
   "kv_namespaces": [{ "binding": "FLEET_THREAT_STATE", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }],
   "vars": {
-    "NTFY_URL": "https://ntfy.phillias.cc",
-    "NTFY_TOPIC": "fleet-threat",
     // "1" (default) files a phillias/selfhost issue per NEW weakness;
     // set to "0" to disable issue filing.
     "FILE_ISSUES": "1"
   },
-  "observability": { "enabled": true, "traces": { "enabled": true } }
+  "observability": { "enabled": true, "traces": { "enabled": false } }
 }
