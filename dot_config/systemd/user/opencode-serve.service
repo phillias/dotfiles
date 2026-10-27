@@ -22,6 +22,11 @@ ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 127.0
 Restart=on-failure
 RestartSec=30
 
+# Serve-scoped config layer (PR #485, issue #486): OPENCODE_CONFIG deep-merges
+# AFTER the global opencode.json and is read ONLY by serve-spawned processes -
+# TUI runs never load it. Pins headless agent defaults (cost guardrail) without
+# touching TUI behavior.
+Environment=OPENCODE_CONFIG=%h/.config/opencode/opencode-serve.json
 EnvironmentFile=%h/.config/opencode/opencode-serve.env
 EnvironmentFile=-%t/opencode-serve.env
 IOWeight=10

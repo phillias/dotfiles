@@ -127,20 +127,21 @@ const DIGEST_MODEL = process.env.SHUNT_DIGEST_MODEL ?? "claude-haiku-4-5";
 const DIGEST_MODEL_FALLBACK = process.env.SHUNT_DIGEST_MODEL_FALLBACK ?? "nemotron-3-ultra-free";
 const DIGEST_TIMEOUT_MS = 20000;
 
-function readOpencodeConfigText(): string | null {
+function readOpencodeConfigTexts(): string[] {
   const env = process.env.OPENCODE_CONFIG;
   const cands = [
-    ...(env ? [env] : []),
     join(homedir(), ".config", "opencode", "opencode.json"),
     join(homedir(), ".config", "opencode", "opencode.jsonc"),
+    ...(env ? [env] : []),
   ];
+  const texts: string[] = [];
   for (const c of cands) {
     try {
       const t = readFileSync(c, "utf-8");
-      if (t) return t;
+      if (t) texts.push(t);
     } catch {}
   }
-  return null;
+  return texts;
 }
 
 function stripJsonComments(s: string): string {
@@ -159,6 +160,23 @@ function parseConfigJson(t: string | null): any {
     return JSON.parse(stripJsonComments(t));
   } catch {}
   return null;
+}
+
+function mergeConfig(base: any, overlay: any): any {
+  if (!base || typeof base !== "object" || Array.isArray(base)) return overlay;
+  if (!overlay || typeof overlay !== "object" || Array.isArray(overlay)) return overlay;
+  const merged = { ...base };
+  for (const [key, value] of Object.entries(overlay)) {
+    merged[key] = key in merged ? mergeConfig(merged[key], value) : value;
+  }
+  return merged;
+}
+
+function readOpencodeConfig(): any {
+  return readOpencodeConfigTexts()
+    .map((text) => parseConfigJson(text))
+    .filter(Boolean)
+    .reduce((merged, config) => mergeConfig(merged, config), null);
 }
 
 function resolveFileTemplate(v: string): string | null {
@@ -189,7 +207,7 @@ function zenAuth(): ZenAuth | null {
   if (envUrl && envKey) return finish({ baseUrl: envUrl, apiKey: envKey, headers: {} });
 
   try {
-    const cfg = parseConfigJson(readOpencodeConfigText());
+    const cfg = readOpencodeConfig();
     const block = cfg?.provider?.["opencode-zen"];
     const opts = block?.options ?? {};
     const url = envUrl ?? (typeof opts.baseURL === "string" ? opts.baseURL : null);
