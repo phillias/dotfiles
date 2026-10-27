@@ -1,0 +1,24 @@
+# Fleet external threat-awareness watch list.
+# Read by ~/.local/bin/fleet-threat-watch.sh (single-line arrays only).
+# Domains resolve passively via the Shodan hosted DNS API; IPs are looked up
+# directly. Nothing here is ever probed from the fleet itself.
+
+[targets]
+# Apex plus public subdomains evidenced in this repo (ntfy, linkwarden).
+# Add more as services go public; tunnel-only names stay out.
+domains = ["phillias.cc", "ntfy.phillias.cc", "linkwarden.phillias.cc"]
+# Extra bare IPs to watch (the auto-detected egress IP is added at runtime).
+ips = []
+# Append this box's own public egress IP (via api.ipify.org) on every run.
+auto_detect_ip = true
+
+[notify]
+url = "https://ntfy.phillias.cc"
+topic = "fleet-threat"
+
+[options]
+# File a phillias/selfhost issue per NEW weakness (new port/service or new
+# vulnerability), deduplicated against open issue titles. Env override wins:
+# FLEET_THREAT_FILE_ISSUES=0 disables, =1 forces on.
+file_issues = true
+selfhost_repo = "phillias/selfhost"

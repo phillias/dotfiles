@@ -1,0 +1,7 @@
+[Unit]
+Description=Fleet external threat-awareness watch (passive Shodan/Censys poll)
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.local/bin/fleet-threat-watch.sh

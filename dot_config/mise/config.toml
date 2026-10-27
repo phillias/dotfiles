@@ -170,3 +170,7 @@ go = "1.25"
 # tools-registry[proxy]; pipx backend (uv tool under the hood). AXI-compliant
 # TOON output: catalog search, call, balance. $1.00 free credit, pay-per-call.
 "pipx:tools-registry" = "0.20.0"
+# shodan — official Shodan CLI for manual triage of fleet-threat-watch
+# findings (fleet-threat-watch.sh itself uses raw curl against api.shodan.io:
+# timer-safe, no on-disk key state from `shodan init`). Equality-only pin.
+"pipx:shodan" = "1.31.0"
