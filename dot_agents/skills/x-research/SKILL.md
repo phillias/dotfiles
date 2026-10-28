@@ -27,14 +27,12 @@ cd ~/.agents/skills/x-research
 ### Bird CLI Setup (Free - Recommended)
 
 ```bash
-# Install Bird CLI (free X search, no API key needed)
-npm install -g @steipete/bird
-
+# Bird is pinned by mise and exposed as the `bird` shim.
 # Provide X credentials: log into x.com in Chrome/Firefox/Safari
 # (bird auto-extracts the session cookies), then verify:
 bird check
-# Or provide via env (exported from vault in shells): AUTH_TOKEN and CT0
-# (no manual paste required when loaded via chezmoi/dotfiles)
+# Or provide via env: AUTH_TOKEN and CT0. The shared dotfiles loader maps
+# BIRD_CLI_AUTH_TOKEN and BIRD_CLI_CT0 from the vault automatically.
 
 # Bird will be used automatically when available
 # Falls back to Composio if Bird is not installed
@@ -189,7 +187,7 @@ skills/x-research/
 |---------|----------|----------|
 | Cost | Free | Free tier (20K calls/mo) |
 | API Key | No | Yes (Composio) |
-| Auth | `bird login` | Twitter OAuth via Composio |
+| Auth | Browser cookies or `AUTH_TOKEN`/`CT0` env | Twitter OAuth via Composio |
 | Priority | Primary | Fallback |
 
 ## Credits
