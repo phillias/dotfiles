@@ -17,13 +17,7 @@ if [ -r "$HOME/.agents/keys/load-keys.sh" ]; then
     . "$HOME/.agents/keys/load-keys.sh"
 fi
 
-# Bird CLI auth (vault keys BIRD_CLI_AUTH_TOKEN / BIRD_CLI_CT0)
-if [ -n "${BIRD_CLI_AUTH_TOKEN:-}" ]; then
-    export AUTH_TOKEN="$BIRD_CLI_AUTH_TOKEN"
-fi
-if [ -n "${BIRD_CLI_CT0:-}" ]; then
-    export CT0="$BIRD_CLI_CT0"
-fi
+
 
 # Vercel AI Gateway key (CF primary, Vercel secondary).
 # load-keys.sh exports AI_GATEWAY_API_KEY from bws (fallback: the retired
