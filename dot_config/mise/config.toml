@@ -108,6 +108,10 @@ gh = "2.100.0"
 "npm:@anthropic-ai/claude-code" = { version = "2.1.296", npm_args = "--ignore-scripts=false" }
 "npm:@openai/codex" = "0.153.4"
 "npm:@xai-official/grok" = "1.0.13"
+# bird — X/Twitter CLI (cookie-auth) used by x-research; pinned via mise for
+# cross-harness shims (opencode/claude/pi/grok/...). Auth via AUTH_TOKEN/CT0
+# env vars auto-exported by load-keys pattern from BWS (env-shaped keys).
+"npm:@steipete/bird" = "0.8.0"
 # Kimi Code — Moonshot agent CLI; verified firstmate worker (re-verify harness
 # facts on this major version). Official npm package, native on aarch64; legacy
 # install.sh bootstrap retired (run_install-kimi.sh removed).
