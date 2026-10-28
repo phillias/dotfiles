@@ -272,6 +272,13 @@ else
     fi
 fi
 
+if [ -n "${BIRD_CLI_AUTH_TOKEN:-}" ]; then
+    export AUTH_TOKEN="$BIRD_CLI_AUTH_TOKEN"
+fi
+if [ -n "${BIRD_CLI_CT0:-}" ]; then
+    export CT0="$BIRD_CLI_CT0"
+fi
+
 # Clear the retired name after every export attempt so stale cache entries
 # cannot override Claude's native login.
 unset ANTHROPIC_API_KEY
