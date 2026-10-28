@@ -33,9 +33,8 @@ npm install -g @steipete/bird
 # Provide X credentials: log into x.com in Chrome/Firefox/Safari
 # (bird auto-extracts the session cookies), then verify:
 bird check
-# Alternatively, pass cookies directly:
-#   export AUTH_TOKEN="<twitter auth_token cookie>"
-#   export CT0="<twitter ct0 cookie>"
+# Or provide via env (exported from vault in shells): AUTH_TOKEN and CT0
+# (no manual paste required when loaded via chezmoi/dotfiles)
 
 # Bird will be used automatically when available
 # Falls back to Composio if Bird is not installed
