@@ -1,6 +1,6 @@
 ---
 name: relay-triage
-description: Fast structured classification of public mentions (Relay/X-mode) using TypeSafe Jev. Classifies mention type, spam probability, and auto-reply safety with calibrated confidence.
+description: Fast structured classification of public mentions (Relay/X-mode) using TypeSafe Jev. Classifies mention type, spam probability, and auto-reply safety with calibrated confidence. Use when public mentions (Relay/X-mode) need classification.
 ---
 
 # Relay Triage

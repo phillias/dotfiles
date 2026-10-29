@@ -5,6 +5,7 @@ description: >
   (bookmarks) and its OCI Object Storage backend: architecture, scoped-IAM
   secrets layout, S3 verification, and credential-rewire procedure.
   Designed for AI consumption: teaches discovery over static reference.
+  Use when working on selfhost stack services, especially Linkwarden and its OCI storage backend.
 compatibility: opencode
 metadata:
   stacks: selfhost

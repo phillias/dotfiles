@@ -8,6 +8,7 @@ description: >
   triage, backup/restore, and a register of known-failed troubleshooting
   paths. Designed for AI consumption: teaches discovery over static
   reference to resist environment drift.
+  Use when the captain asks about the Pirate media suite, its services, or its known-failed troubleshooting paths.
 compatibility: opencode
 metadata:
   stacks: pirate

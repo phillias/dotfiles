@@ -1,5 +1,5 @@
 ---
-name: Skywork-ppt
+name: skywork-ppt
 description: |
   Use this skill when the user wants to work with PowerPoint presentations. Triggers include:
   - Generating a new PPT from a topic: 'generate a PPT' / '帮我做个PPT' / 'PPTを作って' / 'PPT 만들어줘', 'create a presentation about X' / '生成关于X的演示文稿' / 'Xについてのプレゼンを作って' / 'X에 대한 발표 자료 만들어줘', 'help me make slides' / '帮我做幻灯片' / 'スライドを作って' / '슬라이드 만들어줘'

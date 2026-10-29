@@ -1,6 +1,6 @@
 ---
 name: web-perf
-description: Audit, diagnose, or optimize website loading and interaction performance, Core Web Vitals, and Lighthouse performance scores.
+description: Audit, diagnose, or optimize website loading and interaction performance, Core Web Vitals, and Lighthouse performance scores. Use when a site feels slow or a performance score needs improvement.
 ---
 
 # Web Performance Audit
