@@ -5,14 +5,19 @@ set -euo pipefail
 BIN_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
 DESCRIPTION="Send and inspect agent messages across the localhost opencode serve mesh"
 AUTH_ENV="${OPENCODE_SERVE_ENV:-${HOME}/.config/opencode/opencode-serve.env}"
+NODES_FILE="$(dirname -- "$AUTH_ENV")/fleet-chat.nodes"
 MAX_TEXT=1200
 
-declare -A NODE_URL=(
-  [local]="http://127.0.0.1:4096"
-  [primary55522]="http://127.0.0.1:14001"
-  [kali]="http://127.0.0.1:14002"
-  [kalione]="http://127.0.0.1:14003"
+DEFAULT_NODES=(
+  "local=http://127.0.0.1:4096"
+  "primary55522=http://127.0.0.1:14001"
+  "kali=http://127.0.0.1:14002"
+  "kalione=http://127.0.0.1:14003"
 )
+
+declare -A NODE_URL=()
+NODES=()
+NODES_LOADED=0
 
 die() { echo "error: $1"; [[ -n "${2:-}" ]] && echo "help: $2"; exit "${3:-1}"; }
 usage() {
@@ -20,25 +25,80 @@ usage() {
 fleet-chat — send and inspect agent messages across the localhost opencode serve mesh
 
 Usage:
-  fleet-chat list-nodes
-  fleet-chat send --node <name> --prompt <text> [--session <id>]
-  fleet-chat latest --node <name> --session <id> [--full]
+  fleet-chat list-nodes [--toon] [--json]
+  fleet-chat send --node <name> --prompt <text> [--session <id>] [--toon] [--json]
+  fleet-chat latest --node <name> --session <id> [--full] [--max-text N] [--toon] [--json]
+  fleet-chat session-list --node <name> [--toon] [--json]
 
 send creates a session when --session is omitted and returns its id plus the
 machine-readable prompt admission. It does not delete sessions.
+
+Formats: human-readable tables by default; --toon forces typed TOON rows and
+--json emits a JSON object instead. Only one of --toon, --json may be given.
+latest truncates long text at --max-text chars (default 1200); --full disables
+truncation and cannot be combined with --max-text.
+
+Nodes come from FLEET_CHAT_NODES ("name=url" pairs separated by spaces), else
+from a fleet-chat.nodes file next to the auth env file (one "name=url" per
+line, "#" comments and blank lines ignored), else the built-in map.
+session-list reads GET /api/session on the node.
 EOF
 }
 
 json_value() { jq -rn --arg value "$1" '$value|@json'; }
 truncate_text() {
-  local text="$1" length=${#1}
-  if (( length > MAX_TEXT )); then
-    printf '%s' "${text:0:MAX_TEXT}"
+  local text="$1" max="${2:-$MAX_TEXT}" length=${#1}
+  if (( length > max )); then
+    printf '%s' "${text:0:max}"
     printf '\n... (truncated, %d chars total)' "$length"
   else
     printf '%s' "$text"
   fi
 }
+
+parse_node_entry() {
+  local entry="$1" source="$2" name url
+  [[ "$entry" == *=* ]] || die "invalid node entry: ${entry}" "Use name=url pairs in ${source}"
+  name="${entry%%=*}"
+  url="${entry#*=}"
+  [[ "$name" =~ ^[A-Za-z0-9_.-]+$ ]] || die "invalid node name: ${name}" "Use name=url pairs in ${source}"
+  [[ "$url" == http://* || "$url" == https://* ]] || die "invalid node url: ${url}" "Use name=url pairs in ${source}"
+  if [[ -z "${NODE_URL[$name]+yes}" ]]; then
+    NODES+=("$name")
+  fi
+  NODE_URL[$name]="$url"
+}
+
+load_nodes() {
+  (( NODES_LOADED )) && return 0
+  NODES_LOADED=1
+  local entry entries line lineno
+  if [[ -n "${FLEET_CHAT_NODES:-}" ]]; then
+    read -ra entries <<< "${FLEET_CHAT_NODES}"
+    for entry in "${entries[@]}"; do
+      parse_node_entry "$entry" "FLEET_CHAT_NODES"
+    done
+  elif [[ -e "$NODES_FILE" ]]; then
+    [[ -r "$NODES_FILE" ]] || \
+      die "node file is not readable: ${NODES_FILE/#$HOME/~}" "Fix the file permissions or set FLEET_CHAT_NODES"
+    lineno=0
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      (( lineno++ )) || true
+      line="${line#"${line%%[![:space:]]*}"}"
+      line="${line%"${line##*[![:space:]]}"}"
+      [[ -z "$line" || "$line" == \#* ]] && continue
+      parse_node_entry "$line" "${NODES_FILE/#$HOME/~} line ${lineno}"
+    done < "$NODES_FILE"
+  else
+    for entry in "${DEFAULT_NODES[@]}"; do
+      parse_node_entry "$entry" "built-in defaults"
+    done
+  fi
+  (( ${#NODES[@]} > 0 )) || \
+    die "no nodes configured" "Set FLEET_CHAT_NODES or add entries to ${NODES_FILE/#$HOME/~}"
+}
+
+join_nodes() { local IFS=', '; printf '%s' "${NODES[*]}"; }
 
 load_auth() {
   [[ -r "$AUTH_ENV" ]] || \
@@ -72,16 +132,48 @@ request() {
 
 node_url() {
   local node="$1"
-  [[ -n "${NODE_URL[$node]+yes}" ]] || die "unknown node: $node" "Valid nodes: local, primary55522, kali, kalione" 2
+  load_nodes
+  [[ -n "${NODE_URL[$node]+yes}" ]] || die "unknown node: $node" "Valid nodes: $(join_nodes)" 2
   printf '%s' "${NODE_URL[$node]}"
 }
 
 list_nodes() {
-  local node url body status version
+  local format="human" node url body status version
+  while (($#)); do
+    case "$1" in
+      --toon|--json)
+        [[ "$format" == "human" ]] || die "cannot combine $1 with --${format}" "Use only one of --toon, --json" 2
+        format="${1#--}"; shift;;
+      --help) usage; return 0;;
+      -*) die "unknown flag: $1" "Valid flags: --toon, --json" 2;;
+      *) die "unexpected argument: $1" "Use fleet-chat list-nodes --help" 2;;
+    esac
+  done
+  load_nodes
   load_auth
+  if [[ "$format" == "json" ]]; then
+    local rows=() row_version
+    for node in "${NODES[@]}"; do
+      url="${NODE_URL[$node]}"
+      body=$(mktemp)
+      status=$(request GET "$url/global/health" '' "$body")
+      if [[ "$status" == 2* ]]; then
+        row_version=$(jq -r '.version // "unknown"' "$body" 2>/dev/null || printf 'unknown')
+        rows+=("$(printf '%s\t%s\thealthy\t%s\t%s' "$node" "$url" "$row_version" "$status")")
+      else
+        rows+=("$(printf '%s\t%s\tunreachable\t\t%s' "$node" "$url" "$status")")
+      fi
+      rm -f "$body"
+    done
+    printf '%s\n' "${rows[@]}" | jq -Rn '
+      [inputs | split("\t") | {name: .[0], url: .[1], status: .[2],
+        version: (if .[3] == "" then null else .[3] end), httpStatus: .[4]}]
+      | {count: length, nodes: .}'
+    return 0
+  fi
   printf 'bin: %s\ndescription: %s\n' "${BIN_PATH/#$HOME/~}" "$DESCRIPTION"
-  echo "nodes[${#NODE_URL[@]}]{name,url,status,version}:"
-  for node in local primary55522 kali kalione; do
+  echo "nodes[${#NODES[@]}]{name,url,status,version}:"
+  for node in "${NODES[@]}"; do
     url="${NODE_URL[$node]}"
     body=$(mktemp)
     status=$(request GET "$url/global/health" '' "$body")
@@ -93,17 +185,23 @@ list_nodes() {
     fi
     rm -f "$body"
   done
+  if [[ "$format" == "toon" ]]; then
+    echo "help[1]: Run \`fleet-chat list-nodes --json\` for machine-readable JSON"
+  fi
 }
 
 send_prompt() {
-  local node='' prompt='' session='' url body create_body status response admitted
+  local node='' prompt='' session='' format="human" url body create_body status response admitted
   while (($#)); do
     case "$1" in
       --node) [[ $# -ge 2 ]] || die "--node requires a value"; node="$2"; shift 2;;
       --prompt) [[ $# -ge 2 ]] || die "--prompt requires a value"; prompt="$2"; shift 2;;
       --session) [[ $# -ge 2 ]] || die "--session requires a value"; session="$2"; shift 2;;
-      --help) usage; return;;
-      -*) die "unknown flag: $1" "Valid flags: --node, --prompt, --session" 2;;
+      --toon|--json)
+        [[ "$format" == "human" ]] || die "cannot combine $1 with --${format}" "Use only one of --toon, --json" 2
+        format="${1#--}"; shift;;
+      --help) usage; return 0;;
+      -*) die "unknown flag: $1" "Valid flags: --node, --prompt, --session, --toon, --json" 2;;
       *) die "unexpected argument: $1" "Use fleet-chat send --help" 2;;
     esac
   done
@@ -122,6 +220,22 @@ send_prompt() {
   response=$(mktemp); status=$(request POST "$url/api/session/$session/prompt" "$body" "$response")
   [[ "$status" == 2* ]] || die "prompt admission failed (HTTP $status)" "Check the node and session id"
   admitted=$(jq -r '.data.admittedSeq // .admittedSeq // empty' "$response" 2>/dev/null || true)
+  if [[ "$format" == "json" ]]; then
+    jq -cn --arg node "$node" --arg session "$session" --arg admitted "$admitted" \
+      --argjson admission "$(jq -c '.' "$response" 2>/dev/null || printf '{}')" \
+      '{node: $node, session: $session, status: "admitted"}
+        + (if $admitted == "" then {} else {admittedSeq: ($admitted | tonumber? // $admitted)} end)
+        + {admission: $admission}'
+    rm -f "$response"
+    return 0
+  fi
+  if [[ "$format" == "toon" ]]; then
+    echo "message[1]{node,session,status,admittedSeq}:"
+    printf '  %s,%s,admitted,%s\n' "$node" "$session" "$admitted"
+    echo "help[1]: Run \`fleet-chat latest --node ${node} --session ${session}\` to read the reply"
+    rm -f "$response"
+    return 0
+  fi
   echo "message:"
   printf '  node: %s\n  session: %s\n  status: admitted\n' "$node" "$session"
   [[ -n "$admitted" ]] && printf '  admittedSeq: %s\n' "$admitted"
@@ -130,17 +244,26 @@ send_prompt() {
 }
 
 latest() {
-  local node='' session='' full=0 url body status text message_id
+  local node='' session='' full=0 max_set=0 max_text="$MAX_TEXT" format="human"
+  local url body status text message_id length shown truncated
   while (($#)); do
     case "$1" in
       --node) [[ $# -ge 2 ]] || die "--node requires a value"; node="$2"; shift 2;;
       --session) [[ $# -ge 2 ]] || die "--session requires a value"; session="$2"; shift 2;;
       --full) full=1; shift;;
-      --help) usage; return;;
-      -*) die "unknown flag: $1" "Valid flags: --node, --session, --full" 2;;
+      --max-text)
+        [[ $# -ge 2 ]] || die "--max-text requires a value" "fleet-chat latest --node <name> --session <id> [--max-text N]"
+        [[ "$2" =~ ^[0-9]+$ && "$2" -gt 0 ]] || die "invalid --max-text value: $2" "Use a positive integer" 2
+        max_text="$2"; max_set=1; shift 2;;
+      --toon|--json)
+        [[ "$format" == "human" ]] || die "cannot combine $1 with --${format}" "Use only one of --toon, --json" 2
+        format="${1#--}"; shift;;
+      --help) usage; return 0;;
+      -*) die "unknown flag: $1" "Valid flags: --node, --session, --full, --max-text, --toon, --json" 2;;
       *) die "unexpected argument: $1" "Use fleet-chat latest --help" 2;;
     esac
   done
+  (( full && max_set )) && die "cannot combine --full with --max-text" "Use one or the other" 2
   [[ -n "$node" && -n "$session" ]] || \
     die "--node and --session are required" "fleet-chat latest --node <name> --session <id>"
   url=$(node_url "$node"); load_auth; body=$(mktemp)
@@ -148,27 +271,118 @@ latest() {
   [[ "$status" == 2* ]] || die "message read failed (HTTP $status)" "Check the node and session id"
   message_id=$(jq -r '[.data[]? | select(.type == "assistant")] | last | .id // empty' "$body" 2>/dev/null || true)
   if [[ -z "$message_id" ]]; then
-    echo "messages: 0 assistant responses found"
+    if [[ "$format" == "json" ]]; then
+      jq -cn --arg node "$node" --arg session "$session" \
+        '{node: $node, session: $session, count: 0, messages: []}'
+    else
+      echo "messages: 0 assistant responses found"
+    fi
     rm -f "$body"
     return 0
   fi
   text=$(jq -r --arg id "$message_id" '[.data[]? | select(.id == $id) | .content[]? | select(.type == "text") | .text // empty] | join("\n")' \
     "$body")
+  length=${#text}
+  if [[ "$format" == "json" ]]; then
+    if (( full )); then
+      shown="$text"; truncated="false"
+    elif (( length > max_text )); then
+      shown=$(truncate_text "$text" "$max_text"); truncated="true"
+    else
+      shown="$text"; truncated="false"
+    fi
+    jq -cn --arg node "$node" --arg session "$session" --arg message "$message_id" \
+      --argjson chars "$length" --argjson truncated "$truncated" --arg text "$shown" \
+      '{node: $node, session: $session, message: $message, chars: $chars, truncated: $truncated, text: $text}'
+    rm -f "$body"
+    return 0
+  fi
+  if [[ "$format" == "toon" ]]; then
+    echo "response[1]{node,session,message,chars}:"
+    printf '  %s,%s,%s,%d\n' "$node" "$session" "$message_id" "$length"
+    if (( full )); then
+      printf '  text: %s\n' "$(json_value "$text")"
+    else
+      printf '  text: %s\n' "$(json_value "$(truncate_text "$text" "$max_text")")"
+      (( length > max_text )) && \
+        echo "help[1]: Run \`fleet-chat latest --node ${node} --session ${session} --full\` for the complete text"
+    fi
+    rm -f "$body"
+    return 0
+  fi
   echo "response:"
   printf '  node: %s\n  session: %s\n  message: %s\n' "$node" "$session" "$message_id"
   if (( full )); then
     printf '  text: %s\n' "$(json_value "$text")"
   else
-    printf '  text: %s\n' "$(json_value "$(truncate_text "$text")")"
+    printf '  text: %s\n' "$(json_value "$(truncate_text "$text" "$max_text")")"
   fi
+  rm -f "$body"
+}
+
+session_list() {
+  local node='' format="human" url body status rows_tsv count
+  while (($#)); do
+    case "$1" in
+      --node) [[ $# -ge 2 ]] || die "--node requires a value"; node="$2"; shift 2;;
+      --toon|--json)
+        [[ "$format" == "human" ]] || die "cannot combine $1 with --${format}" "Use only one of --toon, --json" 2
+        format="${1#--}"; shift;;
+      --help) usage; return 0;;
+      -*) die "unknown flag: $1" "Valid flags: --node, --toon, --json" 2;;
+      *) die "unexpected argument: $1" "Use fleet-chat session-list --help" 2;;
+    esac
+  done
+  [[ -n "$node" ]] || \
+    die "--node is required" "fleet-chat session-list --node <name>"
+  url=$(node_url "$node"); load_auth; body=$(mktemp)
+  status=$(request GET "$url/api/session" '' "$body")
+  [[ "$status" == 2* ]] || die "session list failed (HTTP $status)" "Check the node name with fleet-chat list-nodes"
+  jq -e 'type == "object" or type == "array"' "$body" >/dev/null 2>&1 || \
+    die "session list returned unexpected data" "Check the node name with fleet-chat list-nodes"
+  rows_tsv=$(jq -r '
+    ((if type == "array" then . else (.data // .) end)
+      | if type == "array" then . elif type == "object" and has("sessions") then .sessions else [] end)
+    | .[]
+    | [(.id // .sessionID // .sessionId // .session_id // "unknown"),
+       (.status // "" | tostring),
+       ((.title // .name // "" | tostring) | gsub("[\t\n\r,]+"; " "))]
+    | @tsv' "$body" 2>/dev/null) || die "session list returned unexpected data" "Check the node name with fleet-chat list-nodes"
+  if [[ -z "$rows_tsv" ]]; then
+    if [[ "$format" == "json" ]]; then
+      jq -cn --arg node "$node" '{node: $node, count: 0, sessions: []}'
+    else
+      echo "sessions: 0 sessions found on node ${node}"
+      echo "help[1]: Run \`fleet-chat send --node ${node} --prompt \"<text>\"\` to start one"
+    fi
+    rm -f "$body"
+    return 0
+  fi
+  if [[ "$format" == "json" ]]; then
+    jq -Rn --arg node "$node" '
+      [inputs | split("\t") | {id: .[0], status: .[1], title: .[2]}]
+      | {node: $node, count: length, sessions: .}' <<< "$rows_tsv"
+    rm -f "$body"
+    return 0
+  fi
+  local -a rows
+  mapfile -t rows <<< "$rows_tsv"
+  count=${#rows[@]}
+  echo "sessions[${count}]{id,status,title}:"
+  local row
+  for row in "${rows[@]}"; do
+    printf '  %s\n' "${row//$'\t'/,}"
+  done
+  echo "help[1]: Run \`fleet-chat latest --node ${node} --session <id>\` to read a session"
   rm -f "$body"
 }
 
 command="${1:-list-nodes}"; [[ $# -gt 0 ]] && shift
 case "$command" in
-  list-nodes) (($# == 0)) || die "list-nodes takes no arguments" "fleet-chat list-nodes" 2; list_nodes;;
+  list-nodes) list_nodes "$@";;
   send) send_prompt "$@";;
   latest) latest "$@";;
+  session-list) session_list "$@";;
   --help|-h) usage;;
-  *) die "unknown command: $command" "Valid commands: list-nodes, send, latest" 2;;
+  *) die "unknown command: $command" "Valid commands: list-nodes, send, latest, session-list" 2;;
 esac
