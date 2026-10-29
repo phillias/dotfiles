@@ -1,6 +1,6 @@
 ---
 name: finding-triage
-description: Fast structured triage for no-mistakes findings using TypeSafe Jev. Classifies severity, auto-fixability, and human-review requirements with calibrated confidence.
+description: Fast structured triage for no-mistakes findings using TypeSafe Jev. Classifies severity, auto-fixability, and human-review requirements with calibrated confidence. Use when triaging findings reported by a no-mistakes gate.
 ---
 
 # Finding Triage

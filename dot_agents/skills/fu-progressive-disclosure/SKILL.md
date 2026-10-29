@@ -1,6 +1,6 @@
 ---
 name: fu-progressive-disclosure
-description: Split an oversized skill, CLAUDE.md, or spec into an entry file plus files that load only when they're needed.
+description: Split an oversized skill, CLAUDE.md, or spec into an entry file plus files that load only when they're needed. Use when an entry file has grown oversized and detail should load only on demand.
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: agents-sdk
-description: Build, debug, or review Cloudflare Agents SDK applications using the agents package.
+description: Build, debug, or review Cloudflare Agents SDK applications using the agents package. Use when a task touches the Cloudflare Agents SDK or the `agents` package.
 ---
 
 # Cloudflare Agents SDK

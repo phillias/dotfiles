@@ -1,6 +1,6 @@
 ---
 name: escalation-check
-description: Fast structured escalation decision helper using TypeSafe Jev. Evaluates if findings or decisions require captain escalation per ask-user-authority criteria with calibrated confidence.
+description: Fast structured escalation decision helper using TypeSafe Jev. Evaluates if findings or decisions require captain escalation per ask-user-authority criteria with calibrated confidence. Use before escalating findings or decisions to the captain.
 ---
 
 # Escalation Check

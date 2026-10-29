@@ -1,6 +1,6 @@
 ---
 name: turnstile-spin
-description: Set up, repair, or migrate to Cloudflare Turnstile bot verification in an existing frontend and backend, including server-side Siteverify.
+description: Set up, repair, or migrate to Cloudflare Turnstile bot verification in an existing frontend and backend, including server-side Siteverify. Use when adding, fixing, or migrating Turnstile bot verification.
 ---
 
 # Turnstile Spin skill

@@ -5,6 +5,7 @@ description: >
   Covers DB clone recovery, fixing NULL/empty dates, tags, config contracts, and
   truncated JSON in Settings fields. Always creates a backup before any destructive
   operation.
+  Use when Prowlarr throws SQLite corruption or deserialization errors.
 compatibility: opencode
 ---
 
