@@ -38,7 +38,7 @@ bitwarden-secrets-manager = "2.1.0"
 "npm:pnpm" = "11.20.0"
 "npm:quota-axi" = "0.1.60"  # upstream from frozen @masculinecache fork (0.1.30, Aug 31 republish to retire the vendored overlay); firstmate floor is 0.1.51
 "npm:tasks-axi" = "0.2.6"  # firstmate floor 0.2.6 (update --archive-body, mv [<id>...])
-"npm:wrangler" = "4.125.0"
+"npm:wrangler" = "4.155.0"
 "npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin). Kept at 0.84.2 2026-09-20: both 0.85.1 and 0.86.0 die on long gate agent sessions with "Stream ended without finish_reason" (three pipeline deaths) while raw streams through the same lane complete cleanly with finish_reason stop — a pi 0.85+ stream-parsing regression; 0.84.2 completed two full pipelines the same night. The static x-opencode-session header on opencode-go-gw is load-bearing on every version (pi does not send it natively for custom providers). Re-bump only after a full no-mistakes run passes on the candidate.
 # no-mistakes gate pipeline (kunchenguid/no-mistakes) — NOT the unrelated npm
 # "no-mistakes" package (jonathanong, TS analysis). Installed via mise's go

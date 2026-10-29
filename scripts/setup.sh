@@ -111,7 +111,7 @@ _ensure_mise() {
 }
 _ensure_mise "gh@2.100.0" '^(gh|"github:cli/cli")'
 _ensure_mise "npm:@bitwarden/cli@2026.5.0" '^"npm:@bitwarden/cli"'
-_ensure_mise "npm:wrangler@4.125.0" '^"npm:wrangler"'
+_ensure_mise "npm:wrangler@4.155.0" '^"npm:wrangler"'
 _ensure_mise "cloudflared@2025.9.0" '^cloudflared'
 _ensure_mise "chezmoi@2.70.4" '^chezmoi'
 echo "gh: $(gh --version 2>&1 | head -1)"
