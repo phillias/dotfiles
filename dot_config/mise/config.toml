@@ -109,8 +109,8 @@ gh = "2.100.0"
 "npm:@openai/codex" = "0.153.4"
 "npm:@xai-official/grok" = "1.0.13"
 # bird — X/Twitter CLI (cookie-auth) used by x-research; pinned via mise for
-# cross-harness shims (opencode/claude/pi/grok/...). Auth via AUTH_TOKEN/CT0
-# env vars auto-exported by load-keys pattern from BWS (env-shaped keys).
+# cross-harness shims (opencode/claude/pi/grok/...). Auth is provided to Bird as
+# AUTH_TOKEN/CT0 by the loader's BIRD_CLI_AUTH_TOKEN/BIRD_CLI_CT0 mapping.
 "npm:@steipete/bird" = "0.8.0"
 # Kimi Code — Moonshot agent CLI; verified firstmate worker (re-verify harness
 # facts on this major version). Official npm package, native on aarch64; legacy

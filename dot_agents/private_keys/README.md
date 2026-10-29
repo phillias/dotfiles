@@ -146,7 +146,9 @@ is unaffected: it reads `META_API_KEY`, not `META_KEY`.
 
 (2026-10-19) The Anthropic vault secret is `ANTHROPIC_KEY`, exported as-is;
 the shared loader also clears inherited or cached `ANTHROPIC_API_KEY` values,
-so it cannot override Claude's native login. The legacy `.anthropic-key` name
+so it cannot override Claude's native login. Bird's X cookie secrets use the
+prefixed vault names `BIRD_CLI_AUTH_TOKEN` and `BIRD_CLI_CT0`; the shared loader
+maps them to Bird's required runtime names `AUTH_TOKEN` and `CT0`. The legacy `.anthropic-key` name
 is filtered by the pattern loader and remains inert. (2026-10-27, Wave A2)
 `tokentelemetry.service` harvests `ANTHROPIC_KEY` directly with bws+jq at
 unit start (`tokentelemetry-env-harvest.sh` -> `%t/tokentelemetry.env`) and
