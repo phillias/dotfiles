@@ -94,6 +94,12 @@ curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/se
 
 `scripts/setup.sh` bootstraps everything in one pass: chezmoi, then mise (the one installer for manifest-managed CLIs — gh, bw, wrangler, bws and the npm-global fleet are versioned by the committed `dot_config/mise/config.toml`), GitHub auth + deploy key, chezmoi init, Bitwarden unlock, age-key decrypt, and `chezmoi apply`. Pre-mise hand-installed copies of gh/bw/wrangler in `~/bin` are removed best-effort; system copies are untouched. bws (Bitwarden Secrets CLI) is manifest-managed too: the `bitwarden-secrets-manager` registry entry (aqua backend) is pinned in `dot_config/mise/config.toml` and provisioned by the mise-sync hook on the first post-setup `chezmoi apply`. The shipped `dot_local/bin/executable_gh` (installed to `~/.local/bin/gh`) intentionally deviates from the legacy host copy: it resolves gh via PATH (skipping itself) rather than hard-coded `/usr/local/bin/gh`/`/usr/bin/gh`, so it also works on fresh mise-only hosts where no system gh binary exists.
 
+### Mise tool management (fleet conventions)
+
+- **Shims for PATH discovery:** `mise install` creates the tool shim (e.g. `wrangler`) for PATH discovery. Never reference versioned install directories (e.g. `installs/npm-wrangler/<ver>/...`) in configs or scripts — always use the shim.
+- **Upgrade flow:** bump the pin in `dot_config/mise/config.toml` → `chezmoi apply` → mise reconciles → the shim re-points. Never run `npm update -g`, and never use in-tool self-updaters.
+- **No duplicate symlinks:** never create duplicate `~/.local/bin` symlinks alongside the mise shim.
+
 ## Secrets
 
 All sensitive values are age-encrypted at rest. The age key itself is stored encrypted in `age-key.txt.age` and decrypted during `chezmoi apply` using the machine's identity.
