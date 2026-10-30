@@ -1,0 +1,35 @@
+{
+  "rules": [
+    {
+      "when": "The task is a trivial mechanical edit such as a rote rename, formatting sweep, targeted typo fix, or simple file gathering.",
+      "use": { "harness": "muse", "effort": "low" },
+      "why": "Free Meta API quota for narrow, low-ambiguity work."
+    },
+    {
+      "when": "The task is a scout or crewmate research task, investigation, or exploration.",
+      "use": [
+        { "harness": "muse", "effort": "medium" },
+        { "harness": "agy", "model": "gemini-3.8-flash-medium", "effort": "medium" },
+        { "harness": "codex", "model": "gpt-reserve", "effort": "medium" }
+      ],
+      "why": "Muse rides Meta API directly (free, separate quota) and is optimized for crewmate/scout work; agy and codex fall through when Meta quota is tight."
+    },
+    {
+      "when": "The task is a big or ambiguous multi-file feature, a risky refactor, or work that requires holding many moving parts in mind.",
+      "use": [
+        { "harness": "codex", "model": "gpt-reserve", "effort": "high" },
+        { "harness": "claude", "effort": "high" },
+        { "harness": "muse", "effort": "high" }
+      ],
+      "why": "Strong coding profiles on independent quota pools (OpenAI cli-rpc, native Anthropic OAuth, Meta API); resolve through quota-array-dispatch."
+    }
+  ],
+  "default": [
+    { "harness": "codex", "model": "gpt-reserve", "effort": "medium" },
+    { "harness": "claude", "effort": "medium" },
+    { "harness": "muse", "effort": "medium" },
+    { "harness": "agy", "model": "gemini-3.8-flash-medium", "effort": "medium" },
+    { "harness": "kimi", "model": "kimi-code/kimi-for-coding", "effort": "medium" },
+    { "harness": "grok", "effort": "medium" }
+  ]
+}
