@@ -4,9 +4,12 @@ Ladder truth is the gateway API; this document is its flowchart rendering.
 Live route + element data verified 2026-10-25 (route version ids inline).
 The D1 `provider-catalog` registry is intended to mirror the gateway daily at
 05:00 ET via `d1-registry-refresh.mjs` — currently BROKEN (no vault token has
-D1 scopes; d1_mirror fails since 2026-10-13). Regenerate this page after
-structural route changes. Live quota truth is always `quota-axi`, never this
-file.
+D1 scopes; d1_mirror fails since 2026-10-13). Remote-query workaround: the
+ambient `CLOUDFLARE_API_TOKEN` from BWS lacks D1 scope (fails 7403); strip it
+and the companion vars so wrangler falls back to working auth:
+`env -u CLOUDFLARE_API_TOKEN -u CLOUDFLARE_API_KEY -u CLOUDFLARE_ACCOUNT_ID -u CLOUDFLARE_DDNS_API_TOKEN npx wrangler d1 execute provider-catalog --remote`.
+Regenerate this page after structural route changes. Live quota truth is
+always `quota-axi`, never this file.
 
 Recent structural changes:
 
@@ -49,11 +52,17 @@ Recent structural changes:
   `custom-zai-coding` elements in dynamic/TUI and dynamic/high were replaced
   with `custom-vercel` elements targeting the Vercel AI Gateway routers
   `router/tui` / `router/high` (custom provider slug `vercel`, base
-  `https://ai-gateway.vercel.sh/v1`, BYOK). TUI v`51c8a2d1` gained the
+  `https://ai-gateway.vercel.sh/v1`, BYOK). TUI v`51c8a2d1` (superseded by v`36c182e3`, next entry) gained the
   vercel rung second-to-last (before the openrouter PAYG tail); high
   v`a7bc6428` patched its dead m8 in place. Both vercel elements: 60s
   timeout, 2 retries. `router/tui` was trimmed GLM-only (captain order —
   keep TUI GLM-only); all Vercel gateway spend is PAYG from credits.
+- **2026-10-25 (TUI fixes; active version `36c182e3`):** rung r8
+  `custom-zai-coding/glm-5.3-flash` removed (version `36215e74` — inserted
+  earlier the same day, diagnosed as empty-reply hang). Head rung nv0
+  `custom-nvidia-nim/z-ai/glm-5.3` diagnosed 0-byte hang; its timeout cut
+  30000 → 5000 so a stalled head falls through fast instead of hanging the
+  ladder. commandcode weekly quota reset 2026-10-27 (GOAT 400s self-heal).
 
 ## How to read the flowcharts
 
@@ -82,11 +91,11 @@ flowchart TD
     harnesses -.->|stage 2 fallback| VG[Vercel AI Gateway vmc/*]
 ```
 
-### dynamic/TUI — daily driver (v51c8a2d1, 2026-10-25)
+### dynamic/TUI — daily driver (v36c182e3, 2026-10-25)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide)"] --> n1["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n2["phoenixgrove PGS<br/>glm-5.2"] --> n3["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n4["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n5["phoenixgrove PGS<br/>glm-5.3-flash"] --> n6["vercel gateway<br/>router/tui (GLM-only)<br/>(60s, 2 retries)"] --> n7["openrouter<br/>z-ai/glm-5.1<br/>(PAYG tail)"] --> done[done]
+    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide, 5s timeout)"] --> n1["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n2["phoenixgrove PGS<br/>glm-5.2"] --> n3["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n4["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n5["phoenixgrove PGS<br/>glm-5.3-flash"] --> n6["vercel gateway<br/>router/tui (GLM-only)<br/>(60s, 2 retries)"] --> n7["openrouter<br/>z-ai/glm-5.1<br/>(PAYG tail)"] --> done[done]
 ```
 
 ### dynamic/high — GLM-5.3-class (v a7bc6428, 2026-10-25)
@@ -242,7 +251,7 @@ Live values: run `quota-axi`. Dated observations below are snapshots, not state.
 |---|---|---|---|
 | opencode (zen + go) | OpenCode account | zen -free models are in-app-only (client-gated); go pool session-gated | monthly window reset 2026-09-30; 5h/weekly 100% (2026-09-27 snapshot) |
 | nvidia-nim (route) | NIM trial key | z-ai/glm-5.3, nemotron-3-super-120b, kimi-k3, deepseek-v4.1-flash | ~40 RPM account-wide shared across ALL NIM route nodes; glm-5.3-flash dead since Sep 28 (removed from TUI 2026-10-22) |
-| commandcode (GOAT) | individual-goat subscription | — | **insufficient credits 2026-10-06** — route rungs 400-fall-through until topped up |
+| commandcode (GOAT) | individual-goat subscription | — | **insufficient credits 2026-10-06** — route rungs 400-fall-through until the weekly reset 2026-10-27 (self-heals) |
 | phoenixgrove (PGS) | PGS subscription | — | **insufficient_quota 2026-10-06** — same fall-through behavior |
 | zai-coding | Z.AI Coding Plan | — | NOT a route element, ever (non-standard `/paas/v4` path vs unified-API canonical append → 404-in-200 false success). CF custom provider deleted 2026-10-25; subscription restored as the DIRECT opencode `zai-coding` provider (PR #478) |
 | openrouter | credit balance + :free lanes | nemotron-3-super-120b-a12b:free, nemotron-3-ultra-550b:free, z-ai/glm-5.2:free (direct; lane DEAD 2026-10-06 — paid slug only) | balance ~6% (2026-09-27) |
