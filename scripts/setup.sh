@@ -9,8 +9,8 @@
 #   2. GitHub auth + deploy key
 #   3. Profile selection
 #   4. chezmoi init (clone dotfiles repo)
-#   5. Bitwarden login + unlock
-#   6. Age key decryption (auto from Bitwarden, fallback to manual)
+#   5. Bitwarden Secrets Manager (bws machine token)
+#   6. Age key decryption (auto from BWS, fallback to manual)
 #   7. chezmoi config + apply
 #   8. Post-setup (inventory, cron, verify)
 
@@ -165,13 +165,8 @@ if $GH_AUTHENTICATED; then
     echo "==> GitHub already authenticated"
 else
     echo ""
-    echo "==> GitHub auth required"
-    echo ""
-    echo "Option A: Run 'gh auth login' in another terminal first, then re-run this script."
-    echo "  $ gh auth login --scopes repo"
-    echo ""
-    echo "Option B: Paste a PAT or OAuth token below."
-    echo "  Create at: https://github.com/settings/tokens (scope: repo)"
+    echo "==> GitHub auth required (PAT only)"
+    echo "Create at: https://github.com/settings/tokens (scope: repo)"
     echo ""
     read -rp "Paste GitHub token (or press Ctrl+C to skip): " GH_TOKEN </dev/tty
     if [ -n "$GH_TOKEN" ]; then
@@ -222,20 +217,8 @@ fi
 # ═══════════════════════════════════════════════════════════════════
 
 # ── 9. Select profile branch ─────────────────────────────────────
-echo ""
-echo "Which profile do you want to use?"
-echo "  1) master  — shared configs only (no SSH keys or API keys)"
-echo "  2) personal — personal SSH keys and API keys"
-echo "  3) work     — work SSH keys and API keys"
-read -rp "Enter choice [1-3]: " BRANCH_CHOICE </dev/tty
 BRANCH="master"
-case "${BRANCH_CHOICE}" in
-    1)  BRANCH="master" ;;
-    2)  BRANCH="personal" ;;
-    3)  BRANCH="work" ;;
-    *)  BRANCH="master" ;;
-esac
-echo "Using branch: $BRANCH"
+echo "Using profile: master"
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase 4 — chezmoi init (clone dotfiles repo)
@@ -260,57 +243,46 @@ if ! grep -qF "$DEPLOY_PUB" ~/.ssh/authorized_keys 2>/dev/null; then
 fi
 
 # ═══════════════════════════════════════════════════════════════════
-# Phase 5 — Bitwarden login + unlock
+# Phase 5 — Bitwarden Secrets Manager (bws)
 # ═══════════════════════════════════════════════════════════════════
 #
-# Key fix: bw unlock --raw output is captured via temp file instead
-# of $() to avoid TTY buffering issues (double-Enter + ghost prompt).
-# bw status is checked first to skip login if already authenticated.
+# Uses bws machine tokens for authentication instead of bw login/unlock.
+# Token is stored at ~/.agents/keys/default/.bws-token for reuse.
 
-# ── 12. Bitwarden authentication ────────────────────────────────
+# ── 12. Bitwarden Secrets Manager authentication ────────────────
 echo ""
-echo "==> Bitwarden authentication"
+echo "==> Bitwarden Secrets Manager authentication"
 echo ""
 
-unset BW_SESSION
+BWS_TOKEN_FILE="$HOME/.agents/keys/default/.bws-token"
+BWS_AUTHENTICATED=false
 
-# Check if already logged in (non-interactive, safe for $())
-BW_STATUS=$(bw status 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('status','unauthenticated'))" 2>/dev/null || echo "unauthenticated")
-
-if [ "$BW_STATUS" = "unauthenticated" ]; then
-    echo "--> Logging in to Bitwarden..."
-    echo "    You will be prompted for:"
-    echo "      1. Master password"
-    echo "      2. Verification code (sent to phillias@gmail.com)"
-    echo ""
-    # Run bw login in the foreground — user interacts directly via /dev/tty
-    bw login phillias@gmail.com || {
-        echo "WARN: Bitwarden login failed. You can set it up later with:"
-        echo "  bw login phillias@gmail.com"
-        echo "  export BW_SESSION=\$(bw unlock --raw)"
-        echo ""
-    }
-else
-    echo "--> Already logged in to Bitwarden"
+# Check if token file exists and is non-empty
+if [ -f "$BWS_TOKEN_FILE" ] && [ -s "$BWS_TOKEN_FILE" ]; then
+    export BWS_ACCESS_TOKEN=$(cat "$BWS_TOKEN_FILE")
+    if bws project list 2>/dev/null | head -1 | grep -q .; then
+        BWS_AUTHENTICATED=true
+    fi
 fi
 
-# Unlock vault — capture session key via temp file, NOT $()
-# This avoids the stdin buffering that causes double-Enter and ghost prompts.
-echo "--> Unlocking vault..."
-BW_SESSION_FILE=$(mktemp /tmp/bw-session-XXXXXXXX)
-# bw unlock --raw reads password/2FA from /dev/tty directly (interactive)
-# stdout (session key) → temp file, stderr → terminal (prompts visible)
-bw unlock --raw > "$BW_SESSION_FILE" || true
-BW_SESSION=$(head -1 "$BW_SESSION_FILE" 2>/dev/null | tr -d '\n\r' || true)
-rm -f "$BW_SESSION_FILE"
-
-if [ -z "$BW_SESSION" ]; then
-    echo ""
-    echo "WARN: Bitwarden unlock failed. Templates using bw_secret will not render."
-    echo "      Fix it later with:"
-    echo "        export BW_SESSION=\$(bw unlock --raw)"
-    echo "        BW_SESSION=\"\$BW_SESSION\" chezmoi apply"
-    echo ""
+if $BWS_AUTHENTICATED; then
+    echo "Bitwarden Secrets Manager: authenticated"
+else
+    read -rp "Paste BWS machine token (or press Ctrl+C to skip): " BWS_TOKEN </dev/tty
+    if [ -n "$BWS_TOKEN" ]; then
+        mkdir -p ~/.agents/keys/default
+        printf '%s' "$BWS_TOKEN" > "$BWS_TOKEN_FILE"
+        chmod 600 "$BWS_TOKEN_FILE"
+        export BWS_ACCESS_TOKEN="$BWS_TOKEN"
+        if bws project list 2>/dev/null | head -1 | grep -q .; then
+            BWS_AUTHENTICATED=true
+            echo "Bitwarden Secrets Manager: authenticated"
+        else
+            echo "WARN: BWS token verification failed. Age key decryption will fall back to manual prompt."
+        fi
+    else
+        echo "WARN: Skipping Bitwarden Secrets Manager. Age key decryption will fall back to manual prompt."
+    fi
 fi
 
 # ═══════════════════════════════════════════════════════════════════
@@ -318,9 +290,8 @@ fi
 # ═══════════════════════════════════════════════════════════════════
 #
 # The age key (age-key.txt.age) is stored encrypted in the repo.
-# Passphrase is in Bitwarden (item: "Chezmoi Age Key", password field).
-# If Bitwarden is available, fetch the passphrase automatically.
-# Otherwise, prompt the user manually.
+# Passphrase is fetched from Bitwarden Secrets Manager (bws).
+# If bws is unavailable, prompt the user manually.
 
 # ── 13. Decrypt age encryption key ──────────────────────────────
 AGE_KEY_FILE="$HOME/.config/chezmoi/key.txt"
@@ -328,37 +299,27 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
     echo ""
     echo "==> Age encryption key"
     echo "    The age key is encrypted in the dotfiles repo."
-    echo "    Passphrase is in Bitwarden: search 'Chezmoi Age Key'"
+    echo "    Passphrase is fetched from Bitwarden Secrets Manager."
     echo ""
 
     mkdir -p "$(dirname "$AGE_KEY_FILE")"
     DECRYPTED=false
 
-    # Auto-fetch passphrase from Bitwarden if logged in
-    if [ -n "${BW_SESSION:-}" ]; then
-        echo "--> Fetching passphrase from Bitwarden..."
-        FETCHED_PP=$(BW_SESSION="$BW_SESSION" bw list items --search "Chezmoi Age Key" 2>/dev/null | python3 -c "
-import sys, json
-try:
-    for item in json.load(sys.stdin):
-        pwd = item.get('login', {}).get('password', '')
-        name = item.get('name', '')
-        if pwd and ('chezmoi' in name.lower() or 'age' in name.lower()):
-            print(pwd)
-            break
-except: pass
-" 2>/dev/null) || true
-        if [ -n "$FETCHED_PP" ]; then
-            if printf '%s\n' "$FETCHED_PP" | chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>/dev/null; then
+    # Auto-fetch passphrase from BWS if authenticated
+    if [ -n "${BWS_ACCESS_TOKEN:-}" ]; then
+        echo "--> Fetching passphrase from Bitwarden Secrets Manager..."
+        BWS_PP=$(bws secret list fe9eea09-9eaf-45e6-a72f-b45e0150b29d 2>/dev/null | jq -r '.[] | select(.key | test("chezmoi.*age|age.*key"; "i")) | .value' 2>/dev/null | head -1) || true
+        if [ -n "$BWS_PP" ]; then
+            if printf '%s\n' "$BWS_PP" | chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>/dev/null; then
                 chmod 600 "$AGE_KEY_FILE"
                 DECRYPTED=true
-                echo "  Age key decrypted (passphrase from Bitwarden)"
+                echo "  Age key decrypted (passphrase from BWS)"
             else
-                echo "  Auto-decrypt failed (passphrase in Bitwarden may be incorrect)"
+                echo "  Auto-decrypt failed (passphrase in BWS may be incorrect)"
                 [ -f "$AGE_KEY_FILE" ] && rm -f "$AGE_KEY_FILE"
             fi
         else
-            echo "  Item not found in vault (expected name: 'Chezmoi Age Key')"
+            echo "  Secret not found in BWS project"
         fi
     fi
 
@@ -442,12 +403,7 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
     CHEZMOI_APPLY_OPTS="--keep-going"
 fi
 
-if [ -n "${BW_SESSION:-}" ]; then
-    echo "  (Bitwarden session available — bw_secret templates will render)"
-    BW_SESSION="$BW_SESSION" chezmoi apply $CHEZMOI_APPLY_OPTS
-else
-    chezmoi apply $CHEZMOI_APPLY_OPTS
-fi
+chezmoi apply $CHEZMOI_APPLY_OPTS
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase 8 — Post-setup
