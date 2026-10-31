@@ -12,7 +12,7 @@ live `~/.agents/keys` dir).
 | Status | Keys | Where they live |
 |---|---|---|
 | **Active** (not migrated) | `.bws-token` (per profile), `.google-tasks-token` | `~/.agents/keys/<profile>/` — unchanged, chezmoi age-encrypted in the repo as before |
-| **Retired** (57 migrated keys: 56 in the `phillias` profile + `masculinecache/.npmjs-key`) | Every other migrated key | bws project named like the profile is the live source; age-encrypted copies at `~/.agents/keys/retired/<profile>/<name>.age` for fallback + recovery |
+| **Retired** (57 migrated keys: 56 in the `phillias` profile + `masculinecache/.npmjs-key`) | Every other migrated key | bws project named like the profile is the live source; age-encrypted copies at `~/.agents/keys/retired/<profile>/<name>.age` for recovery |
 | **Excluded from migration** | `.google-tasks-token` | Stays chezmoi age-encrypted in the active profile dir (binary/non-UTF-8; cannot be a bws secret). Never enters the loader or retired tree |
 
 Retired key inventory (56 in the `phillias` profile): the 45 exported by the
