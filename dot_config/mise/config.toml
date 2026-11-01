@@ -184,3 +184,6 @@ go = "1.25"
 "aqua:jesseduffield/lazygit" = "0.66.2"
 # delta — git diff renderer; lazygit's side-by-side pager (same request).
 "aqua:dandavison/delta" = "0.20.1"
+# difftastic — syntax-aware structural diff; lazygit pager that approaches vimdiff
+# (captain request 2026-11-01). Swap lazygit's pager to `difft --color=always` (cargo backend; aqua/ubi asset naming mismatch on this mise).
+"cargo:difftastic" = "0.72.0"
