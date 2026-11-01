@@ -253,21 +253,45 @@ fi
 # Nothing below touches BWS without explicit interactive consent.
 echo ""
 echo "==> Bitwarden Secrets Manager access"
-echo "    setup.sh will authenticate to Bitwarden Secrets Manager using the local token at ~/.agents/keys/default/.bws-token,"
-echo "    and read the secret matching /chezmoi.*age|age.*key/i from project fe9eea09-9eaf-45e6-a72f-b45e0150b29d."
-echo ""
+BWS_TOKEN_FILE="$HOME/.agents/keys/default/.bws-token"
 BWS_ALLOWED=false
-BWS_REPLY=""
-if [ -t 0 ]; then
-    read -rp "    Allow BWS access? (y/N): " BWS_REPLY || BWS_REPLY=""
-fi
-case "$BWS_REPLY" in
-    [yY]|[yY][eE][sS]) BWS_ALLOWED=true ;;
-    *)
+if [ -f "$BWS_TOKEN_FILE" ] && [ -s "$BWS_TOKEN_FILE" ]; then
+    echo "    setup.sh will authenticate to Bitwarden Secrets Manager using the local token at ~/.agents/keys/default/.bws-token,"
+    echo "    and read the secret matching /chezmoi.*age|age.*key/i from project fe9eea09-9eaf-45e6-a72f-b45e0150b29d."
+    echo ""
+    BWS_REPLY=""
+    if [ -t 0 ]; then
+        read -rp "    Allow BWS access? (y/N): " BWS_REPLY || BWS_REPLY=""
+    fi
+    case "$BWS_REPLY" in
+        [yY]|[yY][eE][sS]) BWS_ALLOWED=true ;;
+        *)
+            echo "WARN: BWS access skipped. Age key decryption will fall back to manual prompt."
+            unset 'BWS_ACCESS_TOKEN' || true
+            ;;
+    esac
+else
+    echo "    No BWS machine token found at ~/.agents/keys/default/.bws-token."
+    echo "    To use Bitwarden Secrets Manager, setup.sh will prompt for a machine token, save it to that path (mode 600),"
+    echo "    and read the secret matching /chezmoi.*age|age.*key/i from project fe9eea09-9eaf-45e6-a72f-b45e0150b29d."
+    echo ""
+    BWS_PASTED=""
+    if [ -t 0 ]; then
+        read -rsp "    Paste BWS machine token (Enter to skip BWS): " BWS_PASTED || BWS_PASTED=""
+        echo ""
+    fi
+    if [ -n "$BWS_PASTED" ]; then
+        mkdir -p "$(dirname "$BWS_TOKEN_FILE")"
+        printf '%s' "$BWS_PASTED" > "$BWS_TOKEN_FILE"
+        chmod 600 "$BWS_TOKEN_FILE"
+        BWS_PASTED=""
+        BWS_ALLOWED=true
+        echo "    BWS machine token saved."
+    else
         echo "WARN: BWS access skipped. Age key decryption will fall back to manual prompt."
         unset 'BWS_ACCESS_TOKEN' || true
-        ;;
-esac
+    fi
+fi
 
 # ── 12b. Bitwarden Secrets Manager authentication ───────────────
 # Gated by the manual confirmation above: every bws invocation and
@@ -276,7 +300,6 @@ echo ""
 echo "==> Bitwarden Secrets Manager authentication"
 echo ""
 
-BWS_TOKEN_FILE="$HOME/.agents/keys/default/.bws-token"
 BWS_AUTHENTICATED=false
 
 if $BWS_ALLOWED; then
