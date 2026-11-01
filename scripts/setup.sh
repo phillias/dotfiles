@@ -249,7 +249,29 @@ fi
 # Uses bws machine tokens for authentication instead of bw login/unlock.
 # Token is stored at ~/.agents/keys/default/.bws-token for reuse.
 
-# ── 12. Bitwarden Secrets Manager authentication ────────────────
+# ── 12. Manual gate for Bitwarden Secrets Manager access ──────
+# Nothing below touches BWS without explicit interactive consent.
+echo ""
+echo "==> Bitwarden Secrets Manager access"
+echo "    setup.sh will authenticate to Bitwarden Secrets Manager using the local token at ~/.agents/keys/default/.bws-token,"
+echo "    and read the secret matching /chezmoi.*age|age.*key/i from project fe9eea09-9eaf-45e6-a72f-b45e0150b29d."
+echo ""
+BWS_ALLOWED=false
+BWS_REPLY=""
+if [ -t 0 ]; then
+    read -rp "    Allow BWS access? (y/N): " BWS_REPLY || BWS_REPLY=""
+fi
+case "$BWS_REPLY" in
+    [yY]|[yY][eE][sS]) BWS_ALLOWED=true ;;
+    *)
+        echo "WARN: BWS access skipped. Age key decryption will fall back to manual prompt."
+        unset 'BWS_ACCESS_TOKEN' || true
+        ;;
+esac
+
+# ── 12b. Bitwarden Secrets Manager authentication ───────────────
+# Gated by the manual confirmation above: every bws invocation and
+# token read below runs only when the user explicitly allowed it.
 echo ""
 echo "==> Bitwarden Secrets Manager authentication"
 echo ""
@@ -257,31 +279,34 @@ echo ""
 BWS_TOKEN_FILE="$HOME/.agents/keys/default/.bws-token"
 BWS_AUTHENTICATED=false
 
-# Check if token file exists and is non-empty
-if [ -f "$BWS_TOKEN_FILE" ] && [ -s "$BWS_TOKEN_FILE" ]; then
-    export BWS_ACCESS_TOKEN=$(cat "$BWS_TOKEN_FILE")
-    if bws project list 2>/dev/null | head -1 | grep -q .; then
-        BWS_AUTHENTICATED=true
-    fi
-fi
-
-if $BWS_AUTHENTICATED; then
-    echo "Bitwarden Secrets Manager: authenticated"
-else
-    read -rp "Paste BWS machine token (or press Ctrl+C to skip): " BWS_TOKEN </dev/tty
-    if [ -n "$BWS_TOKEN" ]; then
-        mkdir -p ~/.agents/keys/default
-        printf '%s' "$BWS_TOKEN" > "$BWS_TOKEN_FILE"
-        chmod 600 "$BWS_TOKEN_FILE"
-        export BWS_ACCESS_TOKEN="$BWS_TOKEN"
+if $BWS_ALLOWED; then
+    # Check if token file exists and is non-empty
+    if [ -f "$BWS_TOKEN_FILE" ] && [ -s "$BWS_TOKEN_FILE" ]; then
+        BWS_ACCESS_TOKEN=$(cat "$BWS_TOKEN_FILE")
+        export BWS_ACCESS_TOKEN
         if bws project list 2>/dev/null | head -1 | grep -q .; then
             BWS_AUTHENTICATED=true
-            echo "Bitwarden Secrets Manager: authenticated"
-        else
-            echo "WARN: BWS token verification failed. Age key decryption will fall back to manual prompt."
         fi
+    fi
+
+    if $BWS_AUTHENTICATED; then
+        echo "Bitwarden Secrets Manager: authenticated"
     else
-        echo "WARN: Skipping Bitwarden Secrets Manager. Age key decryption will fall back to manual prompt."
+        read -rp "Paste BWS machine token (or press Ctrl+C to skip): " BWS_TOKEN </dev/tty
+        if [ -n "$BWS_TOKEN" ]; then
+            mkdir -p ~/.agents/keys/default
+            printf '%s' "$BWS_TOKEN" > "$BWS_TOKEN_FILE"
+            chmod 600 "$BWS_TOKEN_FILE"
+            export BWS_ACCESS_TOKEN="$BWS_TOKEN"
+            if bws project list 2>/dev/null | head -1 | grep -q .; then
+                BWS_AUTHENTICATED=true
+                echo "Bitwarden Secrets Manager: authenticated"
+            else
+                echo "WARN: BWS token verification failed. Age key decryption will fall back to manual prompt."
+            fi
+        else
+            echo "WARN: Skipping Bitwarden Secrets Manager. Age key decryption will fall back to manual prompt."
+        fi
     fi
 fi
 
@@ -305,8 +330,8 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
     mkdir -p "$(dirname "$AGE_KEY_FILE")"
     DECRYPTED=false
 
-    # Auto-fetch passphrase from BWS if authenticated
-    if [ -n "${BWS_ACCESS_TOKEN:-}" ]; then
+    # Auto-fetch passphrase from BWS if authenticated (and gate allowed it)
+    if $BWS_ALLOWED && [ -n "${BWS_ACCESS_TOKEN:-}" ]; then
         echo "--> Fetching passphrase from Bitwarden Secrets Manager..."
         BWS_PP=$(bws secret list fe9eea09-9eaf-45e6-a72f-b45e0150b29d 2>/dev/null | jq -r '.[] | select(.key | test("chezmoi.*age|age.*key"; "i")) | .value' 2>/dev/null | head -1) || true
         if [ -n "$BWS_PP" ]; then
