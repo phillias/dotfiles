@@ -80,16 +80,5 @@
                 ]
             }
         ]
-    },
-    "projects": {
-        "/home/phillias/firstmate": {
-            "hasTrustDialogAccepted": true
-        },
-        "/home/phillias/.local/share/chezmoi": {
-            "hasTrustDialogAccepted": true
-        },
-        "/home/phillias/.treehouse/chezmoi-1667b4": {
-            "hasTrustDialogAccepted": true
-        }
     }
 }
