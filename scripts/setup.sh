@@ -310,12 +310,14 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
         echo "--> Fetching passphrase from Bitwarden Secrets Manager..."
         BWS_PP=$(bws secret list fe9eea09-9eaf-45e6-a72f-b45e0150b29d 2>/dev/null | jq -r '.[] | select(.key | test("chezmoi.*age|age.*key"; "i")) | .value' 2>/dev/null | head -1) || true
         if [ -n "$BWS_PP" ]; then
-            if printf '%s\n' "$BWS_PP" | chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>/dev/null; then
+            if DECRYPT_ERR=$(printf '%s\n' "$BWS_PP" | chezmoi age decrypt --passphrase --no-tty --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>&1); then
                 chmod 600 "$AGE_KEY_FILE"
                 DECRYPTED=true
                 echo "  Age key decrypted (passphrase from BWS)"
             else
                 echo "  Auto-decrypt failed (passphrase in BWS may be incorrect)"
+                echo "  Falling back to manual passphrase entry; decrypt reported:" >&2
+                echo "  ${DECRYPT_ERR:-<no error output>}" >&2
                 [ -f "$AGE_KEY_FILE" ] && rm -f "$AGE_KEY_FILE"
             fi
         else
@@ -334,7 +336,7 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
                 echo "    chezmoi age decrypt --passphrase -o ~/.config/chezmoi/key.txt ~/.local/share/chezmoi/age-key.txt.age"
                 break
             fi
-            if printf '%s\n' "$AGE_PP" | chezmoi age decrypt --passphrase --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>/dev/null; then
+            if printf '%s\n' "$AGE_PP" | chezmoi age decrypt --passphrase --no-tty --output "$AGE_KEY_FILE" "$CHEZMOI_DIR/age-key.txt.age" 2>/dev/null; then
                 chmod 600 "$AGE_KEY_FILE"
                 DECRYPTED=true
                 echo "  Age key decrypted"
