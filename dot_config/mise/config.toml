@@ -179,3 +179,8 @@ go = "1.25"
 # tools-registry[proxy]; pipx backend (uv tool under the hood). AXI-compliant
 # TOON output: catalog search, call, balance. $1.00 free credit, pay-per-call.
 "pipx:tools-registry" = "0.20.0"
+# lazygit — terminal branch browser / git TUI (captain request 2026-11-01:
+# side-by-side diff viewer + branch browser without passing branches on the CLI).
+"aqua:jesseduffield/lazygit" = "0.66.2"
+# delta — git diff renderer; lazygit's side-by-side pager (same request).
+"aqua:dandavison/delta" = "0.20.1"

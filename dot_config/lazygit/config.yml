@@ -1,0 +1,4 @@
+# lazygit config — delta side-by-side diff pager (captain request 2026-11-01).
+git:
+  paging:
+    pager: delta --dark --paging=never --side-by-side
