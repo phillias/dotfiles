@@ -16,3 +16,6 @@
         hostname = "InspironOne"
     [fleet.nodes.primary55522]
         hostname = "primary"
+
+    [fleet.nodes.oci1]
+        hostname = "oci1"
