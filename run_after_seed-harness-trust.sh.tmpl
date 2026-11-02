@@ -11,7 +11,7 @@ HOME="{{ .chezmoi.homeDir }}"
 echo "Seeding harness trust for $HOME (non-clobbering)"
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "WARNING: jq not found; skipping trust seeding (retry on next apply after 'mise install jq')" >&2
+  echo "WARNING: jq not found; skipping trust seeding (retry on next apply once jq is installed)" >&2
   exit 0
 fi
 
@@ -25,12 +25,17 @@ if [ ! -f "$CLAUDE_JSON" ]; then
 fi
 (
   flock -w 10 200 || { echo "could not lock $CLAUDE_JSON" >&2; exit 1; }
+  if ! jq -e --arg home "$HOME" '
+    .projects[$home + "/firstmate"].hasTrustDialogAccepted == true and
+    .projects[$home + "/.local/share/chezmoi"].hasTrustDialogAccepted == true
+  ' "$CLAUDE_JSON" >/dev/null 2>&1; then
   jq --arg home "$HOME" '
     .projects = (.projects // {}) |
     .projects[$home + "/firstmate"] = (.projects[$home + "/firstmate"] // {}) | .projects[$home + "/firstmate"].hasTrustDialogAccepted = true |
     .projects[$home + "/.local/share/chezmoi"] = (.projects[$home + "/.local/share/chezmoi"] // {}) | .projects[$home + "/.local/share/chezmoi"].hasTrustDialogAccepted = true
   ' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
   mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+  fi
   jq -e --arg home "$HOME" '
     .projects[$home + "/firstmate"].hasTrustDialogAccepted == true and
     .projects[$home + "/.local/share/chezmoi"].hasTrustDialogAccepted == true
@@ -50,8 +55,10 @@ if [ ! -f "$PI_TRUST_JSON" ]; then
 fi
 (
   flock -w 10 200 || { echo "could not lock $PI_TRUST_JSON" >&2; exit 1; }
-  jq --arg home "$HOME" '.[$home] = true' "$PI_TRUST_JSON" > "$PI_TRUST_JSON.tmp"
-  mv "$PI_TRUST_JSON.tmp" "$PI_TRUST_JSON"
+  if ! jq -e --arg home "$HOME" '.[$home] == true' "$PI_TRUST_JSON" >/dev/null 2>&1; then
+    jq --arg home "$HOME" '.[$home] = true' "$PI_TRUST_JSON" > "$PI_TRUST_JSON.tmp"
+    mv "$PI_TRUST_JSON.tmp" "$PI_TRUST_JSON"
+  fi
   jq -e --arg home "$HOME" '.[$home] == true' "$PI_TRUST_JSON" >/dev/null || { echo "Pi trust seed did not land in $PI_TRUST_JSON" >&2; exit 1; }
 ) 200>"$PI_LOCK"
 rm -f "$PI_LOCK"
@@ -118,13 +125,14 @@ EOF
 fi
 
 # Kimi: real store is ~/.kimi-code/workspace-trust/wd_<slug>_<12hexhash> (JSON {"root": "<path>", "trustedAt": <ms>}).
-# Hash = first 12 hex of sha256(path); slug = lower basename with non-alphanum -> -. Verified against kimi-code 2.1.1 dist.
-# Seeded for enumerable paths (including $HOME for ancestor coverage). Non-clobbering with live verification.
+# Hash = first 12 hex of sha256(path); slug = lower basename, runs of [^a-z0-9._-] -> -, dashes trimmed, 40 chars max. Verified against kimi-code 2.1.1 dist.
+# Seeded for the two primary paths only (Kimi looks up the exact root; no ancestor walk). Non-clobbering with live verification.
 KIMI_DIR="$HOME/.kimi-code/workspace-trust"
 mkdir -p "$KIMI_DIR"
-for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi" "$HOME"; do
+for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
   hash=$(echo -n "$p" | sha256sum | cut -c1-12)
-  basename_slug=$(basename "$p" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g;s/-$//')
+  basename_slug=$(basename "$p" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g' | cut -c1-40 | sed -E 's/^-+|-+$//g')
+  [ -n "$basename_slug" ] || basename_slug=workspace
   key="wd_${basename_slug}_${hash}"
   file="$KIMI_DIR/$key"
   if [ ! -f "$file" ]; then

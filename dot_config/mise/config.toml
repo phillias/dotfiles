@@ -20,7 +20,6 @@ npm.shell_out = true
 # (chezmoi doctor: failed age-command exit status 1) until this pin landed
 # (2026-10-04). Verify with: age --version via the shim.
 age = "1.2.1"
-jq = "1.7.1"
 # bws — Bitwarden Secrets Manager CLI (machine-account tokens that never lock,
 # the fluid-access vault lane for opencode/firstmate agents; bws-axi wrapper
 # and scripts/bws-migrate-keys.sh consume it). mise registry entry
