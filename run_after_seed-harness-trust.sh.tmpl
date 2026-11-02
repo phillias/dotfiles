@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+# Non-clobbering seed for harness trust stores (idempotent; adds entries without overwriting runtime state or clobbering appends by the harness).
+# Runs after every chezmoi apply so entries survive an authoritative re-render of a templated harness config (e.g. Codex's config.toml.tmpl).
+# Matches firstmate decision for Claude (.claude.json), Pi (trust.json), Grok (trusted_folders.toml), and Codex (config.toml).
+# Uses {{ .chezmoi.homeDir }}; only verified syntax from tool stores.
+
+set -e
+umask 077
+
+HOME="{{ .chezmoi.homeDir }}"
+echo "Seeding harness trust for $HOME (non-clobbering)"
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "WARNING: jq not found; skipping trust seeding (retry on next apply once jq is installed)" >&2
+  exit 0
+fi
+
+# Claude: real store is ~/.claude.json; merge projects entries (never authoritative render).
+# Uses a dedicated lock path, not Claude's own "<file>.lock" mkdir-based lockfile path.
+CLAUDE_JSON="$HOME/.claude.json"
+CLAUDE_LOCK="$CLAUDE_JSON.chezmoi-seed.lock"
+if [ ! -f "$CLAUDE_JSON" ]; then
+  mkdir -p "$(dirname "$CLAUDE_JSON")"
+  echo '{}' > "$CLAUDE_JSON"
+fi
+(
+  flock -w 10 200 || { echo "could not lock $CLAUDE_JSON" >&2; exit 1; }
+  if ! jq -e --arg home "$HOME" '
+    .projects[$home + "/firstmate"].hasTrustDialogAccepted == true and
+    .projects[$home + "/.local/share/chezmoi"].hasTrustDialogAccepted == true
+  ' "$CLAUDE_JSON" >/dev/null 2>&1; then
+  jq --arg home "$HOME" '
+    .projects = (.projects // {}) |
+    .projects[$home + "/firstmate"] = (.projects[$home + "/firstmate"] // {}) | .projects[$home + "/firstmate"].hasTrustDialogAccepted = true |
+    .projects[$home + "/.local/share/chezmoi"] = (.projects[$home + "/.local/share/chezmoi"] // {}) | .projects[$home + "/.local/share/chezmoi"].hasTrustDialogAccepted = true
+  ' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
+  mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+  fi
+  jq -e --arg home "$HOME" '
+    .projects[$home + "/firstmate"].hasTrustDialogAccepted == true and
+    .projects[$home + "/.local/share/chezmoi"].hasTrustDialogAccepted == true
+  ' "$CLAUDE_JSON" >/dev/null || { echo "Claude trust seed did not land in $CLAUDE_JSON" >&2; exit 1; }
+) 200>"$CLAUDE_LOCK"
+rm -f "$CLAUDE_LOCK"
+echo "Claude trust seeded in $CLAUDE_JSON"
+
+# Pi: real store is ~/.pi/agent/trust.json (flat "<path>": true map). Its trust-manager
+# walks ancestors to the root, so a single $HOME grant covers every worktree under it.
+# Merge only; dedicated lock path, not Pi's own "<file>.lock" lockfile path.
+PI_TRUST_JSON="$HOME/.pi/agent/trust.json"
+PI_LOCK="$PI_TRUST_JSON.chezmoi-seed.lock"
+mkdir -p "$(dirname "$PI_TRUST_JSON")"
+if [ ! -f "$PI_TRUST_JSON" ]; then
+  echo '{}' > "$PI_TRUST_JSON"
+fi
+(
+  flock -w 10 200 || { echo "could not lock $PI_TRUST_JSON" >&2; exit 1; }
+  if ! jq -e --arg home "$HOME" '.[$home] == true' "$PI_TRUST_JSON" >/dev/null 2>&1; then
+    jq --arg home "$HOME" '.[$home] = true' "$PI_TRUST_JSON" > "$PI_TRUST_JSON.tmp"
+    mv "$PI_TRUST_JSON.tmp" "$PI_TRUST_JSON"
+  fi
+  jq -e --arg home "$HOME" '.[$home] == true' "$PI_TRUST_JSON" >/dev/null || { echo "Pi trust seed did not land in $PI_TRUST_JSON" >&2; exit 1; }
+) 200>"$PI_LOCK"
+rm -f "$PI_LOCK"
+echo "Pi trust seeded in $PI_TRUST_JSON"
+
+# Grok: append to trusted_folders.toml if not present (non-clobber; harness appends at
+# runtime). Reuses Grok's own lock path (it also flocks here) but opens it non-destructively
+# (<>, not >) so a pid:timestamp record Grok wrote is never truncated out from under it.
+GROK_DIR="$HOME/.grok"
+GROK_TOML="$GROK_DIR/trusted_folders.toml"
+GROK_LOCK="$GROK_TOML.lock"
+mkdir -p "$GROK_DIR"
+if [ ! -f "$GROK_TOML" ]; then
+  cat > "$GROK_TOML" << 'EOF'
+# Seeded by chezmoi (non-clobbering; harness appends additional entries at runtime)
+EOF
+fi
+(
+  flock -w 10 200 || { echo "could not lock $GROK_TOML" >&2; exit 1; }
+  for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
+    escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
+    if ! grep -q "\[folders\.\"${escaped}\"\]" "$GROK_TOML" 2>/dev/null; then
+      cat >> "$GROK_TOML" <<EOF
+
+[folders."$p"]
+trusted = true
+decided_at = $(date +%s)
+EOF
+      echo "Grok trust seeded for $p"
+    fi
+  done
+  for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
+    escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
+    grep -q "\[folders\.\"${escaped}\"\]" "$GROK_TOML" 2>/dev/null || { echo "Grok trust seed did not land for $p" >&2; exit 1; }
+  done
+) 200<>"$GROK_LOCK"
+
+# Codex: real store is ~/.codex/config.toml, which private_dot_codex/config.toml.tmpl
+# renders authoritatively on every apply; [projects.*] entries are appended here, after
+# that render, instead of living in the template, so they survive it. Dedicated lock path.
+CODEX_CONFIG="$HOME/.codex/config.toml"
+CODEX_LOCK="$CODEX_CONFIG.chezmoi-seed.lock"
+if [ -f "$CODEX_CONFIG" ]; then
+  (
+    flock -w 10 200 || { echo "could not lock $CODEX_CONFIG" >&2; exit 1; }
+    for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
+      escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
+      if ! grep -q "\[projects\.\"${escaped}\"\]" "$CODEX_CONFIG" 2>/dev/null; then
+        cat >> "$CODEX_CONFIG" <<EOF
+
+[projects."$p"]
+trust_level = "trusted"
+EOF
+        echo "Codex trust seeded for $p"
+      fi
+    done
+    for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
+      escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
+      grep -q "\[projects\.\"${escaped}\"\]" "$CODEX_CONFIG" 2>/dev/null || { echo "Codex trust seed did not land for $p" >&2; exit 1; }
+    done
+  ) 200>"$CODEX_LOCK"
+  rm -f "$CODEX_LOCK"
+  echo "Codex trust seeded in $CODEX_CONFIG"
+fi
+
+# Kimi: real store is ~/.kimi-code/workspace-trust/wd_<slug>_<12hexhash> (JSON {"root": "<path>", "trustedAt": <ms>}).
+# Hash = first 12 hex of sha256(path); slug = lower basename, runs of [^a-z0-9._-] -> -, dashes trimmed, 40 chars max. Verified against kimi-code 2.1.1 dist.
+# Seeded for the two primary paths only (Kimi looks up the exact root; no ancestor walk). Non-clobbering with live verification.
+KIMI_DIR="$HOME/.kimi-code/workspace-trust"
+mkdir -p "$KIMI_DIR"
+for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
+  hash=$(echo -n "$p" | sha256sum | cut -c1-12)
+  basename_slug=$(basename "$p" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g' | cut -c1-40 | sed -E 's/^-+|-+$//g')
+  [ -n "$basename_slug" ] || basename_slug=workspace
+  key="wd_${basename_slug}_${hash}"
+  file="$KIMI_DIR/$key"
+  if [ ! -f "$file" ]; then
+    cat > "$file" <<EOF
+{"root": "$p", "trustedAt": $(date +%s000)}
+EOF
+    echo "Kimi trust seeded for $p as $key"
+  fi
+  [ -f "$file" ] || { echo "Kimi trust seed did not land for $p" >&2; exit 1; }
+done
+echo "Kimi trust seeded in $KIMI_DIR"
+
+echo "Harness trust seeding complete (idempotent; survives runtime writes and chezmoi apply)."
+chmod 600 "$CLAUDE_JSON" "$PI_TRUST_JSON" "$GROK_TOML" "$KIMI_DIR"/* 2>/dev/null || true

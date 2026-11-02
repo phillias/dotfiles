@@ -50,6 +50,9 @@ age-key.txt.age
 .agents/skills/x-research/data/watchlist.json
 .agents/skills/x-research/node_modules/**
 
+# harness trust models doc is repo-only (not installed to ~)
+docs
+
 # skywork-skills ships as its own git repo — the nested .git is the skill's
 # own VCS, not dotfiles material (2026-08-13)
 .agents/skills/skywork-skills/.git
