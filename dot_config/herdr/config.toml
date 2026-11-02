@@ -130,12 +130,15 @@ last_pane = ["prefix+ctrl+a", "prefix+a"]          # optional, unset by default;
 # type = "popup" opens a session-modal terminal without changing the tab layout.
 # Popup width and height accept terminal cells or percentages such as "80%".
 # On Windows, command strings run through cmd.exe /d /c.
-# [[keys.command]]
-# key = "prefix+alt+g"
-# type = "popup"
-# command = "lazygit"
-# width = "80%"
-# height = "80%"
+# Lazygit popup restored active 2026-11-02 (captain request; the template
+# example above ships commented in herdr's default config — alt+g stays on
+# the Git Graph plugin, this is prefix-then-alt+g).
+[[keys.command]]
+key = "prefix+alt+g"
+type = "popup"
+command = "lazygit"
+width = "80%"
+height = "80%"
 
 # Legacy indexed shortcut config is still parsed for compatibility.
 # Prefer switch_tab, switch_workspace, and focus_agent for new configs.
