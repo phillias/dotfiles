@@ -112,3 +112,18 @@ Host et-kalione
   HostName et.phillias.org
   Port 22
   User phillias
+
+# oci1 — Oracle Cloud selfhost (direct reserved IP)
+Host oci1
+  HostName 147.224.180.103
+  User ubuntu
+  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  IdentitiesOnly yes
+
+# fleet-oci — oci1 opencode serve via Cloudflare (fleet-chat mesh)
+Host fleet-oci
+  HostName oci1.phillias.net
+  User ubuntu
+  IdentityFile ~/.ssh/chezmoi-deploy-key
+  IdentitiesOnly yes
+  ProxyCommand /usr/bin/cloudflared access ssh --hostname %h
