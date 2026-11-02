@@ -11,8 +11,8 @@ HOME="{{ .chezmoi.homeDir }}"
 echo "Seeding harness trust for $HOME (non-clobbering)"
 
 if ! command -v jq >/dev/null 2>&1; then
-  echo "jq not found; cannot safely merge trust stores" >&2
-  exit 1
+  echo "WARNING: jq not found; skipping trust seeding (retry on next apply after 'mise install jq')" >&2
+  exit 0
 fi
 
 # Claude: real store is ~/.claude.json; merge projects entries (never authoritative render).
@@ -73,7 +73,7 @@ fi
   flock -w 10 200 || { echo "could not lock $GROK_TOML" >&2; exit 1; }
   for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
     escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
-    if ! grep -q "\[folders\.[\"']${escaped}[\"']\]" "$GROK_TOML" 2>/dev/null; then
+    if ! grep -q "\[folders\.\"${escaped}\"\]" "$GROK_TOML" 2>/dev/null; then
       cat >> "$GROK_TOML" <<EOF
 
 [folders."$p"]
@@ -85,7 +85,7 @@ EOF
   done
   for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
     escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
-    grep -q "\[folders\.[\"']${escaped}[\"']\]" "$GROK_TOML" 2>/dev/null || { echo "Grok trust seed did not land for $p" >&2; exit 1; }
+    grep -q "\[folders\.\"${escaped}\"\]" "$GROK_TOML" 2>/dev/null || { echo "Grok trust seed did not land for $p" >&2; exit 1; }
   done
 ) 200<>"$GROK_LOCK"
 
@@ -99,7 +99,7 @@ if [ -f "$CODEX_CONFIG" ]; then
     flock -w 10 200 || { echo "could not lock $CODEX_CONFIG" >&2; exit 1; }
     for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
       escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
-      if ! grep -q "\[projects\.[\"']${escaped}[\"']\]" "$CODEX_CONFIG" 2>/dev/null; then
+      if ! grep -q "\[projects\.\"${escaped}\"\]" "$CODEX_CONFIG" 2>/dev/null; then
         cat >> "$CODEX_CONFIG" <<EOF
 
 [projects."$p"]
@@ -110,15 +110,32 @@ EOF
     done
     for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi"; do
       escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
-      grep -q "\[projects\.[\"']${escaped}[\"']\]" "$CODEX_CONFIG" 2>/dev/null || { echo "Codex trust seed did not land for $p" >&2; exit 1; }
+      grep -q "\[projects\.\"${escaped}\"\]" "$CODEX_CONFIG" 2>/dev/null || { echo "Codex trust seed did not land for $p" >&2; exit 1; }
     done
   ) 200>"$CODEX_LOCK"
   rm -f "$CODEX_LOCK"
   echo "Codex trust seeded in $CODEX_CONFIG"
 fi
 
-# Kimi's store is keyed by an unverified hash of the path
-# (~/.kimi-code/workspace-trust/wd_<name>_<hash>) and is left unseeded.
+# Kimi: real store is ~/.kimi-code/workspace-trust/wd_<slug>_<12hexhash> (JSON {"root": "<path>", "trustedAt": <ms>}).
+# Hash = first 12 hex of sha256(path); slug = lower basename with non-alphanum -> -. Verified against kimi-code 2.1.1 dist.
+# Seeded for enumerable paths (including $HOME for ancestor coverage). Non-clobbering with live verification.
+KIMI_DIR="$HOME/.kimi-code/workspace-trust"
+mkdir -p "$KIMI_DIR"
+for p in "$HOME/firstmate" "$HOME/.local/share/chezmoi" "$HOME"; do
+  hash=$(echo -n "$p" | sha256sum | cut -c1-12)
+  basename_slug=$(basename "$p" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g;s/-$//')
+  key="wd_${basename_slug}_${hash}"
+  file="$KIMI_DIR/$key"
+  if [ ! -f "$file" ]; then
+    cat > "$file" <<EOF
+{"root": "$p", "trustedAt": $(date +%s000)}
+EOF
+    echo "Kimi trust seeded for $p as $key"
+  fi
+  [ -f "$file" ] || { echo "Kimi trust seed did not land for $p" >&2; exit 1; }
+done
+echo "Kimi trust seeded in $KIMI_DIR"
 
 echo "Harness trust seeding complete (idempotent; survives runtime writes and chezmoi apply)."
-chmod 600 "$CLAUDE_JSON" "$PI_TRUST_JSON" "$GROK_TOML" 2>/dev/null || true
+chmod 600 "$CLAUDE_JSON" "$PI_TRUST_JSON" "$GROK_TOML" "$KIMI_DIR"/* 2>/dev/null || true
