@@ -94,18 +94,15 @@ agent_config:
 # the cheaper gate ladder. The 2026-10-19 codex selection below supersedes it.
 # Ladder owner: ~/.pi/fallback-chains.json (`review` key); rendered in
 # provider-catalog references/ROUTING_TOPOLOGY.md flow-2.
-# (2026-10-19) Overrides the historical fallback/review selection above.
-# Every independent review/rereview stays on the frontier GPT tier; fixes
-# explicitly use the cheaper subscription model, including later rounds.
+# (2026-11-01, captain) codex subscription rate-limited until Nov 4; review lane switched to pi, grok backup if pi fails concretely. reviewer rides fallback/review, fixer rides fallback/gate (chains in ~/.pi/fallback-chains.json).
 review_agents:
   reviewer:
-    agent: codex
-    # Native subscription reviewer: no gateway fallback or weaker review rung.
-    model: gpt-6-astra
+    agent: pi
+    model: fallback/review
     effort: high
   fixer:
-    agent: codex
-    model: gpt-5.6-luna
+    agent: pi
+    model: fallback/gate
     effort: medium
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and
