@@ -1,0 +1,22 @@
+#!/bin/sh
+# Seed the herdr-reviewr plugin settings (persiyanov.reviewr) once per host.
+# The plugin's settings UI rewrites this file at runtime, so this seed is
+# non-clobbering by design: it creates the file only when absent and never
+# overwrites tool-written state (same invariant as the harness-trust seeds).
+# Seed content enables auto-open of the reviewr pane when herdr creates or
+# opens a worktree (captain request 2026-11-02). Full key reference:
+# https://github.com/persiyanov/herdr-reviewr
+
+_target="${HERDR_CONFIG_HOME:-$HOME/.config/herdr}/plugins/config/persiyanov.reviewr/config.toml"
+
+if [ -f "$_target" ]; then
+    exit 0
+fi
+
+mkdir -p "$(dirname "$_target")"
+cat > "$_target" <<'EOF'
+# persiyanov.reviewr plugin settings (seeded once by chezmoi).
+# Auto-open the reviewr pane when herdr creates or opens a worktree.
+# Safe to edit here or in the plugin's settings UI; this seed never overwrites.
+auto_open = true
+EOF
