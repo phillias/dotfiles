@@ -1,0 +1,10 @@
+# lazygit config — delta side-by-side diff renderer (captain request 2026-11-01,
+# restored to modern diffRenderers form 2026-11-02; the deprecated git.paging.pager
+# key was dropped and an incomplete in-app rewrite had drifted the live file).
+# The default side-panel layout (status; files/worktrees/submodules;
+# branches/remotes/tags; commits/reflog; stash) is built in — no layout keys needed.
+git:
+  diffRenderers:
+    - type: stdinFilter
+      colorArg: always
+      command: delta --dark --paging=never --side-by-side
