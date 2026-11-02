@@ -363,6 +363,143 @@ else
 fi
 
 # ═══════════════════════════════════════════════════════════════════
+# Phase 6b — Fleet registration (self-service via PR)
+# ═══════════════════════════════════════════════════════════════════
+#
+# chezmoi fail-closes on hosts missing from .chezmoidata/fleet.toml
+# (.fleet.nodes). A new host registers itself here: a fleet.toml node
+# entry plus its per-host restic password file are committed to a
+# branch and opened as a PR against phillias/dotfiles. The captain's
+# merge is the approval gate; setup waits for the merge, then falls
+# through to chezmoi apply.
+#
+# Credentials: git push uses the per-host deploy key; PR creation uses
+# the fine-grained GitHub token stored in BWS (project phillias,
+# DOTFILES_SETUP_FLEET_REGISTRATION). The token is never echoed and is
+# used only via the GH_TOKEN environment variable.
+
+HN="$(hostname)"
+FLEET_TOML="$CHEZMOI_DIR/.chezmoidata/fleet.toml"
+
+if grep -qF "hostname = \"$HN\"" "$FLEET_TOML" 2>/dev/null; then
+    echo "==> Fleet registry: $HN already registered"
+else
+    echo ""
+    echo "==> Fleet registry: $HN is not registered yet"
+    echo "    Setup will open a PR against phillias/dotfiles registering this"
+    echo "    host; it must be merged before dotfiles can apply here."
+
+    if [ ! -f "$AGE_KEY_FILE" ]; then
+        echo "ERROR: age key is not decrypted; cannot encrypt this host's restic password." >&2
+        echo "       Decrypt it first (Phase 6), then re-run setup.sh." >&2
+        exit 1
+    fi
+
+    # ── PR credentials: BWS token, fallback to manual paste ────────
+    GH_REG_TOKEN=""
+    if [ -n "${BWS_ACCESS_TOKEN:-}" ]; then
+        GH_REG_TOKEN=$(bws secret list fe9eea09-9eaf-45e6-a72f-b45e0150b29d 2>/dev/null \
+            | jq -r '.[] | select(.key == "DOTFILES_SETUP_FLEET_REGISTRATION") | .value' 2>/dev/null \
+            | head -1) || true
+        if [ -n "$GH_REG_TOKEN" ] \
+            && ! GH_TOKEN="$GH_REG_TOKEN" gh api user --jq .login &>/dev/null; then
+            echo "WARN: BWS registration token rejected by GitHub" >&2
+            GH_REG_TOKEN=""
+        fi
+    fi
+    if [ -z "$GH_REG_TOKEN" ] && ! gh auth status &>/dev/null 2>&1; then
+        echo "==> No BWS registration token; paste a GitHub PAT (repo scope):" >&2
+        read -rp "GitHub token (or Ctrl+C to abort): " GH_REG_TOKEN </dev/tty
+    fi
+    if [ -z "$GH_REG_TOKEN" ] && ! gh auth status &>/dev/null 2>&1; then
+        echo "ERROR: no GitHub credentials available for PR creation." >&2
+        exit 1
+    fi
+    _gh() { if [ -n "$GH_REG_TOKEN" ]; then GH_TOKEN="$GH_REG_TOKEN" gh "$@"; else gh "$@"; fi; }
+
+    # ── DNS domain for this host (data-driven mapping) ────────────
+    read -rp "DNS domain for this host (e.g. phillias.net): " DNS_DOMAIN </dev/tty
+    DNS_DOMAIN="$(echo "$DNS_DOMAIN" | tr -d '[:space:]')"
+    if [ -z "$DNS_DOMAIN" ]; then
+        echo "ERROR: DNS domain is required." >&2
+        exit 1
+    fi
+
+    # ── Branch + fleet.toml entry ─────────────────────────────────
+    BR_REG="fm/fleet-register-$HN"
+    git -C "$CHEZMOI_DIR" checkout -B "$BR_REG" master
+    printf '\n[fleet.nodes.%s]\nhostname = "%s"\ndns_domain = "%s"\n' "$HN" "$HN" "$DNS_DOMAIN" >> "$FLEET_TOML"
+
+    # ── Per-host restic password (age-encrypted, armored) ─────────
+    RECIPIENT=$(grep -oE 'recipient = "[^"]+"' "$CHEZMOI_DIR/.chezmoi.toml.tmpl" | head -1 | sed 's/.*"\(.*\)"/\1/')
+    PW_ENC="$CHEZMOI_DIR/dot_config/private_fleet-backup/encrypted_private_restic-password-$HN.age"
+    if [ ! -f "$PW_ENC" ]; then
+        mkdir -p "$(dirname "$PW_ENC")"
+        PW_TMP=$(mktemp)
+        head -c 24 /dev/urandom | base64 | tr -d '\n' > "$PW_TMP"
+        chmod 600 "$PW_TMP"
+        if ! chezmoi age encrypt -r "$RECIPIENT" -o "$PW_ENC" "$PW_TMP" 2>/dev/null \
+            && ! age -a -r "$RECIPIENT" -o "$PW_ENC" "$PW_TMP" 2>/dev/null; then
+            rm -f "$PW_TMP" "$PW_ENC"
+            echo "ERROR: could not age-encrypt the restic password." >&2
+            exit 1
+        fi
+        rm -f "$PW_TMP"
+        if ! grep -q "BEGIN AGE ENCRYPTED FILE" "$PW_ENC"; then
+            echo "ERROR: encrypted password file is not armored; refusing to continue." >&2
+            exit 1
+        fi
+        chmod 600 "$PW_ENC"
+    fi
+
+    # ── Commit, push, open PR ─────────────────────────────────────
+    git -C "$CHEZMOI_DIR" add .chezmoidata/fleet.toml \
+        "dot_config/private_fleet-backup/encrypted_private_restic-password-$HN.age"
+    if ! git -C "$CHEZMOI_DIR" -c user.name="phillias" -c user.email="phillias@gmail.com" \
+        commit -m "feat(fleet): register $HN in fleet registry" 2>/dev/null; then
+        echo "ERROR: nothing to commit; registration edits failed." >&2
+        exit 1
+    fi
+    if ! GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -o IdentitiesOnly=yes" \
+        git -C "$CHEZMOI_DIR" push -u origin "$BR_REG" 2>&1; then
+        echo "ERROR: push failed. Re-run setup.sh after fixing; the local branch $BR_REG holds the registration." >&2
+        exit 1
+    fi
+
+    PR_URL=$(_gh pr list --repo phillias/dotfiles --head "$BR_REG" --state open \
+        --json url --jq '.[0].url' 2>/dev/null || true)
+    if [ -z "$PR_URL" ]; then
+        PR_URL=$(_gh pr create --repo phillias/dotfiles --base master --head "$BR_REG" \
+            --title "feat(fleet): register $HN in fleet registry" \
+            --body "Auto-registration from setup.sh on host $HN. Adds the fleet.toml node entry (hostname + dns_domain) and the per-host restic password file. Merging lets setup continue on the host." 2>&1) \
+            || { echo "ERROR: PR creation failed: $PR_URL" >&2; exit 1; }
+    fi
+    echo "==> Registration PR: $PR_URL"
+
+    # ── Wait for merge (captain approval gate) ────────────────────
+    MERGED=false
+    for _i in $(seq 1 60); do
+        sleep 30
+        STATE=$(_gh pr view "$PR_URL" --repo phillias/dotfiles --json state --jq .state 2>/dev/null || echo "")
+        case "$STATE" in
+            MERGED) MERGED=true; break ;;
+            CLOSED) echo "ERROR: registration PR was closed without merging." >&2; exit 1 ;;
+        esac
+    done
+    if ! $MERGED; then
+        echo "ERROR: registration PR not merged within 30 minutes." >&2
+        echo "       Re-run setup.sh once it is merged: $PR_URL" >&2
+        exit 1
+    fi
+    echo "==> Registration PR merged"
+
+    git -C "$CHEZMOI_DIR" checkout master
+    git -C "$CHEZMOI_DIR" pull --no-edit
+    git -C "$CHEZMOI_DIR" push origin --delete "$BR_REG" 2>/dev/null || true
+    unset GH_REG_TOKEN
+fi
+
+# ═══════════════════════════════════════════════════════════════════
 # Phase 7 — chezmoi config + apply
 # ═══════════════════════════════════════════════════════════════════
 #

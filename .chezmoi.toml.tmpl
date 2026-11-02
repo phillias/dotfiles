@@ -11,5 +11,11 @@ encryption = "age"
 {{-   $dnsDomain = "phillias.us" }}
 {{- else if eq .chezmoi.hostname "oci1" }}
 {{-   $dnsDomain = "phillias.net" }}
+{{- else }}
+{{-   range $name, $node := .fleet.nodes }}
+{{-     if and (eq $node.hostname .chezmoi.hostname) $node.dns_domain }}
+{{-       $dnsDomain = $node.dns_domain }}
+{{-     end }}
+{{-   end }}
 {{- end }}
     dnsDomain = "{{ $dnsDomain }}"
