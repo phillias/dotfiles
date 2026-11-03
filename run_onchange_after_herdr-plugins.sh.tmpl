@@ -1,0 +1,67 @@
+#!/bin/bash
+# herdr plugins: install the chezmoi-declared herdr plugins on this host.
+#
+# Runs after the file targets (dot_config/herdr/config.toml keybindings) and
+# after run_onchange_mise-sync, so the pinned toolchain is already provisioned:
+#   herdr  "github:herdrdev/herdr"       plugin CLI
+#   cargo  rust                          ez-corp.space-usage [[build]]
+#   lazygit/fzf "aqua:..."               herdr-lazygit runtime (panel.conf)
+#   python3/bash/git                     system-owned (see mise config header)
+# Mise shims go first on PATH so herdr's build steps resolve those pins, never
+# a parallel install. Never versioned install dirs; never ~/.local/bin links.
+#
+# Non-clobbering: a plugin that is already registered is left alone (herdr
+# reinstall replaces the managed checkout, which would undo a deliberate
+# upgrade). The pinned refs below govern fresh installs only; bump a ref here
+# and `herdr plugin install <repo> --ref <new> --yes` by hand to upgrade.
+# Availability-first: a failed install is reported and the script exits 0 so
+# chezmoi apply always succeeds.
+#
+# Captain request 2026-11-03. Keybindings live in dot_config/herdr/config.toml.
+set -uo pipefail
+
+_mise_data="${MISE_DATA_DIR:-$HOME/.local/share/mise}"
+export PATH="$_mise_data/shims:$HOME/.local/bin:$PATH"
+
+if ! command -v herdr >/dev/null 2>&1; then
+  echo "[herdr-plugins] herdr not installed on this machine; skipping (pinned in dot_config/mise/config.toml)"
+  exit 0
+fi
+
+# plugin_id|owner/repo|ref (tag or full commit; herdr fetches it --depth 1)
+PLUGINS=(
+  # lazygit sidebar/tab pane + AI commit messages (v0.4.0)
+  "herdr-lazygit|Crokily/herdr-lazygit|v0.4.0"
+  # Captain's Deck — Firstmate flow kanban (v0.10.0); bash + python3 stdlib
+  "herdr-firstmate-flow|deimantasnork/captains-deck|d19601d6f537b96b5a981fa94808ba76e9c441c9"
+  # PC RAM & CPU usage overlay (v1.12.0); cargo build --release
+  "ez-corp.space-usage|ezcorp-org/herdr-pc-ram-and-cpu-usage-overlay|9872a499181b5a52472da3f74b9c567d3898069f"
+)
+
+for _entry in "${PLUGINS[@]}"; do
+  IFS='|' read -r _id _repo _ref <<<"$_entry"
+  if herdr plugin list --plugin "$_id" --json 2>/dev/null | grep -qF "\"plugin_id\":\"$_id\""; then
+    continue
+  fi
+  echo "[herdr-plugins] installing $_id from $_repo@$_ref"
+  if ! herdr plugin install "$_repo" --ref "$_ref" --yes; then
+    echo "[herdr-plugins] install failed for $_id ($_repo@$_ref); continuing"
+  fi
+done
+
+# herdr-lazygit ships a plugin-private lazygit+fzf runtime under its checkout.
+# Its documented escape hatch (scripts/runtime-env.sh) reads absolute
+# RUNTIME_LAZYGIT_BIN / RUNTIME_FZF_BIN from panel.conf; point both at the mise
+# shims so the plugin runs the mise-pinned binaries. The plugin's settings pane
+# rewrites panel.conf key by key, so only add a key that is absent and never
+# overwrite a value already there.
+_panel="${HERDR_CONFIG_HOME:-$HOME/.config/herdr}/plugins/config/herdr-lazygit/panel.conf"
+mkdir -p "$(dirname "$_panel")"
+[ -f "$_panel" ] || printf '%s\n' '# panel.conf — herdr-lazygit global pane preferences (RUNTIME_* seeded by chezmoi).' >"$_panel"
+for _tool in lazygit fzf; do
+  _key="RUNTIME_$(printf '%s' "$_tool" | tr '[:lower:]' '[:upper:]')_BIN"
+  if ! grep -q "^${_key}=" "$_panel"; then
+    printf "%s='%s'\n" "$_key" "$_mise_data/shims/$_tool" >>"$_panel"
+  fi
+done
+exit 0
