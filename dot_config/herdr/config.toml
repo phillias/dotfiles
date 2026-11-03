@@ -202,6 +202,21 @@ type = "plugin_action"
 command = "herdr.git-graph.toggle-sidebar"
 description = "Toggle Git Graph sidebar"
 
+# Lazygit (Crokily/herdr-lazygit) — README's prefix+g / prefix+shift+g move to
+# the alt plugin surface as alt+l / alt+shift+l (alt+g stays Git Graph,
+# prefix+alt+g stays the plain lazygit popup; ctrl+l left to the shell).
+[[keys.command]]
+key = "alt+l"
+type = "plugin_action"
+command = "herdr-lazygit.open"
+description = "Toggle lazygit split"
+
+[[keys.command]]
+key = "alt+shift+l"
+type = "plugin_action"
+command = "herdr-lazygit.open-tab"
+description = "Toggle lazygit tab"
+
 # Lazysql (baeroe/herdr-lazysql) — README keys
 [[keys.command]]
 key = "alt+s"

@@ -158,6 +158,20 @@ opencode = "1.19.0"
 lazydocker = "0.25.2"
 "go:github.com/jorgerojas26/lazysql" = "0.6.0"
 "github:nicosuave/memex" = "0.27.1"
+# rust — cargo toolchain for herdr plugins built from source on install:
+# ezcorp-org/herdr-pc-ram-and-cpu-usage-overlay ([[build]] = cargo build
+# --release) and the cargo:difftastic pin below. 1.99.0 was installed via
+# mise core:rust (rustup-backed, links ~/.cargo/bin) but UNPINNED, so cargo
+# resolved only through not_found_system_fallback; a fresh machine had no
+# cargo for the plugin build. run_onchange_after_herdr-plugins puts the mise
+# shims first on PATH so herdr's build step uses this pin.
+rust = "1.99.0"
+# fzf — Crokily/herdr-lazygit's settings and AI-commit panes. The plugin's
+# build downloads a private lazygit+fzf runtime; its panel.conf
+# RUNTIME_LAZYGIT_BIN / RUNTIME_FZF_BIN overrides (seeded by
+# run_onchange_after_herdr-plugins) point it at the mise shims instead.
+# 0.74.4 = the fzf version the plugin's v0.4.0 runtime is tested against.
+"aqua:junegunn/fzf" = "0.74.4"
 # agy — Antigravity CLI (Go binary TUI; firstmate-verified CREWMATE/SCOUT
 # harness, models via `agy models`, runs under the captain's signed-in Google
 # account). GitHub-release binary, pinned like herdr above.
