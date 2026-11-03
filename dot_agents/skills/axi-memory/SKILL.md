@@ -4,7 +4,8 @@ description: >
   Filesystem + git agent memory with TOON output. Use when the user says "remember",
   "recall", "memory", "what did I decide about", "have I seen", "previously", "how did
   we", "save this as a memory", "add to notes", or otherwise wants durable cross-session
-  knowledge capture or retrieval. Backed by the `mem` CLI at ~/.local/bin/mem.
+  knowledge capture or retrieval. Backed by the `mem` CLI (mise-managed
+  npm package @masculinecache/mem-axi, resolved via the mise shim on PATH).
 ---
 
 # axi-memory
@@ -32,7 +33,7 @@ Load this skill when the user says any of:
 
 ## Available commands
 
-The binary is at `~/.local/bin/mem`. If missing, run `mem init` (idempotent) first.
+`mem` is a mise-managed npm package (`@masculinecache/mem-axi`), resolved through the mise shim on PATH — never `~/.local/bin/mem`. If it is missing, run `mem init` (idempotent) first.
 
 | Command | Purpose | Token cost |
 |---|---|---|
