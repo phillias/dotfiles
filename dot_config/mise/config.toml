@@ -1,6 +1,9 @@
 # mise global tool manifest — declarative pins for npm-global CLI fleet.
 # System-owned runtimes (node, python, ruby, java) deliberately NOT declared:
-# the OS owns them; mise only manages the packages below via its npm backend.
+# the OS owns them; mise manages the packages below via its declared backends.
+# Sole runtime exception: rust (core backend, pinned below) — herdr plugins
+# build from source on install and a fresh machine cannot be assumed to have
+# cargo.
 # Reconcile with: chezmoi apply (triggers run_onchange_mise-sync) or `mise install`.
 # Drift check: mise install --dry-run-code (exit 1 = declared-but-missing).
 
