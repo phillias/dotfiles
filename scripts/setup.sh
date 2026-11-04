@@ -617,5 +617,91 @@ echo ""
 for k in id_ed25519 id_ed25519_inspironkali id_ed25519_kali id_ed25519_oraclecloud id_ed25519_huggingface; do
     [ -f "$HOME/.ssh/$k" ] && echo "  $k: OK" || echo "  $k: MISSING"
 done
+
+# ── 19. Agent harness logins ─────────────────────────────────────
+echo ""
+echo "=== Agent harness logins ==="
+echo "The fleet's dispatch pool expects these agent CLIs authenticated."
+echo "Headless login commands are printed for any that still need one."
+echo ""
+
+MISSING_LOGINS=""
+
+if command -v codex >/dev/null 2>&1; then
+    if codex login status 2>&1 | grep -q "Not logged in"; then
+        echo "  codex: NOT LOGGED IN — run: codex login"
+        MISSING_LOGINS="$MISSING_LOGINS codex"
+    else
+        echo "  codex: OK"
+    fi
+else
+    echo "  codex: not installed (skipped)"
+fi
+
+if command -v claude >/dev/null 2>&1; then
+    if claude auth status 2>/dev/null | grep -q '"loggedIn": *true'; then
+        echo "  claude: OK"
+    else
+        echo "  claude: NOT LOGGED IN — run: claude auth login"
+        MISSING_LOGINS="$MISSING_LOGINS claude"
+    fi
+else
+    echo "  claude: not installed (skipped)"
+fi
+
+if command -v muse >/dev/null 2>&1; then
+    MUSE_AUTH="${XDG_CONFIG_HOME:-$HOME/.config}/muse/auth.json"
+    if [ -n "$META_API_KEY" ] || [ -f "$MUSE_AUTH" ]; then
+        echo "  muse: OK"
+    else
+        echo "  muse: NO CREDENTIALS — run: muse login (approve code in browser) or set META_API_KEY"
+        MISSING_LOGINS="$MISSING_LOGINS muse"
+    fi
+else
+    echo "  muse: not installed (skipped)"
+fi
+
+if command -v agy >/dev/null 2>&1; then
+    AGY_TIMEOUT=""
+    command -v timeout >/dev/null 2>&1 && AGY_TIMEOUT="timeout 20"
+    if $AGY_TIMEOUT agy models 2>&1 | grep -qi "please sign in"; then
+        echo "  agy: NOT SIGNED IN — run: agy (launch once and approve the browser auth URL)"
+        MISSING_LOGINS="$MISSING_LOGINS agy"
+    else
+        echo "  agy: OK"
+    fi
+else
+    echo "  agy: not installed (skipped)"
+fi
+
+if command -v kimi >/dev/null 2>&1; then
+    if [ -f "$HOME/.kimi-code/credentials/kimi-code.json" ]; then
+        echo "  kimi: OK"
+    else
+        echo "  kimi: NOT LOGGED IN — run: kimi login (device-code flow)"
+        MISSING_LOGINS="$MISSING_LOGINS kimi"
+    fi
+else
+    echo "  kimi: not installed (skipped)"
+fi
+
+if command -v grok >/dev/null 2>&1; then
+    if [ -f "${GROK_HOME:-$HOME/.grok}/auth.json" ]; then
+        echo "  grok: OK"
+    else
+        echo "  grok: NOT LOGGED IN — run: grok login"
+        MISSING_LOGINS="$MISSING_LOGINS grok"
+    fi
+else
+    echo "  grok: not installed (skipped)"
+fi
+
+echo ""
+if [ -n "$MISSING_LOGINS" ]; then
+    echo "  REQUIRED LOGINS PENDING:$MISSING_LOGINS"
+    echo "  Complete them before dispatching crew work on this host."
+else
+    echo "  All installed harnesses authenticated."
+fi
 echo ""
 echo "=== Done ==="
