@@ -291,7 +291,7 @@ flowchart TD
 
 - **Skills:** `~/.agents/skills/<name>/SKILL.md` (+ `references/`, `assets/`).
   Keep SKILL.md < 500 lines; push detail to references.
-- **Memory:** `mem` CLI (`~/.local/bin/mem`), store `~/memories/` (markdown +
+- **Memory:** `mem` CLI (mise shim over npm `@masculinecache/mem-axi`), store `~/memories/` (markdown +
   YAML frontmatter git repo, `objects/<type>/`); types
   `constraint|decision|failure|howto|preference`.
 - **L0 abstracts:** optional `abstract: "<≤120 chars>"` frontmatter field on

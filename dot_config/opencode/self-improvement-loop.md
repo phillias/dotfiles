@@ -127,7 +127,7 @@ frontmatter scoring) before new work in a documented area. Dispatch via the
 
 ### 7. The axi-memory system (the facts sink)
 
-`~/.agents/skills/axi-memory/SKILL.md` + `~/.local/bin/mem` (the `mem` CLI).
+`~/.agents/skills/axi-memory/SKILL.md` + `mem` (the `mem` CLI, a mise shim over npm `@masculinecache/mem-axi`; not `~/.local/bin/mem`).
 
 Part of the same loop: cues that are single facts/corrections/decisions/
 preferences route to axi-memory, not to a skill. The `axi-memory-bridge.ts`
