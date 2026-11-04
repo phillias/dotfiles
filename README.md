@@ -98,6 +98,7 @@ curl -fsSL https://raw.githubusercontent.com/phillias/dotfiles/master/scripts/se
 
 - **Shims for PATH discovery:** `mise install` creates the tool shim (e.g. `wrangler`) for PATH discovery. Never reference versioned install directories (e.g. `installs/npm-wrangler/<ver>/...`) in configs or scripts — always use the shim.
 - **Upgrade flow:** bump the pin in `dot_config/mise/config.toml` → `chezmoi apply` → mise reconciles → the shim re-points. Never run `npm update -g`, and never use in-tool self-updaters.
+- **Deliberate exception — muse:** Meta's `muse` ships only as a self-updating launcher and is not npm/mise-published, so it cannot live under a mise pin. setup.sh section 19 provisions it install-if-absent from `https://api.meta.ai/muse-launcher.sh` to `~/.local/bin/muse` and never overwrites it; keep it outside mise on purpose, because its in-tool self-updater would fight the mise shim layout.
 - **No duplicate symlinks:** never create duplicate `~/.local/bin` symlinks alongside the mise shim.
 
 ## Secrets

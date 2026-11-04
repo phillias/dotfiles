@@ -68,6 +68,15 @@ kimi-facts[4]{layer,mechanism}:
   "upgrades","owned by the mise pin — bump the version in dot_config/mise/config.toml and
     mise-sync reconciles; kimi's install.sh self-update-in-place lane retired with the bootstrap"
 
+### Muse launcher bootstrap
+
+Meta's `muse` is the deliberate counter-example to the mise standard above: it is not
+npm/mise-published — Meta ships the launcher as a self-updating script from
+`https://api.meta.ai/muse-launcher.sh` — so it cannot be pinned in `dot_config/mise/config.toml`
+like kimi. setup.sh section 19 provisions it install-if-absent (only when the executable is
+missing) into `~/.local/bin/muse` with chmod 0755 and never overwrites it afterwards. Keep it
+outside mise on purpose: its in-tool self-updater would fight the mise shim layout.
+
 ---
 
 ## Run scripts
