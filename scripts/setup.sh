@@ -629,7 +629,7 @@ MISSING_LOGINS=""
 
 if command -v codex >/dev/null 2>&1; then
     if codex login status 2>&1 | grep -q "Not logged in"; then
-        echo "  codex: NOT LOGGED IN — run: codex login"
+        echo "  codex: NOT LOGGED IN — run: codex login --device-auth"
         MISSING_LOGINS="$MISSING_LOGINS codex"
     else
         echo "  codex: OK"
@@ -649,16 +649,26 @@ else
     echo "  claude: not installed (skipped)"
 fi
 
+if ! command -v muse >/dev/null 2>&1 && [ ! -f "$HOME/.local/bin/muse" ]; then
+    mkdir -p "$HOME/.local/bin"
+    echo "  muse: not installed — installing launcher from api.meta.ai..."
+    if curl -fsSL https://api.meta.ai/muse-launcher.sh -o "$HOME/.local/bin/muse" && chmod 0755 "$HOME/.local/bin/muse"; then
+        echo "  muse: installed to $HOME/.local/bin/muse (self-updating; never overwrite it later)"
+    else
+        echo "  muse: WARNING — launcher download failed; install manually from https://api.meta.ai/muse-launcher.sh"
+    fi
+fi
+
 if command -v muse >/dev/null 2>&1; then
     MUSE_AUTH="${XDG_CONFIG_HOME:-$HOME/.config}/muse/auth.json"
-    if [ -n "$META_API_KEY" ] || [ -f "$MUSE_AUTH" ]; then
+    if [ -n "${META_API_KEY:-}" ] || [ -f "$MUSE_AUTH" ]; then
         echo "  muse: OK"
     else
         echo "  muse: NO CREDENTIALS — run: muse login (approve code in browser) or set META_API_KEY"
         MISSING_LOGINS="$MISSING_LOGINS muse"
     fi
 else
-    echo "  muse: not installed (skipped)"
+    echo "  muse: install failed (skipped)"
 fi
 
 if command -v agy >/dev/null 2>&1; then
@@ -678,7 +688,7 @@ if command -v kimi >/dev/null 2>&1; then
     if [ -f "$HOME/.kimi-code/credentials/kimi-code.json" ]; then
         echo "  kimi: OK"
     else
-        echo "  kimi: NOT LOGGED IN — run: kimi login (device-code flow)"
+        echo "  kimi: NOT LOGGED IN — run: kimi login --region global (device-code flow)"
         MISSING_LOGINS="$MISSING_LOGINS kimi"
     fi
 else
@@ -689,7 +699,7 @@ if command -v grok >/dev/null 2>&1; then
     if [ -f "${GROK_HOME:-$HOME/.grok}/auth.json" ]; then
         echo "  grok: OK"
     else
-        echo "  grok: NOT LOGGED IN — run: grok login"
+        echo "  grok: NOT LOGGED IN — run: grok login --device-auth"
         MISSING_LOGINS="$MISSING_LOGINS grok"
     fi
 else
@@ -700,6 +710,7 @@ echo ""
 if [ -n "$MISSING_LOGINS" ]; then
     echo "  REQUIRED LOGINS PENDING:$MISSING_LOGINS"
     echo "  Complete them before dispatching crew work on this host."
+    echo "  Then launch each harness once to set trust for directories and plugins."
 else
     echo "  All installed harnesses authenticated."
 fi
