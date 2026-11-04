@@ -330,7 +330,7 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
         echo "  Enter passphrase manually (or press Enter to skip):"
         for attempt in 1 2 3; do
             read -rp "  Passphrase (attempt $attempt/3): " AGE_PP </dev/tty
-            AGE_PP="$(echo "$AGE_PP" | tr -d '[:space:]')"
+            AGE_PP="$(printf '%s' "$AGE_PP" | tr -d '\r\n')"
             if [ -z "$AGE_PP" ]; then
                 echo "  Skipped. Decrypt later:"
                 echo "    chezmoi age decrypt --passphrase -o ~/.config/chezmoi/key.txt ~/.local/share/chezmoi/age-key.txt.age"
