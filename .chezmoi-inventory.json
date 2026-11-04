@@ -20,6 +20,16 @@
       "first_seen": "2026-06-11T00:07:25Z",
       "last_sync": "2026-06-11T00:07:25Z",
       "status": "active"
+    },
+    "oci1": {
+      "hostname": "oci1",
+      "username": "ubuntu",
+      "os": "linux",
+      "arch": "aarch64",
+      "profile": "master",
+      "first_seen": "2026-11-04T17:56:01Z",
+      "last_sync": "2026-11-04T17:56:01Z",
+      "status": "active"
     }
   }
 }
