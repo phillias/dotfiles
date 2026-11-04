@@ -90,6 +90,12 @@ gh = "2.100.0"
 # The working `pi` is @earendil-works/pi-coding-agent@0.84.2, pinned in this manifest.
 # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
 "npm:@ast-grep/cli" = "0.43.0"
+# ripgrep (rg) — search runtime dependency of the mem CLI (axi-memory store
+# search; same rg invocation the retired chezmoi-managed script used). Pin via
+# mise's github backend with shims for PATH discovery; ubi is deprecated
+# (removal targeted mise 2027.1.0) and cargo has no toolchain on ARM hosts.
+# Never create a duplicate ~/.local/bin/rg symlink.
+"github:BurntSushi/ripgrep" = "15.2.0"
 "npm:@bitwarden/cli" = "2026.5.0"
 "npm:@smithery/cli" = "4.11.1"
 "npm:codeburn" = "0.9.19"
