@@ -17,7 +17,38 @@ Uses TypeSafe's Jev evaluation model to make fast, cheap structured decisions ab
 ## Prerequisites
 
 - `AI_GATEWAY_API_KEY` environment variable (Vercel AI Gateway, immediate access)
-- Model: `typesafe-ai/jev` via Vercel AI Gateway
+- Model: `typesafe-ai/jev` via Vercel AI Gateway (decision endpoint `https://ai-gateway.vercel.sh/v1/decisions`)
+
+## API Invocation (verified 2026-11-04)
+
+Call the decision endpoint directly with curl or any HTTP client; there is no Jev CLI.
+The gateway host `ai.gateway.vercel.dev` is unreachable from some hosts (the TLS
+handshake is killed at the SNI level). Use `https://ai-gateway.vercel.sh/v1` with the
+same `AI_GATEWAY_API_KEY`. Jev is a decision model: the chat completions path returns
+`ModelTypeMismatchError`, so use `POST /v1/decisions`.
+
+```sh
+curl -sS --max-time 30 https://ai-gateway.vercel.sh/v1/decisions \
+  -H "Authorization: Bearer $AI_GATEWAY_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d @request.json
+```
+
+Request body: `model`, `input` (the text to classify, as a string; JSON-stringify a
+structured state object), and `questions[]`. Each question carries `name`, `type`
+(`predicate` | `choice` | `score`), `prompt`, and `instructions`, plus
+`choices[]` (`label`/`value`[/`description`] objects) for choice questions or
+`levels[]` (`label`/`value`[/`description`] objects) for score questions.
+Plain string arrays are rejected with a structured 400.
+
+Response `answers[]`:
+
+- predicate -> `{"type","name","probability"}`
+- choice -> `{"type","name","choice","confidence","probabilities":[{"value","probability"}]}`
+- score -> `{"type","name","score","confidence","probabilities":[{"value","label","probability"}]}`
+
+Do not call `ai.gateway.vercel.dev` (dead from some networks) and do not use
+`/v1/chat/completions` (wrong model type for Jev).
 
 ## Question Schemas
 
