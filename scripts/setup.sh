@@ -649,7 +649,7 @@ else
     echo "  claude: not installed (skipped)"
 fi
 
-if ! command -v muse >/dev/null 2>&1 && [ ! -f "$HOME/.local/bin/muse" ]; then
+if ! { command -v muse >/dev/null 2>&1 && [ -x "$(command -v muse)" ] || [ -x "$HOME/.local/bin/muse" ]; }; then
     mkdir -p "$HOME/.local/bin"
     echo "  muse: not installed — installing launcher from api.meta.ai..."
     if curl -fsSL https://api.meta.ai/muse-launcher.sh -o "$HOME/.local/bin/muse" && chmod 0755 "$HOME/.local/bin/muse"; then
@@ -659,7 +659,7 @@ if ! command -v muse >/dev/null 2>&1 && [ ! -f "$HOME/.local/bin/muse" ]; then
     fi
 fi
 
-if command -v muse >/dev/null 2>&1; then
+if command -v muse >/dev/null 2>&1 && [ -x "$(command -v muse)" ]; then
     MUSE_AUTH="${XDG_CONFIG_HOME:-$HOME/.config}/muse/auth.json"
     if [ -n "${META_API_KEY:-}" ] || [ -f "$MUSE_AUTH" ]; then
         echo "  muse: OK"
