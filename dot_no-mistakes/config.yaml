@@ -16,7 +16,14 @@
 # probe. Deep-review reliability remains subject to post-merge validation.
 # Vercel Claude now returns 402 (insufficient credit); CF Claude still 404s.
 # The historical pi routing and convergence notes below remain as evidence.
-agent: pi
+# (2026-11-03, captain) Expanded to an ordered fallback list over every harness
+# installed with firstmate workers (muse/kimi have no no-mistakes adapter). Auth
+# posture unchanged: every CLI keeps its native subscription/OAuth source - this
+# list only falls through between CLI invocations, never mid-run and never to API
+# keys. pi stays head (its fallback/gate chain is the tuned JSON lane); opencode
+# is tail because its review step rejects thinking-mode tool_choice
+# (kunchenguid/no-mistakes#633).
+agent: [pi, codex, claude, grok, opencode, antigravity]
 
 # opencode review step is broken for thinking-mode models: the adapter sends a
 # tool_choice that providers reject ("Thinking mode does not support this
@@ -104,6 +111,13 @@ review_agents:
     agent: pi
     model: fallback/gate
     effort: medium
+
+# (2026-11-03, captain) Reviewer relaxed: after codex reset 2026-11-04T23:01Z the
+# reviewer returns to codex gpt-6-astra at effort MEDIUM (effort is the burn
+# lever; opus rejected as the scarcest Pro quota; claude native sonnet-5 is the
+# next rung if codex exhausts again). Until the reset this pi fallback/review
+# block stays active; it remains the codex-outage swap as a one-line change
+# through this template.
 
 # Optional path to the user-installed acpx binary for acp:<target> agents and
 # ACP aliases
