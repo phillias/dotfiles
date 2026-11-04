@@ -36,7 +36,7 @@ Documented but NOT created: `.cheapestinference-key`, `.cheaperinference-key`, `
 - **quota-axi** — local quota reads for dispatch profile selection.
 - **lavish-axi** — structured decision/report surface.
 - **chrome-devtools-axi** — browser work.
-- **mem / axi-memory** — durable cross-session memory (`.local/bin/mem`).
+- **mem / axi-memory** — durable cross-session memory (mise shim over npm `@masculinecache/mem-axi`).
 - **systemd** — `d1-registry-refresh`/`dynamic-audit` units+timer, `selfimprove-drain` unit (catalog-drift units retired 2026-09-28).
 - **age** — chezmoi secret encryption (age-key.txt.age).
 - **SQLite** — `~/.local/share/opencode/opencode.db` (session records; commit identity via `sqlite3 ... SELECT model FROM session ORDER BY time_updated DESC LIMIT 1`).
