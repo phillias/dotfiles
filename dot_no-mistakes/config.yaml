@@ -16,14 +16,21 @@
 # probe. Deep-review reliability remains subject to post-merge validation.
 # Vercel Claude now returns 402 (insufficient credit); CF Claude still 404s.
 # The historical pi routing and convergence notes below remain as evidence.
-# (2026-11-03, captain) Expanded to an ordered fallback list over every harness
-# installed with firstmate workers (muse/kimi have no no-mistakes adapter). Auth
-# posture unchanged: every CLI keeps its native subscription/OAuth source - this
-# list only falls through between CLI invocations, never mid-run and never to API
-# keys. pi stays head (its fallback/gate chain is the tuned JSON lane); opencode
-# is tail because its review step rejects thinking-mode tool_choice
-# (kunchenguid/no-mistakes#633).
-agent: [pi, codex, claude, grok, opencode, antigravity]
+# (2026-11-03, captain) Expanded to an ordered fallback list; auth posture
+# unchanged: every CLI keeps its native subscription/OAuth source - this list
+# only falls through between CLI invocations, never mid-run and never to API
+# keys. pi stays head (its fallback/gate chain is the tuned JSON lane).
+# (2026-11-04) Gate-lane boundary: this repo sets disable_project_settings, and
+# under that opt-out the gate requires EVERY listed agent to carry a verified
+# project-instruction neutralization knob (pi --no-context-files, codex
+# project_doc_max_bytes=0, claude --setting-sources) - the whole-set check
+# fails closed when any member lacks one, so grok/opencode/antigravity (no
+# knob) refused the wider list at push time. Keep the list to verified-knob
+# agents; the dropped harnesses stay fully available as worker lanes via
+# firstmate dispatch, they are only unusable as gate agents here. opencode is
+# also dropped from the tail: besides lacking the knob, its review step
+# rejects thinking-mode tool_choice (kunchenguid/no-mistakes#633).
+agent: [pi, codex, claude]
 
 # opencode review step is broken for thinking-mode models: the adapter sends a
 # tool_choice that providers reject ("Thinking mode does not support this
