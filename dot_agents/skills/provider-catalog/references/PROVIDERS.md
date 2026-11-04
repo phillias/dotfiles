@@ -71,32 +71,35 @@ Model ids are the upstream API model names sent through the gateway verbatim —
 
 **Provider:** `typesafe-ai` — native provider for Jev evaluation model
 
-**Access:**
-- Direct API: `POST https://api.typesafe.ai/v1/systemone` with `TYPESAFE_API_KEY` (waitlist)
-- Vercel AI Gateway: Model ID `typesafe-ai/jev` with `AI_GATEWAY_API_KEY` (immediate, no waitlist)
+**Access (2026-11-04):**
+- Direct API: `POST https://api.typesafe.ai/v1/systemone` with `TYPESAFE_API_KEY` — GA; waitlist removed 2026-09-20
+- Vercel AI Gateway: Model IDs `typesafe-ai/jev|jev-1.13.0|jev-1.14.0` with `AI_GATEWAY_API_KEY`; decision generation via `POST https://ai-gateway.vercel.sh/v1/decisions` with `{model, input, questions}` (chat/completions rejects Jev with "decision model" error — verified 2026-11-04)
+- OpenRouter: `POST https://openrouter.ai/api/alpha/decisions`, model `typesafe/jev-1.13` — live-verified 2026-11-04 (309-token probe cost $0.000012978 = exact native rate passthrough); alpha endpoints are experimental
 - CF AI Gateway: Custom provider (dashboard BYOK setup, base URL `api.typesafe.ai/v1`)
 
 **Pricing:** $0.042/MTok input, output free (too cheap to meter)
 
 **Model IDs:**
-- `jev-latest` — stable alias (SDK default)
-- `jev-preview` — preview builds
-- `jev-1.13.0` — pin for production (response includes versioned ID)
+- `jev-latest` — stable alias, currently → `jev-1.14.0`
+- `jev-preview` — preview builds (currently also → `jev-1.14.0`; no preview build available)
+- `jev-1.14.0` — released 2026-10-14 (multilingual gains; experimental image input, Box questions, 262K long-context mode — same price)
+- `jev-1.13.0` — original GA release, still served (60-day deprecation-warning policy)
 
-**Status (2026-09-18):** Vercel AI Gateway provides immediate access. Direct TypeSafe API requires waitlist acceptance.
+**Status (2026-11-04):** Direct TypeSafe API GA. All lanes serve the same native price; Jev is the only System One model (no cheaper sibling exists in the family). Jev 1.13→1.14 price unchanged.
 
 **Capabilities:**
-- Question types: Choice (pick from list), Score (rubric), Boolean (probability)
+- Question types: Choice (pick from list, up to 255 options), Score (rubric), Noul/Boolean (probability); Box (bounding box) + image input experimental on 1.14
 - Parallel evaluation: all questions in single call
 - Calibrated confidence: probability distributions match outcomes (RLCD training)
 - Speed: 70–500ms end-to-end, ~100ms typical
-- Context: 32K input budget (documented 32,768 tokens)
+- Context (1.14): 64K per-request / 32K per-question (1.13: 32K); experimental long-context mode 262K (same price, slower)
 
 **Limitations:**
 - Cannot generate prose, code, or explanations
 - Output is strictly structured (cannot invent values outside schema)
-- No image input
+- No image input on 1.13 (experimental PNG/JPEG on 1.14 via assets map)
 - No chat interface
+- Non-deterministic content: same input can yield different probabilities between runs (format is deterministic)
 
 **Use cases:**
 - Task routing and classification
