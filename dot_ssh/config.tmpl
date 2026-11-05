@@ -103,6 +103,8 @@ Host et-kali
   User phillias
   IdentityFile ~/.ssh/id_ed25519_kali
 
+# STALE: et.phillias.cc resolves to primary's grey-cloud IP, which has no
+# :22 listener — this alias no longer connects. Kept for reference only.
 Host et-55522
   HostName et.phillias.cc
   Port 22
@@ -112,6 +114,20 @@ Host et-kalione
   HostName et.phillias.org
   Port 22
   User phillias
+
+# et-oci1 — oci1 ET via direct exposure (no cloudflared, no sslh).
+# et.phillias.net is a grey-cloud A record to oci1 (147.224.180.103); sshd on
+# :22 bootstraps, etserver on :2022. Usage: et -u ubuntu et-oci1
+Host et-oci1
+  HostName et.phillias.net
+  Port 22
+  HostKeyAlias et-oci1
+  User ubuntu
+  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  AddKeysToAgent yes
+{{- if eq .chezmoi.os "darwin" }}
+  UseKeychain yes
+{{- end }}
 
 # oci1 — Oracle Cloud selfhost (direct reserved IP)
 Host oci1
