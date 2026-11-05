@@ -119,12 +119,8 @@ no cloudflared and no sslh:
   (147.224.180.103); the OCI NSG opens TCP/22 (sshd bootstrap) and TCP/2022
   (etserver on 0.0.0.0).
 - Laptop: `et -u ubuntu et-oci1` (`dot_ssh/config.tmpl` alias → `et.phillias.net:22`).
-- Server setup + hardening: `scripts/install-et-no-sslh.sh`. It sets sshd
-  `AllowUsers ubuntu`, `MaxAuthTries 3`, `LoginGraceTime 20`,
-  `PermitRootLogin no`, `X11Forwarding no` (no `ClientAlive*`, so idle
-  moshi/iTerm2 sessions survive), `telemetry = false` in `/etc/et.cfg`, and an
-  iptables `recent` rate limit of 3 new connections per 60s per source IP on
-  :22 and :2022, persisted to `/etc/iptables/rules.v4`.
+- Server setup + hardening: `scripts/install-et-no-sslh.sh` (hardening
+  details: README "Eternal Terminal server setup").
 - `et-55522` (`et.phillias.cc`) is stale: primary's grey-cloud IP has no :22
   listener.
 
