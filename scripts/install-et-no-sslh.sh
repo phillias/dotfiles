@@ -138,14 +138,13 @@ if ! dpkg -s iptables-persistent &>/dev/null; then
     sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq iptables-persistent
 fi
 
-# add_rule POS RULE...: insert RULE at INPUT position POS unless an identical
-# rule already exists anywhere in INPUT
+# add_rule POS RULE...: ensure RULE is at INPUT position POS
 add_rule() {
     local pos="$1"
     shift
-    if sudo iptables -C INPUT "$@" 2>/dev/null; then
-        return 0
-    fi
+    while sudo iptables -C INPUT "$@" 2>/dev/null; do
+        sudo iptables -D INPUT "$@"
+    done
     sudo iptables -I INPUT "$pos" "$@"
     echo "  iptables: added INPUT $*"
 }

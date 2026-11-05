@@ -124,6 +124,7 @@ Host et-oci1
   HostKeyAlias et-oci1
   User ubuntu
   IdentityFile ~/.ssh/id_ed25519_inspironkali
+  IdentitiesOnly yes
   AddKeysToAgent yes
 {{- if eq .chezmoi.os "darwin" }}
   UseKeychain yes
