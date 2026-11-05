@@ -66,6 +66,23 @@ flowchart TD
 | **Eternal Terminal** | Survives network drops and server reboots without losing your session — essential for long-running agent workflows |
 | **Moshi** | Access agent sessions from your phone; web-based, no server-side app install needed |
 
+### Eternal Terminal server setup
+
+Two server patterns, each with its own install script:
+
+| Pattern | Script | Layout | Used by |
+|---|---|---|---|
+| **Direct (no sslh)** | `scripts/install-et-no-sslh.sh` | sshd on `:22`, etserver directly on `0.0.0.0:2022`; both ports exposed so moshi and the laptop connect straight to the host | oci1 |
+| **sslh demux** | `scripts/install-et-sslh-for-moshi.sh` | sslh on `:2022` splits SSH (to a dedicated sshd) from ET (etserver on `127.0.0.1:20220`) | other fleet hosts |
+
+The direct pattern needs the cloud firewall (OCI NSG) to open TCP/22 and TCP/2022 and a grey-cloud (DNS-only) A record (`et.phillias.net` → oci1). The script is idempotent and hardens the exposed ports:
+
+- `/etc/et.cfg`: `port = 2022`, `bind_ip` left unset (0.0.0.0), `telemetry = false`
+- `/etc/ssh/sshd_config.d/99-et-hardening.conf`: `AllowUsers ubuntu`, `MaxAuthTries 3`, `LoginGraceTime 20`, `PermitRootLogin no`, `X11Forwarding no`. It deliberately sets no `ClientAlive*`, which would drop idle moshi/iTerm2 sessions
+- iptables `recent` rate limit on `:22` and `:2022` (3 new connections per 60s per source IP, DROP on exceed), persisted to `/etc/iptables/rules.v4`
+
+From the laptop: `et -u ubuntu et-oci1` (the `et-oci1` alias in `dot_ssh/config.tmpl` points to `et.phillias.net:22`, with no cloudflared client).
+
 ## What's Managed
 
 | Category | Components |

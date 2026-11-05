@@ -110,6 +110,20 @@ remote node (pull + chezmoi apply + daemon-reload + restart serve).
 5. On the new node itself: `sudo apt-get install -y autossh`, then serve + `chezmoi apply`
    (hostname gating brings its own tunnels to the others).
 
+## Eternal Terminal (oci1: direct exposure)
+
+ET does not ride this mesh. oci1 exposes ET directly, with no autossh tunnel,
+no cloudflared and no sslh:
+
+- `et.phillias.net` is a grey-cloud (DNS-only) A record to oci1's reserved IP
+  (147.224.180.103); the OCI NSG opens TCP/22 (sshd bootstrap) and TCP/2022
+  (etserver on 0.0.0.0).
+- Laptop: `et -u ubuntu et-oci1` (`dot_ssh/config.tmpl` alias → `et.phillias.net:22`).
+- Server setup + hardening: `scripts/install-et-no-sslh.sh` (hardening
+  details: README "Eternal Terminal server setup").
+- `et-55522` (`et.phillias.cc`) is stale: primary's grey-cloud IP has no :22
+  listener.
+
 ## Agent-to-agent usage
 
 Use the small `fleet-chat` adapter for agent-to-agent prompts:
