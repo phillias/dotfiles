@@ -14,7 +14,7 @@
 #     moshi/iTerm2 sessions)
 #   - rate-limits new connections on :22 and :2022 with iptables `recent`
 #     and persists the rules to /etc/iptables/rules.v4
-#   - restarts sshd and et only when their config changed
+#   - restarts sshd and et after every successful run
 #
 # Prerequisites:
 #   - Ubuntu/Debian with apt, sudo/root access
@@ -22,16 +22,15 @@
 #
 # Usage:
 #   bash scripts/install-et-no-sslh.sh
-#   SSH_USER=phillias bash scripts/install-et-no-sslh.sh   # custom
 
 set -euo pipefail
 
-SSH_PORT="${SSH_PORT:-22}"
-ET_PORT="${ET_PORT:-2022}"
-SSH_USER="${SSH_USER:-ubuntu}"
+SSH_PORT=22
+ET_PORT=2022
+SSH_USER=ubuntu
 # Rate limit: at most RATE_HITS new connections per RATE_SECONDS per source IP
-RATE_HITS="${RATE_HITS:-3}"
-RATE_SECONDS="${RATE_SECONDS:-60}"
+RATE_HITS=3
+RATE_SECONDS=60
 
 echo "  SSH port:   $SSH_PORT"
 echo "  ET port:    $ET_PORT"
@@ -66,15 +65,20 @@ write_file() {
         echo "  unchanged: $path"
         return 1
     fi
-    sudo mkdir -p "$(dirname "$path")"
-    printf '%s\n' "$content" | sudo tee "$path" > /dev/null
-    sudo chmod "$mode" "$path"
+    if ! sudo mkdir -p "$(dirname "$path")"; then
+        return 2
+    fi
+    if ! printf '%s\n' "$content" | sudo tee "$path" > /dev/null; then
+        return 2
+    fi
+    if ! sudo chmod "$mode" "$path"; then
+        return 2
+    fi
     echo "  wrote: $path"
 }
 
 # ---- Deploy /etc/et.cfg ----
 
-et_changed=0
 if write_file /etc/et.cfg "$(cat <<ETCFG
 ; et.cfg : Config file for Eternal Terminal (direct exposure, no sslh)
 ;
@@ -92,12 +96,16 @@ telemetry = false
 logdirectory = /tmp
 ETCFG
 )"; then
-    et_changed=1
+    :
+else
+    write_status=$?
+    if [[ "$write_status" -ne 1 ]]; then
+        exit "$write_status"
+    fi
 fi
 
 # ---- Deploy sshd hardening ----
 
-sshd_changed=0
 if write_file /etc/ssh/sshd_config.d/99-et-hardening.conf "$(cat <<SSHDCFG
 # ET direct-exposure hardening (managed by dotfiles install-et-no-sslh.sh)
 # No ClientAliveInterval/ClientAliveCountMax: they would disconnect idle
@@ -109,7 +117,12 @@ PermitRootLogin no
 X11Forwarding no
 SSHDCFG
 )"; then
-    sshd_changed=1
+    :
+else
+    write_status=$?
+    if [[ "$write_status" -ne 1 ]]; then
+        exit "$write_status"
+    fi
 fi
 
 # Validate before any restart so a bad drop-in never locks us out
@@ -161,20 +174,16 @@ echo "  persisted: /etc/iptables/rules.v4"
 # ---- Enable and (re)start services ----
 
 sudo systemctl enable et.service >/dev/null 2>&1 || true
-if [[ "$et_changed" == 1 ]] || ! systemctl is-active --quiet et.service; then
-    sudo systemctl restart et.service
-    echo "  restarted: et.service"
-fi
+sudo systemctl restart et.service
+echo "  restarted: et.service"
 
-if [[ "$sshd_changed" == 1 ]]; then
-    # Ubuntu names the unit ssh.service; others use sshd.service
-    if systemctl list-unit-files ssh.service &>/dev/null; then
-        sudo systemctl restart ssh.service
-    else
-        sudo systemctl restart sshd.service
-    fi
-    echo "  restarted: sshd"
+# Ubuntu names the unit ssh.service; others use sshd.service
+if systemctl list-unit-files ssh.service &>/dev/null; then
+    sudo systemctl restart ssh.service
+else
+    sudo systemctl restart sshd.service
 fi
+echo "  restarted: sshd"
 
 # ---- Summary ----
 
