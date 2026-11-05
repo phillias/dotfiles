@@ -222,6 +222,7 @@ Per the harness doctrine (a skill exists only once its trigger line appears here
 - `sandbox-stable` — load when building or maintaining Cloudflare Sandbox apps on the stable package.
 - `seeding` — load when the captain asks about the RapidSeedbox, seeding ratio, tracker strategy, or invite pathways.
 - `selfhost` — load when selfhost stack service work (currently Linkwarden and its OCI Object Storage backend), including credential rewires.
+- `simplefin-axi` — load when bank accounts, balances, transactions, financial data, or SimpleFIN access is needed.
 - `tokentelemetry` — load when deploying, routing, or debugging the TokenTelemetry service on any fleet host.
 - `treg` — load when external or live data is needed first (SEO, SERP, keywords, enrichment, ad libraries, media generation).
 - `turnstile-spin` — load when setting up, repairing, or migrating Cloudflare Turnstile with server-side Siteverify.
