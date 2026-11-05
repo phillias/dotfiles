@@ -45,7 +45,7 @@ bitwarden-secrets-manager = "2.1.0"
 "npm:@masculinecache/mem-axi" = "0.2.0"
 "npm:pnpm" = "11.20.0"
 "npm:quota-axi" = "0.1.60"  # upstream from frozen @masculinecache fork (0.1.30, Aug 31 republish to retire the vendored overlay); firstmate floor is 0.1.51
-"npm:@masculinecache/simplefin-axi" = "0.1.2"  # Agent-ergonomic CLI for SimpleFIN financial data on Cloudflare D1; repo masculinecache/simplefin-axi
+"npm:@masculinecache/simplefin-axi" = "0.1.3"  # Agent-ergonomic CLI for SimpleFIN financial data on Cloudflare D1; repo masculinecache/simplefin-axi (OIDC trusted publishing validated 0.1.3)
 "npm:tasks-axi" = "0.2.6"  # firstmate floor 0.2.6 (update --archive-body, mv [<id>...])
 # wrangler — Cloudflare Workers CLI; pinned via mise npm backend with shims for
 # PATH discovery (mise install creates the wrangler shim). Never reference
