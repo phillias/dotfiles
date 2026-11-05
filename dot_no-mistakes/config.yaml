@@ -19,18 +19,21 @@
 # (2026-11-03, captain) Expanded to an ordered fallback list; auth posture
 # unchanged: every CLI keeps its native subscription/OAuth source - this list
 # only falls through between CLI invocations, never mid-run and never to API
-# keys. pi stays head (its fallback/gate chain is the tuned JSON lane).
+# keys. claude is head (consume Pro subscription first), codex second, pi tail
+# for its fallback chain depth.
 # (2026-11-04) Gate-lane boundary: this repo sets disable_project_settings, and
 # under that opt-out the gate requires EVERY listed agent to carry a verified
 # project-instruction neutralization knob (pi --no-context-files, codex
-# project_doc_max_bytes=0, claude --setting-sources) - the whole-set check
+# project_doc_max_bytes=0, claude --setting-sources user) - the whole-set check
 # fails closed when any member lacks one, so grok/opencode/antigravity (no
 # knob) refused the wider list at push time. Keep the list to verified-knob
 # agents; the dropped harnesses stay fully available as worker lanes via
 # firstmate dispatch, they are only unusable as gate agents here. opencode is
 # also dropped from the tail: besides lacking the knob, its review step
 # rejects thinking-mode tool_choice (kunchenguid/no-mistakes#633).
-agent: [pi, codex, claude]
+# (2026-11-05) Reordered claude first to consume Pro subscription before API
+# rates; codex second; pi tail for its fallback chain depth.
+agent: [claude, codex, pi]
 
 # opencode review step is broken for thinking-mode models: the adapter sends a
 # tool_choice that providers reject ("Thinking mode does not support this
@@ -108,15 +111,18 @@ agent_config:
 # the cheaper gate ladder. The 2026-10-19 codex selection below supersedes it.
 # Ladder owner: ~/.pi/fallback-chains.json (`review` key); rendered in
 # provider-catalog references/ROUTING_TOPOLOGY.md flow-2.
-# (2026-11-01, captain) codex subscription rate-limited until Nov 4; review lane switched to pi, grok backup if pi fails concretely. reviewer rides fallback/review, fixer rides fallback/gate (chains in ~/.pi/fallback-chains.json).
+# (2026-11-05) Codex subscription reset completed 2026-11-04T23:01Z; review lane
+# reverted from pi fallback to codex per 2026-11-03 captain note. Reviewer rides
+# gpt-6-astra at medium effort (opus skipped as scarcest Pro quota), fixer rides
+# gpt-5.6-luna at medium effort. Pi remains the codex-outage one-line swap.
 review_agents:
   reviewer:
-    agent: pi
-    model: fallback/review
-    effort: high
+    agent: codex
+    model: gpt-6-astra
+    effort: medium
   fixer:
-    agent: pi
-    model: fallback/gate
+    agent: codex
+    model: gpt-5.6-luna
     effort: medium
 
 # (2026-11-03, captain) Reviewer relaxed: after codex reset 2026-11-04T23:01Z the
@@ -342,6 +348,13 @@ agent_args_override:
     # the historical 349K gate prompt). Allow the advertised larger window.
     - "-c"
     - "model_context_window=872000"
+  # (2026-11-05) Claude is now head of the agent list; suppress project-level
+  # settings so the gate lane sees a neutral context. --setting-sources user
+  # keeps ~/.claude/ user config while ignoring repo CLAUDE.md and
+  # .claude/settings.json (the gate-lane neutralization knob, see line 26).
+  claude:
+    - "--setting-sources"
+    - "user"
   # (2026-10-20) Timeout no-redrive policy: instructs every pi-invoked step
   # that a time-budget kill is a stop signal, never grounds to request or
   # accept a larger budget. Prompt-level complement to the firstmate interim
