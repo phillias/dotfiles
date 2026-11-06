@@ -39,3 +39,12 @@ wire_api = "responses"
 [profiles.cf]
 model_provider = "cf-aig"
 model = "dynamic/codex"
+
+# Fleet-wide trusted project dirs. codex writes these at runtime on first
+# use; folding them into the template prevents apply from stripping them
+# (runtime-written trust blocks used to drift MM on every trust grant).
+[projects."/home/ubuntu/firstmate"]
+trust_level = "trusted"
+
+[projects."/home/ubuntu/.local/share/chezmoi"]
+trust_level = "trusted"

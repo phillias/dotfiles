@@ -35,8 +35,14 @@ age = "1.2.1"
 # Verify with: bws --version via the shim.
 bitwarden-secrets-manager = "2.1.0"
 "npm:chrome-devtools-axi" = "0.1.29"
-"npm:composio" = "1.0.0"
-"npm:gh-axi" = "0.1.30"
+ "npm:composio" = "1.0.0"
+# chezmoi-axi — agent wrapper for chezmoi; migrated from the dotfiles-tracked
+# ~/.local/bin/chezmoi-axi script (dot_local/bin/executable_chezmoi-axi,
+# removed in the same PR) to mise/npm so fleet fixes ship via version bumps
+# instead of script edits. 0.2.0 fix(verify): uses `chezmoi status` (catches
+# silent rc=1 verify failures, pending installs, queued scripts).
+"npm:@masculinecache/chezmoi-axi" = "0.2.0"
+ "npm:gh-axi" = "0.1.30"
 "npm:lavish-axi" = "0.1.86"
 # mem-axi — agent memory CLI (mem); replaces the retired chezmoi-managed
 # ~/.local/bin/mem script (dot_local/bin/executable_mem, removed in the same
