@@ -35,7 +35,11 @@ age = "1.2.1"
 # Verify with: bws --version via the shim.
 bitwarden-secrets-manager = "2.1.0"
 "npm:chrome-devtools-axi" = "0.1.29"
-"npm:composio" = "1.0.0"
+# bws-axi — Bitwarden Secrets Manager CLI for agents; migrated from the
+# vendored ~/.local/opt/axi/bws-axi.mjs script (dot_local/bin/symlink_bws-axi
+# removed in the same PR; .chezmoiremove deletes the installed copy).
+"npm:@masculinecache/bws-axi" = "1.0.3"
+ "npm:composio" = "1.0.0"
 # chezmoi-axi — agent wrapper for chezmoi; migrated from the dotfiles-tracked
 # ~/.local/bin/chezmoi-axi script (dot_local/bin/executable_chezmoi-axi,
 # removed in the same PR) to mise/npm so fleet fixes ship via version bumps
@@ -59,6 +63,9 @@ bitwarden-secrets-manager = "2.1.0"
 # ~/.local/bin symlinks; upgrades flow bump pin -> chezmoi apply -> mise
 # reconciles -> shim re-points (never npm update -g, never in-tool self-updaters).
 "npm:wrangler" = "4.155.0"
+# wrangler-axi — agent-ergonomic TOON wrapper around Cloudflare Wrangler;
+# first install (was never deployed as a vendored script).
+"npm:@masculinecache/wrangler-axi" = "0.1.1"
 "npm:@earendil-works/pi-coding-agent" = "0.84.2"  # pi coding agent — provides the `pi` command (replaces dropped @oh-my-pi inert pin). Kept at 0.84.2 2026-09-20: both 0.85.1 and 0.86.0 die on long gate agent sessions with "Stream ended without finish_reason" (three pipeline deaths) while raw streams through the same lane complete cleanly with finish_reason stop — a pi 0.85+ stream-parsing regression; 0.84.2 completed two full pipelines the same night. The static x-opencode-session header on opencode-go-gw is load-bearing on every version (pi does not send it natively for custom providers). Re-bump only after a full no-mistakes run passes on the candidate.
 # no-mistakes gate pipeline (kunchenguid/no-mistakes) — NOT the unrelated npm
 # "no-mistakes" package (jonathanong, TS analysis). Installed via mise's go
