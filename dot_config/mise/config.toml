@@ -39,7 +39,7 @@ bitwarden-secrets-manager = "2.1.0"
 # vendored ~/.local/opt/axi/bws-axi.mjs script (dot_local/bin/symlink_bws-axi
 # removed in the same PR; .chezmoiremove deletes the installed copy).
 "npm:@masculinecache/bws-axi" = "1.0.3"
- "npm:composio" = "1.0.0"
+"npm:composio" = "1.0.0"
 # chezmoi-axi — agent wrapper for chezmoi; migrated from the dotfiles-tracked
 # ~/.local/bin/chezmoi-axi script (dot_local/bin/executable_chezmoi-axi,
 # removed in the same PR) to mise/npm so fleet fixes ship via version bumps
