@@ -14,7 +14,7 @@ Wraps chezmoi commands with TOON output for ~40% token savings over plain text.
 
 ## Installation
 
-The `chezmoi-axi` script lives at `~/.local/bin/chezmoi-axi`. Ensure `~/.local/bin` is on PATH.
+Installed via mise as `npm:@masculinecache/chezmoi-axi` (pinned in `dot_config/mise/config.toml`); the `chezmoi-axi` binary resolves through the mise shims on PATH.
 
 ## Commands
 
@@ -89,7 +89,7 @@ chezmoi-axi apply --preview   # dry run — shows what would change
 
 ### `chezmoi-axi verify`
 
-Check that installed files match source state. Exits 0 if clean, 1 if drifted (Principle 5).
+Check that installed files match source state (via `chezmoi status`, so pending installs and queued scripts count as drift). Exits 0 if clean, 1 if drifted (Principle 5).
 
 ```
 chezmoi-axi verify
@@ -126,7 +126,7 @@ All output uses TOON (Token-Oriented Object Notation) per AXI Principle 1.
 **Status example:**
 ```
 chezmoi:
-  bin: ~/.local/bin/chezmoi-axi
+  bin: ~/.local/share/mise/installs/npm-masculinecache-chezmoi-axi/<version>/...
   description: Agent-ergonomic chezmoi wrapper
   managed: 47
   changed: 2
