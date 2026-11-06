@@ -43,8 +43,8 @@ model = "dynamic/codex"
 # Fleet-wide trusted project dirs. codex writes these at runtime on first
 # use; folding them into the template prevents apply from stripping them
 # (runtime-written trust blocks used to drift MM on every trust grant).
-[projects."/home/ubuntu/firstmate"]
+[projects."{{ .chezmoi.homeDir }}/firstmate"]
 trust_level = "trusted"
 
-[projects."/home/ubuntu/.local/share/chezmoi"]
+[projects."{{ .chezmoi.homeDir }}/.local/share/chezmoi"]
 trust_level = "trusted"
