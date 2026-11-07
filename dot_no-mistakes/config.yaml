@@ -102,8 +102,8 @@ agent_config:
   pi:
     # Historical pi setting (2026-09-21; rung names refreshed 2026-09-28):
     # ride pi's fallback/gate
-    # chain instead of directly pinning CfAiGw/dynamic/pr-gate; its
-    # vercel/router/pr-gate rung is the CF-gateway-outage fallthrough.
+    # chain instead of directly pinning CfAiGw/dynamic/pr-gate (ladder owner:
+    # ~/.pi/fallback-chains.json; Vercel rungs removed 2026-11-06).
     model: fallback/gate
 
 # Historical pi review setting: review rode the separate `fallback/review`
