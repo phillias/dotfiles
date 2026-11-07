@@ -51,6 +51,7 @@ one of these labels inside the audit comment that discovered it, same turn.
 - [ ] <criterion per node slice + fleet-wide criterion>
 
 ## Captain gates
+- Canary: <node>, validated by captain before leg 1 (see "Canary node")
 <merges / rotations / reclassifications that require explicit captain word>
 
 ## Findings parking lot
@@ -84,6 +85,48 @@ options, and the ruling; the PR is the artifact. Known inline-violation
 patterns to avoid: naming policy settled in an execution thread (selfhost#93),
 captain rulings with no decision record (selfhost#99 attic role), agreed-path
 recorded only in a closed execution issue (dotfiles#486).
+
+## Canary node (first leg)
+
+Every multi-node execution workstream starts on exactly one **canary node**:
+the first leg proves the work is sound before any other node begins. The
+canary is chosen by a **fleet suitability evaluation**, recorded in the
+charter beside the node matrix.
+
+Suitability evaluation (write the conclusion into the charter, one line per
+factor):
+
+- **Representativeness** — the canary should exercise the change's main
+  variance axes (arch, role) without being the hardest case. If the fleet
+  splits ARM64/AMD64, the canary proves one arch and the matrix names the
+  follow-up leg that proves the other.
+- **Blast radius** — edges before the anchor. The anchor dockhand (primary)
+  runs last unless the change is anchor-only; a failed leg on an edge is
+  cheaper than on the node every other node depends on.
+- **Greenfield vs load-bearing** — a greenfield node (e.g. oci1) is a cheap
+  canary for greenfield work; a node carrying live traffic is a canary only
+  for the class of work it actually hosts.
+- **Peripheral work in flight** — a node may be running other work at the
+  captain's behest. The evaluation must check current holds and active
+  slices (open workstream issues, watcher holds, captain-directed side
+  work) for each candidate. A node with in-flight peripheral work is canary
+  only if the captain validates the collision risk; that validation is the
+  canary captain gate below.
+
+**Captain gate:** the canary choice is captain-validated at charter creation
+or before leg 1 starts. No node begins work on the workstream until that
+gate is explicit in the issue.
+
+**Canary completion contract:** the canary runs the full slice end-to-end:
+apply, timed validation probes, the external peer probe (see cross-node
+verification), and a reboot/restart test where the work affects units; then
+it posts its attestation. Only then does leg 2 start.
+
+**Canary failure:** if canary validation fails, the critical-path rules
+apply (rollback, `HOLD` comment, captain-gated lift). If the failure looks
+node-specific rather than work-specific, re-run the suitability evaluation
+and pick a different canary before retrying — do not retry the same node
+blind.
 
 ## Outliers and special handling
 
@@ -168,3 +211,63 @@ all dependent issues close.
   vocabulary above should exist in both fleet repos.
 - Agent-created issues follow these templates even when using `gh issue
   create --body` directly.
+
+## Verification phases: cross-node third-party verification
+
+Multi-phase verification in a workstream ledger mixes two probe classes:
+
+1. **In-node check** — the node under test probes itself (local config,
+   unit state, rendered files). Required, but shares blind spots with the
+   thing it verifies: local DNS cache, `/etc/hosts`, localhost shortcuts,
+   ambient env, session state.
+2. **External probe** — a *different* fleet node verifies from outside over
+   the mesh: DNS resolution of the target's names, HTTP status/route checks,
+   fetching and rendering an artifact (page loads, cert served, correct
+   backend answered). This proves what an outside client sees, which an
+   in-node check structurally cannot.
+
+Rules:
+
+- The verifier is a different fleet node than the node under test; name both
+  in the attestation (`probe from <peer> → <target>`).
+- Probes are unauthenticated where possible (DNS, HTTP status, TLS subject,
+  artifact bytes). No secrets ever travel to the verifier; tokens stay on
+  the node under test. If a check needs auth, the node under test performs
+  it and the peer verifies only the observable outside surface.
+- Probe command + output land in the fixed-format attestation comment of the
+  node under test's slice, fingerprint-only where values could be sensitive.
+- A verification phase completes only when both classes pass; the ledger
+  tracks them as separate checkboxes: `[ ] in-node check (node)` and
+  `[ ] external probe (peer)`.
+- One peer per probe. Do not fan a single probe out to every node — that is
+  noise, not verification.
+
+## Node-to-node messaging policy
+
+Default: **no direct node-to-node messaging for swarm work.** The issue
+ledger is the only decision and record surface; untracked channels create
+shadow state that no audit, attestation, or closure rule can see.
+
+- Coordination traffic goes through tracked paths: issue comments, firstmate
+  steering (`fm-send.sh` through the owning firstmate), or watcher wakes.
+- If fleet-chat (dotfiles#508) later lands, it is **transport, not record**:
+  any decision, assignment, or finding that arises in chat must be posted to
+  the owning issue in the same turn, or it did not happen.
+- The one sanctioned direct node↔node exchange is a verification probe
+  request (section above) — and both the request and its result must land as
+  issue comments to count.
+
+## Classification enforcement (no-memory guarantee)
+
+Classification must never depend on an agent remembering to do it.
+
+- **At creation (structural):** issue templates with blank issues disabled
+  mean every new issue is classified as it is filed. Nothing to remember.
+- **For the existing backlog (mechanical lint):** `swarm-lint.sh` (this
+  skill's directory) lists open issues carrying no `swarm/*` label that show
+  work activity (assignee, or ≥2 comments). Those are thin cards being
+  picked up without promotion — promote them to a charter before starting
+  work. The script is silent when conforming, so it doubles as an fm-check
+  script: registered on a node's watcher it wakes only on violations.
+- Run the lint at task intake on any fleet issue you are about to touch, and
+  keep a scheduled run on one node (see firstmate check registration).
