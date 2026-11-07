@@ -168,3 +168,63 @@ all dependent issues close.
   vocabulary above should exist in both fleet repos.
 - Agent-created issues follow these templates even when using `gh issue
   create --body` directly.
+
+## Verification phases: cross-node third-party verification
+
+Multi-phase verification in a workstream ledger mixes two probe classes:
+
+1. **In-node check** — the node under test probes itself (local config,
+   unit state, rendered files). Required, but shares blind spots with the
+   thing it verifies: local DNS cache, `/etc/hosts`, localhost shortcuts,
+   ambient env, session state.
+2. **External probe** — a *different* fleet node verifies from outside over
+   the mesh: DNS resolution of the target's names, HTTP status/route checks,
+   fetching and rendering an artifact (page loads, cert served, correct
+   backend answered). This proves what an outside client sees, which an
+   in-node check structurally cannot.
+
+Rules:
+
+- The verifier is a different fleet node than the node under test; name both
+  in the attestation (`probe from <peer> → <target>`).
+- Probes are unauthenticated where possible (DNS, HTTP status, TLS subject,
+  artifact bytes). No secrets ever travel to the verifier; tokens stay on
+  the node under test. If a check needs auth, the node under test performs
+  it and the peer verifies only the observable outside surface.
+- Probe command + output land in the fixed-format attestation comment of the
+  node under test's slice, fingerprint-only where values could be sensitive.
+- A verification phase completes only when both classes pass; the ledger
+  tracks them as separate checkboxes: `[ ] in-node check (node)` and
+  `[ ] external probe (peer)`.
+- One peer per probe. Do not fan a single probe out to every node — that is
+  noise, not verification.
+
+## Node-to-node messaging policy
+
+Default: **no direct node-to-node messaging for swarm work.** The issue
+ledger is the only decision and record surface; untracked channels create
+shadow state that no audit, attestation, or closure rule can see.
+
+- Coordination traffic goes through tracked paths: issue comments, firstmate
+  steering (`fm-send.sh` through the owning firstmate), or watcher wakes.
+- If fleet-chat (dotfiles#508) later lands, it is **transport, not record**:
+  any decision, assignment, or finding that arises in chat must be posted to
+  the owning issue in the same turn, or it did not happen.
+- The one sanctioned direct node↔node exchange is a verification probe
+  request (section above) — and both the request and its result must land as
+  issue comments to count.
+
+## Classification enforcement (no-memory guarantee)
+
+Classification must never depend on an agent remembering to do it.
+
+- **At creation (structural):** issue templates with blank issues disabled
+  mean every new issue is classified as it is filed. Nothing to remember.
+- **For the existing backlog (mechanical lint):** `swarm-lint.sh` (this
+  skill's directory) lists open issues carrying no `swarm/*` label that show
+  work activity (assignee, or ≥2 comments). Those are thin cards being
+  picked up without promotion — promote them to a charter before starting
+  work. The script is silent when conforming, so it doubles as an fm-check
+  script: registered on a node's watcher it wakes only on violations.
+- Run the lint at task intake on any fleet issue you are about to touch, and
+  keep a scheduled run on one node (see firstmate check registration).
