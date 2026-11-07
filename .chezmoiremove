@@ -56,3 +56,4 @@
 .agents/keys/phillias/.zai-key
 .agents/keys/phillias/.zen-key
 .local/bin/chezmoi-axi
+.local/bin/bws-axi
