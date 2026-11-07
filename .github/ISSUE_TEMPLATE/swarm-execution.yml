@@ -1,0 +1,52 @@
+name: Swarm workstream charter
+description: Execution ledger for a cross-node swarm workstream (goal, node matrix, gates)
+title: "[swarm] "
+labels: ["swarm/execution"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Execution issues are the ledger: checkboxes are the state machine, timestamped comments are the audit trail.
+        Nodes post fixed-format audit attestations (fingerprint-only, never secret values). See the `swarm-runbook` skill.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One paragraph, testable.
+    validations:
+      required: true
+  - type: input
+    id: desired-state
+    attributes:
+      label: Desired state ref
+      description: File/PR in this repo that defines the target state (the repo is the desired state; changes land via PRs only).
+    validations:
+      required: true
+  - type: textarea
+    id: node-matrix
+    attributes:
+      label: Node matrix
+      description: "One row per node: `| Node | Arch | Role | Variance | Slice |`. State variance explicitly (ARM64/AMD64, anchor vs edge, stale checkout, greenfield)."
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: completion
+    attributes:
+      label: Completion criteria
+      description: One criterion per node slice plus fleet-wide. Name the validation/reboot test each slice needs.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: gates
+    attributes:
+      label: Captain gates
+      description: Merges / secret rotations / reclassifications requiring explicit captain word. Critical-path changes (ssh, ET, cloudflared, godoxy, loader keys) require a rollback snapshot, a timed validation window, and HOLD-on-failed-validation.
+      render: markdown
+  - type: textarea
+    id: parking
+    attributes:
+      label: Findings parking lot
+      description: One line per newly discovered problem, labeled in-scope / adjacent defect / parked. Promoted issues link back here.
+      render: markdown

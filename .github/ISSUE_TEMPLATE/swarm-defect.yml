@@ -1,0 +1,33 @@
+name: Swarm defect
+description: Adjacent defect discovered during swarm work — link it to its owning workstream
+title: "[defect] "
+labels: ["swarm/defect"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What broke
+      description: Observable failure, one paragraph.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Fingerprint-only (sha256 prefixes), timestamps, command output excerpts. NEVER secret values.
+      render: markdown
+    validations:
+      required: true
+  - type: input
+    id: workstream
+    attributes:
+      label: Owning workstream
+      description: Issue number of the execution ledger this defect blocks or threatens (e.g. "phillias/selfhost#99").
+    validations:
+      required: true
+  - type: textarea
+    id: variance
+    attributes:
+      label: Fleet variance
+      description: Node/arch/role differences that shape the fix (e.g. ARM64-only, edge-only, greenfield node), if any.
+      render: markdown
