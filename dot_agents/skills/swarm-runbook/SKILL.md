@@ -51,6 +51,7 @@ one of these labels inside the audit comment that discovered it, same turn.
 - [ ] <criterion per node slice + fleet-wide criterion>
 
 ## Captain gates
+- Canary: <node>, validated by captain before leg 1 (see "Canary node")
 <merges / rotations / reclassifications that require explicit captain word>
 
 ## Findings parking lot
@@ -84,6 +85,48 @@ options, and the ruling; the PR is the artifact. Known inline-violation
 patterns to avoid: naming policy settled in an execution thread (selfhost#93),
 captain rulings with no decision record (selfhost#99 attic role), agreed-path
 recorded only in a closed execution issue (dotfiles#486).
+
+## Canary node (first leg)
+
+Every multi-node execution workstream starts on exactly one **canary node**:
+the first leg proves the work is sound before any other node begins. The
+canary is chosen by a **fleet suitability evaluation**, recorded in the
+charter beside the node matrix.
+
+Suitability evaluation (write the conclusion into the charter, one line per
+factor):
+
+- **Representativeness** — the canary should exercise the change's main
+  variance axes (arch, role) without being the hardest case. If the fleet
+  splits ARM64/AMD64, the canary proves one arch and the matrix names the
+  follow-up leg that proves the other.
+- **Blast radius** — edges before the anchor. The anchor dockhand (primary)
+  runs last unless the change is anchor-only; a failed leg on an edge is
+  cheaper than on the node every other node depends on.
+- **Greenfield vs load-bearing** — a greenfield node (e.g. oci1) is a cheap
+  canary for greenfield work; a node carrying live traffic is a canary only
+  for the class of work it actually hosts.
+- **Peripheral work in flight** — a node may be running other work at the
+  captain's behest. The evaluation must check current holds and active
+  slices (open workstream issues, watcher holds, captain-directed side
+  work) for each candidate. A node with in-flight peripheral work is canary
+  only if the captain validates the collision risk; that validation is the
+  canary captain gate below.
+
+**Captain gate:** the canary choice is captain-validated at charter creation
+or before leg 1 starts. No node begins work on the workstream until that
+gate is explicit in the issue.
+
+**Canary completion contract:** the canary runs the full slice end-to-end:
+apply, timed validation probes, the external peer probe (see cross-node
+verification), and a reboot/restart test where the work affects units; then
+it posts its attestation. Only then does leg 2 start.
+
+**Canary failure:** if canary validation fails, the critical-path rules
+apply (rollback, `HOLD` comment, captain-gated lift). If the failure looks
+node-specific rather than work-specific, re-run the suitability evaluation
+and pick a different canary before retrying — do not retry the same node
+blind.
 
 ## Outliers and special handling
 
