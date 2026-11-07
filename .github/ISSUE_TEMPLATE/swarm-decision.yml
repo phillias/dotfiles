@@ -1,0 +1,36 @@
+name: Swarm decision
+description: Policy or design question — resolves via PR to the repo, never thread debate
+title: "[decision] "
+labels: ["swarm/decision"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A decision resolves by merging a PR (or recording a decision doc in the repo), not by comment consensus.
+        Captain rulings recorded only in issue comments do not carry precedent.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: The single decision to be made.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      description: Each option with its tradeoff, one per line or subsection.
+      render: markdown
+    validations:
+      required: true
+  - type: input
+    id: pr
+    attributes:
+      label: Desired-state PR
+      description: PR (opened or planned) that carries the ruling into the repo.
+  - type: textarea
+    id: ruling
+    attributes:
+      label: Ruling
+      description: Captain fills this in; the linked PR is the artifact of record.
+      render: markdown
