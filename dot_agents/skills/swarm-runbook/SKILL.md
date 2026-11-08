@@ -150,6 +150,20 @@ Rules:
    cron on the rest of the fleet, one node at a time over a tracked SSH
    path, before the PR merges. This is the canary's first leg — it runs
    before any desired-state change ships.
+2b. **Comment out, never delete.** Deactivation means **commenting out the
+   crontab entry in place** — never deleting it. Replace the active line
+   with the exact same line prefixed `#` plus a freeze annotation above it:
+
+   ```
+   # sync-freeze <workstream-issue#> <ISO date>Z — do not uncomment manually; see workstream
+   <original crontab line unchanged>
+   ```
+
+   Deleting destroys the entry's exact schedule/arguments; a commented-out
+   block preserves them for byte-identical restore and makes a forgotten
+   freeze self-documenting (the annotation names the workstream). Verify the
+   freeze with `crontab -l | grep -c '^# sync-freeze'` (≥1) AND
+   `crontab -l | grep -v '^#' | grep -c chezmoi` (0 active chezmoi-axi entry).
 3. **Work citation comment.** Every deactivation is posted to the workstream
    issue in the fixed format below (append-only, fingerprint-only):
 
@@ -157,9 +171,9 @@ Rules:
    ### Sync freeze — <node> — <ISO date>Z
    | Claim | Verdict | Evidence (fingerprint-only) |
    |---|---|---|
-   | sync cron deactivated | DONE | crontab entry absent: `crontab -l` grep exit 1; prior entry sha256 prefix ab12cd34… |
+   | sync cron commented out | DONE | `crontab -l` active-entry grep exit 1; `# sync-freeze` annotation present with unchanged original line; prior entry sha256 prefix ab12cd34… |
    Deactivated by: <canary node> on behalf of <workstream>
-   Restore command: <exact crontab line to re-enable>
+   Restore command: <exact sed/crontab command to uncomment the entry>
    ```
 
 4. **Hard gate.** The workstream does **not proceed to merge or apply** until
@@ -174,13 +188,15 @@ Rules:
    after that node's slice attests (post-apply verification passed) and the
    node itself runs its recorded restore command, then posts a matching
    "Sync restore" citation comment in the fixed format (append-only,
-   fingerprint-only):
+   fingerprint-only). Restoring means **uncommenting** the annotated entry
+   (or re-adding the identical line if the node recreated its crontab),
+   never re-inventing a schedule from memory:
 
    ```markdown
    ### Sync restore — <node> — <ISO date>Z
    | Claim | Verdict | Evidence (fingerprint-only) |
    |---|---|---|
-   | sync cron re-enabled and re-enrolled | DONE | crontab entry present: `crontab -l` grep exit 0; restored entry sha256 prefix ab12cd34…; next scheduled run <HH:MM UTC> |
+   | sync cron re-enabled and re-enrolled | DONE | `crontab -l` active-entry grep exit 0; restored entry sha256 prefix ab12cd34…; `# sync-freeze` annotation removed; next scheduled run <HH:MM UTC> |
    Restored by: <node> (self) on behalf of <workstream>
    ```
 
