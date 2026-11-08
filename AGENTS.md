@@ -16,6 +16,7 @@ When updating this file, preserve this bar for all agents and keep entries conci
 This repo's apply target is the ENTIRE home directory of every fleet host that runs chezmoi against it, so a bad source change lands everywhere.
 Never run `chezmoi apply` from any worktree.
 `~/.local/share/chezmoi` is out of bounds for agents outside the guarded workflow: disable the chezmoi sync crontab, edit the source, ship a PR, then re-enable the crontab.
+Every root file not listed in `.chezmoiignore` deploys to `~/` on every host, so check `chezmoi managed --source .` after adding one.
 
 Secrets must never be committed plaintext; chef-encrypted keys live under
 `dot_agents/private_keys/` as ASCII-armored `age` files (header

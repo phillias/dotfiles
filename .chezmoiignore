@@ -1,3 +1,7 @@
+# Repo-scoped agent guidance — must not deploy to ~/ on fleet hosts
+/AGENTS.md
+/CLAUDE.md
+
 # Internal chezmoi files
 .chezmoi.toml
 .chezmoiignore
