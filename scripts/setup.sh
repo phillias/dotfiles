@@ -5,7 +5,7 @@
 #
 # Phase structure:
 #   0. Environment setup (PATH, OS detection)
-#   1. Tool installation (chezmoi, gh, cloudflared, bw)
+#   1. Tool installation (chezmoi, gh, cloudflared, bw, zsh)
 #   2. GitHub auth + deploy key
 #   3. Profile selection
 #   4. chezmoi init (clone dotfiles repo)
@@ -135,6 +135,28 @@ for _old in "$HOME/bin/gh" "$HOME/bin/bw" "$HOME/bin/wrangler" \
         fi
     fi
 done
+
+# ── 3c. zsh — required before Phase 7 applies ~/.zshrc and ~/.zshenv ──
+# Those files use zsh builtins (setopt, bindkey). Installing here, before
+# chezmoi apply, keeps a bash-only host from receiving a ~/.zshrc it cannot
+# source. The apply gate below still refuses to continue if zsh is absent.
+if ! command -v zsh >/dev/null 2>&1; then
+    echo "==> Installing zsh (required before zsh dotfiles are applied)..."
+    if $IS_MAC; then
+        if $BREW_OK; then
+            brew install zsh
+        else
+            echo "ERROR: zsh is not installed and Homebrew is unavailable." >&2
+            exit 1
+        fi
+    else
+        if ! sudo -n apt-get install -y zsh; then
+            echo "ERROR: zsh install failed (sudo -n apt-get install -y zsh)." >&2
+            echo "       Refusing to continue: chezmoi would deploy ~/.zshrc and ~/.zshenv with no zsh." >&2
+            exit 1
+        fi
+    fi
+fi
 
 # ═══════════════════════════════════════════════════════════════════
 # Phase 2 — GitHub auth + deploy key
@@ -542,6 +564,14 @@ if [ ! -f "$AGE_KEY_FILE" ]; then
     CHEZMOI_APPLY_OPTS="--keep-going"
 fi
 
+# zsh dotfiles (dot_zshenv.tmpl -> ~/.zshenv, dot_zshrc -> ~/.zshrc) are
+# unconditional. Fail here, before apply, if the interpreter is still missing.
+if ! command -v zsh >/dev/null 2>&1; then
+    echo "ERROR: zsh is not installed. Refusing to apply zsh dotfiles (~/.zshrc, ~/.zshenv)." >&2
+    exit 1
+fi
+echo "==> zsh present: $(zsh --version)"
+
 chezmoi apply $CHEZMOI_APPLY_OPTS
 
 # ═══════════════════════════════════════════════════════════════════
@@ -562,9 +592,11 @@ chezmoi apply $CHEZMOI_APPLY_OPTS
 #      key (registered on phillias/dotfiles in Phase 2/8b) is appended
 #      here, so every other node can SSH in; the tunnels ARE the mesh
 #      security boundary and they ride these keys
-#   4. enable the mesh tunnel units this host applies (its own-target
-#      unit is hostname-ignored via .chezmoiignore)
-# Failures are reported, never fatal: setup continues either way.
+#   4. enable opencode-serve and the mesh tunnel units this host applies
+#      (its own-target tunnel unit is hostname-ignored via .chezmoiignore)
+#      and fail if any deployed opencode unit is still disabled
+# Probe and key-sync failures are reported, not fatal. A deployed
+# opencode unit that is still disabled fails setup.
 
 if ! $IS_MAC; then
     # ── 15b. autossh ─────────────────────────────────────────────
@@ -620,20 +652,49 @@ else
          "to sync fleet deploy keys" >&2
 fi
 
-# ── 15e. Enable mesh tunnel units applied by Phase 7 ─────────────
-if ! $IS_MAC && command -v autossh &>/dev/null; then
-    ENABLED_TUNNELS=0
-    for TUNIT in "$HOME/.config/systemd/user"/opencode-tunnel-*.service; do
+# ── 15e. Enable opencode units applied by Phase 7 ────────────────
+# Serve does not depend on autossh. Tunnel units do: without the binary
+# they stay skipped (ConditionFileIsExecutable) instead of restart-looping.
+if ! $IS_MAC && command -v systemctl &>/dev/null; then
+    systemctl --user daemon-reload 2>/dev/null || true
+    if command -v autossh &>/dev/null; then
+        ENABLED_TUNNELS=0
+        for TUNIT in "$HOME/.config/systemd/user"/opencode-tunnel-*.service; do
+            [ -f "$TUNIT" ] || continue
+            if systemctl --user enable --now "$(basename "$TUNIT")" 2>/dev/null; then
+                ENABLED_TUNNELS=$((ENABLED_TUNNELS+1))
+            fi
+        done
+        echo "==> Fleet tunnels: enabled/confirmed $ENABLED_TUNNELS unit(s)"
+        echo "    (run_fleet-tunnels.sh re-enables them on every chezmoi apply)"
+    else
+        echo "==> Fleet tunnels: autossh unavailable — units stay ConditionFileIsExecutable-skipped"
+    fi
+    if [ -f "$HOME/.config/systemd/user/opencode-serve.service" ]; then
+        if systemctl --user enable --now opencode-serve.service 2>/dev/null; then
+            echo "==> opencode-serve: enabled"
+        else
+            echo "WARN: opencode-serve.service enable --now returned non-zero" >&2
+        fi
+    fi
+    # Deployed-but-disabled is the greenfield gap. Fail visibly.
+    OPENCODE_DISABLED=0
+    for TUNIT in "$HOME/.config/systemd/user"/opencode-*.service; do
         [ -f "$TUNIT" ] || continue
-        systemctl --user daemon-reload 2>/dev/null || true
-        if systemctl --user enable --now "$(basename "$TUNIT")" 2>/dev/null; then
-            ENABLED_TUNNELS=$((ENABLED_TUNNELS+1))
+        TNAME=$(basename "$TUNIT")
+        case "$TNAME" in
+            opencode-tunnel-*)
+                command -v autossh &>/dev/null || continue
+                ;;
+        esac
+        if ! systemctl --user is-enabled "$TNAME" >/dev/null 2>&1; then
+            echo "ERROR: ${TNAME} is deployed but not enabled" >&2
+            OPENCODE_DISABLED=1
         fi
     done
-    echo "==> Fleet tunnels: enabled/confirmed $ENABLED_TUNNELS unit(s)"
-    echo "    (run_fleet-tunnels.sh re-enables them on every chezmoi apply)"
-else
-    echo "==> Fleet tunnels: autossh unavailable — units stay ConditionFileIsExecutable-skipped"
+    if [ "$OPENCODE_DISABLED" -ne 0 ]; then
+        exit 1
+    fi
 fi
 
 # ═══════════════════════════════════════════════════════════════════

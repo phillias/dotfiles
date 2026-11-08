@@ -53,10 +53,11 @@ applies only the units that tunnel to the OTHER nodes:
 | oci1 (`oci1`) | 4096 | primary55522, kali, kalione | 14001, 14002, 14003 |
 
 Enablement is idempotent: `run_fleet-tunnels.sh` (runs on every `chezmoi
-apply`) daemon-reloads and `enable --now`s every installed tunnel unit.
-`scripts/setup.sh` Phase 7b additionally installs autossh, records host keys
-(accept-new probes), syncs fleet deploy keys into authorized_keys, and
-enables the units on greenfield hosts.
+apply`) daemon-reloads and `enable --now`s `opencode-serve.service` plus
+every installed tunnel unit, then fails the apply if any deployed opencode
+unit is still disabled. `scripts/setup.sh` Phase 7b additionally installs
+autossh, records host keys (accept-new probes), syncs fleet deploy keys into
+authorized_keys, and enables the same units on greenfield hosts.
 
 ## Port assignments (sequential, localhost only)
 
@@ -127,8 +128,9 @@ remote node (pull + chezmoi apply + daemon-reload + restart serve).
    phillias/dotfiles into `~/.ssh/authorized_keys` (so every node can SSH
    in), and enables the tunnel units it applies (tunnels to the other
    nodes; its own-target unit is hostname-ignored).
-4. Serve comes up with the standard dotfiles (`opencode-serve.service`).
-   Validate per Operations below.
+4. Serve is enabled by the same apply (`run_fleet-tunnels.sh` runs
+   `systemctl --user enable --now opencode-serve.service`). Validate per
+   Operations below.
 
 ## Eternal Terminal (oci1: direct exposure)
 
