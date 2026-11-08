@@ -77,6 +77,13 @@ Deterministic checks, not vibes. Enforce in CI when a tool can:
   (default ease-out; `:active { scale(0.97) }`; nothing animates without meaning).
 - Run `npx impeccable detect` as a CI quality gate over generated HTML when a Node toolchain exists.
 
+## Choosing among UI-design skills
+
+Bench evidence (Happycapy Skill Arena, AgentCraft, designskill.qiaomu.ai, ui-bench.dev):
+generators (taste-skill / frontend-design) vs polishers (impeccable) vs auditors
+(web-design-guidelines) occupy different roles — see
+[references/UI-SKILL-BENCHMARKS.md](references/UI-SKILL-BENCHMARKS.md) for the survey.
+
 ## Agent troubleshooting (debuggability bias)
 
 The house stack is designed so an agent can troubleshoot it fast and reliably: server-owned
