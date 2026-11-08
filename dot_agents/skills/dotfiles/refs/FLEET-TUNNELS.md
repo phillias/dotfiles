@@ -29,9 +29,10 @@ Every node runs:
 | Unit | Purpose |
 |---|---|
 | `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1`, rooted at `~/firstmate` for hosted sessions and using the shared `~/.config/opencode` config tree plus the serve-only `~/.config/opencode/opencode-serve.json` `OPENCODE_CONFIG` overlay; EnvironmentFile reads `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) — rendered by chezmoi template `private_opencode-serve.env.tmpl`, age-decrypting each secret from its own age file (serve password in `.chezmoitemplates/opencode-serve-password.age`) |
-| `opencode-tunnel-primary55522.service` | autossh `-L 14001:127.0.0.1:4096 primary55522` |
-| `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 kali` |
-| `opencode-tunnel-kalione.service` | autossh `-L 14003:127.0.0.1:4096 kalione` |
+| `opencode-tunnel-primary55522.service` | autossh `-L 14001:127.0.0.1:4096 fleet-primary55522` |
+| `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 fleet-kali` |
+| `opencode-tunnel-kalione.service` | autossh `-L 14003:127.0.0.1:4096 fleet-kalione` |
+| `opencode-tunnel-oci1.service` | autossh `-L 14004:127.0.0.1:4096 fleet-oci` |
 
 Tunnel hardening flags: `-M 0` (systemd owns restarts; no monitoring port),
 `ServerAliveInterval=15 ServerAliveCountMax=3` (dead-peer detection),
@@ -46,25 +47,34 @@ applies only the units that tunnel to the OTHER nodes:
 
 | Host (hostname) | Serve | Gets tunnels to | Local endpoints |
 |---|---|---|---|
-| kalione (`InspironOne`) | 4096 | primary55522, kali | 14001, 14002 |
-| primary55522 (`primary`) | 4096 | kali, kalione | 14002, 14003 |
-| kali (`CabinInspiron22Kali`) | 4096 | primary55522, kalione | 14001, 14003 |
+| kalione (`InspironOne`) | 4096 | primary55522, kali, oci1 | 14001, 14002, 14004 |
+| primary55522 (`primary`) | 4096 | kali, kalione, oci1 | 14002, 14003, 14004 |
+| kali (`CabinInspiron22Kali`) | 4096 | primary55522, kalione, oci1 | 14001, 14003, 14004 |
+| oci1 (`oci1`) | 4096 | primary55522, kali, kalione | 14001, 14002, 14003 |
 
 Enablement is idempotent: `run_fleet-tunnels.sh` (runs on every `chezmoi
 apply`) daemon-reloads and `enable --now`s every installed tunnel unit.
+`scripts/setup.sh` Phase 7b additionally installs autossh, records host keys
+(accept-new probes), syncs fleet deploy keys into authorized_keys, and
+enables the units on greenfield hosts.
 
 ## Port assignments (sequential, localhost only)
 
 | Local port | Remote node | SSH alias |
 |---|---|---|
-| 14001 | primary55522 | `primary55522` (rides cloudflared proxy, no -p) |
-| 14002 | kali | `kali` (rides cloudflared proxy, no -p) |
-| 14003 | kalione | `kalione` (direct port 22) |
-| 14004… | future nodes | next sequential |
+| 14001 | primary55522 | `fleet-primary55522` (cloudflared access, deploy key) |
+| 14002 | kali | `fleet-kali` (cloudflared access, deploy key) |
+| 14003 | kalione | `fleet-kalione` (cloudflared access, deploy key) |
+| 14004 | oci1 | `fleet-oci` (cloudflared access, deploy key) |
+| 14005… | future nodes | next sequential |
 
 The remote serve port is always 4096. Local ports only need per-node uniqueness.
-The SSH aliases resolve host+port via `~/.ssh/config` (cloudflared access
-carries the connection; no `-p` flags needed).
+The SSH aliases are DATA-DRIVEN: `dot_ssh/config.tmpl` renders one `fleet-*`
+Host block per `.fleet.nodes` entry in `.chezmoidata/fleet.toml`
+(`ssh_alias`, `access_host`, `ssh_user`, `tunnel_port`), so registering a
+node in fleet.toml gives every fleet node its alias on next apply. The
+`tunnel_port` value is what the node's own-target tunnel unit
+(`opencode-tunnel-<node>.service`) forwards on the OTHER nodes.
 
 ## System prerequisites (NOT mise-pinnable)
 
@@ -102,13 +112,23 @@ remote node (pull + chezmoi apply + daemon-reload + restart serve).
 
 ## Adding a node
 
-1. Ensure the node has an SSH config alias + passphraseless key from every other node.
-2. Assign the next sequential local port (14004, 14005, …).
-3. Add `opencode-tunnel-<alias>.service` to `dot_config/systemd/user/` and a
-   matching self-ignore rule in `.chezmoiignore` (`eq .chezmoi.hostname "<new>"`).
-4. Ship; on each existing node pull + `chezmoi apply` (the run script enables the new tunnel).
-5. On the new node itself: `sudo apt-get install -y autossh`, then serve + `chezmoi apply`
-   (hostname gating brings its own tunnels to the others).
+1. Run `scripts/setup.sh` on the new node. Its fleet-registration PR
+   (Phase 6b) adds the `fleet.toml` node entry WITH mesh fields
+   (`ssh_alias`, `access_host`, `ssh_user`, `tunnel_port` = next
+   sequential port), the per-host restic password, and (greenfield PRs)
+   the node's own-target tunnel unit `opencode-tunnel-<node>.service`
+   plus its `.chezmoiignore` self-ignore rule.
+2. Merge the PR. Every EXISTING node picks up the new node's alias
+   (data-driven `fleet-*` block in `dot_ssh/config.tmpl`) and tunnel unit
+   on next sync+apply; `run_fleet-tunnels.sh` enables the unit.
+3. On the new node itself, setup.sh Phase 7b (post-apply) installs
+   autossh, probes every fleet alias with accept-new to record host keys
+   into `~/.ssh/known_hosts`, syncs all `chezmoi@*` deploy keys from
+   phillias/dotfiles into `~/.ssh/authorized_keys` (so every node can SSH
+   in), and enables the tunnel units it applies (tunnels to the other
+   nodes; its own-target unit is hostname-ignored).
+4. Serve comes up with the standard dotfiles (`opencode-serve.service`).
+   Validate per Operations below.
 
 ## Eternal Terminal (oci1: direct exposure)
 

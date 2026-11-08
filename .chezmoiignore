@@ -100,8 +100,8 @@ firstmate/projects/selfhost/.env.devcabinkali
 # ── Fleet opencode tunnel self-ignore ───────────────────────
 # Full mesh: every node tunnels to every OTHER node's opencode serve.
 # Each host ignores the tunnel unit that targets ITSELF (a tunnel to
-# your own 127.0.0.1:4096 is a no-op); the other two units apply.
-# Port namespace: 14001=primary55522 14002=kali 14003=kalione.
+# your own 127.0.0.1:4096 is a no-op); the other units apply.
+# Port namespace: 14001=primary55522 14002=kali 14003=kalione 14004=oci1.
 {{- if eq .chezmoi.hostname "primary" }}
 .config/systemd/user/opencode-tunnel-primary55522.service
 {{- end }}
@@ -110,6 +110,9 @@ firstmate/projects/selfhost/.env.devcabinkali
 {{- end }}
 {{- if eq .chezmoi.hostname "InspironOne" }}
 .config/systemd/user/opencode-tunnel-kalione.service
+{{- end }}
+{{- if eq .chezmoi.hostname "oci1" }}
+.config/systemd/user/opencode-tunnel-oci1.service
 {{- end }}
 
 # bench-studio .env is a runtime artifact rendered from BWS (see phillias/bench-studio#19)
