@@ -29,7 +29,7 @@
     { "harness": "claude", "effort": "medium" },
     { "harness": "muse", "effort": "medium" },
     { "harness": "agy", "model": "gemini-3.8-flash-medium", "effort": "medium" },
-    { "harness": "kimi", "model": "kimi-code/kimi-for-coding", "effort": "medium" },
+    { "harness": "kimi", "model": "kimi-code/kimi-for-coding" },
     { "harness": "grok", "effort": "medium" }
   ]
 }
