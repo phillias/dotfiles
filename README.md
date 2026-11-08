@@ -72,7 +72,8 @@ Two server patterns, each with its own install script:
 
 | Pattern | Script | Layout | Used by |
 |---|---|---|---|
-| **Direct (no sslh)** | `scripts/install-et-no-sslh.sh` | sshd on `:22`, etserver directly on `0.0.0.0:2022`; both ports exposed so moshi and the laptop connect straight to the host | oci1 |
+| **Direct (no sslh)** | `scripts/install-et-no-sslh.sh` | sshd on `:22`, etserver directly on `0.0.0.0:2022`; both ports exposed so the laptop connects straight to the host | oci1 |
+| **Direct (no sslh, Kali adaptation)** | `scripts/install-et-no-sslh-phillias.sh` | Removes the legacy `:55554` listener, installs dotfiles-owned system units under `/etc/systemd/system/`, and keeps an optional `:10022` fallback sshd separate from port 22 | kali/nasbox |
 | **sslh demux** | `scripts/install-et-sslh-for-moshi.sh` | sslh on `:2022` splits SSH (to a dedicated sshd) from ET (etserver on `127.0.0.1:20220`) | other fleet hosts |
 
 The direct pattern needs the cloud firewall (OCI NSG) to open TCP/22 and TCP/2022 and a grey-cloud (DNS-only) A record (`et.phillias.net` → oci1). The script is idempotent and hardens the exposed ports:
@@ -80,6 +81,8 @@ The direct pattern needs the cloud firewall (OCI NSG) to open TCP/22 and TCP/202
 - `/etc/et.cfg`: `port = 2022`, `bind_ip` left unset (0.0.0.0), `telemetry = false`
 - `/etc/ssh/sshd_config.d/99-et-hardening.conf`: `AllowUsers ubuntu`, `MaxAuthTries 3`, `LoginGraceTime 20`, `PermitRootLogin no`, `X11Forwarding no`. It deliberately sets no `ClientAlive*`, which would drop idle moshi/iTerm2 sessions
 - iptables `recent` rate limit on `:22` and `:2022` (3 new connections per 60s per source IP, DROP on exceed), persisted to `/etc/iptables/rules.v4`
+
+Host-level ET and fallback-SSH units are versioned in `systemd/system/` and installed by the host installer into `/etc/systemd/system/`. They are system services: do not place them in `~/.config/systemd/user/`, because sshd owns privileged ports and must start before login. `sshd-fallback.service` has no `Conflicts=sshd.service ssh.service`; it listens on `:10022` and must coexist with the normal port-22 daemon.
 
 From the laptop: `et -u ubuntu et-oci1` (the `et-oci1` alias in `dot_ssh/config.tmpl` points to `et.phillias.net:22`, with no cloudflared client).
 
