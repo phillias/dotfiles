@@ -56,6 +56,7 @@ one of these labels inside the audit comment that discovered it, same turn.
 
 ## Prep gates
 - [ ] sync freeze attested on every fleet node (see "Sync freeze (pre-merge prep)") — required for state-clobbering workstreams only
+- [ ] sync self-restore + re-enrollment attested by every fleet node before closure (same section, rules 5-6)
 
 ## Findings parking lot
 <one line each; promoted issues link back here>
@@ -167,10 +168,30 @@ Rules:
    `BLOCKED: sync freeze incomplete — <node> — <reason>` and stop. Lifting a
    freeze-incomplete block is captain-gated; proceeding with a partially
    frozen fleet is prohibited.
-5. **Lift.** A node's freeze lifts only after that node's slice attests
-   (post-apply verification passed) — posted as a matching "Sync restore"
-   citation comment. Fleet-wide lift is a completion criterion; the last
-   restore is recorded before the terminal summary comment.
+5. **Self-restore.** Each node re-enables its **own** sync cron — the canary
+   never restores on a node's behalf (the same hand that froze a node must
+   not be the only proof its sync came back). A node's freeze lifts only
+   after that node's slice attests (post-apply verification passed) and the
+   node itself runs its recorded restore command, then posts a matching
+   "Sync restore" citation comment in the fixed format (append-only,
+   fingerprint-only):
+
+   ```markdown
+   ### Sync restore — <node> — <ISO date>Z
+   | Claim | Verdict | Evidence (fingerprint-only) |
+   |---|---|---|
+   | sync cron re-enabled and re-enrolled | DONE | crontab entry present: `crontab -l` grep exit 0; restored entry sha256 prefix ab12cd34…; next scheduled run <HH:MM UTC> |
+   Restored by: <node> (self) on behalf of <workstream>
+   ```
+
+6. **Closure gate.** The workstream is not complete until **every fleet
+   node** has posted a successful self-restore citation — all nodes must
+   report success and be re-enrolled before closure. Restores are posted
+   before the terminal summary comment, and the last restore is recorded
+   there. If a node cannot restore (unreachable, crontab owned elsewhere,
+   restore command fails), post
+   `BLOCKED: sync restore incomplete — <node> — <reason>` and hold closure;
+   lifting that block is captain-gated.
 
 ## Outliers and special handling
 
