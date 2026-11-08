@@ -97,7 +97,9 @@ install_unit() {
         echo "  unchanged: $destination"
         return 1
     fi
-    sudo install -D -m 0644 "$source" "$destination"
+    if ! sudo install -D -m 0644 "$source" "$destination"; then
+        return 2
+    fi
     echo "  wrote: $destination"
 }
 
@@ -261,6 +263,6 @@ Verify:
 
 Connect from the laptop:
 
-  et -u ${SSH_USER} kali.phillias.us
+  et -u ${SSH_USER} <DIRECT-HOST-OR-IP>
 
 INFO
