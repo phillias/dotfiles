@@ -10,6 +10,7 @@ Chat and completion providers route through Cloudflare AI Gateway `opencode` (BY
 **Live quota and headroom come from `quota-axi`, never from this catalog** — cost/limit rows here are reference facts, not usage state.
 
 Read `references/PROVIDERS.md` for the provider table, gateway URL segments, BYOK mechanics, and known live statuses.
+Read `references/CODING-PLANS.md` for flat-rate coding-agent plan lanes (ClinePass/OpenCode Go/GOAT/PhoenixGrove/Z.AI verified 2026-11-07) and the unutilized flat-rate plan watchlist.
 Read `references/ROUTING_TOPOLOGY.md` for the D1-generated routing snapshot (firstmate→harnesses→providers→models, no-mistakes→pi→chains, free lanes + quota).
 
 ## Antigravity worker chain (agy harness, 2026-10-03)
