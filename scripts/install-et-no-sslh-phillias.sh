@@ -263,6 +263,6 @@ Verify:
 
 Connect from the laptop:
 
-  et -u ${SSH_USER} kali.phillias.us
+  et -u ${SSH_USER} <DIRECT-HOST-OR-IP>
 
 INFO
