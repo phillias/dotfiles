@@ -54,6 +54,10 @@ one of these labels inside the audit comment that discovered it, same turn.
 - Canary: <node>, validated by captain before leg 1 (see "Canary node")
 <merges / rotations / reclassifications that require explicit captain word>
 
+## Prep gates
+- [ ] sync freeze attested on every fleet node (see "Sync freeze (pre-merge prep)") — required for state-clobbering workstreams only
+- [ ] sync self-restore + re-enrollment attested by every fleet node before closure (same section, rules 5-6)
+
 ## Findings parking lot
 <one line each; promoted issues link back here>
 ```
@@ -127,6 +131,87 @@ apply (rollback, `HOLD` comment, captain-gated lift). If the failure looks
 node-specific rather than work-specific, re-run the suitability evaluation
 and pick a different canary before retrying — do not retry the same node
 blind.
+
+## Sync freeze (pre-merge prep)
+
+Dotfiles workstreams whose apply step can clobber live state (runtime files
+the app mutates, `.chezmoiremove` entries, `run_onchange` scripts, secret
+re-renders) **freeze fleet sync before the PR merges** — the 30-minute
+chezmoi-axi sync cron applies merged master mid-work and can revert a node
+to stale source state while the workstream is in flight (exemplar: the
+bench-studio `.env` clobber, dotfiles#562).
+
+Rules:
+
+1. **Freeze scope.** Deactivate the chezmoi-axi sync cron on **every fleet
+   node** — not just nodes with slices. A node left syncing is a node that
+   can apply the merged PR unreviewed.
+2. **Ownership.** The **canary node owns the freeze**: it disables the sync
+   cron on the rest of the fleet, one node at a time over a tracked SSH
+   path, before the PR merges. This is the canary's first leg — it runs
+   before any desired-state change ships.
+2b. **Comment out, never delete.** Deactivation means **commenting out the
+   crontab entry in place** — never deleting it. Replace the active line
+   with the exact same line prefixed `#` plus a freeze annotation above it:
+
+   ```
+   # sync-freeze <owner>/<repo>#<issue> <ISO date>Z — do not uncomment manually; see https://github.com/<owner>/<repo>/issues/<issue>
+   <original crontab line unchanged>
+   ```
+
+   Deleting destroys the entry's exact schedule/arguments; a commented-out
+   block preserves them for byte-identical restore and makes a forgotten
+   freeze self-documenting — the annotation cites the GitHub repo and issue
+   that is locking the freeze, so any operator who later reads the crontab
+   can reach the workstream directly. Use the fully qualified
+   `<owner>/<repo>#<issue>` form (e.g. `phillias/dotfiles#568`), never a
+   bare issue number. Verify the
+   freeze with `crontab -l | grep -c '^# sync-freeze'` (≥1) AND
+   `crontab -l | grep -v '^#' | grep -c chezmoi` (0 active chezmoi-axi entry).
+3. **Work citation comment.** Every deactivation is posted to the workstream
+   issue in the fixed format below (append-only, fingerprint-only):
+
+   ```markdown
+   ### Sync freeze — <node> — <ISO date>Z
+   | Claim | Verdict | Evidence (fingerprint-only) |
+   |---|---|---|
+   | sync cron commented out | DONE | `crontab -l` active-entry grep exit 1; `# sync-freeze <owner>/<repo>#<issue>` annotation present with unchanged original line; prior entry sha256 prefix ab12cd34… |
+   Deactivated by: <canary node> on behalf of <workstream>
+   Restore command: <exact sed/crontab command to uncomment the entry>
+   ```
+
+4. **Hard gate.** The workstream does **not proceed to merge or apply** until
+   every fleet node has a sync-freeze citation comment. If any node cannot be
+   frozen (unreachable, cron managed by another owner, no SSH path), post
+   `BLOCKED: sync freeze incomplete — <node> — <reason>` and stop. Lifting a
+   freeze-incomplete block is captain-gated; proceeding with a partially
+   frozen fleet is prohibited.
+5. **Self-restore.** Each node re-enables its **own** sync cron — the canary
+   never restores on a node's behalf (the same hand that froze a node must
+   not be the only proof its sync came back). A node's freeze lifts only
+   after that node's slice attests (post-apply verification passed) and the
+   node itself runs its recorded restore command, then posts a matching
+   "Sync restore" citation comment in the fixed format (append-only,
+   fingerprint-only). Restoring means **uncommenting** the annotated entry
+   (or re-adding the identical line if the node recreated its crontab),
+   never re-inventing a schedule from memory:
+
+   ```markdown
+   ### Sync restore — <node> — <ISO date>Z
+   | Claim | Verdict | Evidence (fingerprint-only) |
+   |---|---|---|
+   | sync cron re-enabled and re-enrolled | DONE | `crontab -l` active-entry grep exit 0; restored entry sha256 prefix ab12cd34…; `# sync-freeze` annotation removed; next scheduled run <HH:MM UTC> |
+   Restored by: <node> (self) on behalf of <workstream>
+   ```
+
+6. **Closure gate.** The workstream is not complete until **every fleet
+   node** has posted a successful self-restore citation — all nodes must
+   report success and be re-enrolled before closure. Restores are posted
+   before the terminal summary comment, and the last restore is recorded
+   there. If a node cannot restore (unreachable, crontab owned elsewhere,
+   restore command fails), post
+   `BLOCKED: sync restore incomplete — <node> — <reason>` and hold closure;
+   lifting that block is captain-gated.
 
 ## Outliers and special handling
 
