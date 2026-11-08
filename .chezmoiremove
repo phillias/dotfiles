@@ -57,3 +57,6 @@
 .agents/keys/phillias/.zen-key
 .local/bin/chezmoi-axi
 .local/bin/bws-axi
+
+# Retired: selfhost runbook migrated to phillias/selfhost repo (.agents/skills/selfhost/linkwarden.md) — phillias/dotfiles PR (selfhost skill removal)
+.agents/skills/selfhost
