@@ -60,3 +60,6 @@
 
 # Retired: selfhost runbook migrated to phillias/selfhost repo (.agents/skills/selfhost/linkwarden.md) — phillias/dotfiles PR (selfhost skill removal)
 .agents/skills/selfhost
+
+# legacy standalone kimi symlink (shadowed the mise shim; removed on primary 2026-11-08)
+.local/bin/kimi
