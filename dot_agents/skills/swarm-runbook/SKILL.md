@@ -155,13 +155,17 @@ Rules:
    with the exact same line prefixed `#` plus a freeze annotation above it:
 
    ```
-   # sync-freeze <workstream-issue#> <ISO date>Z — do not uncomment manually; see workstream
+   # sync-freeze <owner>/<repo>#<issue> <ISO date>Z — do not uncomment manually; see https://github.com/<owner>/<repo>/issues/<issue>
    <original crontab line unchanged>
    ```
 
    Deleting destroys the entry's exact schedule/arguments; a commented-out
    block preserves them for byte-identical restore and makes a forgotten
-   freeze self-documenting (the annotation names the workstream). Verify the
+   freeze self-documenting — the annotation cites the GitHub repo and issue
+   that is locking the freeze, so any operator who later reads the crontab
+   can reach the workstream directly. Use the fully qualified
+   `<owner>/<repo>#<issue>` form (e.g. `phillias/dotfiles#568`), never a
+   bare issue number. Verify the
    freeze with `crontab -l | grep -c '^# sync-freeze'` (≥1) AND
    `crontab -l | grep -v '^#' | grep -c chezmoi` (0 active chezmoi-axi entry).
 3. **Work citation comment.** Every deactivation is posted to the workstream
@@ -171,7 +175,7 @@ Rules:
    ### Sync freeze — <node> — <ISO date>Z
    | Claim | Verdict | Evidence (fingerprint-only) |
    |---|---|---|
-   | sync cron commented out | DONE | `crontab -l` active-entry grep exit 1; `# sync-freeze` annotation present with unchanged original line; prior entry sha256 prefix ab12cd34… |
+   | sync cron commented out | DONE | `crontab -l` active-entry grep exit 1; `# sync-freeze <owner>/<repo>#<issue>` annotation present with unchanged original line; prior entry sha256 prefix ab12cd34… |
    Deactivated by: <canary node> on behalf of <workstream>
    Restore command: <exact sed/crontab command to uncomment the entry>
    ```
