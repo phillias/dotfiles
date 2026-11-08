@@ -11,6 +11,8 @@ Chat and completion providers route through Cloudflare AI Gateway `opencode` (BY
 
 Read `references/PROVIDERS.md` for the provider table, gateway URL segments, BYOK mechanics, and known live statuses.
 Read `references/ROUTING_TOPOLOGY.md` for the D1-generated routing snapshot (firstmate→harnesses→providers→models, no-mistakes→pi→chains, free lanes + quota).
+Read `references/CHUTES.md` before quoting any Chutes.ai plan: subscriptions were discontinued 2026-10-26; it is PAYG-only now.
+Read `references/GLM-DEEPSEEK-CLAUDE-SUBS.md` for the family-targeted flat-rate survey (GLM/DeepSeek/Claude, incl. NaraRouter) before recommending a subscription lane.
 
 ## Antigravity worker chain (agy harness, 2026-10-03)
 
