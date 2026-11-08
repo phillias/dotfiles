@@ -98,9 +98,15 @@ gh = "2.100.0"
 # gitleaks — deterministic secret-leak gate for the dotfiles repo
 # (scripts/validate.sh), default ruleset; equality-only pin.
 "github:gitleaks/gitleaks" = "8.30.1"
-# @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
-# The working `pi` is @earendil-works/pi-coding-agent@0.84.2, pinned in this manifest.
-# Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
+ # @oh-my-pi/pi-coding-agent dropped: the manifest pin (17.3.1) ships NO `pi` shim.
+ # The working `pi` is @earendil-works/pi-coding-agent@0.84.2, pinned in this manifest.
+ # 2026-11-07: re-added at 18.x for the OMP harness — the package ships the `omp`
+ # binary (not `pi`), so it coexists with the @earendil-works `pi` pin without
+ # shadowing it. Verified firstmate harness (primary + secondmate).
+ # 18.13.2 is the newest release whose engines.bun (>=1.3.14) matches the bun pin
+ # below; 18.13.3+ requires bun >= 1.4.4 — bump bun first, then omp.
+ "npm:@oh-my-pi/pi-coding-agent" = "18.13.2"
+ # Broadened manifest — npm-global CLIs consolidated under mise (npm.shell_out path).
 "npm:@ast-grep/cli" = "0.43.0"
 # ripgrep (rg) — search runtime dependency of the mem CLI (axi-memory store
 # search; same rg invocation the retired chezmoi-managed script used). Pin via
@@ -142,6 +148,13 @@ gh = "2.100.0"
 # facts on this major version). Official npm package, native on aarch64; legacy
 # install.sh bootstrap retired (run_install-kimi.sh removed).
 "npm:@moonshot-ai/kimi-code" = "2.1.1"
+# Gemini CLI — Google agent CLI; firstmate crewmate/scout harness. Workers need
+# GEMINI_API_KEY pre-exported before the session daemon starts (OAuth sign-in
+# does not survive the daemon env).
+"npm:@google/gemini-cli" = "0.67.0"
+# Command Code (commandcode.ai) — firstmate crewmate/scout harness; ships bin
+# cmd/cmdc/command-code. Node >= 22 required. Auth via `cmd login` (GOAT plan).
+"npm:command-code" = "1.88.5"
 # Amp — Sourcegraph cloud coding agent with BYOK support for Cloudflare AI
 # Gateway, Vercel AI Gateway, and OpenCode Go. Model Routing is experimental
 # (early access). CLI: amp config model-providers for BYOK setup.
