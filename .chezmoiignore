@@ -111,3 +111,6 @@ firstmate/projects/selfhost/.env.devcabinkali
 {{- if eq .chezmoi.hostname "InspironOne" }}
 .config/systemd/user/opencode-tunnel-kalione.service
 {{- end }}
+
+# bench-studio .env is a runtime artifact rendered from BWS (see phillias/bench-studio#19)
+docker/bench-studio/.env
