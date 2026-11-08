@@ -1,0 +1,16 @@
+[Unit]
+Description=Fallback OpenSSH daemon on port 10022
+After=network-online.target
+Wants=network-online.target
+# This daemon listens on a separate port and must coexist with ssh.service.
+# Do not add Conflicts=sshd.service ssh.service: it would stop port-22 SSH.
+
+[Service]
+Type=simple
+ExecStartPre=/usr/sbin/sshd -t -f /etc/ssh/sshd_config_fallback
+ExecStart=/usr/sbin/sshd -D -f /etc/ssh/sshd_config_fallback
+Restart=on-failure
+RestartSec=2s
+
+[Install]
+WantedBy=multi-user.target
