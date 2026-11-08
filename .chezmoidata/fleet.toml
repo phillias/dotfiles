@@ -10,11 +10,35 @@
 
     # Fleet node registry — maps chezmoi hostname to fleet node identity.
     # Each node gets its own RESTIC_PASSWORD (age-encrypted) and S3 bucket subpath.
+    #
+    # Mesh fields (consumed by dot_ssh/config.tmpl fleet-alias block and
+    # scripts/setup.sh Phase 7b): ssh_alias = the fleet-* Host alias every
+    # node uses to reach this node (cloudflared access transport, deploy
+    # key); access_host = the hostname passed to `cloudflared access ssh`;
+    # ssh_user = remote login user; tunnel_port = the LOCAL port other nodes
+    # forward to this node's opencode serve (127.0.0.1:4096). Next free port
+    # = max(existing)+1 — greenfield nodes claim it in their registration PR.
     [fleet.nodes.kali]
         hostname = "CabinInspiron22Kali"
-    [fleet.nodes.phillias]
-        hostname = "InspironOne"
-    [fleet.nodes.primary55522]
-        hostname = "primary"
+        ssh_alias = "fleet-kali"
+        access_host = "kali.phillias.us"
+        ssh_user = "phillias"
+        tunnel_port = 14002
     [fleet.nodes.oci1]
         hostname = "oci1"
+        ssh_alias = "fleet-oci"
+        access_host = "oci1.phillias.net"
+        ssh_user = "ubuntu"
+        tunnel_port = 14004
+    [fleet.nodes.phillias]
+        hostname = "InspironOne"
+        ssh_alias = "fleet-kalione"
+        access_host = "ssh.phillias.org"
+        ssh_user = "phillias"
+        tunnel_port = 14003
+    [fleet.nodes.primary55522]
+        hostname = "primary"
+        ssh_alias = "fleet-primary55522"
+        access_host = "primary55522.phillias.cc"
+        ssh_user = "ubuntu"
+        tunnel_port = 14001

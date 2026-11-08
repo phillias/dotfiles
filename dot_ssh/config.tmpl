@@ -56,22 +56,8 @@ Host primary55522
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User ubuntu
 
-Host fleet-primary55522
-  IdentityFile ~/.ssh/chezmoi-deploy-key
-  IdentitiesOnly yes
-  HostName primary55522.phillias.cc
-  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
-  User ubuntu
-
 Host kali
   IdentityFile ~/.ssh/id_ed25519_inspironkali
-  HostName kali.phillias.us
-  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
-  User phillias
-
-Host fleet-kali
-  IdentityFile ~/.ssh/chezmoi-deploy-key
-  IdentitiesOnly yes
   HostName kali.phillias.us
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User phillias
@@ -82,12 +68,23 @@ Host kalione
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User phillias
 
-Host fleet-kalione
+# Fleet mesh aliases — data-driven from .chezmoidata/fleet.toml (.fleet.nodes).
+# One Host block per registered node: the fleet-* alias every node uses to
+# reach that node (autossh tunnel units, fleet-chat, agent panes). Transport
+# is cloudflared access + the shared passphraseless chezmoi-deploy-key.
+# Greenfield: scripts/setup.sh Phase 7b probes these aliases post-apply to
+# record host keys (accept-new) and syncs every fleet deploy key into
+# authorized_keys. accept-new is deliberate — autossh cannot answer the
+# first-connect host-key prompt.
+{{- range $name, $node := .fleet.nodes }}
+Host {{ $node.ssh_alias }}
+  HostName {{ $node.access_host }}
+  User {{ $node.ssh_user }}
   IdentityFile ~/.ssh/chezmoi-deploy-key
   IdentitiesOnly yes
-  HostName ssh.phillias.org
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
-  User phillias
+  StrictHostKeyChecking accept-new
+{{- end }}
 
 # Cloudflare Tunnel SSH keepalive - prevent Gateway 270s idle timeout
 Host *cloudflared* *
@@ -136,11 +133,3 @@ Host oci1
   User ubuntu
   IdentityFile ~/.ssh/id_ed25519_inspironkali
   IdentitiesOnly yes
-
-# fleet-oci — oci1 opencode serve via Cloudflare (fleet-chat mesh)
-Host fleet-oci
-  HostName oci1.phillias.net
-  User ubuntu
-  IdentityFile ~/.ssh/chezmoi-deploy-key
-  IdentitiesOnly yes
-  ProxyCommand /usr/bin/cloudflared access ssh --hostname %h

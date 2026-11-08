@@ -545,6 +545,98 @@ fi
 chezmoi apply $CHEZMOI_APPLY_OPTS
 
 # ═══════════════════════════════════════════════════════════════════
+# Phase 7b — Fleet SSH mesh enrollment
+# ═══════════════════════════════════════════════════════════════════
+#
+# Greenfield provisioning for the fleet-chat / opencode-serve SSH mesh
+# (dot_agents/skills/dotfiles/refs/FLEET-TUNNELS.md). Runs AFTER the
+# Phase 7 apply so the data-driven fleet-* SSH aliases (rendered from
+# .chezmoidata/fleet.toml .fleet.nodes) exist in ~/.ssh/config. It wires
+# up everything SSH communication on the mesh needs:
+#   1. autossh — system transport for the tunnel units (not
+#      mise-pinnable; apt package)
+#   2. host keys — accept-new probes on every fleet alias record the
+#      remote host keys into ~/.ssh/known_hosts (autossh cannot answer
+#      the first-connect prompt)
+#   3. cross-node authorized_keys — every fleet node's chezmoi@* deploy
+#      key (registered on phillias/dotfiles in Phase 2/8b) is appended
+#      here, so every other node can SSH in; the tunnels ARE the mesh
+#      security boundary and they ride these keys
+#   4. enable the mesh tunnel units this host applies (its own-target
+#      unit is hostname-ignored via .chezmoiignore)
+# Failures are reported, never fatal: setup continues either way.
+
+if ! $IS_MAC; then
+    # ── 15b. autossh ─────────────────────────────────────────────
+    if ! command -v autossh &>/dev/null; then
+        echo ""
+        echo "==> Installing autossh (fleet mesh tunnel transport)..."
+        if sudo -n apt-get install -y autossh 2>/dev/null; then
+            echo "  autossh installed"
+        else
+            echo "WARN: autossh install failed; run 'sudo apt-get install -y autossh' before tunnels can start" >&2
+        fi
+    fi
+fi
+
+# ── 15c. Host-key recording + reachability probes ────────────────
+echo ""
+echo "==> Probing fleet SSH aliases (records host keys into known_hosts)..."
+if [ -f "$HOME/.ssh/config" ]; then
+    while IFS= read -r MESH_ALIAS; do
+        [ -z "$MESH_ALIAS" ] && continue
+        if ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
+               -o ConnectTimeout=10 "$MESH_ALIAS" true 2>/dev/null; then
+            echo "  $MESH_ALIAS: reachable (host key recorded)"
+        else
+            echo "  $MESH_ALIAS: probe failed — host key is still recorded if the SSH" \
+                 "banner was reached; otherwise check cloudflared access auth and" \
+                 "this host's deploy key in the remote authorized_keys"
+        fi
+    done < <(sed -nE 's/^[[:space:]]*ssh_alias[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' \
+        "$CHEZMOI_DIR/.chezmoidata/fleet.toml" 2>/dev/null)
+else
+    echo "WARN: ~/.ssh/config missing; skipping fleet alias probes" >&2
+fi
+
+# ── 15d. Cross-node authorized_keys (fleet deploy keys) ──────────
+echo ""
+echo "==> Syncing fleet deploy keys into authorized_keys..."
+if gh auth status &>/dev/null 2>&1; then
+    ADDED_KEYS=0
+    while IFS= read -r FKEY; do
+        [ -z "$FKEY" ] && continue
+        FKEY_BODY=$(printf '%s' "$FKEY" | awk '{print $2}')
+        [ -z "$FKEY_BODY" ] && continue
+        if ! grep -qF "$FKEY_BODY" ~/.ssh/authorized_keys 2>/dev/null; then
+            printf '%s\n' "$FKEY" >> ~/.ssh/authorized_keys
+            ADDED_KEYS=$((ADDED_KEYS+1))
+        fi
+    done < <(gh repo deploy-key list --repo phillias/dotfiles --json title,key \
+        --jq '.[] | select(.title | startswith("chezmoi@")) | .key' 2>/dev/null)
+    echo "  Added $ADDED_KEYS fleet deploy key(s) (idempotent on re-run)"
+else
+    echo "  WARN: gh not authenticated; run 'gh auth login', then re-run setup.sh" \
+         "to sync fleet deploy keys" >&2
+fi
+
+# ── 15e. Enable mesh tunnel units applied by Phase 7 ─────────────
+if ! $IS_MAC && command -v autossh &>/dev/null; then
+    ENABLED_TUNNELS=0
+    for TUNIT in "$HOME/.config/systemd/user"/opencode-tunnel-*.service; do
+        [ -f "$TUNIT" ] || continue
+        systemctl --user daemon-reload 2>/dev/null || true
+        if systemctl --user enable --now "$(basename "$TUNIT")" 2>/dev/null; then
+            ENABLED_TUNNELS=$((ENABLED_TUNNELS+1))
+        fi
+    done
+    echo "==> Fleet tunnels: enabled/confirmed $ENABLED_TUNNELS unit(s)"
+    echo "    (run_fleet-tunnels.sh re-enables them on every chezmoi apply)"
+else
+    echo "==> Fleet tunnels: autossh unavailable — units stay ConditionFileIsExecutable-skipped"
+fi
+
+# ═══════════════════════════════════════════════════════════════════
 # Phase 8 — Post-setup
 # ═══════════════════════════════════════════════════════════════════
 
