@@ -54,6 +54,9 @@ one of these labels inside the audit comment that discovered it, same turn.
 - Canary: <node>, validated by captain before leg 1 (see "Canary node")
 <merges / rotations / reclassifications that require explicit captain word>
 
+## Prep gates
+- [ ] sync freeze attested on every fleet node (see "Sync freeze (pre-merge prep)") — required for state-clobbering workstreams only
+
 ## Findings parking lot
 <one line each; promoted issues link back here>
 ```
@@ -127,6 +130,47 @@ apply (rollback, `HOLD` comment, captain-gated lift). If the failure looks
 node-specific rather than work-specific, re-run the suitability evaluation
 and pick a different canary before retrying — do not retry the same node
 blind.
+
+## Sync freeze (pre-merge prep)
+
+Dotfiles workstreams whose apply step can clobber live state (runtime files
+the app mutates, `.chezmoiremove` entries, `run_onchange` scripts, secret
+re-renders) **freeze fleet sync before the PR merges** — the 30-minute
+chezmoi-axi sync cron applies merged master mid-work and can revert a node
+to stale source state while the workstream is in flight (exemplar: the
+bench-studio `.env` clobber, dotfiles#562).
+
+Rules:
+
+1. **Freeze scope.** Deactivate the chezmoi-axi sync cron on **every fleet
+   node** — not just nodes with slices. A node left syncing is a node that
+   can apply the merged PR unreviewed.
+2. **Ownership.** The **canary node owns the freeze**: it disables the sync
+   cron on the rest of the fleet, one node at a time over a tracked SSH
+   path, before the PR merges. This is the canary's first leg — it runs
+   before any desired-state change ships.
+3. **Work citation comment.** Every deactivation is posted to the workstream
+   issue in the fixed format below (append-only, fingerprint-only):
+
+   ```markdown
+   ### Sync freeze — <node> — <ISO date>Z
+   | Claim | Verdict | Evidence (fingerprint-only) |
+   |---|---|---|
+   | sync cron deactivated | DONE | crontab entry absent: `crontab -l` grep exit 1; prior entry sha256 prefix ab12cd34… |
+   Deactivated by: <canary node> on behalf of <workstream>
+   Restore command: <exact crontab line to re-enable>
+   ```
+
+4. **Hard gate.** The workstream does **not proceed to merge or apply** until
+   every fleet node has a sync-freeze citation comment. If any node cannot be
+   frozen (unreachable, cron managed by another owner, no SSH path), post
+   `BLOCKED: sync freeze incomplete — <node> — <reason>` and stop. Lifting a
+   freeze-incomplete block is captain-gated; proceeding with a partially
+   frozen fleet is prohibited.
+5. **Lift.** A node's freeze lifts only after that node's slice attests
+   (post-apply verification passed) — posted as a matching "Sync restore"
+   citation comment. Fleet-wide lift is a completion criterion; the last
+   restore is recorded before the terminal summary comment.
 
 ## Outliers and special handling
 
