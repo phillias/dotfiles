@@ -63,3 +63,13 @@
 
 # legacy standalone kimi symlink (shadowed the mise shim; removed on primary 2026-11-08)
 .local/bin/kimi
+
+# hermes harness frozen fleet-wide 2026-11-08 (captain decision, dotfiles#576-class reliability freeze):
+# recurring ~/.hermes/config.yaml YAML corruption (3 recurrences) + profile-gateway-idle + --query-file
+# breakage. Legacy venv launcher shadowed nothing but must not resurrect. Upstream firstmate still
+# supports hermes (tmux crewmate/scout tier) — this is a fleet-side freeze, reversible.
+# NOTE: ~/.hermes/ DATA DIR (sessions/memories/kanban/auth) intentionally NOT removed.
+.local/bin/hermes
+.hermes/config.yaml
+.hermes/config.yaml.corrupt.20261001-222140.bak
+.hermes/config.yaml.corrupt.20261030-101028.bak
