@@ -10,10 +10,13 @@
 #   direct gateway access outside this config.
 # - See provider-catalog/references/d1/NO_MISTAKES_MODELS.md for full
 #   per-harness config inventory and chain diagrams.
+# - kimi-code 2.x strict schema: provider type must be openai; model
+#   protocol only anthropic|openai_responses or omitted (omitted = plain
+#   OpenAI chat-completions, which these gateways serve).
 default_model = "tui-via-cf"
 
 [providers.cf-aig]
-type = "openai_legacy"
+type = "openai"
 base_url = "https://gateway.ai.cloudflare.com/v1/a7fa198dd5b359a187c671064fe6b36e/opencode/compat"
 api_key_env = "CF_AI_GATEWAY_TOKEN"
 custom_headers = { "cf-aig-gateway-id" = "opencode", "cf-aig-metadata" = "{\"harness\":\"kimi-code\",\"host\":\"{{ .chezmoi.hostname }}\",\"agent\":\"primary\"}" }
@@ -22,10 +25,9 @@ custom_headers = { "cf-aig-gateway-id" = "opencode", "cf-aig-metadata" = "{\"har
 provider = "cf-aig"
 model = "dynamic/kimi"
 max_context_size = 200000
-protocol = "openai"
 
 [providers.vercel-aig]
-type = "openai_legacy"
+type = "openai"
 base_url = "https://ai-gateway.vercel.sh/v1"
 api_key_env = "AI_GATEWAY_API_KEY"
 
@@ -33,4 +35,3 @@ api_key_env = "AI_GATEWAY_API_KEY"
 provider = "vercel-aig"
 model = "router/kimi"
 max_context_size = 1000000
-protocol = "openai"
