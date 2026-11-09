@@ -21,9 +21,10 @@ Every root file not listed in `.chezmoiignore` deploys to `~/` on every host, so
 Secrets must never be committed plaintext; chef-encrypted keys live under
 `dot_agents/private_keys/` as ASCII-armored `age` files (header
 `-----BEGIN AGE ENCRYPTED FILE-----`), with the identity configured in
-`~/.config/chezmoi/chezmoi.toml`. Compose-project env files (e.g.
-`docker/private_bench-studio/private_dot_env` → `~/docker/bench-studio/.env`)
-are tracked unencrypted with `${VAR}` interpolation placeholders only.
+`~/.config/chezmoi/chezmoi.toml`. Env templates (e.g.
+`dot_config/private_fleet-backup/private_restic-env.tmpl` →
+`~/.config/fleet-backup/restic-env`) are tracked unencrypted with template
+placeholders only; their secrets come from separate age-encrypted files.
 Provider loaders in `dot_zshrc` and `dot_bashrc` must stay in parity — update
 both when adding a key.
 
