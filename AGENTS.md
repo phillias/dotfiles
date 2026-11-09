@@ -28,6 +28,10 @@ placeholders only; their secrets come from separate age-encrypted files.
 Provider loaders in `dot_zshrc` and `dot_bashrc` must stay in parity — update
 both when adding a key.
 
+## Git commit identity
+
+Committing agents set `GIT_AUTHOR_NAME`/`GIT_COMMITTER_NAME` to `<model>@<hostname -s>` at commit time (the static `dot_gitconfig.tmpl` default cannot know the model).
+
 ## Keeping this repo aligned with AGENTS.md
 
 Verify with `bash -n dot_bashrc && zsh -n dot_zshrc` and
