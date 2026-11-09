@@ -73,3 +73,54 @@
 .hermes/config.yaml
 .hermes/config.yaml.corrupt.20261001-222140.bak
 .hermes/config.yaml.corrupt.20261030-101028.bak
+
+# ---- Migrated from DEPRECATED_SKILLS in run_onchange_cleanup-and-sync.sh (dotfiles#575). ----
+# These retired skill names were pruned by the cleanup script; .chezmoiremove is the
+# native mechanism (runs at apply, before scripts, skips source-managed targets).
+# Entries are inert no-ops once targets are gone — sweep in ~30 days (after 2026-12-10).
+.agents/skills/agents-md-add-omo-to-ce-routing-rules-for-the-inte
+.config/opencode/skills/agents-md-add-omo-to-ce-routing-rules-for-the-inte
+.agents/skills/bridge-skill-create-omo-ce-bridge-skill-md-with-in
+.config/opencode/skills/bridge-skill-create-omo-ce-bridge-skill-md-with-in
+.agents/skills/bws-secrets-created-8-new-secrets
+.config/opencode/skills/bws-secrets-created-8-new-secrets
+.agents/skills/ce-plan-skill-md-add-optional-omo-plans-output-sup
+.config/opencode/skills/ce-plan-skill-md-add-optional-omo-plans-output-sup
+.agents/skills/chezmoi-add-new-tracked-files-and-push-to-pr-86
+.config/opencode/skills/chezmoi-add-new-tracked-files-and-push-to-pr-86
+.agents/skills/chezmoi-re-add-tracked-files-add-new-untracked-plu
+.config/opencode/skills/chezmoi-re-add-tracked-files-add-new-untracked-plu
+.agents/skills/create-missing-bws-secrets-db-password-pg-db-passw
+.config/opencode/skills/create-missing-bws-secrets-db-password-pg-db-passw
+.agents/skills/create-pr-in-dotfiles-repo-with-all-changes
+.config/opencode/skills/create-pr-in-dotfiles-repo-with-all-changes
+.agents/skills/deploy-and-verify-services
+.config/opencode/skills/deploy-and-verify-services
+.agents/skills/docker-infra-mgmt
+.config/opencode/skills/docker-infra-mgmt
+.agents/skills/install-matt-pocock-s-grill-with-docs-skill-locall
+.config/opencode/skills/install-matt-pocock-s-grill-with-docs-skill-locall
+.agents/skills/pirate-infra-mgmt
+.config/opencode/skills/pirate-infra-mgmt
+.agents/skills/pirate-stack
+.config/opencode/skills/pirate-stack
+.agents/skills/recreate-mariadb-and-pocketid-containers-with-new-
+.config/opencode/skills/recreate-mariadb-and-pocketid-containers-with-new-
+.agents/skills/selfhost-compose-remove-mariadb-init-tinyauth-init
+.config/opencode/skills/selfhost-compose-remove-mariadb-init-tinyauth-init
+.agents/skills/tinyauth-add-depends-on-locket-for-raw-env-injecti
+.config/opencode/skills/tinyauth-add-depends-on-locket-for-raw-env-injecti
+.agents/skills/update-ce-brainstorm-skill-md-add-context-md-to-ph
+.config/opencode/skills/update-ce-brainstorm-skill-md-add-context-md-to-ph
+.agents/skills/update-ce-workflow-skill-md-add-phase-0-5a-domain-
+.config/opencode/skills/update-ce-workflow-skill-md-add-phase-0-5a-domain-
+.agents/skills/update-mssql-connection-password-via-api
+.config/opencode/skills/update-mssql-connection-password-via-api
+.agents/skills/mcp-policy-enforce
+.config/opencode/skills/mcp-policy-enforce
+.agents/skills/mcp-runtime-guard
+.config/opencode/skills/mcp-runtime-guard
+.agents/skills/mcp-security-audit
+.config/opencode/skills/mcp-security-audit
+.agents/skills/opencode-omo-config
+.config/opencode/skills/opencode-omo-config
