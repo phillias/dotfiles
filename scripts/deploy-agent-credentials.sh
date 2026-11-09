@@ -38,6 +38,11 @@
 # HOME: config files are not trusted) is treated as missing. The script then
 # retries <shim-dir>/../installs/bitwarden-secrets-manager/latest/bws, which
 # does not consult mise's HOME-relative trust database.
+#
+# OpenCode's ~/.local/share/opencode/auth.json is not chezmoi-managed.
+# A host still holding the old age-encrypted copy must move that file aside
+# and re-seed per host; the encrypted copy is a stale snapshot. See scripts/README.
+# commandcode whoami can hang on kali; prefer quota-axi for an auth proof.
 set -euo pipefail
 umask 077
 
