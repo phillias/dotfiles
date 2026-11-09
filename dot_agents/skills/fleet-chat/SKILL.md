@@ -19,7 +19,8 @@ fleet-chat latest --node primary55522 --session <id> --full
 fleet-chat session-list --node primary55522
 ```
 
-`--toon` (default) / `--json` control output. `--max-text N` truncates replies (default 1200).
+Output is human-readable tables by default; `--toon` forces TOON rows and `--json` emits JSON
+(only one of the two). `--max-text N` truncates replies (default 1200).
 
 Nodes resolve from `$FLEET_CHAT_NODES` (space-separated `name=url` pairs), then a
 `fleet-chat.nodes` file next to the auth env file, then the built-in map
