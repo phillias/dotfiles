@@ -111,37 +111,12 @@ cleanup_stale() {
 # reusable tools — prune them by marker so this never needs a name list.
 AUTO_GENERATED_MARKER="Auto-generated skill from completed task"
 
-# Explicitly deprecated skills that lack the marker (empty dirs, stale stubs,
-# renamed artifacts). Add new strays here so every machine prunes them.
-DEPRECATED_SKILLS=(
-    agents-md-add-omo-to-ce-routing-rules-for-the-inte
-    bridge-skill-create-omo-ce-bridge-skill-md-with-in
-    bws-secrets-created-8-new-secrets
-    ce-plan-skill-md-add-optional-omo-plans-output-sup
-    chezmoi-add-new-tracked-files-and-push-to-pr-86
-    chezmoi-re-add-tracked-files-add-new-untracked-plu
-    create-missing-bws-secrets-db-password-pg-db-passw
-    create-pr-in-dotfiles-repo-with-all-changes
-    deploy-and-verify-services
-    docker-infra-mgmt
-    install-matt-pocock-s-grill-with-docs-skill-locall
-    pirate-infra-mgmt
-    pirate-stack
-    recreate-mariadb-and-pocketid-containers-with-new-
-    selfhost-compose-remove-mariadb-init-tinyauth-init
-    tinyauth-add-depends-on-locket-for-raw-env-injecti
-    update-ce-brainstorm-skill-md-add-context-md-to-ph
-    update-ce-workflow-skill-md-add-phase-0-5a-domain-
-    update-mssql-connection-password-via-api
-    # MCP security skills — initial investigations for another environment;
-    # divested from MCPs 2026-08-03 (schema token cost in system prompt).
-    mcp-policy-enforce
-    mcp-runtime-guard
-    mcp-security-audit
-    # Retired skill — merged into opencode-config / provider-catalog (PR #248, 2026-09-01);
-    # removal via chezmoi apply + this prune on every machine.
-    opencode-omo-config
-)
+# NOTE: skill retirement no longer uses a name list here (the apply/prune-fight
+# class of bug, see dotfiles#571/#575). To retire a tracked skill:
+#   untrack it (chezmoi remove / git rm in source) and add a .chezmoiremove
+#   entry — chezmoi removes it fleet-wide on apply, before scripts run, and
+#   never touches targets still managed in source state. See .chezmoiremove
+#   block "Migrated from DEPRECATED_SKILLS (dotfiles#575)".
 
 # Tool skills installed via `npx skills add` / plugin bundles. They are
 # intentionally NOT tracked in the dotfiles repo — never suggest adding them.
@@ -155,17 +130,6 @@ TOOL_SKILLS=(
     skywork-skills
     web-perf
 )
-
-prune_deprecated() {
-    local dir="$1"
-    [[ -d "$dir" ]] || return 0
-    local name
-    for name in "${DEPRECATED_SKILLS[@]}"; do
-        if [[ -e "$dir/$name" ]]; then
-            remove_verbose "$dir/$name" "prune deprecated skill"
-        fi
-    done
-}
 
 prune_auto_generated() {
     local dir="$1"
@@ -285,8 +249,6 @@ prune_auto_generated "$HOME/.agents/skills"
 prune_vendored_ce "$HOME/.agents/skills"
 prune_vendored_ce_agents "$HOME/.config/opencode/agents"
 prune_config_side_duplicates
-prune_deprecated "$HOME/.config/opencode/skills"
-prune_deprecated "$HOME/.agents/skills"
 repo_health
 
 # -------------------------------------------------------------- sync/unmanaged -

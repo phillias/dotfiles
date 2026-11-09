@@ -21,7 +21,8 @@
 # only falls through between CLI invocations, never mid-run and never to API
 # keys. claude is head (consume Pro subscription first), codex second, pi tail
 # for its fallback chain depth.
-# (2026-11-04) Gate-lane boundary: this repo sets disable_project_settings, and
+# (2026-11-04) Gate-lane boundary: dotfiles then set disable_project_settings
+# (flipped to false 2026-11-08; see its .no-mistakes.yaml posture register), and
 # under that opt-out the gate requires EVERY listed agent to carry a verified
 # project-instruction neutralization knob (pi --no-context-files, codex
 # project_doc_max_bytes=0, claude --setting-sources user) - the whole-set check
