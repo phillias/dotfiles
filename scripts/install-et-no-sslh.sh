@@ -12,7 +12,8 @@
 #   - deploys sshd hardening to /etc/ssh/sshd_config.d/99-et-hardening.conf
 #     (deliberately NO ClientAlive* settings: they would drop idle
 #     moshi/iTerm2 sessions)
-#   - rate-limits new connections on :22 and :2022 with iptables `recent`
+#   - rate-limits new connections on :22 and :2022 with iptables `recent`,
+#     after accepting 127.0.0.0/8 so loopback dials never enter the lists,
 #     and persists the rules to /etc/iptables/rules.v4
 #   - restarts sshd and et after every successful run
 #
@@ -36,6 +37,7 @@ echo "  SSH port:   $SSH_PORT"
 echo "  ET port:    $ET_PORT"
 echo "  SSH user:   $SSH_USER"
 echo "  Rate limit: ${RATE_HITS} new conns / ${RATE_SECONDS}s per source IP"
+echo "  Loopback:   127.0.0.0/8 exempt (accepted before the recent rules)"
 echo ""
 
 if ! command -v apt-get &>/dev/null; then
@@ -150,11 +152,16 @@ add_rule() {
 }
 
 # Rules go ahead of the distro defaults (OCI Ubuntu images end INPUT with a
-# REJECT-all, so :2022 also needs an explicit ACCEPT). Per port, in order:
+# REJECT-all, so :2022 also needs an explicit ACCEPT). Loopback is accepted
+# first so a local dial (for example a tunnel origin to 127.0.0.1) never
+# reaches --set/--update and cannot fill its own recent list.
+# Per port, after that exemption, in order:
 #   1. --set     record every new connection from the source
 #   2. --update  DROP once it reaches RATE_HITS+1 within RATE_SECONDS
 #   3. ACCEPT    the new connection otherwise
-pos=1
+add_rule 1 -p tcp -m multiport --dports "${SSH_PORT},${ET_PORT}" \
+    -s 127.0.0.0/8 -j ACCEPT
+pos=2
 for port in "$SSH_PORT" "$ET_PORT"; do
     name="et-rl-${port}"
     add_rule "$pos" -p tcp --dport "$port" -m conntrack --ctstate NEW \
@@ -193,12 +200,12 @@ cat <<INFO
 Configs deployed:
   - /etc/et.cfg                              (etserver on 0.0.0.0:${ET_PORT})
   - /etc/ssh/sshd_config.d/99-et-hardening.conf
-  - /etc/iptables/rules.v4                   (rate limits on :${SSH_PORT}, :${ET_PORT})
+  - /etc/iptables/rules.v4                   (rate limits on :${SSH_PORT}, :${ET_PORT}; 127.0.0.0/8 exempt)
 
 Verify:
 
   sudo ss -tlnp | grep -E ':(${SSH_PORT}|${ET_PORT})\\b'
-  sudo iptables -S INPUT | grep et-rl-
+  sudo iptables -S INPUT | grep -E '127.0.0.0/8|et-rl-'
 
 Connect from the laptop:
 
