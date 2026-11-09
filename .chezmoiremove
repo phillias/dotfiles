@@ -124,4 +124,3 @@
 .config/opencode/skills/mcp-security-audit
 .agents/skills/opencode-omo-config
 .config/opencode/skills/opencode-omo-config
->>>>>>> 4717f47 (refactor(cleanup): migrate DEPRECATED_SKILLS pruning to .chezmoiremove)
