@@ -50,11 +50,15 @@ auto_fix:
   ci: 0
 
 # --- Review-guide posture register (project-settings-enabled entry).
-# Decided 2026-11-08 (captain decision), superseding the 2026-09-13 suppression that set disable_project_settings: true.
+# Decided 2026-11-08 (captain decision), superseding the 2026-09-13
+# suppression that set disable_project_settings: true.
 # Project settings guidance flows to no-mistakes gate agents on purpose.
-# The restored AGENTS.md guardrails are the reason: this repo's apply target is the ENTIRE home directory on every fleet host, and project settings are the only way to guarantee gate agents receive those guardrails.
+# The restored AGENTS.md guardrails are the reason: this repo's apply target
+# is the ENTIRE home directory on every fleet host, and project settings are
+# the only way to guarantee gate agents receive those guardrails.
 # Cross-reference: no-mistakes repo docs, "disable_project_settings".
 #
-# Fleet convention: unset/false (default) -> repo AGENTS.md review guides flow to the gate agent; true -> suppressed.
+# Fleet convention: unset/false (default) -> repo AGENTS.md review guides flow
+# to the gate agent; true -> suppressed.
 # Any future flip must be authored here BEFORE enabling.
 disable_project_settings: false
