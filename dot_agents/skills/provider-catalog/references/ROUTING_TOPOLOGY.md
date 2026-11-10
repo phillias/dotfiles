@@ -119,11 +119,11 @@ flowchart LR
     in["model: dynamic/high"] --> h0["nvidia-nim<br/>z-ai/glm-5.3<br/>(60s)"] --> h1["aihubmix<br/>coding-glm-5.3"] --> h2["aihubmix<br/>glm-5.3"] --> h3["together<br/>zai-org/GLM-5.3"] --> h4["phoenixgrove<br/>glm-5.3"] --> h5["friendli<br/>zai-org/GLM-5.3"] --> h6["deepinfra<br/>zai-org/GLM-5.3<br/>(direct tail)"] --> done[done]
 ```
 
-### dynamic/pr-gate — no-mistakes gate route (v b7002724, 2026-10-05)
+### dynamic/pr-gate — no-mistakes gate route (v dd59ce21, 2026-11-09; vercel rung retired)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/pr-gate"] --> g0["commandcode GOAT<br/>zai-org/GLM-5.2<br/>(60s, thinking)"] --> g1["commandcode GOAT<br/>z-ai/glm-5.3-flash<br/>(60s)"] --> g2["phoenixgrove PGS<br/>glm-5.3-flash<br/>(60s)"] --> g3["phoenixgrove PGS<br/>glm-5.2<br/>(60s)"] --> g4["nvidia-nim<br/>nvidia/nemotron-3-super-120b-a12b<br/>(free)"] --> g5["commandcode GOAT<br/>nvidia/nemotron-3-ultra-550b-a55b"] --> g6["openrouter<br/>openai/gpt-5.6-luna"] --> g7["commandcode GOAT<br/>moonshotai/Kimi-K3"] --> g8["nvidia-nim<br/>moonshotai/kimi-k3"] --> g9["commandcode GOAT<br/>deepseek/deepseek-v4-flash"] --> g10["phoenixgrove PGS<br/>deepseek-v4-flash-0731"] --> g11["google-ai-studio<br/>gemini-2.5-flash"] --> done[done]
+    in["model: dynamic/pr-gate"] --> g0["commandcode GOAT<br/>zai-org/GLM-5.2<br/>(60s, thinking)"] --> g1["commandcode GOAT<br/>z-ai/glm-5.3-flash<br/>(60s)"] --> g2["phoenixgrove PGS<br/>glm-5.3-flash<br/>(60s)"] --> g3["phoenixgrove PGS<br/>glm-5.2<br/>(60s)"] --> g4["nvidia-nim<br/>nvidia/nemotron-3-super-120b-a12b<br/>(free)"] --> g5["commandcode GOAT<br/>nvidia/nemotron-3-ultra-550b-a55b"] --> g6["openrouter<br/>openai/gpt-5.6-luna<br/>(PAYG tail)"] --> done[done]
 ```
 
 GLM head rungs are the captain-ordered subscription-utility block
@@ -133,15 +133,15 @@ The zen `nemotron-3-ultra-free` rung and the `custom-zai-coding` element were
 excluded (locked free lane / route-element ineligible — see the 2026-10-25
 changelog entry).
 
-### dynamic/pr-reviewer — no-mistakes review route (v 469aa66c)
+### dynamic/pr-reviewer — no-mistakes review route (v fd3b161c, 2026-11-09; vercel rung retired)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/pr-reviewer"] --> r0["nvidia-nim<br/>z-ai/glm-5.3"] --> r1["nvidia-nim<br/>deepseek-ai/deepseek-v4.1-flash"] --> r2["openrouter<br/>openai/gpt-5.6-luna"] --> r3["openrouter<br/>nvidia/nemotron-3-ultra-550b-a55b:free"] --> r4["opencode-zen PAID<br/>glm-5.2"] --> done[done]
+    in["model: dynamic/pr-reviewer"] --> r0["nvidia-nim<br/>z-ai/glm-5.3"] --> r1["nvidia-nim<br/>deepseek-ai/deepseek-v4.1-flash"] --> r2["openrouter<br/>openai/gpt-5.6-luna"] --> r3["openrouter<br/>nvidia/nemotron-3-ultra-550b-a55b:free"] --> r4["openrouter<br/>deepseek/deepseek-v4-flash<br/>(PAYG tail)"] --> done[done]
 ```
 
-The zen tail is the PAID glm-5.2 (curl-open; the free-tier lock does not
-apply to paid zen lanes).
+The openrouter tail is deepseek/deepseek-v4-flash (PAYG); it is the final
+fallback after the NIM, luna, and nemotron lanes.
 
 ### dynamic/vision (v 711e9bd5)
 

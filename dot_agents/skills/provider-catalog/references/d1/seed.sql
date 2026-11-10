@@ -20,7 +20,7 @@ ON CONFLICT(provider, model) DO UPDATE SET
   notes=excluded.notes;
 
 INSERT INTO routes(gateway, route, active_version, deployed_at, updated_at, notes) VALUES
-  ('cloudflare-ai-gateway','dynamic/TUI','cce0c37c-48dd-44a3-aa7e-e0739abcd85c','2026-09-25T14:08:36Z','2026-09-25T16:05:00Z','Space-bunny removed as head on 2026-09-25; START now routes to mimo-v2.5-free.'),
+  ('cloudflare-ai-gateway','dynamic/TUI','66b4df87','2026-11-09T00:00:00Z','2026-11-09T00:00:00Z','Vercel router/tui rung retired; seven-rung GLM ladder ends at openrouter z-ai/glm-5.1 PAYG.'),
   ('vercel-ai-gateway','vmc/tui',NULL,NULL,'2026-09-25T16:05:00Z','Space-bunny removed as head on 2026-09-25; six-model ladder retained.')
 ON CONFLICT(gateway, route) DO UPDATE SET
   active_version=excluded.active_version,
@@ -29,16 +29,13 @@ ON CONFLICT(gateway, route) DO UPDATE SET
   notes=excluded.notes;
 
 INSERT INTO route_models(gateway, route, position, provider, model, notes) VALUES
-  ('cloudflare-ai-gateway','dynamic/TUI',1,'custom-opencode-zen','mimo-v2.5-free',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',2,'custom-opencode-zen','glm-5.1',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',3,'custom-opencode-zen','glm-5.2',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',4,'custom-opencode-zen','glm-5.3-flash',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',5,'custom-commandcode','zai-org/GLM-5.1',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',6,'custom-phoenixgrove','glm-5.2',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',7,'custom-commandcode','zai-org/GLM-5.2',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',8,'custom-commandcode','z-ai/glm-5.3-flash',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',9,'custom-phoenixgrove','glm-5.3-flash',NULL),
-  ('cloudflare-ai-gateway','dynamic/TUI',10,'openrouter','z-ai/glm-5.1',NULL),
+  ('cloudflare-ai-gateway','dynamic/TUI',1,'custom-nvidia-nim','z-ai/glm-5.3',NULL),
+  ('cloudflare-ai-gateway','dynamic/TUI',2,'custom-commandcode','zai-org/GLM-5.1',NULL),
+  ('cloudflare-ai-gateway','dynamic/TUI',3,'custom-phoenixgrove','glm-5.2',NULL),
+  ('cloudflare-ai-gateway','dynamic/TUI',4,'custom-commandcode','zai-org/GLM-5.2',NULL),
+  ('cloudflare-ai-gateway','dynamic/TUI',5,'custom-commandcode','z-ai/glm-5.3-flash',NULL),
+  ('cloudflare-ai-gateway','dynamic/TUI',6,'custom-phoenixgrove','glm-5.3-flash',NULL),
+  ('cloudflare-ai-gateway','dynamic/TUI',7,'openrouter','z-ai/glm-5.1',NULL),
   ('vercel-ai-gateway','vmc/tui',1,'alibaba','qwen3.7-flash',NULL),
   ('vercel-ai-gateway','vmc/tui',2,'deepseek','deepseek-v4-flash-0731',NULL),
   ('vercel-ai-gateway','vmc/tui',3,'zai','glm-5.3-flash',NULL),
