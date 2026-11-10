@@ -40,6 +40,16 @@ if [ "$code" = "401" ]; then
   fail=1
 fi
 code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
+  -X POST 'https://ai-gateway.vercel.sh/v1/chat/completions' \
+  -H "Authorization: Bearer $vl_token" \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"router/pr-gate","messages":[{"role":"user","content":"healthcheck"}],"max_tokens":1}' \
+)" || code=000
+if [ "$code" = "401" ]; then
+  echo "nm-daemon-env-harvest: Vercel gateway rejected token (401)" >&2
+  fail=1
+fi
+code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
   'https://openrouter.ai/api/v1/key' \
   -H "Authorization: Bearer $or_token" \
   )" || code=000
