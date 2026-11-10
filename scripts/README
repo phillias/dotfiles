@@ -9,21 +9,39 @@ A line whose first non-whitespace character is # is a comment.
 The target path is relative to $HOME, never absolute.
 The mode is a four-digit octal permission such as 0600.
 
-The only entry today is commandcode.
-Its secret key is AGENT_COMMANDCODE_AUTH_JSON, its path is .commandcode/auth.json, and its mode is 0600.
-The secret lives in the phillias project (fe9eea09-9eaf-45e6-a72f-b45e0150b29d), the same project id scripts/setup.sh uses.
-The secret id is 3a49387f-5c35-477f-80ad-b4fd0002d116.
-The value is the base64 encoding of the credential file and lives only in BWS.
+commandcode uses AGENT_COMMANDCODE_AUTH_JSON at .commandcode/auth.json, mode 0600.
+That secret already lives in the phillias project (fe9eea09-9eaf-45e6-a72f-b45e0150b29d), the same project id scripts/setup.sh uses.
+Its secret id is 3a49387f-5c35-477f-80ad-b4fd0002d116.
+codex uses AGENT_CODEX_AUTH_JSON at .codex/auth.json, mode 0600.
+claude uses AGENT_CLAUDE_CREDENTIALS_JSON at .claude/.credentials.json, mode 0600.
+Claude's target is a dotfile inside .claude/.
+opencode uses AGENT_OPENCODE_AUTH_JSON at .local/share/opencode/auth.json, mode 0600.
+OpenCode's target is two directories under .local/share/.
+The deployer creates those parents with mkdir -p and does not strip a leading dot.
+That path used to be chezmoi-managed from an age-encrypted source.
+That source is gone, and .chezmoiignore lists the target so chezmoi does not manage it.
+Apply does not delete an existing copy.
+A host that still has the old encrypted snapshot must not treat that file as the opencode seed.
+Move the old file aside and re-create the credential on that host from BWS, because the encrypted copy is a stale snapshot.
+Deploy-once skips a file that is already present, so the old copy blocks the new seed until it is moved.
+Do not commit the credential value.
+The value of each secret is the base64 encoding of the credential file and lives only in BWS.
 Do not commit the value, a decoded copy, or a backup of the file.
+The codex, claude, and opencode secrets are created by the captain.
+The deployer tolerates a missing secret: that row prints `tool error missing-secret`, later rows still run, and the process exits nonzero if any row failed.
+
+grok is not in the manifest.
+Its credential-file portability is unverified (dotfiles#589 findings parking lot).
 
 Adding a tool: create the BWS secret in that phillias project first, with the file's base64 as the value and a key named AGENT_<TOOL>_AUTH_JSON, then append one manifest line.
 This change does not wire the deployer into setup.sh.
-Other tools stay out of the manifest until their own secrets exist.
+Leave a tool out of the manifest until its credential file is verified portable.
 
 Refresh staleness: the vault snapshot is a first-login seed, not a live source.
 The deployer writes a target only when that file is absent.
 After seeding, that host's own CLI refreshes the credential through its normal token refresh.
 Running the deployer again prints "deploy-once: exists, skipping (use --force)" and leaves the file alone.
+Overwriting a live credential requires explicit --force, because the local CLI holds newer refresh tokens than any vault snapshot.
 --force overwrites only after writing a timestamped backup beside the target.
 A stale snapshot costs one extra login on a brand-new host.
 It is not a continuous sync, and there is no periodic re-upload here.
@@ -32,5 +50,15 @@ Fallback when BWS is unreachable or the snapshot is too old to refresh: log in w
 That laptop-login plus scp path is the manual procedure this seed replaces for a fresh host.
 
 The deployer prints one stdout line per entry: tool, status, path, and a 12-hex sha256 prefix.
+A failed row prints `tool error <code>` and does not stop the remaining rows.
 It never prints file contents.
+
+Chezmoi applies scripts/* into ~/scripts/ as plain files at mode 0664, without the executable bit.
+Invoke the chezmoi source copy ~/.local/share/chezmoi/scripts/deploy-agent-credentials.sh, or bash ~/scripts/deploy-agent-credentials.sh.
+Do not assume ~/scripts/deploy-agent-credentials.sh is executable.
+
+commandcode whoami hangs on kali (CabinInspiron22Kali): it times out around 30-45 seconds, and it returns quickly on kalione.
+That is a known variance of the CLI, not of this seed.
+Do not treat a hang there as a failed deploy.
+Auth proof for commandcode should use quota-axi, not commandcode whoami.
 bws 2.1.0 `secret get` accepts a secret id, not a key name, so the script resolves the manifest key inside the phillias project and then fetches the bytes with `bws secret get`.

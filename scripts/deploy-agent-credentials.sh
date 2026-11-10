@@ -16,13 +16,33 @@
 # Usage:
 #   deploy-agent-credentials.sh [--force] [--manifest <path>]
 #
-# Auth: BWS_ACCESS_TOKEN, else BWS_TOKEN_FILE, else
-# ~/.agents/keys/default/.bws-token when that file exists.
-# A readable token file wins over an ambient token (stale agent sessions).
+# Auth: an already-set BWS_ACCESS_TOKEN wins, else BWS_TOKEN_FILE, else
+# ~/.agents/keys/default/.bws-token when that file is readable.
+# A token file never replaces an ambient BWS_ACCESS_TOKEN.
 # Project: BWS_PROJECT_ID or the phillias pin used by scripts/setup.sh
 # (fe9eea09-9eaf-45e6-a72f-b45e0150b29d). That pin is a project id.
 # A secret id is not a project id; `bws secret get` receives the secret id
 # only after the manifest key is resolved. bws 2.1.0 get accepts an id only.
+#
+# --force is required to overwrite a live credential. The local CLI holds
+# newer refresh tokens than any vault snapshot. --force writes a timestamped
+# backup beside the target, then replaces the file.
+#
+# Chezmoi applies scripts/* to ~/scripts/ at mode 0664, without the
+# executable bit. Invoke the source copy
+# ~/.local/share/chezmoi/scripts/deploy-agent-credentials.sh, or
+# `bash ~/scripts/deploy-agent-credentials.sh`.
+#
+# bws lookup honors BWS_BIN when that path runs. Otherwise it uses `bws` on
+# PATH when `bws --version` succeeds. A mise shim that errors (synthetic
+# HOME: config files are not trusted) is treated as missing. The script then
+# retries <shim-dir>/../installs/bitwarden-secrets-manager/latest/bws, which
+# does not consult mise's HOME-relative trust database.
+#
+# OpenCode's ~/.local/share/opencode/auth.json is not chezmoi-managed.
+# A host still holding the old age-encrypted copy must move that file aside
+# and re-seed per host; the encrypted copy is a stale snapshot. See scripts/README.
+# commandcode whoami can hang on kali; prefer quota-axi for an auth proof.
 set -euo pipefail
 umask 077
 
@@ -34,8 +54,13 @@ Seed credential files listed in scripts/agent-credentials.conf from the
 phillias BWS project. Manifest format, adding a tool, refresh staleness,
 and the laptop-login + scp fallback are documented in scripts/README.
 
-  --force            overwrite an existing target after a timestamped backup
+  --force            overwrite a live credential after a timestamped backup.
+                     The local CLI holds newer refresh tokens than any snapshot.
   --manifest <path>  manifest to read (default: beside this script)
+
+Chezmoi installs this file to ~/scripts/ mode 0664 (not executable).
+Run ~/.local/share/chezmoi/scripts/deploy-agent-credentials.sh, or
+bash ~/scripts/deploy-agent-credentials.sh.
 
 deploy-once: an existing target is left in place with the message
 "deploy-once: exists, skipping (use --force)". Stdout prints one line
@@ -47,6 +72,13 @@ EOF
 fail() {
     printf '%s error %s\n' "$1" "$2"
     exit 1
+}
+
+# One manifest row failed. Later rows still run. The process exits 1 at the end.
+any_fail=0
+entry_fail() {
+    printf '%s error %s\n' "$1" "$2"
+    any_fail=1
 }
 
 note() {
@@ -87,19 +119,45 @@ command -v sha256sum >/dev/null 2>&1 || { note "sha256sum is required"; fail dep
 # phillias project pin, same id scripts/setup.sh and load-keys.sh hardcode.
 project_id="${BWS_PROJECT_ID:-fe9eea09-9eaf-45e6-a72f-b45e0150b29d}"
 
-bws_bin="${BWS_BIN:-}"
-if [ ! -x "$bws_bin" ]; then
-    bws_bin="$(command -v bws || true)"
-fi
-if [ -z "$bws_bin" ] || [ ! -x "$bws_bin" ]; then
-    bws_bin="$HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws"
-fi
-[ -x "$bws_bin" ] || { note "bws binary not found (set BWS_BIN)"; fail deploy-agent-credentials bws-missing; }
+# True when the path is executable and does not depend on a HOME-trusted mise config.
+bws_runnable() {
+    [ -n "${1:-}" ] && [ -x "$1" ] && "$1" --version >/dev/null 2>&1
+}
 
-if [ -n "${BWS_TOKEN_FILE:-}" ]; then
+bws_bin=""
+if bws_runnable "${BWS_BIN:-}"; then
+    bws_bin="$BWS_BIN"
+else
+    bws_candidate="$(command -v bws || true)"
+    if bws_runnable "$bws_candidate"; then
+        bws_bin="$bws_candidate"
+    else
+        # Shim on PATH but `bws --version` failed. The real binary lives next
+        # to the shim directory, not under a synthetic HOME.
+        if [ -n "$bws_candidate" ]; then
+            bws_shim_dir="$(dirname -- "$bws_candidate")"
+            bws_derived="$(cd -- "$bws_shim_dir/.." && pwd)/installs/bitwarden-secrets-manager/latest/bws"
+            if bws_runnable "$bws_derived"; then
+                bws_bin="$bws_derived"
+            fi
+        fi
+        if [ -z "$bws_bin" ]; then
+            bws_passwd_home="$(getent passwd "$(id -un)" 2>/dev/null | awk -F: 'NR==1 { print $6 }' || true)"
+            if [ -n "$bws_passwd_home" ] && bws_runnable "$bws_passwd_home/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws"; then
+                bws_bin="$bws_passwd_home/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws"
+            elif bws_runnable "$HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws"; then
+                bws_bin="$HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws"
+            fi
+        fi
+    fi
+fi
+[ -n "$bws_bin" ] || { note "bws binary not found or not runnable (set BWS_BIN)"; fail deploy-agent-credentials bws-missing; }
+
+# Env wins. A readable default token file must not clobber BWS_ACCESS_TOKEN.
+if [ -z "${BWS_ACCESS_TOKEN:-}" ] && [ -n "${BWS_TOKEN_FILE:-}" ]; then
     [ -r "$BWS_TOKEN_FILE" ] || { note "BWS_TOKEN_FILE is not readable"; fail deploy-agent-credentials bws-auth; }
     BWS_ACCESS_TOKEN="$(<"$BWS_TOKEN_FILE")"
-elif [ -r "$HOME/.agents/keys/default/.bws-token" ]; then
+elif [ -z "${BWS_ACCESS_TOKEN:-}" ] && [ -r "$HOME/.agents/keys/default/.bws-token" ]; then
     BWS_ACCESS_TOKEN="$(<"$HOME/.agents/keys/default/.bws-token")"
 fi
 [ -n "${BWS_ACCESS_TOKEN:-}" ] || { note "no bws access token (set BWS_ACCESS_TOKEN or BWS_TOKEN_FILE)"; fail deploy-agent-credentials bws-auth; }
@@ -216,19 +274,22 @@ for i in "${!tools[@]}"; do
     fi
     if [ -z "$secret_id" ] || [ "$secret_id" = "null" ]; then
         note "secret not found in project: $key"
-        fail "$tool" missing-secret
+        entry_fail "$tool" missing-secret
+        continue
     fi
 
     if [ -e "$target" ] || [ -L "$target" ]; then
         if [ ! -f "$target" ]; then
             note "target exists and is not a file: $relpath"
-            fail "$tool" not-a-file
+            entry_fail "$tool" not-a-file
+            continue
         fi
         if [ "$force" -ne 1 ]; then
             note "deploy-once: exists, skipping (use --force)"
             prefix="$(sha_prefix "$target")"
             if ! [[ "$prefix" =~ ^[0-9a-f]{12}$ ]]; then
-                fail "$tool" hash
+                entry_fail "$tool" hash
+                continue
             fi
             printf '%s skipped %s %s\n' "$tool" "$relpath" "$prefix"
             continue
@@ -239,35 +300,57 @@ for i in "${!tools[@]}"; do
     errfile="$(mktemp)"
     if ! raw="$("$bws_bin" -t "$BWS_ACCESS_TOKEN" -c no secret get "$secret_id" -o json 2>"$errfile")"; then
         unset raw
-        bws_fail "$tool"
+        if [ -f "$errfile" ] && grep -Eqi 'access token|unauthorized|invalid_client|invalid access|401|forbidden' "$errfile"; then
+            bws_fail "$tool"
+        fi
+        rm -f -- "$errfile"
+        errfile=""
+        note "bws request failed for $key"
+        entry_fail "$tool" bws-error
+        continue
     fi
     rm -f -- "$errfile"
     errfile=""
     if ! b64_value="$(printf '%s' "$raw" | jq -er '.value' 2>/dev/null)"; then
         unset raw b64_value
         note "bws secret get returned no value"
-        fail "$tool" bws-error
+        entry_fail "$tool" bws-error
+        continue
     fi
     unset raw
 
     dir="$(dirname -- "$target")"
-    mkdir -p -- "$dir"
+    # Keep a leading dot (.claude) and nested parents (.local/share/opencode).
+    if ! mkdir -p -- "$dir"; then
+        unset b64_value
+        note "cannot create parent directory: $relpath"
+        entry_fail "$tool" mkdir
+        continue
+    fi
     tmp="$(mktemp "$dir/.${tool}.credential.XXXXXX")"
     if ! printf '%s' "$b64_value" | base64 -d >"$tmp"; then
         unset b64_value
         rm -f -- "$tmp"
         tmp=""
         note "secret value is not valid base64"
-        fail "$tool" bad-base64
+        entry_fail "$tool" bad-base64
+        continue
     fi
     unset b64_value
     if ! jq empty "$tmp" >/dev/null 2>&1; then
         rm -f -- "$tmp"
         tmp=""
         note "decoded secret is not JSON"
-        fail "$tool" invalid-json
+        entry_fail "$tool" invalid-json
+        continue
     fi
-    chmod "$mode" "$tmp"
+    if ! chmod "$mode" "$tmp"; then
+        rm -f -- "$tmp"
+        tmp=""
+        note "cannot set mode on $relpath"
+        entry_fail "$tool" chmod
+        continue
+    fi
 
     if [ -e "$target" ] || [ -L "$target" ]; then
         stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -278,19 +361,37 @@ for i in "${!tools[@]}"; do
             backup="$HOME/$backup_rel"
         fi
         mkdir -p -- "$(dirname -- "$backup")"
-        cp -p -- "$target" "$backup"
+        if ! cp -p -- "$target" "$backup"; then
+            rm -f -- "$tmp"
+            tmp=""
+            note "cannot back up $relpath"
+            entry_fail "$tool" backup
+            continue
+        fi
         note "backup: $backup_rel"
     fi
 
-    mv -f -- "$tmp" "$target"
+    if ! mv -f -- "$tmp" "$target"; then
+        rm -f -- "$tmp"
+        tmp=""
+        note "cannot install $relpath"
+        entry_fail "$tool" install
+        continue
+    fi
     tmp=""
     if ! jq empty "$target" >/dev/null 2>&1; then
         note "deployed file is not JSON"
-        fail "$tool" invalid-json
+        entry_fail "$tool" invalid-json
+        continue
     fi
     prefix="$(sha_prefix "$target")"
     if ! [[ "$prefix" =~ ^[0-9a-f]{12}$ ]]; then
-        fail "$tool" hash
+        entry_fail "$tool" hash
+        continue
     fi
     printf '%s deployed %s %s\n' "$tool" "$relpath" "$prefix"
 done
+
+if [ "$any_fail" -ne 0 ]; then
+    exit 1
+fi

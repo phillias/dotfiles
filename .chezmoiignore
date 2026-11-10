@@ -121,3 +121,10 @@ firstmate/projects/selfhost/.env.devcabinkali
 
 # bench-studio .env is a runtime artifact rendered from BWS (see phillias/bench-studio#19)
 docker/bench-studio/.env
+
+# OpenCode auth.json is a live credential seeded from BWS (dotfiles#589).
+# The age-encrypted source was removed so chezmoi stops re-applying a stale
+# snapshot over the CLI's refreshed token. This ignore stops a later
+# `chezmoi add` from tracking the path again. Apply leaves an existing file
+# in place; re-seed that host only after moving the old copy aside.
+.local/share/opencode/auth.json
