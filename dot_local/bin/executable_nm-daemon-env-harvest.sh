@@ -4,6 +4,8 @@
 # and write CF_AI_GATEWAY_TOKEN + AI_GATEWAY_API_KEY + OPENROUTER_API_KEY
 # to the daemon env file. pi resolves $OPENROUTER_API_KEY at process start
 # for the openrouter-direct lane, so pipeline-spawned pi needs it here.
+# Also writes the login-shell PATH: the unit's static PATH lacks the mise
+# shims, so mise-managed agents (codex, pi) are otherwise unresolvable.
 # A definitive 401 from either gateway (or openrouter) refuses to start
 # the unit loudly — systemd shows it failed instead of running a pipeline
 # that cannot reach any lane. Transient errors (5xx, network) do not block
