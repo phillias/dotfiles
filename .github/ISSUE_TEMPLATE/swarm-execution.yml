@@ -8,6 +8,7 @@ body:
       value: |
         Execution issues are the ledger: checkboxes are the state machine, timestamped comments are the audit trail.
         Nodes post fixed-format audit attestations (fingerprint-only, never secret values). See the `swarm-runbook` skill.
+        Identity: every attestation must use `$FLEET_NODE` as the host identifier — never infer from hostname or dispatch context.
   - type: textarea
     id: goal
     attributes:

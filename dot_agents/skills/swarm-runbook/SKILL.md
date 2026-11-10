@@ -9,6 +9,30 @@ Coordination contract for fleet swarm activities (bws migration, sslh retirement
 firstmate/no-mistakes/herdr upgrades, …). Refined 2026-11-07 from a full
 classification of every open/recent issue in dotfiles + selfhost.
 
+## Node identity
+
+Every fleet host exports `FLEET_NODE` in its shell environment (set by
+`dot_zshenv.tmpl`, resolved from `.chezmoidata/fleet.toml` `.fleet.nodes`
+by matching `.chezmoi.hostname` to the node's `hostname` field). This is
+the canonical fleet identity — **not** `hostname`, `hostname -s`, or any
+other system field, which may differ (e.g. hostname `primary` → fleet key
+`primary55522`, hostname `InspironOne` → fleet key `phillias`).
+
+**Rule:** every attestation, audit, or slice comment must identify the host
+by `$FLEET_NODE` (or the fleet key if writing outside a shell). Never infer
+identity from context, from which node dispatched you, or from `hostname`.
+Before posting an attestation, verify: `echo "$FLEET_NODE"` — the value must
+match the node matrix row in the charter.
+
+The node key → hostname mapping in `fleet.toml`:
+
+| Fleet key | Hostname | SSH alias |
+|---|---|---|
+| `primary55522` | `primary` | `fleet-primary55522` |
+| `kali` | `CabinInspiron22Kali` | `fleet-kali` |
+| `phillias` | `InspironOne` | `fleet-kalione` |
+| `oci1` | `oci1` | `fleet-oci` |
+
 ## Core principle
 
 The repo is the desired state. Issues coordinate; git decides. Desired-state
@@ -69,7 +93,7 @@ multi-node issue to date and must be structural, not prose.
 ## Node audit / attestation comment (fixed format)
 
 ```markdown
-### Node audit — <node> — <ISO date>Z
+### Node audit — $FLEET_NODE — <ISO date>Z
 | Claim | Verdict | Evidence (fingerprint-only) |
 |---|---|---|
 | <live state == vault/repo state for X> | MATCH/MISMATCH | sha256 prefix ab12cd34… |
@@ -80,6 +104,8 @@ Next actions: <what this node does next, or BLOCKED: <reason>>
 Rules: fingerprint-only (sha256 prefixes, never secret values); append-only —
 corrections are new comments; closure of a node slice requires its attestation
 comment plus any reboot/verification test named in the completion criteria.
+The host identity in every attestation header and table must be `$FLEET_NODE`,
+never an inferred or assumed name — see "Node identity".
 
 ## Decision issues
 
@@ -172,7 +198,7 @@ Rules:
    issue in the fixed format below (append-only, fingerprint-only):
 
    ```markdown
-   ### Sync freeze — <node> — <ISO date>Z
+   ### Sync freeze — $FLEET_NODE — <ISO date>Z
    | Claim | Verdict | Evidence (fingerprint-only) |
    |---|---|---|
    | sync cron commented out | DONE | `crontab -l` active-entry grep exit 1; `# sync-freeze <owner>/<repo>#<issue>` annotation present with unchanged original line; prior entry sha256 prefix ab12cd34… |
@@ -197,7 +223,7 @@ Rules:
    never re-inventing a schedule from memory:
 
    ```markdown
-   ### Sync restore — <node> — <ISO date>Z
+   ### Sync restore — $FLEET_NODE — <ISO date>Z
    | Claim | Verdict | Evidence (fingerprint-only) |
    |---|---|---|
    | sync cron re-enabled and re-enrolled | DONE | `crontab -l` active-entry grep exit 0; restored entry sha256 prefix ab12cd34…; `# sync-freeze` annotation removed; next scheduled run <HH:MM UTC> |

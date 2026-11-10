@@ -10,6 +10,14 @@
 export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
 export FLEET_DNS_DOMAIN="{{ .fleet.dnsDomain }}"
+{{- $hn := .chezmoi.hostname -}}
+{{- $node := "" -}}
+{{- range $key, $cfg := .fleet.nodes -}}
+{{- if eq $cfg.hostname $hn -}}
+{{- $node = $key -}}
+{{- end -}}
+{{- end -}}
+export FLEET_NODE="{{ $node }}"
 
 # Load keys from the default profile (~/.agents/keys/default symlink).
 # This makes all provider keys available to non-interactive shells.
