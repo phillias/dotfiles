@@ -63,6 +63,20 @@ Recent structural changes:
   `custom-nvidia-nim/z-ai/glm-5.3` diagnosed 0-byte hang; its timeout cut
   30000 → 5000 so a stalled head falls through fast instead of hanging the
   ladder. commandcode weekly quota reset 2026-10-27 (GOAT 400s self-heal).
+- **2026-11-09 (captain-ordered): Vercel retirement fleet-wide
+  (dotfiles #599).** All `custom-vercel/*` rungs stripped from the
+  CF `opencode` gateway dynamic routes: TUI r7 `router/tui` (new active
+  version `66b4df87` — r6 phoenixgrove now falls straight to the r8
+  openrouter PAYG tail), high m8 `router/high` (new active version
+  `3d9bc378` — tail is now m7 `custom-deepinfra/zai-org/GLM-5.3`,
+  a direct provider), pr-gate gv `router/pr-gate` (new active version
+  `dd59ce21` — tail stays `openrouter/openai/gpt-5.6-luna`), pr-reviewer
+  mv `router/pr-reviewer` (new active version `fd3b161c` — tail stays
+  `openrouter/deepseek/deepseek-v4-flash`). `dynamic/antigravity` carried
+  no vercel rung (google-ai-studio → openrouter only). Verified by API
+  read-back: zero `custom-vercel` elements across all 12 deployed routes.
+  The CF custom provider `vercel` and the Vercel-side `vmc/*` routers,
+  tokens, and skills remain (adjacent surfaces, separate ruling).
 
 ## How to read the flowcharts
 
@@ -91,18 +105,18 @@ flowchart TD
     harnesses -.->|stage 2 fallback| VG[Vercel AI Gateway vmc/*]
 ```
 
-### dynamic/TUI — daily driver (v36c182e3, 2026-10-25)
+### dynamic/TUI — daily driver (v66b4df87, 2026-11-09; vercel rung retired)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide, 5s timeout)"] --> n1["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n2["phoenixgrove PGS<br/>glm-5.2"] --> n3["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n4["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n5["phoenixgrove PGS<br/>glm-5.3-flash"] --> n6["vercel gateway<br/>router/tui (GLM-only)<br/>(60s, 2 retries)"] --> n7["openrouter<br/>z-ai/glm-5.1<br/>(PAYG tail)"] --> done[done]
+    in["model: dynamic/TUI"] --> n0["nvidia-nim<br/>z-ai/glm-5.3<br/>(free, ~40 RPM acct-wide, 5s timeout)"] --> n1["commandcode GOAT<br/>zai-org/GLM-5.1"] --> n2["phoenixgrove PGS<br/>glm-5.2"] --> n3["commandcode GOAT<br/>zai-org/GLM-5.2"] --> n4["commandcode GOAT<br/>z-ai/glm-5.3-flash"] --> n5["phoenixgrove PGS<br/>glm-5.3-flash"] --> n6["openrouter<br/>z-ai/glm-5.1<br/>(PAYG tail)"] --> done[done]
 ```
 
-### dynamic/high — GLM-5.3-class (v a7bc6428, 2026-10-25)
+### dynamic/high — GLM-5.3-class (v 3d9bc378, 2026-11-09; vercel rung retired)
 
 ```mermaid
 flowchart LR
-    in["model: dynamic/high"] --> h0["nvidia-nim<br/>z-ai/glm-5.3<br/>(60s)"] --> h1["aihubmix<br/>coding-glm-5.3"] --> h2["aihubmix<br/>claude-fable-5-1"] --> h3["aihubmix<br/>glm-5.3"] --> h4["together<br/>zai-org/GLM-5.3"] --> h5["phoenixgrove<br/>glm-5.3"] --> h6["friendli<br/>zai-org/GLM-5.3"] --> h7["deepinfra<br/>zai-org/GLM-5.3"] --> h8["vercel gateway<br/>router/high<br/>(60s, 2 retries)"] --> h9["openrouter<br/>z-ai/glm-5.3<br/>(60s)"] --> done[done]
+    in["model: dynamic/high"] --> h0["nvidia-nim<br/>z-ai/glm-5.3<br/>(60s)"] --> h1["aihubmix<br/>coding-glm-5.3"] --> h2["aihubmix<br/>glm-5.3"] --> h3["together<br/>zai-org/GLM-5.3"] --> h4["phoenixgrove<br/>glm-5.3"] --> h5["friendli<br/>zai-org/GLM-5.3"] --> h6["deepinfra<br/>zai-org/GLM-5.3<br/>(direct tail)"] --> done[done]
 ```
 
 ### dynamic/pr-gate — no-mistakes gate route (v b7002724, 2026-10-05)
@@ -216,15 +230,17 @@ seed before the daily refresh discovers it.
 
 **Callable-kind rule (verified 2026-10-03):** D1 labels every Vercel route
 `vmc/<slug>`, but the inference callable depends on kind — `alias` answers to
-`vmc/<slug>`, `router` answers ONLY to `router/<slug>`. Pi chains use the
-correct `vercel/router/*` form.
+`vmc/<slug>`, `router` answers ONLY to `router/<slug>`. Pi chains carried the
+`vercel/router/*` form until the 2026-11-09 retirement (dotfiles #599); they
+no longer reference Vercel rungs.
 
-**CF indirection (2026-10-25):** the CF custom provider `vercel` (base
-`https://ai-gateway.vercel.sh/v1`, BYOK) lets CF dynamic-route elements call
-Vercel routers — `custom-vercel/router/tui` is TUI rung 7, `custom-vercel/router/high`
-is high rung 9. Route elements reach the Vercel unified API, which appends
-`/chat/completions` to the base — a real upstream path, so this pairing is
-route-element safe (unlike Z.AI).
+**CF indirection (2026-10-25; RETIRED 2026-11-09, dotfiles #599):** the CF
+custom provider `vercel` (base `https://ai-gateway.vercel.sh/v1`, BYOK) let
+CF dynamic-route elements call Vercel routers — `custom-vercel/router/tui`
+was TUI rung 7, `custom-vercel/router/high` was high rung 9. All
+`custom-vercel/*` rungs are now stripped from every dynamic route (see the
+2026-11-09 changelog entry); the custom provider itself and the Vercel-side
+routers remain for the separate adjacent-surfaces ruling.
 
 ## Flow 2 — no-mistakes → codex → model → ...
 
