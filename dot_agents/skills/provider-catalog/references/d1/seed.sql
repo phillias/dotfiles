@@ -28,6 +28,8 @@ ON CONFLICT(gateway, route) DO UPDATE SET
   updated_at=excluded.updated_at,
   notes=excluded.notes;
 
+DELETE FROM route_models WHERE gateway='cloudflare-ai-gateway' AND route='dynamic/TUI' AND position > 7;
+
 INSERT INTO route_models(gateway, route, position, provider, model, notes) VALUES
   ('cloudflare-ai-gateway','dynamic/TUI',1,'custom-nvidia-nim','z-ai/glm-5.3',NULL),
   ('cloudflare-ai-gateway','dynamic/TUI',2,'custom-commandcode','zai-org/GLM-5.1',NULL),
