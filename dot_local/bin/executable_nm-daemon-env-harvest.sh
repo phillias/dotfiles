@@ -4,6 +4,8 @@
 # and write CF_AI_GATEWAY_TOKEN + AI_GATEWAY_API_KEY + OPENROUTER_API_KEY
 # to the daemon env file. pi resolves $OPENROUTER_API_KEY at process start
 # for the openrouter-direct lane, so pipeline-spawned pi needs it here.
+# Also writes the login-shell PATH: the unit's static PATH lacks the mise
+# shims, so mise-managed agents (codex, pi) are otherwise unresolvable.
 # A definitive 401 from either gateway (or openrouter) refuses to start
 # the unit loudly — systemd shows it failed instead of running a pipeline
 # that cannot reach any lane. Transient errors (5xx, network) do not block
@@ -13,15 +15,20 @@
 set -eu
 umask 077
 env_file="${1:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/no-mistakes-daemon.env}"
-harvest="$(zsh -lc 'printf "CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\n" "$CF_AI_GATEWAY_TOKEN" "$AI_GATEWAY_API_KEY" "$OPENROUTER_API_KEY"')"
+harvest="$(zsh -lc 'printf "CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\nDAEMON_PATH=%s\n" "$CF_AI_GATEWAY_TOKEN" "$AI_GATEWAY_API_KEY" "$OPENROUTER_API_KEY" "$PATH"')"
 cf_token="$(printf '%s\n' "$harvest" | sed -n 's/^CF_AI_GATEWAY_TOKEN=//p')"
 vl_token="$(printf '%s\n' "$harvest" | sed -n 's/^AI_GATEWAY_API_KEY=//p')"
 or_token="$(printf '%s\n' "$harvest" | sed -n 's/^OPENROUTER_API_KEY=//p')"
+daemon_path="$(printf '%s\n' "$harvest" | sed -n 's/^DAEMON_PATH=//p')"
 if [ -z "$cf_token" ] || [ -z "$vl_token" ] || [ -z "$or_token" ]; then
   echo "nm-daemon-env-harvest: empty harvest (load-keys.sh exported nothing — check bws)" >&2
   exit 1
 fi
-printf 'CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\n' "$cf_token" "$vl_token" "$or_token" > "$env_file"
+if [ -z "$daemon_path" ]; then
+  echo "nm-daemon-env-harvest: empty PATH harvest (login shell misconfigured)" >&2
+  exit 1
+fi
+printf 'CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\nPATH=%s\n' "$cf_token" "$vl_token" "$or_token" "$daemon_path" > "$env_file"
 chmod 0600 "$env_file"
 fail=0
 code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
