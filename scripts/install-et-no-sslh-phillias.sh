@@ -9,8 +9,9 @@
 #   - deploys, but does not enable, the dotfiles-owned fallback sshd unit on
 #     :10022; it deliberately has no Conflicts=ssh.service declaration
 #   - rate-limits new connections on :22 and :2022 with iptables `recent`,
-#     after accepting 127.0.0.0/8 so loopback dials never enter the lists,
-#     and persists the rules to /etc/iptables/rules.v4
+#     after accepting 127.0.0.0/8 and 172.16.0.0/12 (loopback and Docker
+#     bridge) so their dials never enter the lists, and persists the rules
+#     to /etc/iptables/rules.v4
 #   - removes the legacy sslh sshd listener on :55554
 #   - restarts sshd and et after every successful run
 #
@@ -44,7 +45,8 @@ echo "  SSH user:   $SSH_USER"
 echo "  Legacy sslh port: $LEGACY_SSH_PORT (removed)"
 echo "  Fallback SSH port: $FALLBACK_SSH_PORT (installed, not enabled)"
 echo "  Rate limit: ${RATE_HITS} new conns / ${RATE_SECONDS}s per source IP"
-echo "  Loopback:   127.0.0.0/8 exempt (accepted before the recent rules)"
+echo "  Loopback:      127.0.0.0/8 exempt (accepted before the recent rules)"
+echo "  Docker bridge: 172.16.0.0/12 exempt (accepted before the recent rules)"
 echo ""
 
 if ! command -v apt-get &>/dev/null; then
@@ -216,15 +218,18 @@ add_rule() {
     echo "  iptables: added INPUT $*"
 }
 
-# Loopback is accepted first, before either port's recent rules, so a local
-# dial never reaches --set/--update and cannot fill its own recent list.
-# Per port, after that exemption, in order:
+# Loopback and Docker bridge are accepted first, before either port's recent
+# rules, so local and container dials never reach --set/--update and cannot
+# fill their own recent lists.
+# Per port, after those exemptions, in order:
 #   1. --set     record every new connection from the source
 #   2. --update  DROP once it reaches RATE_HITS+1 within RATE_SECONDS
 #   3. ACCEPT    the new connection otherwise
 add_rule 1 -p tcp -m multiport --dports "${SSH_PORT},${ET_PORT}" \
     -s 127.0.0.0/8 -j ACCEPT
-pos=2
+add_rule 2 -p tcp -m multiport --dports "${SSH_PORT},${ET_PORT}" \
+    -s 172.16.0.0/12 -j ACCEPT
+pos=3
 for port in "$SSH_PORT" "$ET_PORT"; do
     name="et-rl-${port}"
     add_rule "$pos" -p tcp --dport "$port" -m conntrack --ctstate NEW \
@@ -263,12 +268,12 @@ Configs deployed:
   - /etc/ssh/sshd_config_fallback            (sshd on 0.0.0.0:${FALLBACK_SSH_PORT})
   - /etc/systemd/system/et.service
   - /etc/systemd/system/sshd-fallback.service (installed, not enabled)
-  - /etc/iptables/rules.v4                   (rate limits on :${SSH_PORT}, :${ET_PORT}; 127.0.0.0/8 exempt)
+  - /etc/iptables/rules.v4                   (rate limits on :${SSH_PORT}, :${ET_PORT}; 127.0.0.0/8, 172.16.0.0/12 exempt)
 
 Verify:
 
   sudo ss -tlnp | grep -E ':(${SSH_PORT}|${ET_PORT})\\b'
-  sudo iptables -S INPUT | grep -E '127.0.0.0/8|et-rl-'
+  sudo iptables -S INPUT | grep -E '127.0.0.0/8|172.16.0.0|et-rl-'
   systemctl is-enabled et.service
 
 Connect from the laptop:
