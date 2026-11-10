@@ -13,15 +13,20 @@
 set -eu
 umask 077
 env_file="${1:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/no-mistakes-daemon.env}"
-harvest="$(zsh -lc 'printf "CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\n" "$CF_AI_GATEWAY_TOKEN" "$AI_GATEWAY_API_KEY" "$OPENROUTER_API_KEY"')"
+harvest="$(zsh -lc 'printf "CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\nDAEMON_PATH=%s\n" "$CF_AI_GATEWAY_TOKEN" "$AI_GATEWAY_API_KEY" "$OPENROUTER_API_KEY" "$PATH"')"
 cf_token="$(printf '%s\n' "$harvest" | sed -n 's/^CF_AI_GATEWAY_TOKEN=//p')"
 vl_token="$(printf '%s\n' "$harvest" | sed -n 's/^AI_GATEWAY_API_KEY=//p')"
 or_token="$(printf '%s\n' "$harvest" | sed -n 's/^OPENROUTER_API_KEY=//p')"
+daemon_path="$(printf '%s\n' "$harvest" | sed -n 's/^DAEMON_PATH=//p')"
 if [ -z "$cf_token" ] || [ -z "$vl_token" ] || [ -z "$or_token" ]; then
   echo "nm-daemon-env-harvest: empty harvest (load-keys.sh exported nothing — check bws)" >&2
   exit 1
 fi
-printf 'CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\n' "$cf_token" "$vl_token" "$or_token" > "$env_file"
+if [ -z "$daemon_path" ]; then
+  echo "nm-daemon-env-harvest: empty PATH harvest (login shell misconfigured)" >&2
+  exit 1
+fi
+printf 'CF_AI_GATEWAY_TOKEN=%s\nAI_GATEWAY_API_KEY=%s\nOPENROUTER_API_KEY=%s\nPATH=%s\n' "$cf_token" "$vl_token" "$or_token" "$daemon_path" > "$env_file"
 chmod 0600 "$env_file"
 fail=0
 code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
@@ -32,16 +37,6 @@ code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
 )" || code=000
 if [ "$code" = "401" ]; then
   echo "nm-daemon-env-harvest: Cloudflare gateway rejected token (401)" >&2
-  fail=1
-fi
-code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
-  -X POST 'https://ai-gateway.vercel.sh/v1/chat/completions' \
-  -H "Authorization: Bearer $vl_token" \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"router/pr-gate","messages":[{"role":"user","content":"healthcheck"}],"max_tokens":1}' \
-)" || code=000
-if [ "$code" = "401" ]; then
-  echo "nm-daemon-env-harvest: Vercel gateway rejected token (401)" >&2
   fail=1
 fi
 code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' \
