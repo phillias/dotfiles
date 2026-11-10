@@ -13,8 +13,9 @@
 #     (deliberately NO ClientAlive* settings: they would drop idle
 #     moshi/iTerm2 sessions)
 #   - rate-limits new connections on :22 and :2022 with iptables `recent`,
-#     after accepting 127.0.0.0/8 so loopback dials never enter the lists,
-#     and persists the rules to /etc/iptables/rules.v4
+#     after accepting 127.0.0.0/8 and 172.16.0.0/12 (loopback and Docker
+#     bridge) so their dials never enter the lists, and persists the rules
+#     to /etc/iptables/rules.v4
 #   - restarts sshd and et after every successful run
 #
 # Prerequisites:
@@ -37,7 +38,8 @@ echo "  SSH port:   $SSH_PORT"
 echo "  ET port:    $ET_PORT"
 echo "  SSH user:   $SSH_USER"
 echo "  Rate limit: ${RATE_HITS} new conns / ${RATE_SECONDS}s per source IP"
-echo "  Loopback:   127.0.0.0/8 exempt (accepted before the recent rules)"
+echo "  Loopback:      127.0.0.0/8 exempt (accepted before the recent rules)"
+echo "  Docker bridge: 172.16.0.0/12 exempt (accepted before the recent rules)"
 echo ""
 
 if ! command -v apt-get &>/dev/null; then
@@ -152,16 +154,19 @@ add_rule() {
 }
 
 # Rules go ahead of the distro defaults (OCI Ubuntu images end INPUT with a
-# REJECT-all, so :2022 also needs an explicit ACCEPT). Loopback is accepted
-# first so a local dial (for example a tunnel origin to 127.0.0.1) never
-# reaches --set/--update and cannot fill its own recent list.
-# Per port, after that exemption, in order:
+# REJECT-all, so :2022 also needs an explicit ACCEPT). Loopback and Docker
+# bridge are accepted first so local and container dials (for example a
+# tunnel origin to 127.0.0.1 or a Docker container on 172.17.x.x) never
+# reach --set/--update and cannot fill their own recent lists.
+# Per port, after those exemptions, in order:
 #   1. --set     record every new connection from the source
 #   2. --update  DROP once it reaches RATE_HITS+1 within RATE_SECONDS
 #   3. ACCEPT    the new connection otherwise
 add_rule 1 -p tcp -m multiport --dports "${SSH_PORT},${ET_PORT}" \
     -s 127.0.0.0/8 -j ACCEPT
-pos=2
+add_rule 2 -p tcp -m multiport --dports "${SSH_PORT},${ET_PORT}" \
+    -s 172.16.0.0/12 -j ACCEPT
+pos=3
 for port in "$SSH_PORT" "$ET_PORT"; do
     name="et-rl-${port}"
     add_rule "$pos" -p tcp --dport "$port" -m conntrack --ctstate NEW \
@@ -200,12 +205,12 @@ cat <<INFO
 Configs deployed:
   - /etc/et.cfg                              (etserver on 0.0.0.0:${ET_PORT})
   - /etc/ssh/sshd_config.d/99-et-hardening.conf
-  - /etc/iptables/rules.v4                   (rate limits on :${SSH_PORT}, :${ET_PORT}; 127.0.0.0/8 exempt)
+  - /etc/iptables/rules.v4                   (rate limits on :${SSH_PORT}, :${ET_PORT}; 127.0.0.0/8, 172.16.0.0/12 exempt)
 
 Verify:
 
   sudo ss -tlnp | grep -E ':(${SSH_PORT}|${ET_PORT})\\b'
-  sudo iptables -S INPUT | grep -E '127.0.0.0/8|et-rl-'
+  sudo iptables -S INPUT | grep -E '127.0.0.0/8|172.16.0.0|et-rl-'
 
 Connect from the laptop:
 

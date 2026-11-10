@@ -80,7 +80,7 @@ The direct pattern needs the cloud firewall (OCI NSG) to open TCP/22 and TCP/202
 
 - `/etc/et.cfg`: `port = 2022`, `bind_ip` left unset (0.0.0.0), `telemetry = false`
 - `/etc/ssh/sshd_config.d/99-et-hardening.conf`: `AllowUsers ubuntu`, `MaxAuthTries 3`, `LoginGraceTime 20`, `PermitRootLogin no`, `X11Forwarding no`. It deliberately sets no `ClientAlive*`, which would drop idle moshi/iTerm2 sessions
-- iptables `recent` rate limit on `:22` and `:2022` (3 new connections per 60s per source IP, DROP on exceed; `127.0.0.0/8` accepted before the recent rules so loopback dials are not counted), persisted to `/etc/iptables/rules.v4`
+- iptables `recent` rate limit on `:22` and `:2022` (3 new connections per 60s per source IP, DROP on exceed; `127.0.0.0/8` and `172.16.0.0/12` accepted before the recent rules so loopback and Docker bridge dials are not counted), persisted to `/etc/iptables/rules.v4`
 
 Host-level ET and fallback-SSH units are versioned in `systemd/system/` and installed by the host installer into `/etc/systemd/system/`. They are system services: do not place them in `~/.config/systemd/user/`, because sshd owns privileged ports and must start before login. `sshd-fallback.service` has no `Conflicts=sshd.service ssh.service`; it listens on `:10022` and must coexist with the normal port-22 daemon.
 
