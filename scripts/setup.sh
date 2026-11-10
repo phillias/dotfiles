@@ -158,6 +158,22 @@ if ! command -v zsh >/dev/null 2>&1; then
     fi
 fi
 
+# ── 3d. Change default login shell to zsh ────────────────────────
+# The dotfiles posture is zsh-first: ~/.zshrc, ~/.zshenv, and
+# environment.d all assume zsh. If the login shell is still bash,
+# change it so SSH and terminal logins land in zsh consistently.
+ZSH_PATH="$(command -v zsh 2>/dev/null)"
+if [ -n "$ZSH_PATH" ] && [ "$SHELL" != "$ZSH_PATH" ]; then
+    if grep -qx "$ZSH_PATH" /etc/shells 2>/dev/null; then
+        echo "==> Changing default login shell to zsh..."
+        if ! chsh -s "$ZSH_PATH"; then
+            echo "WARNING: chsh failed. You can run 'chsh -s $ZSH_PATH' manually." >&2
+        fi
+    else
+        echo "WARNING: $ZSH_PATH not in /etc/shells; skipping chsh. Add it and re-run chsh manually." >&2
+    fi
+fi
+
 # ═══════════════════════════════════════════════════════════════════
 # Phase 2 — GitHub auth + deploy key
 # ═══════════════════════════════════════════════════════════════════
