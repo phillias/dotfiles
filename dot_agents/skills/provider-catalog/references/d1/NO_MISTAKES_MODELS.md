@@ -46,7 +46,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    ses["pi interactive session"] --> d1["CfAiGw/dynamic/TUI<br/>(8-rung: NIM GLM head →<br/>GOAT/PGS GLM → openrouter)"] --> d2["vercel/router/tui<br/>(vmc/tui 6-rung)"] --> done[done]
+    ses["pi interactive session"] --> d1["CfAiGw/dynamic/TUI<br/>(7-rung: NIM GLM head →<br/>GOAT/PGS GLM → openrouter)"] --> done[done]
 ```
 
 pr-gate route change (2026-10-05, captain-ordered): zen `nemotron-3-ultra-free`
