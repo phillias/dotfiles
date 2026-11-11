@@ -30,8 +30,9 @@ Do not commit the value, a decoded copy, or a backup of the file.
 The codex, claude, and opencode secrets are created by the captain.
 The deployer tolerates a missing secret: that row prints `tool error missing-secret`, later rows still run, and the process exits nonzero if any row failed.
 
-grok is not in the manifest.
-Its credential-file portability is unverified (dotfiles#589 findings parking lot).
+grok uses AGENT_GROK_AUTH_JSON at .grok/auth.json, mode 0600.
+Its credential-file portability is verified (dotfiles#589).
+BWS secret id f199afaf-6eb1-4c2c-9410-b4ff001c2cf6.
 
 Adding a tool: create the BWS secret in that phillias project first, with the file's base64 as the value and a key named AGENT_<TOOL>_AUTH_JSON, then append one manifest line.
 This change does not wire the deployer into setup.sh.
@@ -53,9 +54,8 @@ The deployer prints one stdout line per entry: tool, status, path, and a 12-hex 
 A failed row prints `tool error <code>` and does not stop the remaining rows.
 It never prints file contents.
 
-Chezmoi applies scripts/* into ~/scripts/ as plain files at mode 0664, without the executable bit.
-Invoke the chezmoi source copy ~/.local/share/chezmoi/scripts/deploy-agent-credentials.sh, or bash ~/scripts/deploy-agent-credentials.sh.
-Do not assume ~/scripts/deploy-agent-credentials.sh is executable.
+Chezmoi applies scripts/* into ~/scripts/ with the executable bit set when the source filename has the executable_ prefix (PR #610).
+The deploy script source is scripts/executable_deploy-agent-credentials.sh and renders at mode 0775.
 
 commandcode whoami hangs on kali (CabinInspiron22Kali): it times out around 30-45 seconds, and it returns quickly on kalione.
 That is a known variance of the CLI, not of this seed.
