@@ -28,10 +28,8 @@
 # newer refresh tokens than any vault snapshot. --force writes a timestamped
 # backup beside the target, then replaces the file.
 #
-# Chezmoi applies scripts/* to ~/scripts/ at mode 0664, without the
-# executable bit. Invoke the source copy
-# ~/.local/share/chezmoi/scripts/deploy-agent-credentials.sh, or
-# `bash ~/scripts/deploy-agent-credentials.sh`.
+# The executable_ prefix in the chezmoi source ensures the rendered file
+# at ~/scripts/deploy-agent-credentials.sh is mode 0755.
 #
 # bws lookup honors BWS_BIN when that path runs. Otherwise it uses `bws` on
 # PATH when `bws --version` succeeds. A mise shim that errors (synthetic
