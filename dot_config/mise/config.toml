@@ -47,7 +47,7 @@ bitwarden-secrets-manager = "2.1.0"
 # silent rc=1 verify failures, pending installs, queued scripts).
 "npm:@masculinecache/chezmoi-axi" = "0.2.1"
 "npm:gh-axi" = "0.1.30"
-"npm:@masculinecache/issue-work" = "0.1.2"
+"npm:@masculinecache/issue-work" = { version = "0.1.3", npm_args = "--ignore-scripts=false" }
 "npm:lavish-axi" = "0.1.86"
 # mem-axi — agent memory CLI (mem); replaces the retired chezmoi-managed
 # ~/.local/bin/mem script (dot_local/bin/executable_mem, removed in the same
