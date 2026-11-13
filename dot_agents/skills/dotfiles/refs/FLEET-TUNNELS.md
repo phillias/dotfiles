@@ -146,7 +146,7 @@ no cloudflared and no sslh:
 - `et-55522` (`et.phillias.cc`) is stale: primary's grey-cloud IP has no :22
   listener.
 
-## Eternal Terminal (kali/nasbox migration)
+## Eternal Terminal (kali migration)
 
 The Kali edge node uses the host-specific adaptation
 `scripts/install-et-no-sslh-phillias.sh`. It removes only the old sshd

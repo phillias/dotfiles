@@ -73,7 +73,7 @@ Two server patterns, each with its own install script:
 | Pattern | Script | Layout | Used by |
 |---|---|---|---|
 | **Direct (no sslh)** | `scripts/install-et-no-sslh.sh` | sshd on `:22`, etserver directly on `0.0.0.0:2022`; both ports exposed so the laptop connects straight to the host | oci1 |
-| **Direct (no sslh, Kali adaptation)** | `scripts/install-et-no-sslh-phillias.sh` | Removes the legacy `:55554` listener, installs dotfiles-owned system units under `/etc/systemd/system/`, and keeps an optional `:10022` fallback sshd separate from port 22 | kali/nasbox |
+| **Direct (no sslh, Kali adaptation)** | `scripts/install-et-no-sslh-phillias.sh` | Removes the legacy `:55554` listener, installs dotfiles-owned system units under `/etc/systemd/system/`, and keeps an optional `:10022` fallback sshd separate from port 22 | kali |
 | **sslh demux** | `scripts/install-et-sslh-for-moshi.sh` | sslh on `:2022` splits SSH (to a dedicated sshd) from ET (etserver on `127.0.0.1:20220`) | other fleet hosts |
 
 The direct pattern needs the cloud firewall (OCI NSG) to open TCP/22 and TCP/2022 and a grey-cloud (DNS-only) A record (`et.phillias.net` → oci1). The script is idempotent and hardens the exposed ports:

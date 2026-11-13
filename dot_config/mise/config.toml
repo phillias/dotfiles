@@ -243,3 +243,6 @@ go = "1.25"
 # difftastic — syntax-aware structural diff; lazygit pager that approaches vimdiff
 # (captain request 2026-11-01). Swap lazygit's pager to `difft --color=always` (cargo backend; aqua/ubi asset naming mismatch on this mise).
 "cargo:difftastic" = "0.72.0"
+# warp-axi — agent-ergonomic TOON wrapper around warp-cli; installed on WARP-enrolled
+# fleet nodes only. warp-cli --json is a global flag (warp-cli -j status), not per-command.
+"npm:@masculinecache/warp-axi" = "0.1.2"
