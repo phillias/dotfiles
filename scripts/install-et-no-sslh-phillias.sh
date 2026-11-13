@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install and harden Eternal Terminal with direct exposure (no sslh, no tunnel)
-# on the Kali/nasbox fleet node as user phillias.
+# on the kali fleet node as user phillias.
 #
 # What it does (idempotent; safe to re-run):
 #   - installs etserver from the jgmath2000/et PPA
