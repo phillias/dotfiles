@@ -2,7 +2,7 @@
 # Install and enable warp-firewall-fix systemd service.
 # Runs on chezmoi apply when the service file or script changes.
 # Linux-only: exits 0 on non-Linux.
-# Fingerprint: {{ output "bash" "-c" (printf "sha256sum '%s/dot_local/bin/executable_warp-firewall-fix.sh' '%s/systemd/system/warp-firewall-fix.service' 2>/dev/null | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir .chezmoi.sourceDir) }}
+# Fingerprint: {{ output "bash" "-c" (printf "{ sha256sum '%s/dot_local/bin/executable_warp-firewall-fix.sh' '%s/systemd/system/warp-firewall-fix.service' 2>/dev/null; if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files warp-svc.service >/dev/null 2>&1; then echo warp-available; else echo warp-unavailable; fi; } | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir .chezmoi.sourceDir) }}
 
 set -euo pipefail
 
