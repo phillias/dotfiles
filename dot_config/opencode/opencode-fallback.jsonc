@@ -42,9 +42,9 @@
     // the chain at stage 1 (NIM glm-5.3 TUI head).
     // longcat-2.5-preview-free dropped (captain 2026-10-05).
     "opencode-zen/glm-5.1",
-    "opencode-go/glm-5.1",
-    "opencode-go/deepseek-v4-flash",
-    "opencode-zen/mimo-v2.5-free",
+    "opencode-go/glm-5.2",
+    "opencode-go/deepseek-v4.1-flash",
+    "opencode-zen/mimo-v2.6-flash-free",
 
     // STAGE 1: Gateway dynamic route (cascading GLM ladder)
     // Route handles free → subsidized → PAYG internally
@@ -60,19 +60,19 @@
   "agents": {
     // Utility crewmates: Gateway route first → Vercel → opencode-go fallback
     "general": {
-      "model": "opencode-go/longcat-2.5-preview-free",
+      "model": "opencode-go/longcat-2.5-free",
       "fallback_models": [
-        "opencode-go/glm-5.1",
-        "opencode-go/deepseek-v4-flash",
+        "opencode-go/glm-5.2",
+        "opencode-go/deepseek-v4.1-flash",
         "CfAiGw/dynamic/TUI",
         "vercel/router/tui"
       ]
     },
     "explore": {
-      "model": "opencode-go/longcat-2.5-preview-free",
+      "model": "opencode-go/longcat-2.5-free",
       "fallback_models": [
-        "opencode-go/glm-5.1",
-        "opencode-go/deepseek-v4-flash",
+        "opencode-go/glm-5.2",
+        "opencode-go/deepseek-v4.1-flash",
         "CfAiGw/dynamic/TUI",
         "vercel/router/tui"
       ]
@@ -83,13 +83,13 @@
       "fallback_models": [
         "zai-coding/glm-5.2",
         "commandcode/zai-org/GLM-5.1",
-        "opencode-go/glm-5.1",
+        "opencode-go/glm-5.2",
         "opencode-zen/kimi-k2.6"
       ],
       "no_global_tail": true
     },
     "solutions-research": {
-      "model": "opencode-zen/nemotron-3-ultra-free",
+      "model": "opencode-zen/glm-5.3-flash-free",
       "fallback_models": [
         "commandcode/moonshotai/Kimi-K2.6",
         "opencode-zen/kimi-k2.6"
@@ -106,16 +106,16 @@
       "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
         "vercel/router/tui",
-        "opencode-go/glm-5.1",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/glm-5.2",
+        "opencode-go/deepseek-v4.1-flash"
       ]
     },
     "unspecified-low": {
       "model": "CfAiGw/dynamic/TUI",
       "fallback_models": [
         "vercel/router/tui",
-        "opencode-go/glm-5.1",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/glm-5.2",
+        "opencode-go/deepseek-v4.1-flash"
       ]
     },
     // HIGH-INTENSITY / SPECIALIZED (decision A): models pinned, fallback
@@ -130,21 +130,21 @@
       "no_global_tail": true
     },
     "deep": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "opencode-go/kimi-k2.7-code",
       "fallback_models": [
         "zai-coding/glm-5.2",
         "commandcode/moonshotai/Kimi-K2.6",
-        "opencode-go/kimi-k2.6",
+        "opencode-go/kimi-k2.7-code",
         "opencode-zen/kimi-k2.6"
       ],
       "no_global_tail": true
     },
     "unspecified-high": {
-      "model": "opencode-go/kimi-k2.6",
+      "model": "opencode-go/kimi-k2.7-code",
       "fallback_models": [
         "zai-coding/glm-5.2",
         "commandcode/moonshotai/Kimi-K2.6",
-        "opencode-go/kimi-k2.6",
+        "opencode-go/kimi-k2.7-code",
         "opencode-zen/kimi-k2.6"
       ],
       "no_global_tail": true
@@ -162,16 +162,16 @@
       "fallback_models": [
         "commandcode/xiaomi/mimo-v2.5",
         "commandcode/thinkingmachines/inkling",
-        "opencode-go/mimo-v2.5",
-        "opencode-zen/mimo-v2.5-free"
+        "opencode-go/mimo-v2.6-flash",
+        "opencode-zen/mimo-v2.6-flash-free"
       ],
       "no_global_tail": true
     },
     "writing": {
-      "model": "opencode-zen/deepseek-v4-flash-free",
+      "model": "opencode-zen/deepseek-v4.1-flash-free",
       "fallback_models": [
         "commandcode/deepseek/deepseek-v4-flash",
-        "opencode-go/deepseek-v4-flash"
+        "opencode-go/deepseek-v4.1-flash"
       ],
       "no_global_tail": true
     }
