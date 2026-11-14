@@ -17,6 +17,7 @@ SCRIPT_SRC="{{ .chezmoi.sourceDir }}/dot_local/bin/executable_warp-firewall-fix.
 SCRIPT_DST="/usr/local/bin/warp-firewall-fix.sh"
 
 command -v systemctl >/dev/null 2>&1 || exit 0
+systemctl list-unit-files warp-svc.service >/dev/null 2>&1 || exit 0
 
 # Install script to /usr/local/bin (executable)
 if [ -f "$SCRIPT_SRC" ]; then
