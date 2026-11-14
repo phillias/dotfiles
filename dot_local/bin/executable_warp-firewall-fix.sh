@@ -74,9 +74,9 @@ done
 
 # Add bypass routes to WARP routing table (idempotent: only if not present)
 for cidr in "${CF_EDGE_CIDRS[@]}"; do
-    if ! ip route show table "$WARP_TABLE" | grep -q "^$cidr "; then
-        log "Adding bypass route for $cidr via $GATEWAY dev $INTERFACE table $WARP_TABLE"
-        ip route add "$cidr" via "$GATEWAY" dev "$INTERFACE" table "$WARP_TABLE"
+    if ! ip route show table "$WARP_TABLE" "$cidr" | grep -qF "$cidr via $GATEWAY dev $INTERFACE"; then
+        log "Reconciling bypass route for $cidr via $GATEWAY dev $INTERFACE table $WARP_TABLE"
+        ip route replace "$cidr" via "$GATEWAY" dev "$INTERFACE" table "$WARP_TABLE"
     fi
 done
 
