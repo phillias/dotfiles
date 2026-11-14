@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARP firewall bypass — idempotent nftables + routing fix for Cloudflare edge IPs.
 # Adds accept rules to cloudflare-warp nftables table and bypass routes to table 65743.
-# Must run as root. Exits 0 if cloudflare-warp table doesn't exist yet (systemd retries).
+# Must run as root. Exits 1 if cloudflare-warp table doesn't exist yet (systemd retries).
 
 set -euo pipefail
 
@@ -37,8 +37,8 @@ fi
 
 # Check nftables table exists (WARP may not be fully started)
 if ! nft list table "$NFT_TABLE" >/dev/null 2>&1; then
-    log "cloudflare-warp nftables table not ready; exiting 0 for systemd retry"
-    exit 0
+    log "cloudflare-warp nftables table not ready; failing for systemd retry"
+    exit 1
 fi
 
 # Detect default gateway and LAN interface dynamically
