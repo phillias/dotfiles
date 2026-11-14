@@ -59,14 +59,18 @@ fi
 log "Detected gateway: $GATEWAY, interface: $INTERFACE"
 
 # Add nftables accept rules (idempotent: only if not present)
+# Snapshot each chain once: piping nft into grep -q under pipefail can fail with
+# SIGPIPE when grep exits early, which would re-add an existing rule.
+INPUT_RULES=$(nft list chain "$NFT_TABLE" input)
+OUTPUT_RULES=$(nft list chain "$NFT_TABLE" output)
 for cidr in "${CF_EDGE_CIDRS[@]}"; do
     # INPUT chain
-    if ! nft list chain "$NFT_TABLE" input | grep -q "ip saddr $cidr accept"; then
+    if ! grep -qF "ip saddr $cidr accept" <<<"$INPUT_RULES"; then
         log "Adding nftables INPUT rule for $cidr"
         nft add rule "$NFT_TABLE" input ip saddr "$cidr" accept
     fi
     # OUTPUT chain
-    if ! nft list chain "$NFT_TABLE" output | grep -q "ip daddr $cidr accept"; then
+    if ! grep -qF "ip daddr $cidr accept" <<<"$OUTPUT_RULES"; then
         log "Adding nftables OUTPUT rule for $cidr"
         nft add rule "$NFT_TABLE" output ip daddr "$cidr" accept
     fi
