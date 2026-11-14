@@ -160,7 +160,7 @@
     "artistry": {
       "model": "opencode-zen/gemini-3.5-flash",  // CF AI Gateway gemma dropped 2026-09-11 (never resolved routing)
       "fallback_models": [
-        "commandcode/xiaomi/mimo-v2.5",
+        "commandcode/xiaomi/mimo-v2.6-flash",
         "commandcode/thinkingmachines/inkling",
         "opencode-go/mimo-v2.6-flash",
         "opencode-zen/mimo-v2.6-flash-free"
