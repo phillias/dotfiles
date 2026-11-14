@@ -1,0 +1,34 @@
+#!/bin/bash
+# Install and enable warp-firewall-fix systemd service.
+# Runs on chezmoi apply when the service file or script changes.
+# Linux-only: exits 0 on non-Linux.
+
+set -euo pipefail
+
+# Linux-only guard
+if [ "$(uname -s)" != "Linux" ]; then
+    exit 0
+fi
+
+SERVICE_SRC="{{ .chezmoi.sourceDir }}/systemd/system/warp-firewall-fix.service"
+SERVICE_DST="/etc/systemd/system/warp-firewall-fix.service"
+SCRIPT_SRC="{{ .chezmoi.sourceDir }}/dot_local/bin/executable_warp-firewall-fix.sh"
+SCRIPT_DST="/usr/local/bin/warp-firewall-fix.sh"
+
+command -v systemctl >/dev/null 2>&1 || exit 0
+
+# Install script to /usr/local/bin (executable)
+if [ -f "$SCRIPT_SRC" ]; then
+    install -m 755 "$SCRIPT_SRC" "$SCRIPT_DST"
+fi
+
+# Install service to /etc/systemd/system
+if [ -f "$SERVICE_SRC" ]; then
+    install -m 644 "$SERVICE_SRC" "$SERVICE_DST"
+fi
+
+# Reload systemd and enable service
+systemctl daemon-reload 2>/dev/null || true
+systemctl enable --now warp-firewall-fix.service 2>/dev/null || true
+
+exit 0

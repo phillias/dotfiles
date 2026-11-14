@@ -1,0 +1,14 @@
+[Unit]
+Description=WARP firewall bypass for Cloudflare edge IPs
+After=warp-svc.service
+Requires=warp-svc.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/warp-firewall-fix.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
