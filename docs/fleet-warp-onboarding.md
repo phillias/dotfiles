@@ -289,9 +289,19 @@ systemctl --user disable opencode-tunnel-<node>.service
 
 `run_fleet-tunnels.sh` enables and starts every installed tunnel on each
 `chezmoi apply`. The automatic `chezmoi-sync-cron` job runs every 30 minutes,
-so stopping and disabling a unit alone does not preserve this state. Move each
-unit out of `~/.config/systemd/user/` so the hook's glob cannot find it while
-the reliability period is in progress:
+running `chezmoi-axi sync --force` and re-applying the chezmoi source. The
+tunnel unit is managed source at
+`dot_config/systemd/user/opencode-tunnel-<node>.service`, so stopping,
+disabling, or moving it aside alone is undone by the next sync. Suspend the
+automatic sync for the reliability period; the node will not receive dotfiles
+updates while it is suspended:
+
+```bash
+crontab -l | grep -v chezmoi-sync-cron | crontab -
+```
+
+Then move each unit out of `~/.config/systemd/user/` so the hook's glob cannot
+find it during the reliability period:
 
 ```bash
 mkdir -p ~/.config/systemd/user-disabled
@@ -323,6 +333,12 @@ If `FLEET_CHAT_NODES` is set, restore the corresponding entry there too:
 mv ~/.config/systemd/user-disabled/opencode-tunnel-<node>.service ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now opencode-tunnel-<node>.service
+```
+
+After Mesh is proven reliable, restore the automatic sync entry:
+
+```bash
+( crontab -l 2>/dev/null; echo '*/30 * * * * /bin/sh -c ". $HOME/.profile; chezmoi-sync-cron"' ) | crontab -
 ```
 
 Use the existing local-forward port for the node (`14001` for
