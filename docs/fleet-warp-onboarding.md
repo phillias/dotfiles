@@ -18,9 +18,6 @@ Confirm all four before starting.
 - A **device enrollment rule** using the **Service Auth** action (not plain
   Allow). A plain Allow rule enrolls but yields a null org in `registration
   show` and a device that cannot authenticate.
-- The **device policy exclude list** already carries the Cloudflare edge IP
-  ranges fleet-wide. This needs no per-node action — see issue #577. Do not
-  re-add edge exclusions per node.
 
 **BWS enrollment secrets** — the service token pair lives in the BWS project
 `phillias`:
@@ -80,22 +77,19 @@ The file is `/var/lib/cloudflare-warp/mdm.xml`, mode `0600`, root-owned.
 
 ```bash
 sudo mkdir -p /var/lib/cloudflare-warp
-sudo tee /var/lib/cloudflare-warp/mdm.xml > /dev/null <<'EOF'
-<dict>
-  <key>organization</key>
-  <string>phillias</string>
-  <key>auth_client_id</key>
-  <string>CLIENT_ID_VALUE</string>
-  <key>auth_client_secret</key>
-  <string>CLIENT_SECRET_VALUE</string>
-</dict>
-EOF
-sudo chmod 600 /var/lib/cloudflare-warp/mdm.xml
-sudo chown root:root /var/lib/cloudflare-warp/mdm.xml
+sudo install -o root -g root -m 600 /dev/null /var/lib/cloudflare-warp/mdm.xml
+read -r -p 'Client ID: ' CLIENT_ID < /dev/tty
+read -r -s -p 'Client secret: ' CLIENT_SECRET < /dev/tty; printf '\n' >&2
+{
+  printf '<dict>\n  <key>organization</key>\n  <string>phillias</string>\n'
+  printf '  <key>auth_client_id</key>\n  <string>%s</string>\n' "$CLIENT_ID"
+  printf '  <key>auth_client_secret</key>\n  <string>%s</string>\n</dict>\n' "$CLIENT_SECRET"
+} | sudo tee /var/lib/cloudflare-warp/mdm.xml > /dev/null
+unset CLIENT_ID CLIENT_SECRET
 ```
 
-Substitute the two BWS values. Verify the key names landed (values are
-deliberately not printed):
+Enter the two BWS values only at the prompts; do not put them in a command or
+heredoc. Verify the key names landed (values are deliberately not printed):
 
 ```bash
 sudo grep -o '<key>[^<]*</key>' /var/lib/cloudflare-warp/mdm.xml
@@ -120,6 +114,7 @@ subcommand.
 
 ```bash
 sudo warp-cli --accept-tos registration new phillias
+sudo warp-cli --accept-tos connect
 ```
 
 Accepting the terms once at enrollment is what lets the remaining
@@ -238,11 +233,6 @@ fleet-chat list-nodes
 
 The new node should appear with status `healthy`.
 
-> **Gotcha.** On a node listing *itself* by its own name, that one entry is
-> expected to be unreachable — a host's own-target tunnel unit is
-> hostname-ignored, so the self-alias is dead on that host. Use `local` for
-> the self node. This is normal health, not an outage.
->
 > `fleet-chat` reads its auth from `~/.config/opencode/opencode-serve.env`,
 > which must be mode `0600`; if `list-nodes` dies on permissions, fix the mode
 > rather than the node entries.
@@ -287,16 +277,44 @@ systemctl --user stop opencode-tunnel-<node>.service
 systemctl --user disable opencode-tunnel-<node>.service
 ```
 
+`run_fleet-tunnels.sh` enables and starts every installed tunnel on each
+`chezmoi apply`. Do not run `chezmoi apply` during this reliability period. If
+an apply is unavoidable, stop and disable the units again immediately, then
+confirm each reports `disabled` before relying on Mesh:
+
+```bash
+systemctl --user is-enabled opencode-tunnel-<node>.service
+```
+
 Do not `rm` the unit files yet. Rolling back is re-enable + start:
+
+In `~/.config/opencode/fleet-chat.nodes`, restore each affected entry to its
+tunnel's localhost forward, for example:
+
+```text
+primary55522=http://127.0.0.1:14001
+kali=http://127.0.0.1:14002
+kalione=http://127.0.0.1:14003
+oci1=http://127.0.0.1:14004
+```
+
+If `FLEET_CHAT_NODES` is set, restore the corresponding entry there too:
+
+```text
+<node>=http://127.0.0.1:<local-forward-port>
+```
 
 ```bash
 systemctl --user enable --now opencode-tunnel-<node>.service
 ```
 
+Use the existing local-forward port for the node (`14001` for
+`primary55522`, `14002` for `kali`, `14003` for `kalione`, `14004` for
+`oci1`, and the next assigned port for a new node), then run
+`fleet-chat list-nodes` to verify the tunnel path.
+
 ## Out of scope for this runbook
 
-- CF device policy configuration and the edge-IP exclude list (fleet-wide;
-  recorded in issue #577).
 - CIDR routes, Access private apps, and Gateway network rules per node.
 - `kalione`/`phillias.org` specifics, cloudflared tunnel config, DNS records,
   and nftables rules.
