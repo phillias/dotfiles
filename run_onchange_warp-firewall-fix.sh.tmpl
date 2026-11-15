@@ -1,8 +1,8 @@
 #!/bin/bash
-# Install and enable warp-firewall-fix systemd service.
-# Runs on chezmoi apply when the service file or script changes.
+# Install and enable warp-firewall-fix systemd service and timer.
+# Runs on chezmoi apply when the service file, timer file, or script changes.
 # Linux-only: exits 0 on non-Linux.
-# Fingerprint: {{ output "bash" "-c" (printf "{ sha256sum '%s/dot_local/bin/executable_warp-firewall-fix.sh' '%s/systemd/system/warp-firewall-fix.service' 2>/dev/null; if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files warp-svc.service >/dev/null 2>&1; then echo warp-available; else echo warp-unavailable; fi; } | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir .chezmoi.sourceDir) }}
+# Fingerprint: {{ output "bash" "-c" (printf "{ sha256sum '%s/dot_local/bin/executable_warp-firewall-fix.sh' '%s/systemd/system/warp-firewall-fix.service' '%s/systemd/system/warp-firewall-fix.timer' 2>/dev/null; if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files warp-svc.service >/dev/null 2>&1; then echo warp-available; else echo warp-unavailable; fi; } | sha256sum | cut -d' ' -f1" .chezmoi.sourceDir .chezmoi.sourceDir .chezmoi.sourceDir) }}
 
 set -euo pipefail
 
@@ -13,6 +13,8 @@ fi
 
 SERVICE_SRC="{{ .chezmoi.sourceDir }}/systemd/system/warp-firewall-fix.service"
 SERVICE_DST="/etc/systemd/system/warp-firewall-fix.service"
+TIMER_SRC="{{ .chezmoi.sourceDir }}/systemd/system/warp-firewall-fix.timer"
+TIMER_DST="/etc/systemd/system/warp-firewall-fix.timer"
 SCRIPT_SRC="{{ .chezmoi.sourceDir }}/dot_local/bin/executable_warp-firewall-fix.sh"
 SCRIPT_DST="/usr/local/bin/warp-firewall-fix.sh"
 
@@ -29,9 +31,16 @@ if [ -f "$SERVICE_SRC" ]; then
     sudo install -m 644 "$SERVICE_SRC" "$SERVICE_DST"
 fi
 
-# Reload systemd and enable service
+# Install timer to /etc/systemd/system
+if [ -f "$TIMER_SRC" ]; then
+    sudo install -m 644 "$TIMER_SRC" "$TIMER_DST"
+fi
+
+# Reload systemd and enable service + timer
 sudo systemctl daemon-reload
 sudo systemctl enable warp-firewall-fix.service
+sudo systemctl enable warp-firewall-fix.timer
 sudo systemctl restart warp-firewall-fix.service
+sudo systemctl restart warp-firewall-fix.timer
 
 exit 0

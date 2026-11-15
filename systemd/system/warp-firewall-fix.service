@@ -6,7 +6,6 @@ PartOf=warp-svc.service
 
 [Service]
 Type=oneshot
-RemainAfterExit=yes
 ExecStart=/usr/local/bin/warp-firewall-fix.sh
 Restart=on-failure
 RestartSec=10

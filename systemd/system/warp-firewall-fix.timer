@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodic WARP firewall bypass reconciliation
+Requires=warp-firewall-fix.service
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=60s
+Persistent=false
+
+[Install]
+WantedBy=timers.target
