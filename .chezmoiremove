@@ -57,6 +57,9 @@
 .agents/keys/phillias/.zen-key
 .local/bin/chezmoi-axi
 .local/bin/bws-axi
+# legacy standalone treehouse binary (v2.1.1) shadows the mise shim (v2.3.0
+# pinned in global mise config.toml); remove so the shim resolves on PATH.
+.local/bin/treehouse
 
 # Retired: selfhost runbook migrated to phillias/selfhost repo (.agents/skills/selfhost/linkwarden.md) — phillias/dotfiles PR (selfhost skill removal)
 .agents/skills/selfhost
