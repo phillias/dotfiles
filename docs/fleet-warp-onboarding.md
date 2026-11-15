@@ -310,8 +310,10 @@ systemctl --user daemon-reload
 ```
 
 The unit remains on disk, but is outside the apply hook's scan path. Do not
-`rm` it or run a manual apply that restores it during this period. Rolling back
-is move it back, reload, then re-enable and start:
+`rm` it or run a manual apply that restores it during this period.
+
+To roll back to the tunnels, first point fleet-chat back at them, then move
+each unit back, reload, and re-enable and start it.
 
 In `~/.config/opencode/fleet-chat.nodes`, restore each affected entry to its
 tunnel's localhost forward, for example:
