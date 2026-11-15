@@ -75,11 +75,20 @@ warp-cli --version
 
 The file is `/var/lib/cloudflare-warp/mdm.xml`, mode `0600`, root-owned.
 
+Start Bash for this block; do not paste it into the assumed zsh login shell:
+
 ```bash
 sudo mkdir -p /var/lib/cloudflare-warp
+if ! read -r -p 'Client ID: ' CLIENT_ID < /dev/tty || [[ -z "$CLIENT_ID" ]]; then
+  printf 'Client ID is required\n' >&2
+  exit 1
+fi
+if ! read -r -s -p 'Client secret: ' CLIENT_SECRET < /dev/tty || [[ -z "$CLIENT_SECRET" ]]; then
+  printf '\nClient secret is required\n' >&2
+  exit 1
+fi
+printf '\n' >&2
 sudo install -o root -g root -m 600 /dev/null /var/lib/cloudflare-warp/mdm.xml
-read -r -p 'Client ID: ' CLIENT_ID < /dev/tty
-read -r -s -p 'Client secret: ' CLIENT_SECRET < /dev/tty; printf '\n' >&2
 {
   printf '<dict>\n  <key>organization</key>\n  <string>phillias</string>\n'
   printf '  <key>auth_client_id</key>\n  <string>%s</string>\n' "$CLIENT_ID"
@@ -89,7 +98,8 @@ unset CLIENT_ID CLIENT_SECRET
 ```
 
 Enter the two BWS values only at the prompts; do not put them in a command or
-heredoc. Verify the key names landed (values are deliberately not printed):
+heredoc. The block exits before creating the file if either value is empty.
+Verify the key names landed (values are deliberately not printed):
 
 ```bash
 sudo grep -o '<key>[^<]*</key>' /var/lib/cloudflare-warp/mdm.xml
@@ -278,15 +288,20 @@ systemctl --user disable opencode-tunnel-<node>.service
 ```
 
 `run_fleet-tunnels.sh` enables and starts every installed tunnel on each
-`chezmoi apply`. Do not run `chezmoi apply` during this reliability period. If
-an apply is unavoidable, stop and disable the units again immediately, then
-confirm each reports `disabled` before relying on Mesh:
+`chezmoi apply`. The automatic `chezmoi-sync-cron` job runs every 30 minutes,
+so stopping and disabling a unit alone does not preserve this state. Move each
+unit out of `~/.config/systemd/user/` so the hook's glob cannot find it while
+the reliability period is in progress:
 
 ```bash
-systemctl --user is-enabled opencode-tunnel-<node>.service
+mkdir -p ~/.config/systemd/user-disabled
+mv ~/.config/systemd/user/opencode-tunnel-<node>.service ~/.config/systemd/user-disabled/
+systemctl --user daemon-reload
 ```
 
-Do not `rm` the unit files yet. Rolling back is re-enable + start:
+The unit remains on disk, but is outside the apply hook's scan path. Do not
+`rm` it or run a manual apply that restores it during this period. Rolling back
+is move it back, reload, then re-enable and start:
 
 In `~/.config/opencode/fleet-chat.nodes`, restore each affected entry to its
 tunnel's localhost forward, for example:
@@ -305,6 +320,8 @@ If `FLEET_CHAT_NODES` is set, restore the corresponding entry there too:
 ```
 
 ```bash
+mv ~/.config/systemd/user-disabled/opencode-tunnel-<node>.service ~/.config/systemd/user/
+systemctl --user daemon-reload
 systemctl --user enable --now opencode-tunnel-<node>.service
 ```
 
