@@ -335,6 +335,13 @@ systemctl --user daemon-reload
 systemctl --user enable --now opencode-tunnel-<node>.service
 ```
 
+If Mesh is unreliable and this rollback completes, restore automatic sync
+immediately:
+
+```bash
+( crontab -l 2>/dev/null; echo '*/30 * * * * /bin/sh -c ". $HOME/.profile; chezmoi-sync-cron"' ) | crontab -
+```
+
 After Mesh is proven reliable, restore the automatic sync entry:
 
 ```bash
