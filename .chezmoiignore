@@ -7,7 +7,6 @@ CLAUDE.md
 .chezmoiignore
 .chezmoi-inventory.json
 age-key.txt.age
-dot_ssh/authorized_keys
 
 # Literal .config/ path (chezmoi uses dot_config/ prefix convention instead)
 # .config  - Disabled to allow dot_config/ prefix convention for ~/.config/
