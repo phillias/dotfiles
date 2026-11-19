@@ -15,6 +15,11 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
+TREEHOUSE_WORKTREES=()
+if [ -d "{{ .chezmoi.homeDir }}/.treehouse" ]; then
+  mapfile -t TREEHOUSE_WORKTREES < <(find {{ .chezmoi.homeDir }}/.treehouse -maxdepth 4 -name '.git' -type f 2>/dev/null | sed 's|/\.git$||')
+fi
+
 # Claude: real store is ~/.claude.json; merge projects entries (never authoritative render).
 # Uses a dedicated lock path, not Claude's own "<file>.lock" mkdir-based lockfile path.
 CLAUDE_JSON="$HOME/.claude.json"
@@ -36,6 +41,13 @@ fi
   ' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
   mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
   fi
+  for p in "${TREEHOUSE_WORKTREES[@]}"; do
+    if ! jq -e --arg p "$p" '.projects[$p].hasTrustDialogAccepted == true' "$CLAUDE_JSON" >/dev/null 2>&1; then
+      jq --arg p "$p" '.projects = (.projects // {}) | .projects[$p] = (.projects[$p] // {}) | .projects[$p].hasTrustDialogAccepted = true' "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp"
+      mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+    fi
+    jq -e --arg p "$p" '.projects[$p].hasTrustDialogAccepted == true' "$CLAUDE_JSON" >/dev/null || { echo "Claude trust seed did not land for $p" >&2; exit 1; }
+  done
   jq -e --arg home "$HOME" '
     .projects[$home + "/firstmate"].hasTrustDialogAccepted == true and
     .projects[$home + "/.local/share/chezmoi"].hasTrustDialogAccepted == true
@@ -96,6 +108,23 @@ EOF
   done
 ) 200<>"$GROK_LOCK"
 
+(
+  flock -w 10 200 || { echo "could not lock $GROK_TOML" >&2; exit 1; }
+  for p in "${TREEHOUSE_WORKTREES[@]}"; do
+    escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
+    if ! grep -q "\[folders\.\"${escaped}\"\]" "$GROK_TOML" 2>/dev/null; then
+      cat >> "$GROK_TOML" <<EOF
+
+[folders."$p"]
+trusted = true
+decided_at = $(date +%s)
+EOF
+      echo "Grok trust seeded for $p"
+    fi
+    grep -q "\[folders\.\"${escaped}\"\]" "$GROK_TOML" 2>/dev/null || { echo "Grok trust seed did not land for $p" >&2; exit 1; }
+  done
+) 200<>"$GROK_LOCK"
+
 # Codex: real store is ~/.codex/config.toml, which private_dot_codex/config.toml.tmpl
 # renders authoritatively on every apply; [projects.*] entries are appended here, after
 # that render, instead of living in the template, so they survive it. Dedicated lock path.
@@ -122,6 +151,22 @@ EOF
   ) 200>"$CODEX_LOCK"
   rm -f "$CODEX_LOCK"
   echo "Codex trust seeded in $CODEX_CONFIG"
+  (
+    flock -w 10 200 || { echo "could not lock $CODEX_CONFIG" >&2; exit 1; }
+    for p in "${TREEHOUSE_WORKTREES[@]}"; do
+      escaped=$(echo "$p" | sed 's/[]\/$*.^|[]/\\&/g')
+      if ! grep -q "\[projects\.\"${escaped}\"\]" "$CODEX_CONFIG" 2>/dev/null; then
+        cat >> "$CODEX_CONFIG" <<EOF
+
+[projects."$p"]
+trust_level = "trusted"
+EOF
+        echo "Codex trust seeded for $p"
+      fi
+      grep -q "\[projects\.\"${escaped}\"\]" "$CODEX_CONFIG" 2>/dev/null || { echo "Codex trust seed did not land for $p" >&2; exit 1; }
+    done
+  ) 200>"$CODEX_LOCK"
+  rm -f "$CODEX_LOCK"
 fi
 
 # Kimi: real store is ~/.kimi-code/workspace-trust/wd_<slug>_<12hexhash> (JSON {"root": "<path>", "trustedAt": <ms>}).
@@ -142,6 +187,20 @@ EOF
     echo "Kimi trust seeded for $p as $key"
   fi
   [ -f "$file" ] || { echo "Kimi trust seed did not land for $p" >&2; exit 1; }
+done
+for p in "${TREEHOUSE_WORKTREES[@]}"; do
+  hash=$(echo -n "$p" | sha256sum | cut -c1-12)
+  basename_slug=$(basename "$p" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g' | cut -c1-40 | sed -E 's/^-+|-+$//g')
+  [ -n "$basename_slug" ] || basename_slug=workspace
+  key="wd_${basename_slug}_${hash}"
+  file="$KIMI_DIR/$key"
+  if [ ! -f "$file" ]; then
+    cat > "$file" <<EOF
+{"root": "$p", "trustedAt": $(date +%s000)}
+EOF
+    echo "Kimi trust seeded for $p as $key"
+  fi
+  [ -f "$file" ] || { echo "Kimi trust seed did not land in $file" >&2; exit 1; }
 done
 echo "Kimi trust seeded in $KIMI_DIR"
 
