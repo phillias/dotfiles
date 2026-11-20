@@ -14,6 +14,12 @@ if [[ -f /etc/default/dnsmasq ]] && ! grep -q '^IGNORE_RESOLVCONF=yes' /etc/defa
     printf '%s\n' 'IGNORE_RESOLVCONF=yes' | sudo -n tee -a /etc/default/dnsmasq >/dev/null
 fi
 
+# Guard against regression: mesh.conf must never forward upstream.
+# The template ships no-resolv, but an older deployed copy may lack it.
+if [[ -f /etc/dnsmasq.d/mesh.conf ]] && ! grep -q '^no-resolv' /etc/dnsmasq.d/mesh.conf 2>/dev/null; then
+    printf '%s\n' 'no-resolv' | sudo -n tee -a /etc/dnsmasq.d/mesh.conf >/dev/null
+fi
+
 if command -v warp-cli >/dev/null 2>&1; then
     if ! warp-cli dns fallback list 2>/dev/null | grep -Eq '(^|[[:space:]])\.mesh([[:space:]]|$)'; then
         warp-cli dns fallback add .mesh

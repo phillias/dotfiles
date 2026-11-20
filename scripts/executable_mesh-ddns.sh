@@ -186,6 +186,21 @@ regenerate_mesh_hosts() {
     return $((1 - changed))
 }
 
+update_listen_address() {
+    local mesh_ip="$1" desired="listen-address=127.0.0.1,${1}"
+    [[ -f "$MESH_CONF_FILE" ]] || return 1
+    if grep -qxF "$desired" "$MESH_CONF_FILE" 2>/dev/null; then
+        return 1
+    fi
+    if grep -q '^listen-address=' "$MESH_CONF_FILE" 2>/dev/null; then
+        sudo sed -i "s|^listen-address=.*|${desired}|" "$MESH_CONF_FILE" || return 2
+    else
+        printf '%s\n' "$desired" | sudo tee -a "$MESH_CONF_FILE" >/dev/null || return 2
+    fi
+    log "listen-address updated to 127.0.0.1,${mesh_ip}"
+    return 0
+}
+
 restart_dnsmasq() {
     sudo mkdir -p "$DNSMASQ_DATA_DIR"
     sudo systemctl restart dnsmasq
@@ -200,7 +215,7 @@ reload_dnsmasq() {
 }
 
 main() {
-    local mesh_ip node_key config_changed=1 deploy_status regenerate_status
+    local mesh_ip node_key config_changed=1 deploy_status regenerate_status update_status
     mesh_ip=$(resolve_mesh_ip)
     node_key=$(fleet_key)
     [[ -n "$node_key" ]] || die "hostname ${HOSTNAME} is not registered in fleet.toml"
@@ -216,6 +231,14 @@ main() {
         (( deploy_status == 1 )) || exit "$deploy_status"
     fi
     deploy_seed_hosts
+
+    update_status=0
+    update_listen_address "$mesh_ip" || update_status=$?
+    if (( update_status == 0 )); then
+        config_changed=0
+    elif (( update_status != 1 )); then
+        exit "$update_status"
+    fi
 
     if regenerate_mesh_hosts; then
         :
