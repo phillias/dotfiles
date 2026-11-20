@@ -1,5 +1,5 @@
 [Unit]
-Description=Fleet mesh DDNS — publish WARP Mesh IP to CF KV and refresh mesh-hosts
+Description=Fleet mesh DDNS — publish LAN IP to CF KV and refresh mesh-hosts
 After=network-online.target
 Wants=network-online.target
 
