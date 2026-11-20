@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ "$(uname -s)" != "Linux" ]]; then
+    exit 0
+fi
+
+if ! command -v dnsmasq >/dev/null 2>&1; then
+    echo "[mesh-dns] installing dnsmasq"
+    sudo -n apt-get install -y dnsmasq
+fi
+
+if [[ -f /etc/default/dnsmasq ]] && ! grep -q '^IGNORE_RESOLVCONF=yes' /etc/default/dnsmasq 2>/dev/null; then
+    printf '%s\n' 'IGNORE_RESOLVCONF=yes' | sudo -n tee -a /etc/default/dnsmasq >/dev/null
+fi
+
+if command -v warp-cli >/dev/null 2>&1; then
+    if ! warp-cli dns fallback list 2>/dev/null | grep -Eq '(^|[[:space:]])\.mesh([[:space:]]|$)'; then
+        warp-cli dns fallback add .mesh
+    fi
+fi
+
+if command -v systemctl >/dev/null 2>&1 && [[ -f "$HOME/.config/systemd/user/mesh-ddns.timer" ]]; then
+    systemctl --user daemon-reload
+    systemctl --user enable --now mesh-ddns.timer
+fi

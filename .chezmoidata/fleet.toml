@@ -30,7 +30,7 @@
         access_host = "oci1.phillias.net"
         ssh_user = "ubuntu"
         tunnel_port = 14004
-    [fleet.nodes.phillias]
+    [fleet.nodes.kalione]
         hostname = "InspironOne"
         ssh_alias = "fleet-kalione"
         access_host = "ssh.phillias.org"
