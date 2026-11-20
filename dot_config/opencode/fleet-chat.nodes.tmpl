@@ -1,0 +1,11 @@
+# Fleet chat node endpoints — managed by chezmoi.
+# Uses .mesh hostnames resolved by dnsmasq (WARP Mesh IPs).
+# The local entry always points to the loopback opencode-serve instance.
+#
+# Format: <name>=http://<host>:<port>
+local=http://127.0.0.1:4096
+{{- range $name, $node := .fleet.nodes }}
+{{- if ne $node.hostname $.chezmoi.hostname }}
+{{ $name }}=http://{{ $name }}.mesh:4096
+{{- end }}
+{{- end }}
