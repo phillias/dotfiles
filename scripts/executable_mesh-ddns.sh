@@ -24,6 +24,7 @@ DNSMASQ_ETC_DIR="/etc/dnsmasq.d"
 DNSMASQ_DATA_DIR="/var/lib/dnsmasq"
 MESH_HOSTS_FILE="${DNSMASQ_DATA_DIR}/mesh-hosts"
 MESH_CONF_FILE="${DNSMASQ_ETC_DIR}/mesh.conf"
+MESH_CONFIG_STATE_FILE="${DNSMASQ_DATA_DIR}/mesh-config-deployed"
 STAGED_MESH_CONF="${HOME}/.config/dnsmasq/dnsmasq.d/mesh.conf"
 STAGED_MESH_HOSTS="${HOME}/.config/dnsmasq/d/mesh-hosts"
 
@@ -117,20 +118,19 @@ kv_get() {
 }
 
 deploy_mesh_conf() {
-    if [[ -f "$MESH_CONF_FILE" ]]; then
-        return 1
-    fi
-    if [[ -f "$STAGED_MESH_CONF" ]]; then
+    if [[ ! -f "$MESH_CONF_FILE" ]]; then
+        if [[ ! -f "$STAGED_MESH_CONF" ]]; then
+            log "no staged mesh.conf found at ${STAGED_MESH_CONF} — skipping deploy"
+            return 1
+        fi
         if ! sudo mkdir -p "$DNSMASQ_ETC_DIR" || ! sudo cp "$STAGED_MESH_CONF" "$MESH_CONF_FILE" || ! sudo chmod 644 "$MESH_CONF_FILE"; then
             log "ERROR: failed to deploy mesh.conf" >&2
             return 2
         fi
         log "deployed mesh.conf from chezmoi staging to ${MESH_CONF_FILE}"
-        return 0
-    else
-        log "no staged mesh.conf found at ${STAGED_MESH_CONF} — skipping deploy"
-        return 1
     fi
+    [[ -f "$MESH_CONFIG_STATE_FILE" ]] && return 1
+    return 0
 }
 
 deploy_seed_hosts() {
@@ -187,7 +187,10 @@ regenerate_mesh_hosts() {
 }
 
 restart_dnsmasq() {
+    sudo mkdir -p "$DNSMASQ_DATA_DIR"
     sudo systemctl restart dnsmasq
+    sudo touch "$MESH_CONFIG_STATE_FILE"
+    sudo chmod 644 "$MESH_CONFIG_STATE_FILE"
     log "dnsmasq restarted"
 }
 
