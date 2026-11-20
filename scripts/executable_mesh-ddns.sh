@@ -54,8 +54,38 @@ resolve_mesh_ip() {
 }
 
 resolve_lan_ip() {
-    local lan_ip
-    lan_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1; i<=NF; i++) if ($i == "src") {print $(i+1); exit}}')
+    local lan_ip node_key
+    node_key=$(fleet_key)
+    if [[ -n "$node_key" && -f "$FLEET_TOML" ]]; then
+        lan_ip=$(awk -v key="$node_key" '
+            /^[[:space:]]*\[fleet\.nodes\.[^]]+\][[:space:]]*$/ {
+                section=$0
+                sub(/^[[:space:]]*/, "", section)
+                sub(/^\[fleet\.nodes\./, "", section)
+                sub(/\]$/, "", section)
+                sub(/[[:space:]]*$/, "", section)
+                current=section
+            }
+            /^[[:space:]]*lan_ip[[:space:]]*=/ {
+                if (current == key) {
+                    value=$0
+                    sub(/^[^=]*=[[:space:]]*"/, "", value)
+                    sub(/"[[:space:]]*$/, "", value)
+                    print value
+                    exit
+                }
+            }
+        ' "$FLEET_TOML")
+    fi
+    if [[ -n "$lan_ip" && "$lan_ip" != "UNKNOWN" ]]; then
+        valid_ip "$lan_ip" || die "invalid LAN IP from fleet.toml: ${lan_ip}"
+        printf '%s' "$lan_ip"
+        return
+    fi
+    lan_ip=$(ip -4 route get 1.1.1.1 oif CloudflareWARP 2>/dev/null | awk '/src/ {for (i=1; i<=NF; i++) if ($i == "src") {print $(i+1); exit}}')
+    if [[ -z "$lan_ip" ]]; then
+        lan_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1; i<=NF; i++) if ($i == "src") {print $(i+1); exit}}')
+    fi
     if [[ -z "$lan_ip" ]]; then
         die "could not resolve LAN IP — is a network route available?"
     fi
