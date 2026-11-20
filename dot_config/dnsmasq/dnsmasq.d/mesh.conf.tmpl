@@ -3,9 +3,10 @@
 #
 # The mesh-hosts file provides hostname→IP mappings,
 # kept current by the mesh-ddns systemd timer. dnsmasq binds only to
-# 127.0.0.1 plus this node's WARP mesh IP (rewritten by mesh-ddns at
-# runtime) so it never conflicts with systemd-resolved (127.0.0.53/54)
-# or warp-svc (127.0.0.2/3) on port 53.
+# loopback plus this node's LAN IP (never 0.0.0.0) to avoid port 53
+# conflicts with systemd-resolved and warp-svc. The LAN IP is reachable
+# from other WARP devices via Cloudflare Tunnel private routes.
+# mesh-ddns rewrites the listen-address line at runtime to add the mesh IP too.
 
 # Serve .mesh domain from the mesh-hosts file
 addn-hosts=/var/lib/dnsmasq/mesh-hosts
@@ -14,9 +15,12 @@ addn-hosts=/var/lib/dnsmasq/mesh-hosts
 local=/mesh/
 domain=mesh
 
+# Never bind all interfaces — loopback + LAN IP only.
+bind-interfaces
+
 # Never use /etc/resolv.conf as upstream — .mesh is served locally only.
 no-resolv
 
 # Safe default bind address; mesh-ddns rewrites this line at runtime to
-# "listen-address=127.0.0.1,<mesh-ip>" so both local and mesh queries work.
-listen-address=127.0.0.1
+# "listen-address=127.0.0.1,<mesh-ip>,<lan-ip>" so local, mesh, and LAN queries work.
+listen-address=127.0.0.1{{ range $name, $node := .fleet.nodes }}{{ if eq $node.hostname $.chezmoi.hostname }},{{ $node.lan_ip }}{{ end }}{{ end }}

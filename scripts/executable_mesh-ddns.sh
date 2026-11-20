@@ -3,8 +3,11 @@ set -euo pipefail
 
 # mesh-ddns — Dynamic DNS for fleet mesh via Cloudflare Workers KV.
 #
-# Writes this node's current WARP Mesh IP to CF KV (FLEET_MESH_IPS namespace),
+# Writes this node's current LAN IP to CF KV (FLEET_MESH_IPS namespace),
 # reads all peers from KV, regenerates the mesh-hosts file, and reloads dnsmasq.
+# KV stores LAN IPs — the address other nodes use to reach this node's
+# dnsmasq via Cloudflare Tunnel private routes. The WARP mesh IP is still
+# detected for the dnsmasq listen-address line but is never published to KV.
 #
 # Also deploys mesh.conf from the chezmoi-managed staging area
 # (~/.config/dnsmasq/dnsmasq.d/mesh.conf) to /etc/dnsmasq.d/ if not present.
@@ -46,12 +49,22 @@ resolve_mesh_ip() {
     if [[ -z "$mesh_ip" ]]; then
         die "could not resolve WARP Mesh IP — is WARP connected?"
     fi
-    valid_mesh_ip "$mesh_ip" || die "invalid WARP Mesh IP: ${mesh_ip}"
+    valid_ip "$mesh_ip" || die "invalid WARP Mesh IP: ${mesh_ip}"
     printf '%s' "$mesh_ip"
 }
 
-valid_mesh_ip() {
-    awk -F. 'NF == 4 && $1 == 100 && $2 >= 96 && $2 <= 111 && $3 >= 0 && $3 <= 255 && $4 >= 0 && $4 <= 255 && $2 !~ /[^0-9]/ && $3 !~ /[^0-9]/ && $4 !~ /[^0-9]/ { ok=1 } END { exit !ok }' <<< "$1"
+resolve_lan_ip() {
+    local lan_ip
+    lan_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1; i<=NF; i++) if ($i == "src") {print $(i+1); exit}}')
+    if [[ -z "$lan_ip" ]]; then
+        die "could not resolve LAN IP — is a network route available?"
+    fi
+    valid_ip "$lan_ip" || die "invalid LAN IP: ${lan_ip}"
+    printf '%s' "$lan_ip"
+}
+
+valid_ip() {
+    awk -F. 'NF == 4 && $1 >= 0 && $1 <= 255 && $2 >= 0 && $2 <= 255 && $3 >= 0 && $3 <= 255 && $4 >= 0 && $4 <= 255 && $1 !~ /[^0-9]/ && $2 !~ /[^0-9]/ && $3 !~ /[^0-9]/ && $4 !~ /[^0-9]/ { ok=1 } END { exit !ok }' <<< "$1"
 }
 
 fleet_key() {
@@ -113,7 +126,7 @@ kv_get() {
     response="${response%$'\n'*}"
     [[ "$status" == "2"* ]] || die "KV value fetch failed for key=${key} (HTTP ${status})"
     [[ "$response" != *$'\n'* && "$response" != *$'\r'* ]] || die "invalid KV value for key=${key}"
-    valid_mesh_ip "$response" || die "invalid KV value for key=${key}"
+    valid_ip "$response" || die "invalid KV value for key=${key}"
     printf '%s' "$response"
 }
 
@@ -187,17 +200,17 @@ regenerate_mesh_hosts() {
 }
 
 update_listen_address() {
-    local mesh_ip="$1" desired="listen-address=127.0.0.1,${1}"
+    local mesh_ip="$1" lan_ip="$2" desired="listen-address=127.0.0.1,${1},${2}"
     [[ -f "$MESH_CONF_FILE" ]] || return 1
     if grep -qxF "$desired" "$MESH_CONF_FILE" 2>/dev/null; then
         return 1
     fi
-    if grep -q '^listen-address=' "$MESH_CONF_FILE" 2>/dev/null; then
+    if grep -qE '^listen-address=127\.0\.0\.1(,[0-9.]+){1,2}$' "$MESH_CONF_FILE" 2>/dev/null || grep -q '^listen-address=' "$MESH_CONF_FILE" 2>/dev/null; then
         sudo sed -i "s|^listen-address=.*|${desired}|" "$MESH_CONF_FILE" || return 2
     else
         printf '%s\n' "$desired" | sudo tee -a "$MESH_CONF_FILE" >/dev/null || return 2
     fi
-    log "listen-address updated to 127.0.0.1,${mesh_ip}"
+    log "listen-address updated to 127.0.0.1,${mesh_ip},${lan_ip}"
     return 0
 }
 
@@ -215,14 +228,16 @@ reload_dnsmasq() {
 }
 
 main() {
-    local mesh_ip node_key config_changed=1 deploy_status regenerate_status update_status
+    local mesh_ip lan_ip node_key config_changed=1 deploy_status regenerate_status update_status
     mesh_ip=$(resolve_mesh_ip)
+    lan_ip=$(resolve_lan_ip)
     node_key=$(fleet_key)
     [[ -n "$node_key" ]] || die "hostname ${HOSTNAME} is not registered in fleet.toml"
     log "mesh IP: ${mesh_ip}"
+    log "LAN IP: ${lan_ip}"
 
-    kv_put "$node_key" "$mesh_ip"
-    log "published ${node_key}=${mesh_ip} to KV"
+    kv_put "$node_key" "$lan_ip"
+    log "published ${node_key}=${lan_ip} to KV"
 
     if deploy_mesh_conf; then
         config_changed=0
@@ -233,7 +248,7 @@ main() {
     deploy_seed_hosts
 
     update_status=0
-    update_listen_address "$mesh_ip" || update_status=$?
+    update_listen_address "$mesh_ip" "$lan_ip" || update_status=$?
     if (( update_status == 0 )); then
         config_changed=0
     elif (( update_status != 1 )); then

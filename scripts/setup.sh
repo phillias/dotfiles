@@ -639,6 +639,11 @@ if ! $IS_MAC; then
                     echo "  configured IGNORE_RESOLVCONF=yes in /etc/default/dnsmasq"
                 fi
             fi
+            # Bind loopback + LAN IP only, and read the mesh conf.d drop-ins.
+            if [ -f /etc/dnsmasq.conf ]; then
+                grep -q '^bind-interfaces' /etc/dnsmasq.conf 2>/dev/null || echo 'bind-interfaces' | sudo -n tee -a /etc/dnsmasq.conf >/dev/null
+                grep -q '^conf-dir=' /etc/dnsmasq.conf 2>/dev/null || echo 'conf-dir=/etc/dnsmasq.d/,*.conf' | sudo -n tee -a /etc/dnsmasq.conf >/dev/null
+            fi
         else
             echo "WARN: dnsmasq install failed; run 'sudo apt-get install -y dnsmasq' before mesh DNS can start" >&2
         fi

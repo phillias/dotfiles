@@ -26,6 +26,74 @@ if command -v warp-cli >/dev/null 2>&1; then
     fi
 fi
 
+{{- $selfLanIP := "" }}
+{{- $selfTunnelID := "" }}
+{{- range $name, $node := .fleet.nodes }}
+{{- if eq $node.hostname $.chezmoi.hostname }}
+{{- $selfLanIP = $node.lan_ip }}
+{{- $selfTunnelID = $node.tunnel_id }}
+{{- end }}
+{{- end }}
+{{- $lanIPs := list }}
+{{- range $name, $node := .fleet.nodes }}
+{{- if and $node.lan_ip (ne $node.lan_ip "UNKNOWN") }}
+{{- $lanIPs = append $lanIPs $node.lan_ip }}
+{{- end }}
+{{- end }}
+
+# Private route: expose this node's LAN IP through its own tunnel.
+# WARP mesh IPs live in WARP's reserved range and cannot be routed (CF API error 1099).
+SELF_LAN_IP="{{ $selfLanIP }}"
+SELF_TUNNEL_ID="{{ $selfTunnelID }}"
+if [[ -n "$SELF_LAN_IP" && "$SELF_LAN_IP" != "UNKNOWN" && -n "$SELF_TUNNEL_ID" ]]; then
+    if [[ -f "$HOME/.agents/keys/load-keys.sh" ]]; then
+        # shellcheck disable=SC1091
+        . "$HOME/.agents/keys/load-keys.sh"
+    fi
+    if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1; then
+        ROUTES_URL="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/teamnet/routes"
+        if ! EXISTING_ROUTES=$(curl --fail --silent -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$ROUTES_URL"); then
+            echo "[mesh-dns] WARN: could not list teamnet routes; skipping private route check" >&2
+        elif ! jq -e --arg net "${SELF_LAN_IP}/32" '.result[] | select(.network == $net)' <<< "$EXISTING_ROUTES" >/dev/null 2>&1; then
+            echo "[mesh-dns] creating private route ${SELF_LAN_IP}/32 via tunnel ${SELF_TUNNEL_ID}"
+            curl --fail --silent --output /dev/null -X POST \
+                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                -H "Content-Type: application/json" \
+                --data "{\"network\":\"${SELF_LAN_IP}/32\",\"tunnel_id\":\"${SELF_TUNNEL_ID}\"}" \
+                "$ROUTES_URL" || echo "[mesh-dns] WARN: private route creation failed" >&2
+        fi
+    fi
+fi
+
+# LDF: point .mesh (and .local) at fleet LAN IPs so WARP clients reach dnsmasq.
+# The fallback_domains endpoint takes a bare JSON array body; a wrapped object returns error 2003.
+MESH_DNS_SERVERS_JSON='{{ $lanIPs | toJson }}'
+if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1; then
+    LDF_URL="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/devices/policy/fallback_domains"
+    if CURRENT_LDF=$(curl --fail --silent -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$LDF_URL"); then
+        MERGED_LDF=$(jq --argjson servers "$MESH_DNS_SERVERS_JSON" '
+            (.result // .) as $domains
+            | ($domains | map(if .suffix == ".mesh" then .dns_servers = $servers else . end)) as $withMesh
+            | (if ($withMesh | any(.suffix == ".mesh")) then $withMesh
+               else $withMesh + [{suffix: ".mesh", description: "Fleet mesh DNS", dns_servers: $servers}] end) as $withBoth
+            | if ($withBoth | any(.suffix == ".local")) then $withBoth
+              else $withBoth + [{suffix: ".local", description: "Fleet mesh DNS", dns_servers: $servers}] end
+        ' <<< "$CURRENT_LDF")
+        if [[ -n "$MERGED_LDF" ]] && ! jq -e --argjson servers "$MESH_DNS_SERVERS_JSON" '
+            ([.[] | select(.suffix == ".mesh" or .suffix == ".local") | .dns_servers] | all(. == $servers))
+        ' <<< "$MERGED_LDF" >/dev/null 2>&1; then
+            echo "[mesh-dns] updating LDF dns_servers for .mesh/.local"
+            curl --fail --silent --output /dev/null -X PUT \
+                -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                -H "Content-Type: application/json" \
+                --data "$MERGED_LDF" \
+                "$LDF_URL" || echo "[mesh-dns] WARN: LDF dns_servers update failed" >&2
+        fi
+    else
+        echo "[mesh-dns] WARN: could not read LDF config; skipping dns_servers update" >&2
+    fi
+fi
+
 if command -v systemctl >/dev/null 2>&1 && [[ -f "$HOME/.config/systemd/user/mesh-ddns.timer" ]]; then
     systemctl --user daemon-reload
     systemctl --user enable --now mesh-ddns.timer
