@@ -625,6 +625,24 @@ if ! $IS_MAC; then
             echo "WARN: autossh install failed; run 'sudo apt-get install -y autossh' before tunnels can start" >&2
         fi
     fi
+
+    # ── 15b2. dnsmasq ────────────────────────────────────────────
+    if ! command -v dnsmasq &>/dev/null; then
+        echo ""
+        echo "==> Installing dnsmasq (fleet mesh DNS resolver)..."
+        if sudo -n apt-get install -y dnsmasq 2>/dev/null; then
+            echo "  dnsmasq installed"
+            # Debian dnsmasq needs IGNORE_RESOLVCONF=yes to start
+            if [ -f /etc/default/dnsmasq ]; then
+                if ! grep -q '^IGNORE_RESOLVCONF=yes' /etc/default/dnsmasq 2>/dev/null; then
+                    echo "IGNORE_RESOLVCONF=yes" | sudo -n tee -a /etc/default/dnsmasq > /dev/null
+                    echo "  configured IGNORE_RESOLVCONF=yes in /etc/default/dnsmasq"
+                fi
+            fi
+        else
+            echo "WARN: dnsmasq install failed; run 'sudo apt-get install -y dnsmasq' before mesh DNS can start" >&2
+        fi
+    fi
 fi
 
 # ── 15c. Host-key recording + reachability probes ────────────────
@@ -691,6 +709,14 @@ if ! $IS_MAC && command -v systemctl &>/dev/null; then
             echo "==> opencode-serve: enabled"
         else
             echo "WARN: opencode-serve.service enable --now returned non-zero" >&2
+        fi
+    fi
+    # Enable mesh DDNS timer for fleet mesh DNS
+    if [ -f "$HOME/.config/systemd/user/mesh-ddns.timer" ]; then
+        if systemctl --user enable --now mesh-ddns.timer 2>/dev/null; then
+            echo "==> mesh-ddns.timer: enabled"
+        else
+            echo "WARN: mesh-ddns.timer enable --now returned non-zero" >&2
         fi
     fi
     # Deployed-but-disabled is the greenfield gap. Fail visibly.

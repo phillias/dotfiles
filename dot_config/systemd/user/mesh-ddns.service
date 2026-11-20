@@ -1,0 +1,9 @@
+[Unit]
+Description=Fleet mesh DDNS — publish WARP Mesh IP to CF KV and refresh mesh-hosts
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/share/mise/shims:%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=%h/scripts/mesh-ddns.sh

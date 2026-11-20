@@ -1,0 +1,13 @@
+# Mesh hosts — maps <fleet-key>.mesh to WARP Mesh IPs.
+# Managed by chezmoi (seed) + mesh-ddns (runtime updates).
+# Do not edit locally; changes will be overwritten.
+#
+# This template seeds the file with last-known IPs from fleet data.
+# At runtime, mesh-ddns.sh reads all peer IPs from CF Workers KV
+# and regenerates the file, skipping the self entry (DDNS handles
+# self at runtime since the IP may change after apply).
+{{ range $name, $node := .fleet.nodes }}
+{{ if ne $node.hostname $.chezmoi.hostname }}
+{{ with index $node "mesh_ip" }}{{ . }} {{ $name }}.mesh{{ else }}# {{ $name }}.mesh — IP populated at runtime by mesh-ddns{{ end }}
+{{ end }}
+{{ end }}
