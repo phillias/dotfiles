@@ -1,17 +1,16 @@
 # dnsmasq mesh DNS configuration — serves *.mesh hostnames
 # Managed by chezmoi; do not edit locally.
 #
-# The mesh-hosts file (same directory) provides hostname→IP mappings,
+# The mesh-hosts file provides hostname→IP mappings,
 # kept current by the mesh-ddns systemd timer. dnsmasq listens on
 # all interfaces so that both local and mesh-network queries are served.
 
 # Serve .mesh domain from the mesh-hosts file
-addn-hosts=/etc/dnsmasq.d/mesh-hosts
+addn-hosts=/var/lib/dnsmasq/mesh-hosts
 
 # Resolve .mesh locally (do not forward upstream)
 local=/mesh/
 domain=mesh
-server=/mesh/
 
 # Listen on all interfaces (mesh IP is dynamic)
 listen-address=0.0.0.0
