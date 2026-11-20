@@ -8,6 +8,6 @@
 # self at runtime since the IP may change after apply).
 {{- range $name, $node := .fleet.nodes }}
 {{- if ne $node.hostname $.chezmoi.hostname }}
-{{- if $node.mesh_ip }}{{ $node.mesh_ip }} {{ $name }}.mesh{{- else }}# {{ $name }}.mesh — IP populated at runtime by mesh-ddns{{- end }}
+{{- with index $node "mesh_ip" }}{{ . }} {{ $name }}.mesh{{- else }}# {{ $name }}.mesh — IP populated at runtime by mesh-ddns{{- end }}
 {{- end }}
 {{- end }}
