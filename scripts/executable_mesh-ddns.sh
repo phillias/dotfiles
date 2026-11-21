@@ -3,11 +3,11 @@ set -euo pipefail
 
 # mesh-ddns — Dynamic DNS for fleet mesh via Cloudflare Workers KV.
 #
-# Writes this node's current LAN IP to CF KV (FLEET_MESH_IPS namespace),
+# Writes this node's WARP mesh IP to CF KV (FLEET_MESH_IPS namespace),
 # reads all peers from KV, regenerates the mesh-hosts file, and reloads dnsmasq.
-# KV stores LAN IPs — the address other nodes use to reach this node's
-# dnsmasq via Cloudflare Tunnel private routes. The WARP mesh IP is still
-# detected for the dnsmasq listen-address line but is never published to KV.
+# KV stores mesh IPs (100.96.x.x) — the address WARP devices use to reach
+# this node directly over the mesh. The LAN IP is used only for the
+# dnsmasq listen-address (reachable via Cloudflare Tunnel private routes).
 #
 # Also deploys mesh.conf from the chezmoi-managed staging area
 # (~/.config/dnsmasq/dnsmasq.d/mesh.conf) to /etc/dnsmasq.d/ if not present.
@@ -266,8 +266,8 @@ main() {
     log "mesh IP: ${mesh_ip}"
     log "LAN IP: ${lan_ip}"
 
-    kv_put "$node_key" "$lan_ip"
-    log "published ${node_key}=${lan_ip} to KV"
+    kv_put "$node_key" "$mesh_ip"
+    log "published ${node_key}=${mesh_ip} to KV"
 
     if deploy_mesh_conf; then
         config_changed=0

@@ -42,7 +42,7 @@
         access_host = "ssh.phillias.org"
         ssh_user = "phillias"
         tunnel_port = 14003
-    [fleet.nodes.primary55522]
+    [fleet.nodes.primary]
         hostname = "primary"
         lan_ip = "UNKNOWN"
         tunnel_id = "7269342a"
