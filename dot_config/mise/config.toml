@@ -208,6 +208,8 @@ lazydocker = "0.25.2"
 # cargo for the plugin build. run_onchange_after_herdr-plugins puts the mise
 # shims first on PATH so herdr's build step uses this pin.
 rust = "1.99.0"
+# sqlite3 CLI needed for agent operations including opencode session queries and firstmate debugging.
+sqlite = "3.54.1"
 # fzf — Crokily/herdr-lazygit's settings and AI-commit panes. The plugin's
 # build downloads a private lazygit+fzf runtime; its panel.conf
 # RUNTIME_LAZYGIT_BIN / RUNTIME_FZF_BIN overrides (seeded by
