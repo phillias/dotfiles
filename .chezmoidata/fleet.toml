@@ -23,7 +23,7 @@
         lan_ip = "192.168.1.173"
         tunnel_id = "cdb47885"
         ssh_alias = "fleet-kali"
-        access_host = "kali.phillias.us"
+        access_host = "ssh.phillias.us"
         ssh_user = "phillias"
         tunnel_port = 14002
     [fleet.nodes.oci1]
@@ -31,7 +31,7 @@
         lan_ip = "10.0.0.245"
         tunnel_id = "176d01ef"
         ssh_alias = "fleet-oci"
-        access_host = "oci1.phillias.net"
+        access_host = "ssh.phillias.net"
         ssh_user = "ubuntu"
         tunnel_port = 14004
     [fleet.nodes.kalione]
@@ -47,6 +47,6 @@
         lan_ip = "UNKNOWN"
         tunnel_id = "7269342a"
         ssh_alias = "fleet-primary55522"
-        access_host = "primary55522.phillias.cc"
+        access_host = "ssh.phillias.cc"
         ssh_user = "ubuntu"
         tunnel_port = 14001

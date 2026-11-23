@@ -52,13 +52,13 @@ Host ora
 
 Host primary55522
   IdentityFile ~/.ssh/id_ed25519_inspironkali
-  HostName primary55522.phillias.cc
+  HostName ssh.phillias.cc
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User ubuntu
 
 Host kali
   IdentityFile ~/.ssh/id_ed25519_inspironkali
-  HostName kali.phillias.us
+  HostName ssh.phillias.us
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User phillias
 
@@ -99,13 +99,6 @@ Host et-kali
   Port 55554
   User phillias
   IdentityFile ~/.ssh/id_ed25519_kali
-
-# STALE: et.phillias.cc resolves to primary's grey-cloud IP, which has no
-# :22 listener — this alias no longer connects. Kept for reference only.
-Host et-55522
-  HostName et.phillias.cc
-  Port 22
-  User ubuntu
 
 Host et-kalione
   HostName et.phillias.org
