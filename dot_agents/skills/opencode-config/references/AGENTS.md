@@ -1,6 +1,6 @@
 # Agent & Category Routing
 
-Live agent/category chain design. **Authoritative source: `~/.config/opencode/opencode-fallback.jsonc`** — this file mirrors it and must be kept in sync via the drift-promotion gate (DESIGN.md §2.5). OmO-era tier tables are archived in `ARCHIVE-OMO.md`.
+Live agent/category chain design. **Authoritative source: `~/.config/opencode/opencode.json` and its provider ladder.** OmO-era tier tables are archived in `ARCHIVE-OMO.md`.
 
 ## Fleet taxonomy
 

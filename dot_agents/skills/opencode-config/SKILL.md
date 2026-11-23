@@ -7,15 +7,15 @@ description: Architecture, decisions, and maintenance of the OpenCode config —
 
 Purpose: architecture, decisions, and maintenance of the OpenCode config — provider stack, model catalog, fallback system, drift pipeline, per-provider gotchas, and the firstmate distro built on it.
 
-History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/` vs `@cf/` prefix bug source — resolved 2026-08-29: the cloudflare provider targets the AI Gateway **REST API** (`.../ai/v1` baseURL + required `cf-aig-gateway-id: opencode` header), where Workers AI ids are bare `@cf/...`, so the Cloudflare model ids and every fallback/doc reference are `cloudflare/@cf/...`; the 2026-08-27 `workers-ai/` prefix scheme applied only to the deprecated `/compat` endpoint). OmO retired 2026-08-09 — the OmO plugin was purged from opencode.json + node_modules; `~/.omo/omo.jsonc` recovered config seeded `opencode-fallback.jsonc` and is **provenance only**. Renamed from opencode-omo-config.
+History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/` vs `@cf/` prefix bug source — resolved 2026-08-29: the cloudflare provider targets the AI Gateway **REST API** (`.../ai/v1` baseURL + required `cf-aig-gateway-id: opencode` header), where Workers AI ids are bare `@cf/...`, so the Cloudflare model ids are `cloudflare/@cf/...`; the 2026-08-27 `workers-ai/` prefix scheme applied only to the deprecated `/compat` endpoint). OmO retired 2026-08-09 and its recovered routing config is provenance only. Renamed from opencode-omo-config.
 
 ## Reference files (load the section you need)
 
 | Purpose | File |
 |---|---|
 | Design — 4 runtime systems + architecture overview | `references/DESIGN.md` |
-| Agent & category routing (fallback chains) | `references/AGENTS.md` |
-| Plugins — runtime fallback, fleet-state-writer, stack | `references/PLUGINS.md` |
+| Agent & category routing | `references/AGENTS.md` |
+| Plugins — fleet-state-writer and stack | `references/PLUGINS.md` |
 | Skills — CE stagger dispatch, related skills | `references/SKILLS.md` |
 | OmO-era archive (Model Selection Priorities, Config File Hierarchy) | `references/ARCHIVE-OMO.md` |
 | Firstmate agent distro brief | `references/FIRSTMATE.md` |
@@ -27,8 +27,8 @@ History: single-root config since 2026-07-18 (profiles phased out; `cloudflare/`
 
 1. The config-root and serve-layering contract is owned by `references/DESIGN.md` §7; follow it when changing headless or TUI configuration.
 2. `~/.config/opencode/opencode.json` defines live providers + MCPs (interactive TUI + headless runs without the serve unit).
-3. `opencode-fallback.jsonc` owns agent/category/global routing; `oh-my-openagent.jsonc` is a legacy orphan never read.
-4. Global default fallback — project > global first-match-wins.
+3. `opencode.json` owns the live provider ladder; the Cloudflare AI Gateway ladder is the runtime fallback mechanism.
+4. The legacy standalone fallback config and plugin are not runtime inputs.
 5. Plugins auto-load; retired plugins enforced-removed.
 6. No symlinks, machine diffs via chezmoi `.tmpl`, paths always `$HOME`/`%h` (never `/home/<user>`).
 
@@ -44,7 +44,7 @@ Provider/model facts (stack, gateway routing, BYOK, pricing, quotas, quirks) are
 
 ## Key files
 
-`opencode.json` (root) · `opencode-fallback.jsonc` (chain) · `dispatch-rules.json` (30 rules) · `plugins/opencode-runtime-fallback.ts` + `lib/opencode-runtime-fallback-core.ts` · `lib/opencode-rest-api-provider.test.ts` (contract: @cf lane + gateway-routed provider assertions) · `~/.local/state/opencode-fleet/fallback.json` (live state) · `scripts/bws-exec.sh` (runtime secret loader for the two timer units) + `d1-registry-refresh.mjs` (daily) + `dynamic-audit.mjs` (hourly) · `fm-drift-pr.sh` · systemd `d1-registry-refresh.{service,timer}` + `dynamic-audit.{service,timer}` — both exec via `bws-exec.sh` (sources BWS `load-keys.sh`, maps `CLOUDFLARE_DEPLOY_TOKEN` → `CLOUDFLARE_API_TOKEN` for wrangler; PRs #480; never put a static `CF_AI_GATEWAY_TOKEN` in `provider-catalog.env` — stale copies shadow the vault token and caused the 2026-10-15→24 monitoring blind spot) (catalog-drift.mjs + its units retired 2026-09-28) · `~/.agents/skills/provider-catalog/models.snapshot.json` · `~/.agents/skills/` · gateway token via env `CF_AI_GATEWAY_TOKEN` (bws phillias env-shaped vault key, harvested at consumer start — `glm-free-lane-scan.sh` chain: env override → bws → age fallback only on failed vault fetch; successful-fetch-missing-key errors; covers both `/ai/*` and `/ai-gateway/*` planes; dot-key `.cf-ai-gw` and its age copy are fallback-only since Wave A2 2026-10-27 — use env-shaped `CLOUDFLARE_DEPLOY_TOKEN` for deploy).
+`opencode.json` (root, including the live provider ladder) · `dispatch-rules.json` (30 rules) · `lib/opencode-rest-api-provider.test.ts` (contract: @cf lane + gateway-routed provider assertions) · `scripts/bws-exec.sh` (runtime secret loader for the two timer units) + `d1-registry-refresh.mjs` (daily) + `dynamic-audit.mjs` (hourly) · `fm-drift-pr.sh` · systemd `d1-registry-refresh.{service,timer}` + `dynamic-audit.{service,timer}` — both exec via `bws-exec.sh` (sources BWS `load-keys.sh`, maps `CLOUDFLARE_DEPLOY_TOKEN` → `CLOUDFLARE_API_TOKEN` for wrangler; PRs #480; never put a static `CF_AI_GATEWAY_TOKEN` in `provider-catalog.env` — stale copies shadow the vault token and caused the 2026-10-15→24 monitoring blind spot) (catalog-drift.mjs + its units retired 2026-09-28) · `~/.agents/skills/provider-catalog/models.snapshot.json` · `~/.agents/skills/` · gateway token via env `CF_AI_GATEWAY_TOKEN` (bws phillias env-shaped vault key, harvested at consumer start — `glm-free-lane-scan.sh` chain: env override → bws → age fallback only on failed vault fetch; successful-fetch-missing-key errors; covers both `/ai/*` and `/ai-gateway/*` planes; dot-key `.cf-ai-gw` and its age copy are fallback-only since Wave A2 2026-10-27 — use env-shaped `CLOUDFLARE_DEPLOY_TOKEN` for deploy).
 
 ## Maintenance
 
