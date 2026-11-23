@@ -8,6 +8,8 @@
 # for ssh logins, install and configure the libpam-umask package.
 #umask 022
 
+export FM_HOME="$HOME/firstmate"
+
 # Load keys from the default profile (~/.agents/keys/default symlink).
 # This makes all provider keys available to login shells and SSH sessions.
 if [ -r "$HOME/.agents/keys/load-keys.sh" ]; then

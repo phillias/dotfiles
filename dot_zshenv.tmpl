@@ -18,6 +18,7 @@ export FLEET_DNS_DOMAIN="{{ .fleet.dnsDomain }}"
 {{- end -}}
 {{- end -}}
 export FLEET_NODE="{{ $node }}"
+export FM_HOME="$HOME/firstmate"
 
 # Load keys from the default profile (~/.agents/keys/default symlink).
 # This makes all provider keys available to non-interactive shells.
