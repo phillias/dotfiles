@@ -2,7 +2,7 @@
 # fm-drift-pr.sh — capture drift-applied chezmoi files and PR them to dotfiles.
 #
 # The catalog-drift gate applies auto-writes to chezmoi-managed files
-# (opencode-fallback.jsonc, models.snapshot.json, opencode-config SKILL.md,
+# (models.snapshot.json, opencode-config SKILL.md,
 # ...). After applying, the gate runs this script so every such update is
 # re-added into the chezmoi source tree and lands as a pull request against
 # the dotfiles default branch.
@@ -19,7 +19,6 @@ STATE_DIR="$HOME/.local/state/opencode-fleet"
 DRIFT_JSON="$STATE_DIR/catalog-drift.json"
 
 DEFAULT_FILES=(
-  "$HOME/.config/opencode/opencode-fallback.jsonc"
   "$HOME/.agents/skills/opencode-config/models.snapshot.json"
   "$HOME/.agents/skills/opencode-config/SKILL.md"
 )

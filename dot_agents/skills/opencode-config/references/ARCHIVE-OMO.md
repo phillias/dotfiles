@@ -1,6 +1,6 @@
 # Archived OmO-era Material (provenance only)
 
-Superseded OpenCode-Modification-Orchestrator (OmO) design material. Retired 2026-08-09: the OmO plugin was purged from opencode.json + node_modules; `~/.omo/omo.jsonc` recovered config seeded opencode-fallback.jsonc. Since 2026-08-09 `~/.omo/omo.jsonc` is **provenance only** — do not edit it for routing. This file preserves history; the live design lives in `DESIGN.md`, `AGENTS.md`, and `~/.config/opencode/opencode-fallback.jsonc`.
+Superseded OpenCode-Modification-Orchestrator (OmO) design material. Retired 2026-08-09: the OmO plugin was purged from opencode.json + node_modules; `~/.omo/omo.jsonc` is **provenance only** — do not edit it for routing. This file preserves history; the live design lives in `DESIGN.md`, `AGENTS.md`, and `opencode.json`.
 
 ## Model Selection Priorities (SUPERSEDED 2026-08-12 by paid-first)
 
@@ -35,7 +35,7 @@ OmO-era tiered agent model assignment:
 
 ## OmO-era architecture tree
 
-`~/.omo/` contained: `omo.jsonc` (the OmO config), `migration-backup/` (recovery from pre-single-root), `plans/`. Agent/category routing edits went to omo.jsonc — SUPERSEDED. The tree survives only as provenance; the opencode-side tree (opencode.json, opencode-fallback.jsonc, dispatch-rules.json, plugins/, scripts/) is the live architecture.
+`~/.omo/` contained: `omo.jsonc` (the OmO config), `migration-backup/` (recovery from pre-single-root), `plans/`. Agent/category routing edits went to omo.jsonc — SUPERSEDED. The tree survives only as provenance; the opencode-side tree (opencode.json, dispatch-rules.json, plugins/, scripts/) is the live architecture.
 
 ## Legacy file status
 

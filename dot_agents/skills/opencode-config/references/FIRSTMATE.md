@@ -1,6 +1,6 @@
 # Firstmate (first-class agent distro)
 
-Firstmate is the captain-facing agent distro standardized on this OpenCode design. It runs ON opencode, consumes the fallback chains in `opencode-fallback.jsonc`, and delegates project work to crewmates. This brief is the OpenCode-config view; the authoritative operating contract is the firstmate repo's own `AGENTS.md` (`~/firstmate/AGENTS.md`).
+Firstmate is the captain-facing agent distro standardized on this OpenCode design. It runs on opencode, uses the provider ladder in `opencode.json`, and delegates project work to crewmates. This brief is the OpenCode-config view; the authoritative operating contract is the firstmate repo's own `AGENTS.md` (`~/firstmate/AGENTS.md`).
 
 ## Positioning
 

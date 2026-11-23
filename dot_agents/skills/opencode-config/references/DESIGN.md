@@ -117,7 +117,7 @@ current.
 
 ```mermaid
 flowchart TB
-    CFG[opencode-fallback.jsonc<br/>two-path architecture] --> CORE[Chain engine<br/>lib/opencode-runtime-fallback-core.ts]
+    CFG[opencode.json<br/>provider ladder] --> CORE[Cloudflare AI Gateway]
     EV[event hooks<br/>session.status / session.error] --> CORE
     CORE --> STEP[advance chain<br/>skip cooldown]
     STEP --> UPD[client.session.update<br/>+ title marker]
@@ -161,7 +161,7 @@ stateDiagram-v2
 
 ### 2.4 Chain resolution & config
 
-**Resolution order** (per `opencode-fallback.jsonc` header):
+**Resolution order** (per the `opencode.json` provider ladder):
 1. UI-selected session model
 2. agent `fallback_models`
 3. category `fallback_models`
@@ -213,7 +213,7 @@ unavailable in this API version so the annotation rides system-transform.
 opencode-go can never be a gateway route node (it requires the `x-opencode-session` header that only the Go client provides).
 
 **Automatic failover (CF → Vercel → opencode-go):**
-- **OpenCode** (`opencode-fallback.jsonc`): global/agent/category ladders insert `vercel/vmc/tui` as stage 1. Provider-qualified IDs (`CfAiGw/dynamic/TUI`, `vercel/vmc/tui`) so the fallback plugin swaps correctly on retryable session errors.
+- **OpenCode** (`opencode.json`): the Cloudflare AI Gateway provider ladder supplies the retry/fallback path.
 - **Pi** (`~/.pi/fallback-chains.json`): no chain carries a Vercel `router/*` rung — `fallback/gate` and `fallback/review` were divested from Vercel 2026-11-06 (platform fee on BYOK traffic), and `fallback/default` dropped its `vercel/router/tui` rung 2026-11-09 (dotfiles #599). Current ladders live in that file; they are drawn in provider-catalog `references/ROUTING_TOPOLOGY.md` flow-2 (regenerated from the file 2026-10-10).
 - **No-mistakes** (`config.yaml`): agent is set to `codex` with `agent_config.codex.model: gpt-5.6-luna` for generic steps, while `review_agents.reviewer.model: gpt-6-astra` and `review_agents.fixer.model: gpt-5.6-luna` use direct models, so automated validation uses the codex harness.
 
@@ -258,9 +258,9 @@ selection moved to the provider-catalog skill (2026-09-01): see
 |---|---|
 | Full provider/limits reference (16 providers) | `SKILL.md` (Provider Rate Limits section) |
 | Concurrency profiles (team + free) | `SKILL.md` |
-| Fallback config (chains, agents, categories) | `opencode-fallback.jsonc` |
-| Chain engine (pure functions, unit-tested) | `lib/opencode-runtime-fallback-core.ts` |
-| Plugin wiring & state file | `plugins/opencode-runtime-fallback.ts` |
+| Provider ladder | `opencode.json` |
+| Runtime routing | Cloudflare AI Gateway |
+| Plugin wiring & state file | Active plugins and their documented state files |
 | Promotion scripts | `scripts/fm-drift-pr.sh` (drift detector retired 2026-09-28) |
 | Prior art consciously NOT adopted | `SKILL.md` (Layer D: Hermes `model_switch`, deepagents `switch_model`) |
 
@@ -500,7 +500,7 @@ re-derive from session transcripts — and the price of keeping the session aliv
 
 | Topic | Where |
 |---|---|
-| Fallback `chat.params` auto-recovery logic | `plugins/opencode-runtime-fallback.ts` (chat.params handler) |
+| Fallback routing | Cloudflare AI Gateway provider ladder in `opencode.json` |
 | `chat.message` chain disruption (design rationale) | this doc §4 |
 | Flywheel consumer contract | `plugins/axi-memory-bridge.ts`, `plugins/self-learning-autocapture.ts` |
 | Crew-dispatch model resolution | firstmate `config/crew-dispatch.json` + `bin/fm-spawn.sh` |
@@ -532,7 +532,6 @@ never reaches downstream handlers. All three must be isolation-safe.
 | 2 | axi-gh-axi.js | swallow | gh-axi ambient context (issues, PRs, help) |
 | 3 | axi-chrome-devtools-axi.js | swallow | chrome-devtools-axi ambient context |
 | 4 | axi-lavish-axi.js | swallow | lavish-axi ambient context (sessions, visual guidance, playbooks) |
-| 5 | opencode-runtime-fallback.ts | swallow | Fallback chain state annotation |
 
 #### `tool.execute.after` — after every tool call
 
@@ -555,7 +554,6 @@ never reaches downstream handlers. All three must be isolation-safe.
 | 1 | fleet-state-writer | swallow | Task state → `state.json` + `wake.log` |
 | 2 | opencode-ntfy.sh | swallow | Push notifications via ntfy.sh |
 | 3 | opencode-telemetry | swallow | SQLite telemetry |
-| 4 | opencode-runtime-fallback.ts | swallow | Model fallback chain on retry/error |
 | 5 | tps-status.tsx | swallow | TPS calculation for TUI status bar |
 
 #### `tool` — register custom tools
@@ -564,7 +562,6 @@ never reaches downstream handlers. All three must be isolation-safe.
 |---|---|
 | envsitter-guard | `envsitter_*` (keys, match, set, add, delete, copy, format, validate, annotate, help) |
 | axi-memory-bridge | `axi-memory-search`, `axi-memory-add`, `axi-memory-show` |
-| opencode-runtime-fallback.ts | `fallback-status` |
 
 #### Safety contract
 
@@ -615,10 +612,9 @@ OmO-era material is archived in `ARCHIVE-OMO.md`.
 ### 7.1 `~/.config/opencode/` tree (live)
 
 - `opencode.json` — root config: providers + MCPs + compaction (20 providers)
-- `opencode-fallback.jsonc` — global default fallback (PAID-FIRST chain; project > global first-match-wins)
 - `dispatch-rules.json` — 30 crew-dispatch rules
-- `plugins/` — fleet-state-writer.ts, self-learning-autocapture.ts, axi-memory-bridge.ts, tps-status.tsx, opencode-runtime-fallback.ts (retired: better-compaction.ts, tmux-subagent-activator.ts, go-pool-guard.ts)
-- `lib/` — opencode-runtime-fallback-core.ts
+- `plugins/` — fleet-state-writer.ts, self-learning-autocapture.ts, axi-memory-bridge.ts, tps-status.tsx (retired: better-compaction.ts, tmux-subagent-activator.ts, go-pool-guard.ts)
+- `lib/` — provider contract tests and shared helpers
 - `scripts/` — fleet-digest.sh, fleet-note.sh, fm-drift-pr.sh, d1-registry-refresh.mjs, dynamic-audit.mjs
 - `AGENTS.md`, `docs/plans/`, `skills/`, `.*-key` files
 
@@ -628,8 +624,8 @@ Runtime state: `~/.local/state/opencode-fleet/` (wake.log, state.json, digest.tx
 
 1. One config root, no profiles, `OPENCODE_CONFIG_DIR` unset; the serve unit reads the same tree and applies its `OPENCODE_CONFIG` overlay.
 2. `opencode.json` defines the live providers + MCPs.
-3. Routing is owned by `opencode-fallback.jsonc` (agents/categories/global); the legacy `oh-my-openagent.jsonc` orphan is never read.
-4. `opencode-fallback.jsonc` is the global default fallback — project > global first-match-wins.
+3. Routing is owned by the provider ladder in `opencode.json`; the legacy standalone fallback config and `oh-my-openagent.jsonc` orphan are never read.
+4. The Cloudflare AI Gateway ladder is the runtime fallback mechanism.
 5. Plugins auto-load from `plugins/`; retired plugins are enforced-removed.
 6. No symlinks, no env switching; machine diffs via chezmoi `.tmpl` with `%h` / `$HOME` portability.
 

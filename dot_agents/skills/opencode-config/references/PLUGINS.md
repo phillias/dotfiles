@@ -8,15 +8,14 @@ Runtime-behavior plugins loaded by the OpenCode config. All plugin-level — ope
 - **axi-memory-bridge.ts** — durable memory bridge
 - **self-learning-autocapture.ts** — harvest-cue writer (see DESIGN.md §1)
 - **tps-status.tsx** — TUI status widget
-- **opencode-runtime-fallback.ts** — model fallback (this file) + `lib/opencode-runtime-fallback-core.ts`
 - **opencode-ntfy.sh**, **opencode-log-sanitizer**, **envsitter-guard**, **opencode-telemetry** — notification/observability hooks
 - **dcp node_module** — context-management hook
 
 **Retired (enforced-removed):** better-compaction.ts, tmux-subagent-activator.ts (2026), go-pool-guard.ts (2026-08-12).
 
-## Runtime fallback plugin
+## Runtime fallback
 
-Local plugin `plugins/opencode-runtime-fallback.ts` + core lib `lib/opencode-runtime-fallback-core.ts` (added 2026-08-08, replaces go-pool-fallback). Config source: `opencode-fallback.jsonc` (global default; project overrides win via first-match-wins).
+The Cloudflare AI Gateway provider ladder in `opencode.json` supplies runtime fallback. No local fallback plugin or standalone fallback config is used.
 
 ### Behavior
 
@@ -49,7 +48,7 @@ No agent-callable chain-switch tool. AXI token discipline; know-not-operate cont
 
 ```mermaid
 flowchart TB
-  CFG["opencode-fallback.jsonc<br/>single-root OmO shape"] --> CORE[Chain engine]
+  CFG["opencode.json<br/>provider ladder"] --> CORE[Gateway routing]
   EV["event hooks<br/>session.status / session.error"] --> CORE
   CORE --> STEP["advance chain<br/>skip cooldown"]
   STEP --> UPD["client.session.update<br/>+ title marker"]
@@ -87,7 +86,7 @@ stateDiagram-v2
   exhausted --> [*]
 ```
 
-**Mermaid parsing note:** node labels containing `<br/>` MUST be quoted — `CFG["opencode-fallback.jsonc<br/>single-root OmO shape"]` — unquoted `<br/>` inside `[...]` breaks the chart (the exact error the captain hit at "Layer D → Architecture"). The charts above carry the fix.
+**Mermaid parsing note:** node labels containing `<br/>` must be quoted.
 
 ## Fleet state writer fixes (2026-07-22)
 
