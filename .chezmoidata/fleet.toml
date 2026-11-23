@@ -21,6 +21,7 @@
     [fleet.nodes.kali]
         hostname = "CabinInspiron22Kali"
         lan_ip = "192.168.1.173"
+        mesh_ip = "100.96.0.3"
         tunnel_id = "cdb47885"
         ssh_alias = "fleet-kali"
         access_host = "ssh.phillias.us"
@@ -29,6 +30,7 @@
     [fleet.nodes.oci1]
         hostname = "oci1"
         lan_ip = "10.0.0.245"
+        mesh_ip = "100.96.0.8"
         tunnel_id = "176d01ef"
         ssh_alias = "fleet-oci"
         access_host = "ssh.phillias.net"
@@ -37,6 +39,7 @@
     [fleet.nodes.kalione]
         hostname = "InspironOne"
         lan_ip = "192.168.1.224"
+        mesh_ip = "100.96.0.2"
         tunnel_id = "b0d2b018"
         ssh_alias = "fleet-kalione"
         access_host = "ssh.phillias.org"
@@ -44,7 +47,8 @@
         tunnel_port = 14003
     [fleet.nodes.primary]
         hostname = "primary"
-        lan_ip = "UNKNOWN"
+        lan_ip = "10.0.0.149"
+        mesh_ip = "100.96.0.7"
         tunnel_id = "7269342a"
         ssh_alias = "fleet-primary55522"
         access_host = "ssh.phillias.cc"

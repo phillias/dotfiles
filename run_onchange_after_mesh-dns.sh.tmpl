@@ -34,15 +34,16 @@ fi
 {{- $selfTunnelID = $node.tunnel_id }}
 {{- end }}
 {{- end }}
-{{- $lanIPs := list }}
+{{- $meshIPs := list }}
 {{- range $name, $node := .fleet.nodes }}
-{{- if and $node.lan_ip (ne $node.lan_ip "UNKNOWN") }}
-{{- $lanIPs = append $lanIPs $node.lan_ip }}
+{{- if and $node.mesh_ip (ne $node.mesh_ip "UNKNOWN") }}
+{{- $meshIPs = append $meshIPs $node.mesh_ip }}
 {{- end }}
 {{- end }}
 
 # Private route: expose this node's LAN IP through its own tunnel.
 # WARP mesh IPs live in WARP's reserved range and cannot be routed (CF API error 1099).
+# Private routes are kept for LAN-side access but LDF dns_servers now use mesh IPs.
 SELF_LAN_IP="{{ $selfLanIP }}"
 SELF_TUNNEL_ID="{{ $selfTunnelID }}"
 if [[ -n "$SELF_LAN_IP" && "$SELF_LAN_IP" != "UNKNOWN" && -n "$SELF_TUNNEL_ID" ]]; then
@@ -65,9 +66,11 @@ if [[ -n "$SELF_LAN_IP" && "$SELF_LAN_IP" != "UNKNOWN" && -n "$SELF_TUNNEL_ID" ]
     fi
 fi
 
-# LDF: point .mesh (and .local) at fleet LAN IPs so WARP clients reach dnsmasq.
+# LDF: point .mesh (and .local) at fleet WARP mesh IPs so WARP clients reach dnsmasq
+# directly over the mesh. LAN IPs fail for same-subnet nodes because WARP intercepts
+# local traffic and tunnel private routes can't deliver back to the source subnet.
 # The fallback_domains endpoint takes a bare JSON array body; a wrapped object returns error 2003.
-MESH_DNS_SERVERS_JSON='{{ $lanIPs | toJson }}'
+MESH_DNS_SERVERS_JSON='{{ $meshIPs | toJson }}'
 if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1; then
     LDF_URL="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/devices/policy/fallback_domains"
     if CURRENT_LDF=$(curl --fail --silent -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$LDF_URL"); then
