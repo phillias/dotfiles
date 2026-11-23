@@ -1,4 +1,5 @@
 # shellcheck shell=sh
+# shellcheck source=/dev/null
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 
 # Identity router lives in ~/.local/bin/gh, so it must precede mise shims:
@@ -18,10 +19,12 @@ export FLEET_DNS_DOMAIN="{{ .fleet.dnsDomain }}"
 {{- end -}}
 {{- end -}}
 export FLEET_NODE="{{ $node }}"
+export FM_HOME="$HOME/firstmate"
 
 # Load keys from the default profile (~/.agents/keys/default symlink).
 # This makes all provider keys available to non-interactive shells.
 if [ -r "$HOME/.agents/keys/load-keys.sh" ]; then
+    # shellcheck source=/dev/null
     . "$HOME/.agents/keys/load-keys.sh"
 fi
 
@@ -31,6 +34,7 @@ fi
 # file retired to ~/.agents/keys/retired/phillias/.vercel-gateway-key.age.
 
 # Route Kimi Code through CF AI Gateway (already configured in ~/.kimi-code/config.toml)
+# shellcheck disable=SC3003
 export KIMI_CODE_CUSTOM_HEADERS=$'cf-aig-gateway-id: opencode\ncf-aig-metadata: {"harness":"kimi-code","host":"{{ .chezmoi.hostname }}","agent":"primary"}'
 
 # Claude Code uses its native Anthropic OAuth login by default.
