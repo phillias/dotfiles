@@ -143,8 +143,7 @@ no cloudflared and no sslh:
 - Laptop: `et -u ubuntu et-oci1` (`dot_ssh/config.tmpl` alias → `et.phillias.net:22`).
 - Server setup + hardening: `scripts/install-et-no-sslh.sh` (hardening
   details: README "Eternal Terminal server setup").
-- `et-55522` (`et.phillias.cc`) is stale: primary's grey-cloud IP has no :22
-  listener.
+- `et.phillias.cc` routes through the `primary` tunnel (config-managed, Access-gated).
 
 ## Eternal Terminal (kali migration)
 
