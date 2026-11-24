@@ -2,7 +2,7 @@
 # ~/.local/bin/lavish-godoxy-setup — chezmoi-managed, executable, in $PATH
 # Verifies or creates the lavish route in the godoxy reverse proxy config.
 #
-# The lavish route proxies lavish.phillias.us → 127.0.0.1:4387, where
+# The lavish route proxies lavish.$FLEET_DNS_DOMAIN → 127.0.0.1:4387, where
 # lavish-axi listens (started with lavish-proxy-env). It sets a CSP that
 # allows framing from the same origin and hides the X-Frame-Options header
 # so the artifact can be embedded in iframes.
@@ -13,6 +13,8 @@
 #   lavish-godoxy-setup --restart    # restart godoxy after changes
 #
 # Requires: FLEET_DNS_DOMAIN (set in ~/.zshenv from chezmoi fleet.dnsDomain)
+# Cross-check: GODOXY_DOMAIN in the godoxy container env should match
+# $FLEET_DNS_DOMAIN; a mismatch means the proxy domain is wrong.
 
 set -euo pipefail
 
