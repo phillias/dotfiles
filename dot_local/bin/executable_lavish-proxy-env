@@ -24,6 +24,17 @@ if [ -z "${FLEET_DNS_DOMAIN:-}" ]; then
   [ "$_LAVISH_SOURCED" = 1 ] && return 1 2>/dev/null || exit 1
 fi
 
+_godoxy_domain="$(docker inspect godoxy-proxy 2>/dev/null \
+  | python3 -c 'import sys,json
+for d in json.load(sys.stdin):
+  for v in d["Config"]["Env"]:
+    if v.startswith("GODOXY_DOMAIN="):
+      print(v.split("=",1)[1])' 2>/dev/null)"
+if [ -n "$_godoxy_domain" ] && [ "$_godoxy_domain" != "$FLEET_DNS_DOMAIN" ]; then
+  echo "warning: FLEET_DNS_DOMAIN=$FLEET_DNS_DOMAIN differs from godoxy GODOXY_DOMAIN=$_godoxy_domain" >&2
+  echo "help: fix chezmoi fleet.dnsDomain to match GODOXY_DOMAIN, or the Lavish server will get 403 forbidden host" >&2
+fi
+
 # Binds 0.0.0.0 so the Docker proxy container can reach the host via
 # host.docker.internal. Ensure port 4387 is firewalled to local access —
 # external traffic should go through godoxy (ACL, CrowdSec, CSP).
