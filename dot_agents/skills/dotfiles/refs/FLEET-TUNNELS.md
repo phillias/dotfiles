@@ -1,6 +1,6 @@
 # Fleet Tunnels — opencode serve cross-node mesh
 
-Fleet nodes (kalione, primary55522, kali) each run a headless `opencode serve`
+Fleet nodes (kalione, primary, kali, oci1) each run a headless `opencode serve`
 bound to `127.0.0.1:4096`. This is a FULL MESH: every node tunnels to every
 other node's serve through persistent autossh tunnels, so every firstmate's
 opencode agent sees all remote fleet agents as localhost ports. The tunnel is
@@ -14,9 +14,9 @@ changes, no public exposure.
                     │        localhost :14xxx namespace    │
                     └─────────────────────────────────────┘
 
-  kalione ───14001──> primary55522 serve      primary55522 ───14002──> kali serve
-  kalione ───14002──> kali serve              primary55522 ───14003──> kalione serve
-  kali ─────14001──> primary55522 serve       kali ────14003──> kalione serve
+  kalione ───14001──> primary serve          primary ───14002──> kali serve
+  kalione ───14002──> kali serve              primary ───14003──> kalione serve
+  kali ─────14001──> primary serve            kali ────14003──> kalione serve
 ```
 
 Every node runs:
@@ -47,10 +47,10 @@ applies only the units that tunnel to the OTHER nodes:
 
 | Host (hostname) | Serve | Gets tunnels to | Local endpoints |
 |---|---|---|---|
-| kalione (`InspironOne`) | 4096 | primary55522, kali, oci1 | 14001, 14002, 14004 |
-| primary55522 (`primary`) | 4096 | kali, kalione, oci1 | 14002, 14003, 14004 |
-| kali (`CabinInspiron22Kali`) | 4096 | primary55522, kalione, oci1 | 14001, 14003, 14004 |
-| oci1 (`oci1`) | 4096 | primary55522, kali, kalione | 14001, 14002, 14003 |
+| kalione (`InspironOne`) | 4096 | primary, kali, oci1 | 14001, 14002, 14004 |
+| primary (`primary`) | 4096 | kali, kalione, oci1 | 14002, 14003, 14004 |
+| kali (`CabinInspiron22Kali`) | 4096 | primary, kalione, oci1 | 14001, 14003, 14004 |
+| oci1 (`oci1`) | 4096 | primary, kali, kalione | 14001, 14002, 14003 |
 
 Enablement is idempotent: `run_fleet-tunnels.sh` (runs on every `chezmoi
 apply`) daemon-reloads and `enable --now`s `opencode-serve.service` plus
@@ -63,7 +63,7 @@ authorized_keys, and enables the same units on greenfield hosts.
 
 | Local port | Remote node | SSH alias |
 |---|---|---|
-| 14001 | primary55522 | `fleet-ssh.phillias.cc` (cloudflared access, deploy key) |
+| 14001 | primary | `fleet-ssh.phillias.cc` (cloudflared access, deploy key) |
 | 14002 | kali | `fleet-kali` (cloudflared access, deploy key) |
 | 14003 | kalione | `fleet-kalione` (cloudflared access, deploy key) |
 | 14004 | oci1 | `fleet-oci` (cloudflared access, deploy key) |
@@ -154,13 +154,10 @@ ET directly on `0.0.0.0:2022`. The migration also installs the versioned
 system-layer units from `systemd/system/` into `/etc/systemd/system/`:
 
 - `et.service` owns the `/usr/bin/etserver --cfgfile=/etc/et.cfg` process.
-- `sshd-fallback.service` is an optional, independently enabled safety net on
-  `0.0.0.0:10022`; it has no `Conflicts=sshd.service ssh.service` declaration.
 
 These are host services, not user units under `~/.config/systemd/user/`.
-The fallback unit is installed but not enabled by the migration script; a
-captain-approved window may enable it before a live migration and disable it
-after port-22 and ET validation complete.
+Rescue sshd (sshd-fallback.service, port 10022) has been decommissioned
+across the fleet. Each tunnel now exposes only SSH (:22) and ET (:2022).
 
 ## Agent-to-agent usage
 
@@ -168,8 +165,8 @@ Use the small `fleet-chat` adapter for agent-to-agent prompts:
 
 ```bash
 fleet-chat list-nodes
-fleet-chat send --node primary55522 --prompt "Please inspect the failing job"
-fleet-chat latest --node primary55522 --session <session-id>
+fleet-chat send --node primary --prompt "Please inspect the failing job"
+fleet-chat latest --node primary --session <session-id>
 ```
 
 `send` creates a remote session with `POST /api/session` unless an existing
