@@ -5,7 +5,7 @@ set -euo pipefail
 {{- $zone := "" }}
 {{- $tunnel_id := "" }}
 {{- range $key, $val := .fleet.nodes }}
-{{-   if eq $val.hostname .chezmoi.hostname }}
+{{-   if eq $val.hostname $.chezmoi.hostname }}
 {{-     $node = $key }}
 {{-     $zone = $val.tunnel_zone }}
 {{-     $tunnel_id = $val.tunnel_id }}
@@ -25,10 +25,14 @@ fi
 cat > "$CF_CONFIG" << YAML
 tunnel: {{ $tunnel_id }}
 credentials-file: $CF_CRED
+
+warp-routing:
+  enabled: true
+
 ingress:
-  - hostname: {{ .chezmoi.hostname }}.{{ $zone }}
+  - hostname: {{ $.chezmoi.hostname }}.{{ $zone }}
     service: ssh://localhost:22
-  - hostname: et-{{ .chezmoi.hostname }}.{{ $zone }}
+  - hostname: et-{{ $.chezmoi.hostname }}.{{ $zone }}
     service: tcp://localhost:2022
   - hostname: ssh.{{ $zone }}
     service: ssh://localhost:22
