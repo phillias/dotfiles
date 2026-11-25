@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+{{- $node := "" }}
+{{- $zone := "" }}
+{{- $tunnel_id := "" }}
+{{- range $key, $val := .fleet.nodes }}
+{{-   if eq $val.hostname .chezmoi.hostname }}
+{{-     $node = $key }}
+{{-     $zone = $val.tunnel_zone }}
+{{-     $tunnel_id = $val.tunnel_id }}
+{{-   end }}
+{{- end }}
+
+{{- if and $tunnel_id $zone }}
+
+CF_CONFIG="/etc/cloudflared/config.yml"
+CF_CRED="/etc/cloudflared/{{ $tunnel_id }}.json"
+
+if [ ! -f "$CF_CRED" ]; then
+    echo "cloudflared-config: credentials $CF_CRED not found, skipping"
+    exit 0
+fi
+
+cat > "$CF_CONFIG" << YAML
+tunnel: {{ $tunnel_id }}
+credentials-file: $CF_CRED
+ingress:
+  - hostname: {{ .chezmoi.hostname }}.{{ $zone }}
+    service: ssh://localhost:22
+  - hostname: et-{{ .chezmoi.hostname }}.{{ $zone }}
+    service: tcp://localhost:2022
+  - hostname: ssh.{{ $zone }}
+    service: ssh://localhost:22
+  - hostname: et.{{ $zone }}
+    service: tcp://localhost:2022
+  - service: http_status:404
+YAML
+
+chmod 644 "$CF_CONFIG"
+echo "cloudflared-config: wrote $CF_CONFIG for tunnel {{ $tunnel_id }}"
+
+{{- else }}
+
+echo "cloudflared-config: no tunnel_id/zone for host {{ .chezmoi.hostname }}, skipping"
+
+{{- end }}
