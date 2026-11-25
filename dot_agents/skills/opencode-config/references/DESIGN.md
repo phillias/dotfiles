@@ -303,8 +303,8 @@ flowchart TD
 - **`mem sync` anchor rule:** on primary/OCI-anchor the remote MUST be the local
   bare `/home/ubuntu/mem-bare.git` — never the tunnel
   `ssh://ssh.phillias.cc/~/mem-bare.git` (hairpin timeout). Other
-  machines use the tunnel URL + `ssh.phillias.cc` alias. Bare repo covered by
-  restic.
+  machines use the `ssh.phillias.cc` SSH alias, which carries the ProxyCommand
+  and key selection. Bare repo covered by restic.
 
 ### 3.3 Gotchas
 

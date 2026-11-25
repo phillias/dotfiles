@@ -49,7 +49,7 @@
         hostname = "primary"
         lan_ip = "UNKNOWN"
         tunnel_id = "d8787ea7-f3db-4b14-b9da-20a8e244809a"
-        ssh_alias = "fleet-primary55522"
+        ssh_alias = "fleet-ssh.phillias.cc"
         access_host = "ssh.phillias.cc"
         ssh_user = "ubuntu"
         tunnel_port = 14001

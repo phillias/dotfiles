@@ -142,9 +142,9 @@ plugin injects relevant memories into the system prompt and exposes
   this machine (`primary`, the OCI anchor) the remote MUST be the local bare
   repo `origin = /home/ubuntu/mem-bare.git`, never the tunnel hostname
   `ssh://ssh.phillias.cc/~/mem-bare.git` — the anchor hairpinning
-  through its own Cloudflare tunnel times out. Other machines use the tunnel
-  URL + `ssh.phillias.cc` ssh alias. The bare repo is covered by the restic backup
-  schedule on OCI.
+  through its own Cloudflare tunnel times out. Other machines use the
+  `ssh.phillias.cc` SSH alias, which carries the ProxyCommand and key
+  selection. The bare repo is covered by the restic backup schedule on OCI.
 
 ## Data flow
 

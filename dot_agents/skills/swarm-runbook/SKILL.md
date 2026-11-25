@@ -28,7 +28,7 @@ The node key → hostname mapping in `fleet.toml`:
 
 | Fleet key | Hostname | SSH alias |
 |---|---|---|
-| `primary55522` | `primary` | `fleet-primary55522` |
+| `primary55522` | `primary` | `fleet-ssh.phillias.cc` |
 | `kali` | `CabinInspiron22Kali` | `fleet-kali` |
 | `phillias` | `InspironOne` | `fleet-kalione` |
 | `oci1` | `oci1` | `fleet-oci` |

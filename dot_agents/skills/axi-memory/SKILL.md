@@ -163,14 +163,15 @@ the anchor, check `git -C ~/memories remote -v` first.
 
 **Sync target and per-machine routes:** `mem sync` targets the anchor's bare
 repo `/home/ubuntu/mem-bare.git` (user `ubuntu`). Each non-anchor machine uses
-its authorized tunnel route to that repo:
+its SSH-configured alias to reach that repo. The `ssh.phillias.cc` alias
+carries the `cloudflared access ssh` ProxyCommand and the correct key — using
+a raw hostname without the SSH config would bypass both.
 
-- **cabinkali**: remote URL `ssh.phillias.cc:mem-bare.git` — ssh alias
+- **cabinkali**: remote URL `ssh.phillias.cc:mem-bare.git` — SSH alias
   `ssh.phillias.cc` (`chezmoi-deploy-key`, `cloudflared access ssh`
-  ProxyCommand). The plain `primary55522` alias is NOT authorized on the anchor
-  from this box (its `id_ed25519_inspironkali` key is rejected: publickey).
+  ProxyCommand).
 - **kalione**: remote URL `ssh.phillias.cc:mem-bare.git` — the `ssh.phillias.cc`
-  tunnel alias (ProxyCommand path works from there).
+  alias (ProxyCommand path works from there).
 
 A store born local (never cloned from the anchor) has unrelated history:
 `git pull --rebase` refuses, so the first sync needs explicit reconciliation —
