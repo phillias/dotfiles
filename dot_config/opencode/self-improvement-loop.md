@@ -141,9 +141,9 @@ plugin injects relevant memories into the system prompt and exposes
 - Cross-machine sync: `mem sync` → local git remote. **Anchor-remote rule**: on
   this machine (`primary`, the OCI anchor) the remote MUST be the local bare
   repo `origin = /home/ubuntu/mem-bare.git`, never the tunnel hostname
-  `ssh://ssh.phillias.cc/~/mem-bare.git` — the anchor hairpinning
-  through its own Cloudflare tunnel times out. Other machines use the tunnel
-  URL + `ssh.phillias.cc` ssh alias. The bare repo is covered by the restic backup
+  `ssh://primary55522/~/mem-bare.git` — the anchor hairpinning
+  through its own Cloudflare tunnel times out. Other machines use the
+  `primary55522` alias (resolves to `ssh.phillias.cc` via SSH config). The bare repo is covered by the restic backup
   schedule on OCI.
 
 ## Data flow

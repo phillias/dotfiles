@@ -302,8 +302,9 @@ flowchart TD
   auto-captured memories extract it from the captured text.
 - **`mem sync` anchor rule:** on primary/OCI-anchor the remote MUST be the local
   bare `/home/ubuntu/mem-bare.git` — never the tunnel
-  `ssh://ssh.phillias.cc/~/mem-bare.git` (hairpin timeout). Other
-  machines use the tunnel URL + `ssh.phillias.cc` alias. Bare repo covered by
+  `ssh://primary55522/~/mem-bare.git` (hairpin timeout — alias resolves to
+  `ssh.phillias.cc` via SSH config). Other machines use the alias
+  `primary55522` in their remote URL. Bare repo covered by
   restic.
 
 ### 3.3 Gotchas

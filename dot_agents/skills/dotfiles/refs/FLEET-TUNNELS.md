@@ -154,13 +154,11 @@ ET directly on `0.0.0.0:2022`. The migration also installs the versioned
 system-layer units from `systemd/system/` into `/etc/systemd/system/`:
 
 - `et.service` owns the `/usr/bin/etserver --cfgfile=/etc/et.cfg` process.
-- `sshd-fallback.service` is an optional, independently enabled safety net on
-  `0.0.0.0:10022`; it has no `Conflicts=sshd.service ssh.service` declaration.
+- `sshd-fallback.service` was an optional safety net on `0.0.0.0:10022`;
+  it has been decommissioned across the fleet — rescue access now goes
+  through `ssh.phillias.<tld>` via the config-managed tunnel only.
 
 These are host services, not user units under `~/.config/systemd/user/`.
-The fallback unit is installed but not enabled by the migration script; a
-captain-approved window may enable it before a live migration and disable it
-after port-22 and ET validation complete.
 
 ## Agent-to-agent usage
 
@@ -168,8 +166,8 @@ Use the small `fleet-chat` adapter for agent-to-agent prompts:
 
 ```bash
 fleet-chat list-nodes
-fleet-chat send --node primary55522 --prompt "Please inspect the failing job"
-fleet-chat latest --node primary55522 --session <session-id>
+fleet-chat send --node ssh.phillias.cc --prompt "Please inspect the failing job"
+fleet-chat latest --node ssh.phillias.cc --session <session-id>
 ```
 
 `send` creates a remote session with `POST /api/session` unless an existing
