@@ -1,0 +1,44 @@
+#!/bin/bash
+set -euo pipefail
+
+KEY_LOADER="$HOME/.agents/keys/load-keys.sh"
+if [[ ! -r "$KEY_LOADER" ]]; then
+    echo "[warp-mdm] ERROR: key loader not found or unreadable: $KEY_LOADER" >&2
+    exit 1
+fi
+
+# shellcheck disable=SC1091
+. "$KEY_LOADER"
+
+if [[ -z "${WARP_FLEET_ENROLLMENT_CLIENT_ID:-}" ]]; then
+    echo "[warp-mdm] ERROR: WARP_FLEET_ENROLLMENT_CLIENT_ID is unset" >&2
+    exit 1
+fi
+if [[ -z "${WARP_FLEET_ENROLLMENT_CLIENT_SECRET:-}" ]]; then
+    echo "[warp-mdm] ERROR: WARP_FLEET_ENROLLMENT_CLIENT_SECRET is unset" >&2
+    exit 1
+fi
+
+MDM_DIR="/var/lib/cloudflare-warp"
+MDM_PATH="$MDM_DIR/mdm.xml"
+MDM_TMP="$(mktemp)"
+trap 'rm -f "$MDM_TMP"' EXIT
+
+cat > "$MDM_TMP" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>auth_client_id</key><string>$WARP_FLEET_ENROLLMENT_CLIENT_ID</string>
+  <key>auth_client_secret</key><string>$WARP_FLEET_ENROLLMENT_CLIENT_SECRET</string>
+  <key>auto_connect</key><integer>1</integer>
+  <key>onboarding</key><false />
+  <key>organization</key><string>phillias</string>
+  <key>service_mode</key><string>warp</string>
+</dict>
+</plist>
+EOF
+
+sudo -n mkdir -p "$MDM_DIR"
+sudo -n install -m 600 "$MDM_TMP" "$MDM_PATH"
+echo "[warp-mdm] installed $MDM_PATH"

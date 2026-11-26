@@ -128,3 +128,7 @@ docker/bench-studio/.env
 # `chezmoi add` from tracking the path again. Apply leaves an existing file
 # in place; re-seed that host only after moving the old copy aside.
 .local/share/opencode/auth.json
+
+# WARP MDM configuration is generated at apply time from BWS credentials.
+# Runtime path: /var/lib/cloudflare-warp/mdm.xml
+var/lib/cloudflare-warp/mdm.xml
