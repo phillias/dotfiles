@@ -18,6 +18,17 @@ SYSTEMD_USER_DIR="${HOME}/.config/systemd/user"
 
 command -v systemctl >/dev/null 2>&1 || exit 0
 
+for legacy_unit in \
+	opencode-tunnel-primary55522.service \
+	opencode-tunnel-ssh.phillias.cc.service
+do
+	legacy_path="${SYSTEMD_USER_DIR}/${legacy_unit}"
+	if [ -f "$legacy_path" ]; then
+		systemctl --user disable --now "$legacy_unit" 2>/dev/null || true
+		rm -f "$legacy_path"
+	fi
+done
+
 systemctl --user daemon-reload 2>/dev/null || true
 
 for unit in "${SYSTEMD_USER_DIR}"/opencode-tunnel-*.service; do

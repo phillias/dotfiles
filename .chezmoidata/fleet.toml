@@ -13,15 +13,15 @@
     #
     # Mesh fields (consumed by dot_ssh/config.tmpl fleet-alias block and
     # scripts/setup.sh Phase 7b): ssh_alias = the fleet-* Host alias every
-    # node uses to reach this node (cloudflared access transport, deploy
-    # key); access_host = the hostname passed to `cloudflared access ssh`;
+    # node uses to reach this node (mesh SSH transport, deploy key);
+    # access_host = the hostname used by the SSH transport;
     # ssh_user = remote login user; tunnel_port = the LOCAL port other nodes
     # forward to this node's opencode serve (127.0.0.1:4096). Next free port
     # = max(existing)+1 — greenfield nodes claim it in their registration PR.
     [fleet.nodes.kali]
         hostname = "CabinInspiron22Kali"
         lan_ip = "192.168.1.173"
-        tunnel_id = "cdb47885"
+        tunnel_id = "c0118086-2b95-4766-990d-5b44ecf5e05a"
         ssh_alias = "fleet-kali"
         access_host = "ssh.phillias.us"
         ssh_user = "phillias"
@@ -29,7 +29,7 @@
     [fleet.nodes.oci1]
         hostname = "oci1"
         lan_ip = "10.0.0.245"
-        tunnel_id = "176d01ef"
+        tunnel_id = "d5142bb1-74f1-414c-b57a-da7cd03d9515"
         ssh_alias = "fleet-oci"
         access_host = "ssh.phillias.net"
         ssh_user = "ubuntu"
@@ -37,16 +37,16 @@
     [fleet.nodes.kalione]
         hostname = "InspironOne"
         lan_ip = "192.168.1.224"
-        tunnel_id = "b0d2b018"
+        tunnel_id = "dd2af799-7400-4155-9002-9ef61e1c0cff"
         ssh_alias = "fleet-kalione"
         access_host = "ssh.phillias.org"
         ssh_user = "phillias"
         tunnel_port = 14003
     [fleet.nodes.primary]
         hostname = "primary"
-        lan_ip = "UNKNOWN"
-        tunnel_id = "7269342a"
-        ssh_alias = "fleet-primary55522"
+        lan_ip = "10.0.0.149"
+        tunnel_id = "d8787ea7-f3db-4b14-b9da-20a8e244809a"
+        ssh_alias = "fleet-primary"
         access_host = "ssh.phillias.cc"
         ssh_user = "ubuntu"
         tunnel_port = 14001

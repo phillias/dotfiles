@@ -302,9 +302,9 @@ flowchart TD
   auto-captured memories extract it from the captured text.
 - **`mem sync` anchor rule:** on primary/OCI-anchor the remote MUST be the local
   bare `/home/ubuntu/mem-bare.git` — never the tunnel
-  `ssh://primary55522.phillias.cc/~/mem-bare.git` (hairpin timeout). Other
-  machines use the tunnel URL + `primary55522` alias. Bare repo covered by
-  restic.
+  `ssh://ssh.phillias.cc/~/mem-bare.git` (hairpin timeout). Other
+  machines use the `ssh.phillias.cc` SSH alias, which carries the ProxyCommand
+  and key selection. Bare repo covered by restic.
 
 ### 3.3 Gotchas
 
@@ -654,7 +654,7 @@ facts.
 
 ## 9. Fleet serve mesh (cross-node agent communication)
 
-Fleet nodes (kalione, primary55522, kali) each run `opencode serve --port 4096
+Fleet nodes (kalione, primary, kali) each run `opencode serve --port 4096
 --hostname 127.0.0.1` as a systemd --user unit (`opencode-serve.service`,
 chezmoi-managed in dotfiles), rooted at `~/firstmate` for hosted sessions.
 Nodes reach each other's serve through
@@ -663,7 +663,7 @@ firstmate's opencode agent reaches a remote node's agent at a localhost port:
 
 | Local endpoint | Remote node | Remote serve |
 |---|---|---|
-| `http://127.0.0.1:14001` | primary55522 | 127.0.0.1:4096 |
+| `http://127.0.0.1:14001` | primary | 127.0.0.1:4096 |
 | `http://127.0.0.1:14002` | kali | 127.0.0.1:4096 |
 | `http://127.0.0.1:14003` | kalione | 127.0.0.1:4096 |
 
@@ -686,8 +686,8 @@ adapter is `fleet-chat` (installed as `~/.local/bin/fleet-chat`):
 
 ```sh
 fleet-chat list-nodes
-fleet-chat send --node primary55522 --prompt "Run the requested task"
-fleet-chat latest --node primary55522 --session <session-id>
+fleet-chat send --node primary --prompt "Run the requested task"
+fleet-chat latest --node primary --session <session-id>
 ```
 
 The adapter creates a session with `POST /api/session` unless `--session` is
@@ -710,7 +710,7 @@ arguments or output.
 
 Each host applies only the tunnels to the OTHER nodes (hostname-gated via
 `.chezmoiignore`), so the endpoints a host sees depend on which node it is:
-kalione sees 14001+14002, primary55522 sees 14002+14003, kali sees
+kalione sees 14001+14002, primary sees 14002+14003, kali sees
 14001+14003. Tunnel unit design, port assignments, validation commands, and
 the add-a-node procedure are owned by the dotfiles skill:
 `dotfiles/refs/FLEET-TUNNELS.md`.

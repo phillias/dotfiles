@@ -1,11 +1,11 @@
 # Fleet Tunnels — opencode serve cross-node mesh
 
-Fleet nodes (kalione, primary55522, kali) each run a headless `opencode serve`
+Fleet nodes (kalione, primary, kali, oci1) each run a headless `opencode serve`
 bound to `127.0.0.1:4096`. This is a FULL MESH: every node tunnels to every
 other node's serve through persistent autossh tunnels, so every firstmate's
-opencode agent sees all remote fleet agents as localhost ports. The tunnel is
-the security boundary — it rides existing passphraseless SSH keys; no firewall
-changes, no public exposure.
+opencode agent sees all remote fleet agents as localhost ports. The mesh uses
+SSH over the private fleet network; cloudflared is reserved for break-the-glass
+SSH access from an administrator's laptop.
 
 ## Architecture
 
@@ -14,9 +14,9 @@ changes, no public exposure.
                     │        localhost :14xxx namespace    │
                     └─────────────────────────────────────┘
 
-  kalione ───14001──> primary55522 serve      primary55522 ───14002──> kali serve
-  kalione ───14002──> kali serve              primary55522 ───14003──> kalione serve
-  kali ─────14001──> primary55522 serve       kali ────14003──> kalione serve
+  kalione ───14001──> primary serve          primary ───14002──> kali serve
+  kalione ───14002──> kali serve              primary ───14003──> kalione serve
+  kali ─────14001──> primary serve            kali ────14003──> kalione serve
 ```
 
 Every node runs:
@@ -29,7 +29,7 @@ Every node runs:
 | Unit | Purpose |
 |---|---|
 | `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1`, rooted at `~/firstmate` for hosted sessions and using the shared `~/.config/opencode` config tree plus the serve-only `~/.config/opencode/opencode-serve.json` `OPENCODE_CONFIG` overlay; EnvironmentFile reads `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) — rendered by chezmoi template `private_opencode-serve.env.tmpl`, age-decrypting each secret from its own age file (serve password in `.chezmoitemplates/opencode-serve-password.age`) |
-| `opencode-tunnel-primary55522.service` | autossh `-L 14001:127.0.0.1:4096 fleet-primary55522` |
+| `opencode-tunnel-primary.service` | autossh `-L 14001:127.0.0.1:4096 fleet-primary` |
 | `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 fleet-kali` |
 | `opencode-tunnel-kalione.service` | autossh `-L 14003:127.0.0.1:4096 fleet-kalione` |
 | `opencode-tunnel-oci1.service` | autossh `-L 14004:127.0.0.1:4096 fleet-oci` |
@@ -47,10 +47,10 @@ applies only the units that tunnel to the OTHER nodes:
 
 | Host (hostname) | Serve | Gets tunnels to | Local endpoints |
 |---|---|---|---|
-| kalione (`InspironOne`) | 4096 | primary55522, kali, oci1 | 14001, 14002, 14004 |
-| primary55522 (`primary`) | 4096 | kali, kalione, oci1 | 14002, 14003, 14004 |
-| kali (`CabinInspiron22Kali`) | 4096 | primary55522, kalione, oci1 | 14001, 14003, 14004 |
-| oci1 (`oci1`) | 4096 | primary55522, kali, kalione | 14001, 14002, 14003 |
+| kalione (`InspironOne`) | 4096 | primary, kali, oci1 | 14001, 14002, 14004 |
+| primary (`primary`) | 4096 | kali, kalione, oci1 | 14002, 14003, 14004 |
+| kali (`CabinInspiron22Kali`) | 4096 | primary, kalione, oci1 | 14001, 14003, 14004 |
+| oci1 (`oci1`) | 4096 | primary, kali, kalione | 14001, 14002, 14003 |
 
 Enablement is idempotent: `run_fleet-tunnels.sh` (runs on every `chezmoi
 apply`) daemon-reloads and `enable --now`s `opencode-serve.service` plus
@@ -63,10 +63,10 @@ authorized_keys, and enables the same units on greenfield hosts.
 
 | Local port | Remote node | SSH alias |
 |---|---|---|
-| 14001 | primary55522 | `fleet-primary55522` (cloudflared access, deploy key) |
-| 14002 | kali | `fleet-kali` (cloudflared access, deploy key) |
-| 14003 | kalione | `fleet-kalione` (cloudflared access, deploy key) |
-| 14004 | oci1 | `fleet-oci` (cloudflared access, deploy key) |
+| 14001 | primary | `fleet-primary` (mesh SSH, deploy key) |
+| 14002 | kali | `fleet-kali` (mesh SSH, deploy key) |
+| 14003 | kalione | `fleet-kalione` (mesh SSH, deploy key) |
+| 14004 | oci1 | `fleet-oci` (mesh SSH, deploy key) |
 | 14005… | future nodes | next sequential |
 
 The remote serve port is always 4096. Local ports only need per-node uniqueness.
@@ -132,45 +132,14 @@ remote node (pull + chezmoi apply + daemon-reload + restart serve).
    `systemctl --user enable --now opencode-serve.service`). Validate per
    Operations below.
 
-## Eternal Terminal (oci1: direct exposure)
-
-ET does not ride this mesh. oci1 exposes ET directly, with no autossh tunnel,
-no cloudflared and no sslh:
-
-- `et.phillias.net` is a grey-cloud (DNS-only) A record to oci1's reserved IP
-  (147.224.180.103); the OCI NSG opens TCP/22 (sshd bootstrap) and TCP/2022
-  (etserver on 0.0.0.0).
-- Laptop: `et -u ubuntu et-oci1` (`dot_ssh/config.tmpl` alias → `et.phillias.net:22`).
-- Server setup + hardening: `scripts/install-et-no-sslh.sh` (hardening
-  details: README "Eternal Terminal server setup").
-- `et-55522` (`et.phillias.cc`) is stale: primary's grey-cloud IP has no :22
-  listener.
-
-## Eternal Terminal (kali migration)
-
-The Kali edge node uses the host-specific adaptation
-`scripts/install-et-no-sslh-phillias.sh`. It removes only the old sshd
-`Port 55554` directive, leaves the primary `:22` daemon in place, and exposes
-ET directly on `0.0.0.0:2022`. The migration also installs the versioned
-system-layer units from `systemd/system/` into `/etc/systemd/system/`:
-
-- `et.service` owns the `/usr/bin/etserver --cfgfile=/etc/et.cfg` process.
-- `sshd-fallback.service` is an optional, independently enabled safety net on
-  `0.0.0.0:10022`; it has no `Conflicts=sshd.service ssh.service` declaration.
-
-These are host services, not user units under `~/.config/systemd/user/`.
-The fallback unit is installed but not enabled by the migration script; a
-captain-approved window may enable it before a live migration and disable it
-after port-22 and ET validation complete.
-
 ## Agent-to-agent usage
 
 Use the small `fleet-chat` adapter for agent-to-agent prompts:
 
 ```bash
 fleet-chat list-nodes
-fleet-chat send --node primary55522 --prompt "Please inspect the failing job"
-fleet-chat latest --node primary55522 --session <session-id>
+fleet-chat send --node primary --prompt "Please inspect the failing job"
+fleet-chat latest --node primary --session <session-id>
 ```
 
 `send` creates a remote session with `POST /api/session` unless an existing

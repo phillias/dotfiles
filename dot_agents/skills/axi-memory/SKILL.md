@@ -150,27 +150,28 @@ explicitly tells you with `truncated: 500 bytes shown of <N> total` and a
 This skill stores memories in `~/memories/` (working dir) and treats a bare
 git repo on the OCI anchor (`~/mem-bare.git`) as the source of truth. Other
 machines (cabinkali, kalione) clone the same bare repo over their existing
-Cloudflare tunnel SSH route (`primary55522.phillias.cc`), no new tunnels
+Cloudflare tunnel SSH route (`ssh.phillias.cc`), no new tunnels
 required.
 
 **Anchor remote rule:** on the OCI anchor itself (`primary`), the git remote
 MUST be the local path `origin = /home/ubuntu/mem-bare.git` — never the
-tunnel hostname `ssh://primary55522.phillias.cc/~/mem-bare.git`. The anchor
+tunnel hostname `ssh://ssh.phillias.cc/~/mem-bare.git`. The anchor
 syncing to its own tunnel hairpins through Cloudflare edge:22, which times
-out (sshd listens on localhost:55522 behind the tunnel, served on 443 via
+out (sshd listens on localhost:22 behind the tunnel, served on 443 via
 `cloudflared access ssh`). If `mem sync` reports the remote unreachable on
 the anchor, check `git -C ~/memories remote -v` first.
 
 **Sync target and per-machine routes:** `mem sync` targets the anchor's bare
 repo `/home/ubuntu/mem-bare.git` (user `ubuntu`). Each non-anchor machine uses
-its authorized tunnel route to that repo:
+its SSH-configured alias to reach that repo. The `ssh.phillias.cc` alias
+carries the `cloudflared access ssh` ProxyCommand and the correct key — using
+a raw hostname without the SSH config would bypass both.
 
-- **cabinkali**: remote URL `fleet-primary55522:mem-bare.git` — ssh alias
-  `fleet-primary55522` (`chezmoi-deploy-key`, `cloudflared access ssh`
-  ProxyCommand). The plain `primary55522` alias is NOT authorized on the anchor
-  from this box (its `id_ed25519_inspironkali` key is rejected: publickey).
-- **kalione**: remote URL `primary55522:mem-bare.git` — the `primary55522`
-  tunnel alias (ProxyCommand path works from there).
+- **cabinkali**: remote URL `ssh.phillias.cc:mem-bare.git` — SSH alias
+  `ssh.phillias.cc` (`chezmoi-deploy-key`, `cloudflared access ssh`
+  ProxyCommand).
+- **kalione**: remote URL `ssh.phillias.cc:mem-bare.git` — the `ssh.phillias.cc`
+  alias (ProxyCommand path works from there).
 
 A store born local (never cloned from the anchor) has unrelated history:
 `git pull --rebase` refuses, so the first sync needs explicit reconciliation —
