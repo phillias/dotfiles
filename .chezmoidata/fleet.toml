@@ -47,7 +47,7 @@
         tunnel_zone = "phillias.org"
     [fleet.nodes.primary]
         hostname = "primary"
-        lan_ip = "UNKNOWN"
+        lan_ip = "10.0.0.149"
         tunnel_id = "d8787ea7-f3db-4b14-b9da-20a8e244809a"
         ssh_alias = "fleet-ssh.phillias.cc"
         access_host = "ssh.phillias.cc"
