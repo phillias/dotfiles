@@ -2,19 +2,19 @@
 set -euo pipefail
 
 if [[ "$(uname -s)" != "Linux" ]]; then
-    exit 0
+	exit 0
 fi
 
 if [[ -f "$HOME/.agents/keys/load-keys.sh" ]]; then
-    # shellcheck disable=SC1091
-    if . "$HOME/.agents/keys/load-keys.sh"; then
-        :
-    fi
+	# shellcheck disable=SC1091
+	if . "$HOME/.agents/keys/load-keys.sh"; then
+		:
+	fi
 fi
 
 if [[ -z "${WARP_FLEET_ENROLLMENT_CLIENT_ID:-}" || -z "${WARP_FLEET_ENROLLMENT_CLIENT_SECRET:-}" ]]; then
-    echo "[warp-mdm] ERROR: WARP enrollment credentials not available" >&2
-    exit 1
+	echo "[warp-mdm] ERROR: WARP enrollment credentials not available" >&2
+	exit 1
 fi
 
 sudo -n mkdir -p /var/lib/cloudflare-warp
