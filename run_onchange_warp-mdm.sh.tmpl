@@ -41,4 +41,4 @@ cat <<EOF | sudo -n tee /var/lib/cloudflare-warp/mdm.xml >/dev/null
 </plist>
 EOF
 
-sudo -n systemctl restart warp-svc.service 2>/dev/null || true
+sudo -n systemctl restart warp-svc.service
