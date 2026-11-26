@@ -9,8 +9,31 @@ fi
 
 unset WARP_FLEET_ENROLLMENT_CLIENT_ID WARP_FLEET_ENROLLMENT_CLIENT_SECRET
 
+KEYS_ORIGINAL_HOME="$HOME"
+KEYS_ISOLATED_HOME="$(mktemp -d)"
+trap 'rm -rf "$KEYS_ISOLATED_HOME"' EXIT
+mkdir -p "$KEYS_ISOLATED_HOME/.agents/keys"
+ln -s "$KEYS_ORIGINAL_HOME/.agents/keys/default" "$KEYS_ISOLATED_HOME/.agents/keys/default"
+KEYS_PROFILE="$(readlink "$KEYS_ORIGINAL_HOME/.agents/keys/default" 2>/dev/null || true)"
+if [[ -n "$KEYS_PROFILE" && -d "$KEYS_ORIGINAL_HOME/.agents/keys/$KEYS_PROFILE" ]]; then
+    ln -s "$KEYS_ORIGINAL_HOME/.agents/keys/$KEYS_PROFILE" "$KEYS_ISOLATED_HOME/.agents/keys/$KEYS_PROFILE"
+fi
+if [[ -x "$KEYS_ORIGINAL_HOME/.local/bin/jq" ]]; then
+    mkdir -p "$KEYS_ISOLATED_HOME/.local/bin"
+    ln -s "$KEYS_ORIGINAL_HOME/.local/bin/jq" "$KEYS_ISOLATED_HOME/.local/bin/jq"
+fi
+if [[ -z "${BWS_BIN:-}" ]]; then
+    if KEYS_BWS_BIN="$(command -v bws 2>/dev/null)"; then
+        export BWS_BIN="$KEYS_BWS_BIN"
+    elif [[ -x "$KEYS_ORIGINAL_HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws" ]]; then
+        export BWS_BIN="$KEYS_ORIGINAL_HOME/.local/share/mise/installs/bitwarden-secrets-manager/latest/bws"
+    fi
+fi
+export HOME="$KEYS_ISOLATED_HOME"
+
 # shellcheck disable=SC1091
 . "$KEY_LOADER"
+export HOME="$KEYS_ORIGINAL_HOME"
 
 if [[ -z "${WARP_FLEET_ENROLLMENT_CLIENT_ID:-}" ]]; then
     echo "[warp-mdm] ERROR: WARP_FLEET_ENROLLMENT_CLIENT_ID is unset" >&2
@@ -24,7 +47,7 @@ fi
 MDM_DIR="/var/lib/cloudflare-warp"
 MDM_PATH="$MDM_DIR/mdm.xml"
 MDM_TMP="$(mktemp)"
-trap 'rm -f "$MDM_TMP"' EXIT
+trap 'rm -f "$MDM_TMP"; rm -rf "$KEYS_ISOLATED_HOME"' EXIT
 
 cat > "$MDM_TMP" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
