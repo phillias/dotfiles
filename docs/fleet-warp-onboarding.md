@@ -75,6 +75,11 @@ warp-cli --version
 
 The file is `/var/lib/cloudflare-warp/mdm.xml`, mode `0600`, root-owned.
 
+On a node with these dotfiles applied, `chezmoi apply` writes this file from
+fresh BWS credentials via `run_onchange_warp-mdm.sh.tmpl`. That version also
+sets `auto_connect`, `onboarding`, and `service_mode`, so the key check below
+lists six keys. Use the manual block only when chezmoi is not yet applied.
+
 Start Bash for this block; do not paste it into the assumed zsh login shell:
 
 ```bash
@@ -105,8 +110,8 @@ Verify the key names landed (values are deliberately not printed):
 sudo grep -o '<key>[^<]*</key>' /var/lib/cloudflare-warp/mdm.xml
 ```
 
-Expect exactly three keys: `organization`, `auth_client_id`,
-`auth_client_secret`.
+Expect exactly three keys from the manual block: `organization`,
+`auth_client_id`, `auth_client_secret`.
 
 > **Gotcha.** The keys are `auth_client_id` and `auth_client_secret` — not
 > `unique_client_id`/`unique_client_secret`, and not the
