@@ -7,7 +7,9 @@ fi
 
 if [[ -f "$HOME/.agents/keys/load-keys.sh" ]]; then
     # shellcheck disable=SC1091
-    . "$HOME/.agents/keys/load-keys.sh"
+    if . "$HOME/.agents/keys/load-keys.sh"; then
+        :
+    fi
 fi
 
 if [[ -z "${WARP_FLEET_ENROLLMENT_CLIENT_ID:-}" || -z "${WARP_FLEET_ENROLLMENT_CLIENT_SECRET:-}" ]]; then
