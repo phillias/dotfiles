@@ -13,7 +13,7 @@ KEYS_ORIGINAL_HOME="$HOME"
 KEYS_ISOLATED_HOME="$(mktemp -d)"
 trap 'rm -rf "$KEYS_ISOLATED_HOME"' EXIT
 mkdir -p "$KEYS_ISOLATED_HOME/.agents/keys"
-ln -s "$KEYS_ORIGINAL_HOME/.agents/keys/default" "$KEYS_ISOLATED_HOME/.agents/keys/default"
+ln -s "$(readlink "$KEYS_ORIGINAL_HOME/.agents/keys/default")" "$KEYS_ISOLATED_HOME/.agents/keys/default"
 KEYS_PROFILE="$(readlink "$KEYS_ORIGINAL_HOME/.agents/keys/default" 2>/dev/null || true)"
 if [[ -n "$KEYS_PROFILE" && -d "$KEYS_ORIGINAL_HOME/.agents/keys/$KEYS_PROFILE" ]]; then
     ln -s "$KEYS_ORIGINAL_HOME/.agents/keys/$KEYS_PROFILE" "$KEYS_ISOLATED_HOME/.agents/keys/$KEYS_PROFILE"
