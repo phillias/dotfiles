@@ -73,40 +73,21 @@ warp-cli --version
 
 ### 1c. Write the MDM enrollment file
 
-The file is `/var/lib/cloudflare-warp/mdm.xml`, mode `0600`, root-owned.
+The chezmoi `run_onchange_warp-mdm.sh.tmpl` hook sources
+`WARP_FLEET_ENROLLMENT_CLIENT_ID` and
+`WARP_FLEET_ENROLLMENT_CLIENT_SECRET` from `load-keys.sh`, then writes
+`/var/lib/cloudflare-warp/mdm.xml` as a root-owned mode-`0600` file. It fails
+when either credential is unavailable so a later apply can retry. On Linux it
+also restarts `warp-svc.service` after writing the file.
 
-Start Bash for this block; do not paste it into the assumed zsh login shell:
-
-```bash
-sudo mkdir -p /var/lib/cloudflare-warp
-if ! read -r -p 'Client ID: ' CLIENT_ID < /dev/tty || [[ -z "$CLIENT_ID" ]]; then
-  printf 'Client ID is required\n' >&2
-  exit 1
-fi
-if ! read -r -s -p 'Client secret: ' CLIENT_SECRET < /dev/tty || [[ -z "$CLIENT_SECRET" ]]; then
-  printf '\nClient secret is required\n' >&2
-  exit 1
-fi
-printf '\n' >&2
-sudo install -o root -g root -m 600 /dev/null /var/lib/cloudflare-warp/mdm.xml
-{
-  printf '<dict>\n  <key>organization</key>\n  <string>phillias</string>\n'
-  printf '  <key>auth_client_id</key>\n  <string>%s</string>\n' "$CLIENT_ID"
-  printf '  <key>auth_client_secret</key>\n  <string>%s</string>\n</dict>\n' "$CLIENT_SECRET"
-} | sudo tee /var/lib/cloudflare-warp/mdm.xml > /dev/null
-unset CLIENT_ID CLIENT_SECRET
-```
-
-Enter the two BWS values only at the prompts; do not put them in a command or
-heredoc. The block exits before creating the file if either value is empty.
 Verify the key names landed (values are deliberately not printed):
 
 ```bash
 sudo grep -o '<key>[^<]*</key>' /var/lib/cloudflare-warp/mdm.xml
 ```
 
-Expect exactly three keys: `organization`, `auth_client_id`,
-`auth_client_secret`.
+Expect these keys: `organization`, `auth_client_id`, `auth_client_secret`,
+`onboarding`, `switch_locked`, `auto_connect`, and `service_mode`.
 
 > **Gotcha.** The keys are `auth_client_id` and `auth_client_secret` — not
 > `unique_client_id`/`unique_client_secret`, and not the
