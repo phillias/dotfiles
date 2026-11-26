@@ -7,6 +7,8 @@ if [[ ! -r "$KEY_LOADER" ]]; then
     exit 1
 fi
 
+unset WARP_FLEET_ENROLLMENT_CLIENT_ID WARP_FLEET_ENROLLMENT_CLIENT_SECRET
+
 # shellcheck disable=SC1091
 . "$KEY_LOADER"
 
