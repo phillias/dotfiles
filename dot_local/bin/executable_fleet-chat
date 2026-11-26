@@ -10,7 +10,7 @@ MAX_TEXT=1200
 
 DEFAULT_NODES=(
   "local=http://127.0.0.1:4096"
-  "primary55522=http://127.0.0.1:14001"
+  "primary=http://127.0.0.1:14001"
   "kali=http://127.0.0.1:14002"
   "kalione=http://127.0.0.1:14003"
 )

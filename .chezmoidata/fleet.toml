@@ -13,8 +13,8 @@
     #
     # Mesh fields (consumed by dot_ssh/config.tmpl fleet-alias block and
     # scripts/setup.sh Phase 7b): ssh_alias = the fleet-* Host alias every
-    # node uses to reach this node (cloudflared access transport, deploy
-    # key); access_host = the hostname passed to `cloudflared access ssh`;
+    # node uses to reach this node (mesh SSH transport, deploy key);
+    # access_host = the hostname used by the SSH transport;
     # ssh_user = remote login user; tunnel_port = the LOCAL port other nodes
     # forward to this node's opencode serve (127.0.0.1:4096). Next free port
     # = max(existing)+1 — greenfield nodes claim it in their registration PR.
@@ -26,7 +26,6 @@
         access_host = "ssh.phillias.us"
         ssh_user = "phillias"
         tunnel_port = 14002
-        tunnel_zone = "phillias.us"
     [fleet.nodes.oci1]
         hostname = "oci1"
         lan_ip = "10.0.0.245"
@@ -35,7 +34,6 @@
         access_host = "ssh.phillias.net"
         ssh_user = "ubuntu"
         tunnel_port = 14004
-        tunnel_zone = "phillias.net"
     [fleet.nodes.kalione]
         hostname = "InspironOne"
         lan_ip = "192.168.1.224"
@@ -44,13 +42,11 @@
         access_host = "ssh.phillias.org"
         ssh_user = "phillias"
         tunnel_port = 14003
-        tunnel_zone = "phillias.org"
     [fleet.nodes.primary]
         hostname = "primary"
         lan_ip = "10.0.0.149"
         tunnel_id = "d8787ea7-f3db-4b14-b9da-20a8e244809a"
-        ssh_alias = "fleet-ssh.phillias.cc"
+        ssh_alias = "fleet-primary"
         access_host = "ssh.phillias.cc"
         ssh_user = "ubuntu"
         tunnel_port = 14001
-        tunnel_zone = "phillias.cc"

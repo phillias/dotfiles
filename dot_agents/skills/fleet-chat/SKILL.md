@@ -13,10 +13,10 @@ full-mesh by autossh user tunnels (see dotfiles `dot_agents/skills/dotfiles/refs
 
 ```bash
 fleet-chat list-nodes                                    # mesh health + versions
-fleet-chat send --node primary55522 --prompt "..."       # create/admit a prompt
-fleet-chat latest --node primary55522 --session <id>     # read newest assistant reply
-fleet-chat latest --node primary55522 --session <id> --full
-fleet-chat session-list --node primary55522
+fleet-chat send --node primary --prompt "..."       # create/admit a prompt
+fleet-chat latest --node primary --session <id>     # read newest assistant reply
+fleet-chat latest --node primary --session <id> --full
+fleet-chat session-list --node primary
 ```
 
 Output is human-readable tables by default; `--toon` forces TOON rows and `--json` emits JSON
@@ -24,7 +24,7 @@ Output is human-readable tables by default; `--toon` forces TOON rows and `--jso
 
 Nodes resolve from `$FLEET_CHAT_NODES` (space-separated `name=url` pairs), then a
 `fleet-chat.nodes` file next to the auth env file, then the built-in map
-(`local=127.0.0.1:4096`, `primary55522=:14001`, `kali=:14002`, `kalione=:14003`).
+(`local=127.0.0.1:4096`, `primary=:14001`, `kali=:14002`, `kalione=:14003`).
 Auth: `OPENCODE_SERVE_ENV` → `~/.config/opencode/opencode-serve.env`
 (`OPENCODE_SERVER_USERNAME`/`OPENCODE_SERVER_PASSWORD`), sent as basic auth.
 

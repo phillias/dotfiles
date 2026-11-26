@@ -3,9 +3,9 @@
 Fleet nodes (kalione, primary, kali, oci1) each run a headless `opencode serve`
 bound to `127.0.0.1:4096`. This is a FULL MESH: every node tunnels to every
 other node's serve through persistent autossh tunnels, so every firstmate's
-opencode agent sees all remote fleet agents as localhost ports. The tunnel is
-the security boundary — it rides existing passphraseless SSH keys; no firewall
-changes, no public exposure.
+opencode agent sees all remote fleet agents as localhost ports. The mesh uses
+SSH over the private fleet network; cloudflared is reserved for break-the-glass
+SSH access from an administrator's laptop.
 
 ## Architecture
 
@@ -29,7 +29,7 @@ Every node runs:
 | Unit | Purpose |
 |---|---|
 | `opencode-serve.service` | `opencode serve --port 4096 --hostname 127.0.0.1`, rooted at `~/firstmate` for hosted sessions and using the shared `~/.config/opencode` config tree plus the serve-only `~/.config/opencode/opencode-serve.json` `OPENCODE_CONFIG` overlay; EnvironmentFile reads `~/.config/opencode/opencode-serve.env` (OPENCODE_SERVER_PASSWORD etc.) — rendered by chezmoi template `private_opencode-serve.env.tmpl`, age-decrypting each secret from its own age file (serve password in `.chezmoitemplates/opencode-serve-password.age`) |
-| `opencode-tunnel-ssh.phillias.cc.service` | autossh `-L 14001:127.0.0.1:4096 fleet-ssh.phillias.cc` |
+| `opencode-tunnel-primary.service` | autossh `-L 14001:127.0.0.1:4096 fleet-primary` |
 | `opencode-tunnel-kali.service` | autossh `-L 14002:127.0.0.1:4096 fleet-kali` |
 | `opencode-tunnel-kalione.service` | autossh `-L 14003:127.0.0.1:4096 fleet-kalione` |
 | `opencode-tunnel-oci1.service` | autossh `-L 14004:127.0.0.1:4096 fleet-oci` |
@@ -63,10 +63,10 @@ authorized_keys, and enables the same units on greenfield hosts.
 
 | Local port | Remote node | SSH alias |
 |---|---|---|
-| 14001 | primary | `fleet-ssh.phillias.cc` (cloudflared access, deploy key) |
-| 14002 | kali | `fleet-kali` (cloudflared access, deploy key) |
-| 14003 | kalione | `fleet-kalione` (cloudflared access, deploy key) |
-| 14004 | oci1 | `fleet-oci` (cloudflared access, deploy key) |
+| 14001 | primary | `fleet-primary` (mesh SSH, deploy key) |
+| 14002 | kali | `fleet-kali` (mesh SSH, deploy key) |
+| 14003 | kalione | `fleet-kalione` (mesh SSH, deploy key) |
+| 14004 | oci1 | `fleet-oci` (mesh SSH, deploy key) |
 | 14005… | future nodes | next sequential |
 
 The remote serve port is always 4096. Local ports only need per-node uniqueness.
@@ -131,33 +131,6 @@ remote node (pull + chezmoi apply + daemon-reload + restart serve).
 4. Serve is enabled by the same apply (`run_fleet-tunnels.sh` runs
    `systemctl --user enable --now opencode-serve.service`). Validate per
    Operations below.
-
-## Eternal Terminal (oci1: direct exposure)
-
-ET does not ride this mesh. oci1 exposes ET directly, with no autossh tunnel,
-no cloudflared and no sslh:
-
-- `et.phillias.net` is a grey-cloud (DNS-only) A record to oci1's reserved IP
-  (147.224.180.103); the OCI NSG opens TCP/22 (sshd bootstrap) and TCP/2022
-  (etserver on 0.0.0.0).
-- Laptop: `et -u ubuntu et-oci1` (`dot_ssh/config.tmpl` alias → `et.phillias.net:22`).
-- Server setup + hardening: `scripts/install-et-no-sslh.sh` (hardening
-  details: README "Eternal Terminal server setup").
-- `et.phillias.cc` routes through the `primary` tunnel (config-managed, Access-gated).
-
-## Eternal Terminal (kali migration)
-
-The Kali edge node uses the host-specific adaptation
-`scripts/install-et-no-sslh-phillias.sh`. It removes only the old sshd
-`Port 55554` directive, leaves the primary `:22` daemon in place, and exposes
-ET directly on `0.0.0.0:2022`. The migration also installs the versioned
-system-layer units from `systemd/system/` into `/etc/systemd/system/`:
-
-- `et.service` owns the `/usr/bin/etserver --cfgfile=/etc/et.cfg` process.
-
-These are host services, not user units under `~/.config/systemd/user/`.
-Rescue sshd (sshd-fallback.service, port 10022) has been decommissioned
-across the fleet. Each tunnel now exposes only SSH (:22) and ET (:2022).
 
 ## Agent-to-agent usage
 

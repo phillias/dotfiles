@@ -50,28 +50,38 @@ Host ora
   HostName ora.phillias.us
   User ubuntu
 
-Host ssh.phillias.cc
+Host ssh.phillias.us
   IdentityFile ~/.ssh/id_ed25519_inspironkali
-  HostName ssh.phillias.cc
-  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
-  User ubuntu
-
-Host kali
-  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  HostKeyAlias ssh.phillias.us
   HostName ssh.phillias.us
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User phillias
 
-Host kalione
+Host ssh.phillias.net
   IdentityFile ~/.ssh/id_ed25519_inspironkali
+  HostKeyAlias ssh.phillias.net
+  HostName ssh.phillias.net
+  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
+  User ubuntu
+
+Host ssh.phillias.org
+  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  HostKeyAlias ssh.phillias.org
   HostName ssh.phillias.org
   ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   User phillias
 
+Host ssh.phillias.cc
+  IdentityFile ~/.ssh/id_ed25519_inspironkali
+  HostKeyAlias ssh.phillias.cc
+  HostName ssh.phillias.cc
+  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
+  User ubuntu
+
 # Fleet mesh aliases — data-driven from .chezmoidata/fleet.toml (.fleet.nodes).
 # One Host block per registered node: the fleet-* alias every node uses to
 # reach that node (autossh tunnel units, fleet-chat, agent panes). Transport
-# is cloudflared access + the shared passphraseless chezmoi-deploy-key.
+# is the fleet mesh transport + the shared passphraseless chezmoi-deploy-key.
 # Greenfield: scripts/setup.sh Phase 7b probes these aliases post-apply to
 # record host keys (accept-new) and syncs every fleet deploy key into
 # authorized_keys. accept-new is deliberate — autossh cannot answer the
@@ -82,7 +92,6 @@ Host {{ $node.ssh_alias }}
   User {{ $node.ssh_user }}
   IdentityFile ~/.ssh/chezmoi-deploy-key
   IdentitiesOnly yes
-  ProxyCommand {{ $cloudflared }} access ssh --hostname %h
   StrictHostKeyChecking accept-new
 {{- end }}
 
@@ -91,34 +100,6 @@ Host *cloudflared* *
   ServerAliveInterval 30
   ServerAliveCountMax 3
   TCPKeepAlive yes
-
-# ET — Eternal Terminal host aliases (for CLI et connections)
-# Usage: et et-kali  (connects to etserver via tunnel DNS on port 2022)
-Host et-kali
-  HostName 127.0.0.1
-  Port 55554
-  User phillias
-  IdentityFile ~/.ssh/id_ed25519_kali
-
-Host et-kalione
-  HostName et.phillias.org
-  Port 22
-  User phillias
-
-# et-oci1 — oci1 ET via direct exposure (no cloudflared, no sslh).
-# et.phillias.net is a grey-cloud A record to oci1 (147.224.180.103); sshd on
-# :22 bootstraps, etserver on :2022. Usage: et -u ubuntu et-oci1
-Host et-oci1
-  HostName et.phillias.net
-  Port 22
-  HostKeyAlias et-oci1
-  User ubuntu
-  IdentityFile ~/.ssh/id_ed25519_inspironkali
-  IdentitiesOnly yes
-  AddKeysToAgent yes
-{{- if eq .chezmoi.os "darwin" }}
-  UseKeychain yes
-{{- end }}
 
 # oci1 — Oracle Cloud selfhost (direct reserved IP)
 Host oci1
