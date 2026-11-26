@@ -11,11 +11,12 @@ if [[ -f "$HOME/.agents/keys/load-keys.sh" ]]; then
 fi
 
 if [[ -z "${WARP_FLEET_ENROLLMENT_CLIENT_ID:-}" || -z "${WARP_FLEET_ENROLLMENT_CLIENT_SECRET:-}" ]]; then
-    echo "[warp-mdm] WARN: WARP enrollment credentials not available; skipping mdm.xml render" >&2
-    exit 0
+    echo "[warp-mdm] ERROR: WARP enrollment credentials not available" >&2
+    exit 1
 fi
 
 sudo -n mkdir -p /var/lib/cloudflare-warp
+sudo -n install -o root -g root -m 600 /dev/null /var/lib/cloudflare-warp/mdm.xml
 
 cat <<EOF | sudo -n tee /var/lib/cloudflare-warp/mdm.xml >/dev/null
 <?xml version="1.0" encoding="UTF-8"?>
@@ -39,7 +40,5 @@ cat <<EOF | sudo -n tee /var/lib/cloudflare-warp/mdm.xml >/dev/null
 </dict>
 </plist>
 EOF
-
-sudo -n chmod 600 /var/lib/cloudflare-warp/mdm.xml
 
 sudo -n systemctl restart cloudflare-warp.service 2>/dev/null || true
