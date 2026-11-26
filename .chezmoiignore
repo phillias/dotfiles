@@ -107,7 +107,7 @@ firstmate/projects/selfhost/.env.devcabinkali
 # your own 127.0.0.1:4096 is a no-op); the other units apply.
 # Port namespace: 14001=primary 14002=kali 14003=kalione 14004=oci1.
 {{- if eq .chezmoi.hostname "primary" }}
-.config/systemd/user/opencode-tunnel-ssh.phillias.cc.service
+.config/systemd/user/opencode-tunnel-primary.service
 {{- end }}
 {{- if eq .chezmoi.hostname "CabinInspiron22Kali" }}
 .config/systemd/user/opencode-tunnel-kali.service

@@ -225,7 +225,7 @@ Add the new node using its Mesh IP from Step 1f:
 ```bash
 # ~/.config/opencode/fleet-chat.nodes  (on every peer that must reach the node)
 local=http://127.0.0.1:4096
-primary55522=http://127.0.0.1:14001
+primary=http://127.0.0.1:14001
 kali=http://100.96.0.3:4096
 kalione=http://100.96.0.2:4096
 newton=http://<mesh-ip>:4096
@@ -319,7 +319,7 @@ In `~/.config/opencode/fleet-chat.nodes`, restore each affected entry to its
 tunnel's localhost forward, for example:
 
 ```text
-primary55522=http://127.0.0.1:14001
+primary=http://127.0.0.1:14001
 kali=http://127.0.0.1:14002
 kalione=http://127.0.0.1:14003
 oci1=http://127.0.0.1:14004
@@ -351,7 +351,7 @@ After Mesh is proven reliable, restore the automatic sync entry:
 ```
 
 Use the existing local-forward port for the node (`14001` for
-`primary55522`, `14002` for `kali`, `14003` for `kalione`, `14004` for
+`primary`, `14002` for `kali`, `14003` for `kalione`, `14004` for
 `oci1`, and the next assigned port for a new node), then run
 `fleet-chat list-nodes` to verify the tunnel path.
 

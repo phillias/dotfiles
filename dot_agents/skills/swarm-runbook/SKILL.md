@@ -16,7 +16,7 @@ Every fleet host exports `FLEET_NODE` in its shell environment (set by
 by matching `.chezmoi.hostname` to the node's `hostname` field). This is
 the canonical fleet identity — **not** `hostname`, `hostname -s`, or any
 other system field, which may differ (e.g. hostname `primary` → fleet key
-`primary55522`, hostname `InspironOne` → fleet key `phillias`).
+`primary`, hostname `InspironOne` → fleet key `phillias`).
 
 **Rule:** every attestation, audit, or slice comment must identify the host
 by `$FLEET_NODE` (or the fleet key if writing outside a shell). Never infer
@@ -28,7 +28,7 @@ The node key → hostname mapping in `fleet.toml`:
 
 | Fleet key | Hostname | SSH alias |
 |---|---|---|
-| `primary55522` | `primary` | `fleet-ssh.phillias.cc` |
+| `primary` | `primary` | `fleet-primary` |
 | `kali` | `CabinInspiron22Kali` | `fleet-kali` |
 | `phillias` | `InspironOne` | `fleet-kalione` |
 | `oci1` | `oci1` | `fleet-oci` |

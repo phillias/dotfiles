@@ -286,7 +286,7 @@ log_level: info
 
 # Override native agent binary paths (optional)
 # (2026-09-02: removed the active opencode override — it hardcoded a
-# /home/ubuntu path from primary55522 onto every other host in the fleet.
+# /home/ubuntu path from primary onto every other host in the fleet.
 # Auto-detection resolves the correct per-host binary.)
 # agent_path_override:
 #   claude: /usr/local/bin/claude
