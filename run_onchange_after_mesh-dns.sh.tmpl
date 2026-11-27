@@ -34,11 +34,10 @@ fi
 {{- $selfTunnelID = $node.tunnel_id }}
 {{- end }}
 {{- end }}
-{{- $meshIPs := list }}
+{{- $lanIPs := list }}
 {{- range $name, $node := .fleet.nodes }}
-{{- $meshIP := index $node "mesh_ip" }}
-{{- if and $meshIP (ne $meshIP "UNKNOWN") }}
-{{- $meshIPs = append $meshIPs $meshIP }}
+{{- if and $node.lan_ip (ne $node.lan_ip "UNKNOWN") }}
+{{- $lanIPs = append $lanIPs $node.lan_ip }}
 {{- end }}
 {{- end }}
 
@@ -66,9 +65,9 @@ if [[ -n "$SELF_LAN_IP" && "$SELF_LAN_IP" != "UNKNOWN" && -n "$SELF_TUNNEL_ID" ]
     fi
 fi
 
-# LDF: point .mesh (and .local) at fleet WARP mesh IPs so WARP clients reach dnsmasq.
+# LDF: point .mesh (and .local) at fleet LAN IPs so WARP clients reach dnsmasq.
 # The fallback_domains endpoint takes a bare JSON array body; a wrapped object returns error 2003.
-MESH_DNS_SERVERS_JSON='{{ $meshIPs | toJson }}'
+MESH_DNS_SERVERS_JSON='{{ $lanIPs | toJson }}'
 if [[ -n "${CLOUDFLARE_API_TOKEN:-}" && -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]] && command -v jq >/dev/null 2>&1; then
     LDF_URL="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/devices/policy/fallback_domains"
     if CURRENT_LDF=$(curl --fail --silent -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$LDF_URL"); then
