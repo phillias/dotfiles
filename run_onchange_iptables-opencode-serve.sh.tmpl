@@ -5,10 +5,6 @@ if [[ "$(uname -s)" != "Linux" ]]; then
     exit 0
 fi
 
-if ! command -v iptables >/dev/null 2>&1; then
-    exit 0
-fi
-
 # Ensure iptables-persistent is installed (non-interactive debconf pattern).
 if ! dpkg -s iptables-persistent >/dev/null 2>&1; then
     echo "iptables-persistent iptables-persistent/autosave_v4 boolean false" | sudo -n debconf-set-selections
