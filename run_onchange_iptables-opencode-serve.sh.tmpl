@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ "$(uname -s)" != "Linux" ]]; then
+    exit 0
+fi
+
+if ! command -v iptables >/dev/null 2>&1; then
+    exit 0
+fi
+
+# Skip if port 4096 is already allowed.
+if sudo -n iptables -C INPUT -p tcp --dport 4096 -j ACCEPT >/dev/null 2>&1; then
+    exit 0
+fi
+
+# Only act when a firewall (REJECT/DROP) is in place; skip silently otherwise.
+if ! sudo -n iptables -S INPUT 2>/dev/null | grep -qiE 'REJECT|DROP'; then
+    exit 0
+fi
+
+# Ensure iptables-persistent is installed (non-interactive debconf pattern).
+if ! dpkg -s iptables-persistent >/dev/null 2>&1; then
+    echo "iptables-persistent iptables-persistent/autosave_v4 boolean false" | sudo -n debconf-set-selections
+    echo "iptables-persistent iptables-persistent/autosave_v6 boolean false" | sudo -n debconf-set-selections
+    sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -qq iptables-persistent
+fi
+
+# Add the rule if not already present (idempotent).
+if ! sudo -n iptables -C INPUT -p tcp --dport 4096 -j ACCEPT >/dev/null 2>&1; then
+    sudo -n iptables -I INPUT -p tcp --dport 4096 -j ACCEPT
+fi
+
+sudo -n mkdir -p /etc/iptables
+sudo -n sh -c 'iptables-save > /etc/iptables/rules.v4'
