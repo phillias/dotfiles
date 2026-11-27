@@ -21,9 +21,6 @@ sudo -n mkdir -p /var/lib/cloudflare-warp
 sudo -n install -o root -g root -m 600 /dev/null /var/lib/cloudflare-warp/mdm.xml
 
 cat <<EOF | sudo -n tee /var/lib/cloudflare-warp/mdm.xml >/dev/null
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
 <dict>
     <key>organization</key>
     <string>phillias</string>
@@ -40,7 +37,6 @@ cat <<EOF | sudo -n tee /var/lib/cloudflare-warp/mdm.xml >/dev/null
     <key>service_mode</key>
     <string>warp</string>
 </dict>
-</plist>
 EOF
 
 sudo -n systemctl restart warp-svc.service
