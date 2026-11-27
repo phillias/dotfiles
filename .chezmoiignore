@@ -128,8 +128,3 @@ docker/bench-studio/.env
 # `chezmoi add` from tracking the path again. Apply leaves an existing file
 # in place; re-seed that host only after moving the old copy aside.
 .local/share/opencode/auth.json
-
-# Cloudflare WARP MDM XML is a runtime artifact rendered from BWS-sourced
-# enrollment credentials (dotfiles#641 prep gate 1); chezmoi must not track or
-# overwrite it. Absolute path form per chezmoi source-path convention.
-/var/lib/cloudflare-warp/mdm.xml
