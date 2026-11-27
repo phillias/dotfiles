@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ "$(uname -s)" != "Linux" ]]; then
+	exit 0
+fi
+
+if [[ -f "$HOME/.agents/keys/load-keys.sh" ]]; then
+	# shellcheck disable=SC1091
+	if . "$HOME/.agents/keys/load-keys.sh"; then
+		:
+	fi
+fi
+
+if [[ -z "${WARP_FLEET_ENROLLMENT_CLIENT_ID:-}" || -z "${WARP_FLEET_ENROLLMENT_CLIENT_SECRET:-}" ]]; then
+	echo "[warp-mdm] ERROR: WARP enrollment credentials not available" >&2
+	exit 1
+fi
+
+sudo -n mkdir -p /var/lib/cloudflare-warp
+sudo -n install -o root -g root -m 600 /dev/null /var/lib/cloudflare-warp/mdm.xml
+
+cat <<EOF | sudo -n tee /var/lib/cloudflare-warp/mdm.xml >/dev/null
+<dict>
+    <key>organization</key>
+    <string>phillias</string>
+    <key>auth_client_id</key>
+    <string>${WARP_FLEET_ENROLLMENT_CLIENT_ID}</string>
+    <key>auth_client_secret</key>
+    <string>${WARP_FLEET_ENROLLMENT_CLIENT_SECRET}</string>
+    <key>onboarding</key>
+    <false/>
+    <key>switch_locked</key>
+    <true/>
+    <key>auto_connect</key>
+    <integer>0</integer>
+    <key>service_mode</key>
+    <string>warp</string>
+</dict>
+EOF
+
+sudo -n systemctl restart warp-svc.service

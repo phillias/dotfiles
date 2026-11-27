@@ -36,22 +36,11 @@ sudo apt-get install -y cloudflare-warp
 
 ### 3. Write MDM enrollment file
 
-Service token keys from bws project `phillias`:
-- `WARP_FLEET_ENROLLMENT_CLIENT_ID`
-- `WARP_FLEET_ENROLLMENT_CLIENT_SECRET`
-
-```bash
-sudo mkdir -p /var/lib/cloudflare-warp
-sudo tee /var/lib/cloudflare-warp/mdm.xml > /dev/null <<'EOF'
-<dict>
-  <key>warp_fleet_enrollment_client_id</key>
-  <string>CLIENT_ID_VALUE</string>
-  <key>warp_fleet_enrollment_client_secret</key>
-  <string>CLIENT_SECRET_VALUE</string>
-</dict>
-EOF
-sudo chmod 600 /var/lib/cloudflare-warp/mdm.xml
-```
+Follow the [fleet WARP onboarding runbook](../../../docs/fleet-warp-onboarding.md)
+for the chezmoi hook that sources the BWS credentials, writes the required
+bare-dict MDM file at `/var/lib/cloudflare-warp/mdm.xml`, and restarts
+`warp-svc.service`. Do not use the older manual XML block; its key names are
+obsolete.
 
 ### 4. Enroll in Zero Trust
 
