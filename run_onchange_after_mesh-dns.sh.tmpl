@@ -36,8 +36,9 @@ fi
 {{- end }}
 {{- $lanIPs := list }}
 {{- range $name, $node := .fleet.nodes }}
-{{- if and $node.lan_ip (ne $node.lan_ip "UNKNOWN") }}
-{{- $lanIPs = append $lanIPs $node.lan_ip }}
+{{- $lanIP := index $node "lan_ip" }}
+{{- if and $lanIP (ne $lanIP "UNKNOWN") }}
+{{- $lanIPs = append $lanIPs $lanIP }}
 {{- end }}
 {{- end }}
 
