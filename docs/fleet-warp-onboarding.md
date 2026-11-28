@@ -37,7 +37,7 @@ bws-axi secret phillias WARP_FLEET_ENROLLMENT_CLIENT_SECRET --full
 
 **SSH access** — a login account with passwordless `sudo` on the node, plus
 `fleet-*` SSH aliases already present in `~/.ssh/config` if the node is also
-reached over the tunnel fallback.
+reached over SSH.
 
 **Target port free** — the node's `opencode serve` will bind `:4096`. Confirm
 nothing else holds it: `ss -tlnp | grep 4096` should print nothing (or only
@@ -91,8 +91,9 @@ Expect these keys: `organization`, `auth_client_id`, `auth_client_secret`,
 
 > **Gotcha.** The keys are `auth_client_id` and `auth_client_secret` — not
 > `unique_client_id`/`unique_client_secret`, and not the
-> `warp_fleet_enrollment_*` names used by the older
-> `scripts/install-warp-fleet.sh`. The MDM file is the enrollment credential
+> `warp_fleet_enrollment_*` names used by the removed
+> `scripts/install-warp-fleet.sh` (superseded by
+> `run_onchange_warp-mdm.sh.tmpl`). The MDM file is the enrollment credential
 > source; wrong key names silently produce an unenrolled device.
 >
 > `organization` is the Cloudflare Zero Trust **team name** (here `phillias`),
@@ -162,6 +163,11 @@ ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 127.0
 ExecStart=%h/.local/share/mise/shims/opencode serve --port 4096 --hostname 0.0.0.0 --log-level WARN
 ```
 
+The chezmoi hook `run_onchange_fleet-firewall.sh.tmpl` accepts TCP/4096 in
+iptables INPUT (port list `.fleet.ports` in `.chezmoidata/fleet.toml`) and
+persists it to `/etc/iptables/rules.v4`, so a node that has run `chezmoi
+apply` needs no manual firewall change.
+
 Then reload and restart:
 
 ```bash
@@ -192,6 +198,11 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4096/doc
 
 ## Step 3: fleet-chat nodes
 
+`fleet-chat`'s built-in map already covers the core nodes over Mesh
+(`primary`, `kali`, `kalione`, `oci1` at `http://<node>.mesh:4096`). A node
+outside that map needs a `fleet-chat.nodes` entry (or a map update in
+`dot_local/bin/executable_fleet-chat`).
+
 Every node that should reach the new node keeps a `fleet-chat.nodes` file next
 to its serve auth env — by default
 `~/.config/opencode/fleet-chat.nodes` (i.e. alongside
@@ -206,9 +217,10 @@ Add the new node using its Mesh IP from Step 1f:
 ```bash
 # ~/.config/opencode/fleet-chat.nodes  (on every peer that must reach the node)
 local=http://127.0.0.1:4096
-primary=http://127.0.0.1:14001
-kali=http://100.96.0.3:4096
-kalione=http://100.96.0.2:4096
+primary=http://primary.mesh:4096
+kali=http://kali.mesh:4096
+kalione=http://kalione.mesh:4096
+oci1=http://oci1.mesh:4096
 newton=http://<mesh-ip>:4096
 ```
 
@@ -260,81 +272,24 @@ fleet-chat latest --node <name> --session <session-id>
 
 ## Fallback and rollback
 
-Keep the autossh tunnel units on disk but **stopped and disabled** until Mesh
-proves reliable over a few days of real traffic:
+The autossh tunnel layer is **retired**: WARP Mesh is the primary inter-node
+transport. The `opencode-tunnel-<node>.service` units are no longer shipped,
+and `run_fleet-tunnels.sh` disables and removes any that are still deployed on
+the next `chezmoi apply` (including the automatic `chezmoi-sync-cron` run).
+No manual tunnel stop/disable/move is needed.
+
+If Mesh connectivity to a node fails, diagnose the Mesh path rather than
+falling back to tunnels:
 
 ```bash
-systemctl --user stop opencode-tunnel-<node>.service
-systemctl --user disable opencode-tunnel-<node>.service
+getent hosts <node>.mesh            # mesh DNS resolves (dnsmasq + mesh-ddns)
+nc -zv <node>.mesh 4096             # serve reachable
+sudo iptables -S INPUT | grep 4096  # on the node: fleet firewall hook applied
 ```
 
-`run_fleet-tunnels.sh` enables and starts every installed tunnel on each
-`chezmoi apply`. The automatic `chezmoi-sync-cron` job runs every 30 minutes,
-running `chezmoi-axi sync --force` and re-applying the chezmoi source. The
-tunnel unit is managed source at
-`dot_config/systemd/user/opencode-tunnel-<node>.service`, so stopping,
-disabling, or moving it aside alone is undone by the next sync. Suspend the
-automatic sync for the reliability period; the node will not receive dotfiles
-updates while it is suspended:
-
-```bash
-crontab -l | grep -v chezmoi-sync-cron | crontab -
-```
-
-Then move each unit out of `~/.config/systemd/user/` so the hook's glob cannot
-find it during the reliability period:
-
-```bash
-mkdir -p ~/.config/systemd/user-disabled
-mv ~/.config/systemd/user/opencode-tunnel-<node>.service ~/.config/systemd/user-disabled/
-systemctl --user daemon-reload
-```
-
-The unit remains on disk, but is outside the apply hook's scan path. Do not
-`rm` it or run a manual apply that restores it during this period.
-
-To roll back to the tunnels, first point fleet-chat back at them, then move
-each unit back, reload, and re-enable and start it.
-
-In `~/.config/opencode/fleet-chat.nodes`, restore each affected entry to its
-tunnel's localhost forward, for example:
-
-```text
-primary=http://127.0.0.1:14001
-kali=http://127.0.0.1:14002
-kalione=http://127.0.0.1:14003
-oci1=http://127.0.0.1:14004
-```
-
-If `FLEET_CHAT_NODES` is set, restore the corresponding entry there too:
-
-```text
-<node>=http://127.0.0.1:<local-forward-port>
-```
-
-```bash
-mv ~/.config/systemd/user-disabled/opencode-tunnel-<node>.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now opencode-tunnel-<node>.service
-```
-
-If Mesh is unreliable and this rollback completes, restore automatic sync
-immediately:
-
-```bash
-( crontab -l 2>/dev/null; echo '*/30 * * * * /bin/sh -c ". $HOME/.profile; chezmoi-sync-cron"' ) | crontab -
-```
-
-After Mesh is proven reliable, restore the automatic sync entry:
-
-```bash
-( crontab -l 2>/dev/null; echo '*/30 * * * * /bin/sh -c ". $HOME/.profile; chezmoi-sync-cron"' ) | crontab -
-```
-
-Use the existing local-forward port for the node (`14001` for
-`primary`, `14002` for `kali`, `14003` for `kalione`, `14004` for
-`oci1`, and the next assigned port for a new node), then run
-`fleet-chat list-nodes` to verify the tunnel path.
+Restoring the tunnels is a dotfiles revert of the retirement change (units,
+their `.chezmoiignore` self-ignores, and the `run_fleet-tunnels.sh`
+enablement), not a per-host procedure.
 
 ## Out of scope for this runbook
 

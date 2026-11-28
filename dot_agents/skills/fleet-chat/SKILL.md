@@ -6,8 +6,8 @@ description: Send prompts to and read responses from opencode serve nodes across
 # fleet-chat
 
 `fleet-chat` (~/.local/bin/fleet-chat) is the adapter for agent-to-agent prompts across the
-opencode serve mesh. Every node runs headless `opencode serve` on 127.0.0.1:4096, connected
-full-mesh by autossh user tunnels (see dotfiles `dot_agents/skills/dotfiles/refs/FLEET-TUNNELS.md`).
+opencode serve mesh. Every node runs headless `opencode serve` on port 4096, reached full-mesh
+over WARP mesh at `<node>.mesh:4096` (see dotfiles `dot_agents/skills/dotfiles/refs/FLEET-TUNNELS.md`).
 
 ## Commands
 
@@ -24,7 +24,7 @@ Output is human-readable tables by default; `--toon` forces TOON rows and `--jso
 
 Nodes resolve from `$FLEET_CHAT_NODES` (space-separated `name=url` pairs), then a
 `fleet-chat.nodes` file next to the auth env file, then the built-in map
-(`local=127.0.0.1:4096`, `primary=:14001`, `kali=:14002`, `kalione=:14003`).
+(`local=127.0.0.1:4096`, `primary`/`kali`/`kalione`/`oci1` = `http://<node>.mesh:4096`).
 Auth: `OPENCODE_SERVE_ENV` → `~/.config/opencode/opencode-serve.env`
 (`OPENCODE_SERVER_USERNAME`/`OPENCODE_SERVER_PASSWORD`), sent as basic auth.
 
@@ -48,9 +48,9 @@ Auth: `OPENCODE_SERVE_ENV` → `~/.config/opencode/opencode-serve.env`
 
 ## Per-host self-alias gotcha
 
-Each host's own node name in the map is dead on that host: its own-target autossh tunnel unit
-is chezmoi-ignored, so `fleet-chat list-nodes` always shows that one node unreachable. Use
-`local` for the self node. This is expected health, not an outage.
+Each host's own node name in the map may be unreachable on that host: mesh-hosts skips the
+self entry, so `<self>.mesh` may not resolve locally and `fleet-chat list-nodes` can show that
+one node unreachable. Use `local` for the self node. This is expected health, not an outage.
 
 ## Empty reply troubleshooting (remote nodes)
 
@@ -59,7 +59,7 @@ remote node**, not a transport problem. Confirm via the raw V2 projection with t
 auth:
 
 ```bash
-curl -s --user "$USER:$PASS" "http://<node-tunnel-port>/api/session/<id>/message"
+curl -s --user "$USER:$PASS" "http://<node>.mesh:4096/api/session/<id>/message"
 ```
 
 An assistant message with `"finish":"error"` carrying

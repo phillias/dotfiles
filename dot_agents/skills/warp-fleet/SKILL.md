@@ -146,9 +146,10 @@ nc -zv <kalione-mesh-ip-or-cidr> 4096
 
 ### Step 2: Update fleet-chat node discovery
 
-fleet-chat resolves nodes from `$FLEET_CHAT_NODES` or its built-in map.
-Replace `localhost:14xxx` entries with Mesh-reachable addresses (Mesh IPs or
-CIDR-routed LAN IPs on port 4096).
+fleet-chat resolves nodes from `$FLEET_CHAT_NODES`, a `fleet-chat.nodes` file,
+or its built-in map. The built-in map now points at `<node>.mesh:4096`
+(resolved by the fleet dnsmasq from `fleet.toml` `mesh_ip` seeds plus
+mesh-ddns); the old `localhost:14xxx` tunnel entries are gone.
 
 ### Step 3: Validate fleet-chat over Mesh
 
@@ -158,15 +159,12 @@ fleet-chat send --node <peer> --prompt "ping"
 fleet-chat latest --node <peer> --session <id>
 ```
 
-### Step 4: Remove autossh tunnel units
+### Step 4: Remove autossh tunnel units (automatic)
 
-Once fleet-chat works over Mesh for a node pair:
-```bash
-systemctl --user stop opencode-tunnel-<node>.service
-systemctl --user disable opencode-tunnel-<node>.service
-rm ~/.config/systemd/user/opencode-tunnel-<node>.service
-systemctl --user daemon-reload
-```
+The autossh tunnel units are retired in dotfiles. A plain `chezmoi apply`
+removes them: `run_fleet-tunnels.sh` disables (`disable --now`) and deletes
+any deployed `opencode-tunnel-{primary,kali,kalione,oci1}.service`, then
+daemon-reloads. No manual stop/disable/rm is needed.
 
 ### Step 5: macOS captain workstation
 
@@ -178,22 +176,24 @@ cloudflared access tcp --hostname <node-access-host> --url localhost:14xxx
 
 Same localhost:14xxx → remote:4096 forwarding, minus the SSH+autossh layer.
 
-### Step 6: Cleanup
+### Step 6: Cleanup — done
 
-- Remove `autossh` from node prerequisites
-- Remove `opencode-tunnel-*.service` templates from dotfiles
-- Update `run_fleet-tunnels.sh` (remove autossh enablement)
-- Update FLEET-TUNNELS.md
+- `autossh` removed from node prerequisites (setup.sh Phase 7b)
+- `opencode-tunnel-*.service` units and their `.chezmoiignore` self-ignores removed
+- `run_fleet-tunnels.sh` no longer enables tunnels; it retires deployed ones
+- FLEET-TUNNELS.md rewritten for the mesh transport
 - Close #597
 
 ## Safety rules
 
 - **sshd-rescue is always pristine** — never touched by Mesh rework
-- If Mesh connectivity fails, autossh tunnels remain as fallback until
-  diagnosis completes
+- autossh tunnels are retired; WARP mesh is the primary inter-node
+  transport. If Mesh connectivity fails, diagnose the mesh (DNS, WARP
+  enrollment, `run_onchange_fleet-firewall.sh.tmpl` :4096 rule)
 - Captain gates: CIDR routes, Access apps, Gateway rules, WARP enrollment
   approval
-- Rollback: re-enable autossh tunnel units if Mesh proves unreliable
+- Rollback: restoring autossh tunnels means reverting the retirement PR
+  (units, `.chezmoiignore` self-ignores, `run_fleet-tunnels.sh` enablement)
 
 ## WARP split tunnel behavior
 

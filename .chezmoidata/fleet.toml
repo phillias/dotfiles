@@ -8,6 +8,25 @@
     # firstmate/data/captain.md.tmpl and lavish-axi server launch.
     dnsDomain = "phillias.org"
 
+    # Fleet-wide firewall ports managed by run_onchange_fleet-firewall.sh.tmpl.
+    # rate_limit = true applies the iptables `recent` pattern (3 new conns /
+    # 60s per source IP); false is a plain ACCEPT.
+    [[fleet.ports]]
+        number = 22
+        protocol = "tcp"
+        name = "ssh"
+        rate_limit = true
+    [[fleet.ports]]
+        number = 2022
+        protocol = "tcp"
+        name = "et"
+        rate_limit = true
+    [[fleet.ports]]
+        number = 4096
+        protocol = "tcp"
+        name = "opencode-serve"
+        rate_limit = false
+
     # Fleet node registry — maps chezmoi hostname to fleet node identity.
     # Each node gets its own RESTIC_PASSWORD (age-encrypted) and S3 bucket subpath.
     #
@@ -15,12 +34,14 @@
     # scripts/setup.sh Phase 7b): ssh_alias = the fleet-* Host alias every
     # node uses to reach this node (mesh SSH transport, deploy key);
     # access_host = the hostname used by the SSH transport;
-    # ssh_user = remote login user; tunnel_port = the LOCAL port other nodes
-    # forward to this node's opencode serve (127.0.0.1:4096). Next free port
-    # = max(existing)+1 — greenfield nodes claim it in their registration PR.
+    # ssh_user = remote login user; mesh_ip = static seed for the node's WARP
+    # Mesh IP (dot_config/dnsmasq/d/mesh-hosts.tmpl; mesh-ddns publishes the
+    # live value). tunnel_port = the local port of the RETIRED autossh tunnel
+    # to this node (no longer consumed; kept as a historical record).
     [fleet.nodes.kali]
         hostname = "CabinInspiron22Kali"
         lan_ip = "192.168.1.173"
+        mesh_ip = "100.96.0.7"
         tunnel_id = "c0118086-2b95-4766-990d-5b44ecf5e05a"
         ssh_alias = "fleet-kali"
         access_host = "ssh.phillias.us"
@@ -29,6 +50,7 @@
     [fleet.nodes.oci1]
         hostname = "oci1"
         lan_ip = "10.0.0.245"
+        mesh_ip = "100.96.0.8"
         tunnel_id = "d5142bb1-74f1-414c-b57a-da7cd03d9515"
         ssh_alias = "fleet-oci"
         access_host = "ssh.phillias.net"
@@ -37,6 +59,7 @@
     [fleet.nodes.kalione]
         hostname = "InspironOne"
         lan_ip = "192.168.1.224"
+        mesh_ip = "100.96.0.2"
         tunnel_id = "dd2af799-7400-4155-9002-9ef61e1c0cff"
         ssh_alias = "fleet-kalione"
         access_host = "ssh.phillias.org"
@@ -45,6 +68,7 @@
     [fleet.nodes.primary]
         hostname = "primary"
         lan_ip = "10.0.0.149"
+        mesh_ip = "100.96.0.1"
         tunnel_id = "d8787ea7-f3db-4b14-b9da-20a8e244809a"
         ssh_alias = "fleet-primary"
         access_host = "ssh.phillias.cc"

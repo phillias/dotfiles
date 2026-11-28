@@ -1,0 +1,74 @@
+#!/bin/bash
+# Fleet firewall: iptables INPUT rules for every port in .fleet.ports
+# (.chezmoidata/fleet.toml). Supersedes the iptables blocks inlined in
+# scripts/install-et-no-sslh*.sh; service setup stays in
+# scripts/install-fleet-networking.sh.
+#
+# Loopback (127.0.0.0/8) and Docker bridge (172.16.0.0/12) dials are accepted
+# first so they never enter a recent list. Then, per port:
+#   rate_limit = true   --set, --update DROP past 3 new conns / 60s per
+#                       source IP (recent list et-rl-<port>), then ACCEPT
+#   rate_limit = false  plain ACCEPT
+# add_rule deletes any matching copy before re-inserting at its position, so
+# every apply converges to the same layout. Rules are persisted to
+# /etc/iptables/rules.v4. Prerequisite failures fail the apply: there are no
+# silent skips that would let chezmoi record this hook as done.
+set -euo pipefail
+{{ if eq .chezmoi.os "linux" }}
+{{- $dports := list }}
+{{- range .fleet.ports }}
+{{- $dports = append $dports (toString .number) }}
+{{- end }}
+
+RATE_HITS=3
+RATE_SECONDS=60
+
+if ! dpkg -s iptables-persistent >/dev/null 2>&1; then
+    echo "[fleet-firewall] installing iptables-persistent"
+    echo "iptables-persistent iptables-persistent/autosave_v4 boolean false" | sudo -n debconf-set-selections
+    echo "iptables-persistent iptables-persistent/autosave_v6 boolean false" | sudo -n debconf-set-selections
+    sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -qq iptables-persistent
+fi
+
+# add_rule POS RULE...: ensure RULE is at INPUT position POS
+add_rule() {
+    local pos="$1"
+    shift
+    while sudo -n iptables -C INPUT "$@" 2>/dev/null; do
+        sudo -n iptables -D INPUT "$@"
+    done
+    sudo -n iptables -I INPUT "$pos" "$@"
+}
+
+# Drop the exemption pair left by the deprecated install-et-no-sslh*.sh
+# scripts (dports 22,2022), superseded by the fleet-wide pair below.
+for src in 127.0.0.0/8 172.16.0.0/12; do
+    while sudo -n iptables -C INPUT -p tcp -m multiport --dports 22,2022 -s "$src" -j ACCEPT 2>/dev/null; do
+        sudo -n iptables -D INPUT -p tcp -m multiport --dports 22,2022 -s "$src" -j ACCEPT
+    done
+done
+
+add_rule 1 -p tcp -m multiport --dports "{{ join "," $dports }}" -s 127.0.0.0/8 -j ACCEPT
+add_rule 2 -p tcp -m multiport --dports "{{ join "," $dports }}" -s 172.16.0.0/12 -j ACCEPT
+pos=3
+{{- range .fleet.ports }}
+
+# Port {{ .number }} ({{ .name }})
+{{- if .rate_limit }}
+add_rule "$pos" -p {{ .protocol }} --dport {{ .number }} -m conntrack --ctstate NEW \
+    -m recent --name "et-rl-{{ .number }}" --set
+add_rule "$((pos + 1))" -p {{ .protocol }} --dport {{ .number }} -m conntrack --ctstate NEW \
+    -m recent --name "et-rl-{{ .number }}" --update --seconds "$RATE_SECONDS" \
+    --hitcount "$((RATE_HITS + 1))" -j DROP
+add_rule "$((pos + 2))" -p {{ .protocol }} --dport {{ .number }} -m conntrack --ctstate NEW -j ACCEPT
+pos=$((pos + 3))
+{{- else }}
+add_rule "$pos" -p {{ .protocol }} --dport {{ .number }} -j ACCEPT
+pos=$((pos + 1))
+{{- end }}
+{{- end }}
+
+sudo -n mkdir -p /etc/iptables
+sudo -n sh -c 'iptables-save > /etc/iptables/rules.v4'
+echo "[fleet-firewall] INPUT rules applied for ports {{ join "," $dports }}; persisted /etc/iptables/rules.v4"
+{{ end }}

@@ -1,4 +1,8 @@
 #!/bin/bash
+# DEPRECATED: This script is superseded by install-fleet-networking.sh.
+# Kept for reference only. Use install-fleet-networking.sh for new setups.
+# The iptables logic has moved to run_onchange_fleet-firewall.sh.tmpl (chezmoi-managed).
+#
 # Install and harden Eternal Terminal with direct exposure (no sslh, no tunnel)
 # on the kali fleet node as user phillias.
 #

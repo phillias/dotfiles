@@ -594,39 +594,26 @@ chezmoi apply $CHEZMOI_APPLY_OPTS
 # Phase 7b — Fleet SSH mesh enrollment
 # ═══════════════════════════════════════════════════════════════════
 #
-# Greenfield provisioning for the fleet-chat / opencode-serve SSH mesh
+# Greenfield provisioning for the fleet SSH mesh and opencode serve
 # (dot_agents/skills/dotfiles/refs/FLEET-TUNNELS.md). Runs AFTER the
 # Phase 7 apply so the data-driven fleet-* SSH aliases (rendered from
-# .chezmoidata/fleet.toml .fleet.nodes) exist in ~/.ssh/config. It wires
-# up everything SSH communication on the mesh needs:
-#   1. autossh — system transport for the tunnel units (not
-#      mise-pinnable; apt package)
+# .chezmoidata/fleet.toml .fleet.nodes) exist in ~/.ssh/config. The
+# autossh opencode tunnels are retired: fleet-chat reaches other nodes'
+# serve over WARP mesh (<node>.mesh:4096). It wires up:
+#   1. dnsmasq — the fleet mesh DNS resolver
 #   2. host keys — accept-new probes on every fleet alias record the
-#      remote host keys into ~/.ssh/known_hosts (autossh cannot answer
-#      the first-connect prompt)
+#      remote host keys into ~/.ssh/known_hosts (non-interactive SSH
+#      cannot answer the first-connect prompt)
 #   3. cross-node authorized_keys — every fleet node's chezmoi@* deploy
 #      key (registered on phillias/dotfiles in Phase 2/8b) is appended
-#      here, so every other node can SSH in; the tunnels ARE the mesh
-#      security boundary and they ride these keys
-#   4. enable opencode-serve and the mesh tunnel units this host applies
-#      (its own-target tunnel unit is hostname-ignored via .chezmoiignore)
-#      and fail if any deployed opencode unit is still disabled
+#      here, so every other node can SSH in
+#   4. enable opencode-serve and fail if any deployed opencode unit is
+#      still disabled
 # Probe and key-sync failures are reported, not fatal. A deployed
 # opencode unit that is still disabled fails setup.
 
 if ! $IS_MAC; then
-    # ── 15b. autossh ─────────────────────────────────────────────
-    if ! command -v autossh &>/dev/null; then
-        echo ""
-        echo "==> Installing autossh (fleet mesh tunnel transport)..."
-        if sudo -n apt-get install -y autossh 2>/dev/null; then
-            echo "  autossh installed"
-        else
-            echo "WARN: autossh install failed; run 'sudo apt-get install -y autossh' before tunnels can start" >&2
-        fi
-    fi
-
-    # ── 15b2. dnsmasq ────────────────────────────────────────────
+    # ── 15b. dnsmasq ────────────────────────────────────────────
     if ! command -v dnsmasq &>/dev/null; then
         echo ""
         echo "==> Installing dnsmasq (fleet mesh DNS resolver)..."
@@ -692,23 +679,10 @@ else
 fi
 
 # ── 15e. Enable opencode units applied by Phase 7 ────────────────
-# Serve does not depend on autossh. Tunnel units do: without the binary
-# they stay skipped (ConditionFileIsExecutable) instead of restart-looping.
+# The autossh tunnel units are retired; run_fleet-tunnels.sh removes any
+# still deployed on every chezmoi apply.
 if ! $IS_MAC && command -v systemctl &>/dev/null; then
     systemctl --user daemon-reload 2>/dev/null || true
-    if command -v autossh &>/dev/null; then
-        ENABLED_TUNNELS=0
-        for TUNIT in "$HOME/.config/systemd/user"/opencode-tunnel-*.service; do
-            [ -f "$TUNIT" ] || continue
-            if systemctl --user enable --now "$(basename "$TUNIT")" 2>/dev/null; then
-                ENABLED_TUNNELS=$((ENABLED_TUNNELS+1))
-            fi
-        done
-        echo "==> Fleet tunnels: enabled/confirmed $ENABLED_TUNNELS unit(s)"
-        echo "    (run_fleet-tunnels.sh re-enables them on every chezmoi apply)"
-    else
-        echo "==> Fleet tunnels: autossh unavailable — units stay ConditionFileIsExecutable-skipped"
-    fi
     if [ -f "$HOME/.config/systemd/user/opencode-serve.service" ]; then
         if systemctl --user enable --now opencode-serve.service 2>/dev/null; then
             echo "==> opencode-serve: enabled"
@@ -729,11 +703,6 @@ if ! $IS_MAC && command -v systemctl &>/dev/null; then
     for TUNIT in "$HOME/.config/systemd/user"/opencode-*.service; do
         [ -f "$TUNIT" ] || continue
         TNAME=$(basename "$TUNIT")
-        case "$TNAME" in
-            opencode-tunnel-*)
-                command -v autossh &>/dev/null || continue
-                ;;
-        esac
         if ! systemctl --user is-enabled "$TNAME" >/dev/null 2>&1; then
             echo "ERROR: ${TNAME} is deployed but not enabled" >&2
             OPENCODE_DISABLED=1

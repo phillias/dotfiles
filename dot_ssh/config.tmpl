@@ -80,12 +80,12 @@ Host ssh.phillias.cc
 
 # Fleet mesh aliases — data-driven from .chezmoidata/fleet.toml (.fleet.nodes).
 # One Host block per registered node: the fleet-* alias every node uses to
-# reach that node (autossh tunnel units, fleet-chat, agent panes). Transport
+# reach that node (fleet SSH, agent panes). Transport
 # is the fleet mesh transport + the shared passphraseless chezmoi-deploy-key.
 # Greenfield: scripts/setup.sh Phase 7b probes these aliases post-apply to
 # record host keys (accept-new) and syncs every fleet deploy key into
-# authorized_keys. accept-new is deliberate — autossh cannot answer the
-# first-connect host-key prompt.
+# authorized_keys. accept-new is deliberate — non-interactive SSH cannot
+# answer the first-connect host-key prompt.
 {{- range $name, $node := .fleet.nodes }}
 Host {{ $node.ssh_alias }}
   HostName {{ $node.access_host }}

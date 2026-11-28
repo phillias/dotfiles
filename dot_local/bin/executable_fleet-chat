@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
-# fleet-chat — small, secret-safe adapter for the local opencode serve mesh.
+# fleet-chat — small, secret-safe adapter for the fleet opencode serve mesh.
 set -euo pipefail
 
 BIN_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/$(basename -- "${BASH_SOURCE[0]}")"
-DESCRIPTION="Send and inspect agent messages across the localhost opencode serve mesh"
+DESCRIPTION="Send and inspect agent messages across the fleet opencode serve mesh"
 AUTH_ENV="${OPENCODE_SERVE_ENV:-${HOME}/.config/opencode/opencode-serve.env}"
 NODES_FILE="$(dirname -- "$AUTH_ENV")/fleet-chat.nodes"
 MAX_TEXT=1200
 
+# Remote nodes are reached over WARP mesh (<node>.mesh resolves via the
+# fleet dnsmasq); the autossh localhost tunnels (:14001-14004) are retired.
 DEFAULT_NODES=(
   "local=http://127.0.0.1:4096"
-  "primary=http://127.0.0.1:14001"
-  "kali=http://127.0.0.1:14002"
-  "kalione=http://127.0.0.1:14003"
+  "primary=http://primary.mesh:4096"
+  "kali=http://kali.mesh:4096"
+  "kalione=http://kalione.mesh:4096"
+  "oci1=http://oci1.mesh:4096"
 )
 
 declare -A NODE_URL=()
@@ -22,7 +25,7 @@ NODES_LOADED=0
 die() { echo "error: $1"; [[ -n "${2:-}" ]] && echo "help: $2"; exit "${3:-1}"; }
 usage() {
   cat <<'EOF'
-fleet-chat — send and inspect agent messages across the localhost opencode serve mesh
+fleet-chat — send and inspect agent messages across the fleet opencode serve mesh
 
 Usage:
   fleet-chat list-nodes [--toon] [--json]

@@ -654,18 +654,13 @@ facts.
 
 ## 9. Fleet serve mesh (cross-node agent communication)
 
-Fleet nodes (kalione, primary, kali) each run `opencode serve --port 4096
---hostname 127.0.0.1` as a systemd --user unit (`opencode-serve.service`,
+Fleet nodes (kalione, primary, kali, oci1) each run `opencode serve --port
+4096 --hostname 0.0.0.0` as a systemd --user unit (`opencode-serve.service`,
 chezmoi-managed in dotfiles), rooted at `~/firstmate` for hosted sessions.
-Nodes reach each other's serve through
-persistent autossh SSH tunnels (`opencode-tunnel-<node>.service`), so a
-firstmate's opencode agent reaches a remote node's agent at a localhost port:
-
-| Local endpoint | Remote node | Remote serve |
-|---|---|---|
-| `http://127.0.0.1:14001` | primary | 127.0.0.1:4096 |
-| `http://127.0.0.1:14002` | kali | 127.0.0.1:4096 |
-| `http://127.0.0.1:14003` | kalione | 127.0.0.1:4096 |
+Nodes reach each other's serve directly over WARP mesh at
+`http://<node>.mesh:4096` (TCP/4096 accepted by the dotfiles hook
+`run_onchange_fleet-firewall.sh.tmpl`). The autossh localhost tunnels
+(`opencode-tunnel-<node>.service`, `127.0.0.1:14001-14004`) are retired.
 
 Auth: `OPENCODE_SERVER_USERNAME/PASSWORD` from
 `~/.config/opencode/opencode-serve.env` (EnvironmentFile in the unit), rendered
@@ -708,9 +703,5 @@ acknowledgement. Basic auth is loaded from the mode-0600
 `~/.config/opencode/opencode-serve.env` and is never placed in command
 arguments or output.
 
-Each host applies only the tunnels to the OTHER nodes (hostname-gated via
-`.chezmoiignore`), so the endpoints a host sees depend on which node it is:
-kalione sees 14001+14002, primary sees 14002+14003, kali sees
-14001+14003. Tunnel unit design, port assignments, validation commands, and
-the add-a-node procedure are owned by the dotfiles skill:
-`dotfiles/refs/FLEET-TUNNELS.md`.
+Mesh transport, validation commands, and the add-a-node procedure are owned
+by the dotfiles skill: `dotfiles/refs/FLEET-TUNNELS.md`.
