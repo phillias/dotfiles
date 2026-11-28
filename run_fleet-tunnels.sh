@@ -16,6 +16,7 @@ SYSTEMD_USER_DIR="${HOME}/.config/systemd/user"
 
 command -v systemctl >/dev/null 2>&1 || exit 0
 
+cleanup_failed=0
 for legacy_unit in \
 	opencode-tunnel-primary55522.service \
 	opencode-tunnel-ssh.phillias.cc.service \
@@ -26,8 +27,12 @@ for legacy_unit in \
 do
 	legacy_path="${SYSTEMD_USER_DIR}/${legacy_unit}"
 	if [ -f "$legacy_path" ]; then
-		systemctl --user disable --now "$legacy_unit" 2>/dev/null || true
-		rm -f "$legacy_path"
+		if systemctl --user disable --now "$legacy_unit" 2>/dev/null; then
+			rm -f "$legacy_path"
+		else
+			echo "ERROR: failed to stop retired unit ${legacy_unit}; preserving it for retry" >&2
+			cleanup_failed=1
+		fi
 	fi
 done
 
@@ -47,5 +52,9 @@ for unit in "${SYSTEMD_USER_DIR}"/opencode-*.service; do
 	fi
 done
 if [ "$failed" -ne 0 ]; then
+	exit 1
+fi
+
+if [ "$cleanup_failed" -ne 0 ]; then
 	exit 1
 fi
