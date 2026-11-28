@@ -88,7 +88,7 @@ Host ssh.phillias.cc
 # answer the first-connect host-key prompt.
 {{- range $name, $node := .fleet.nodes }}
 Host {{ $node.ssh_alias }}
-  HostName {{ $node.access_host }}
+  HostName {{ $node.mesh_ip }}
   User {{ $node.ssh_user }}
   IdentityFile ~/.ssh/chezmoi-deploy-key
   IdentitiesOnly yes
@@ -100,6 +100,13 @@ Host *cloudflared* *
   ServerAliveInterval 30
   ServerAliveCountMax 3
   TCPKeepAlive yes
+
+# mem-bare git remote on primary (WARP mesh)
+Host mem-primary
+  HostName {{ .fleet.nodes.primary.mesh_ip }}
+  User {{ .fleet.nodes.primary.ssh_user }}
+  IdentityFile ~/.ssh/chezmoi-deploy-key
+  IdentitiesOnly yes
 
 # oci1 — Oracle Cloud selfhost (direct reserved IP)
 Host oci1
