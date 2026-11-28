@@ -17,7 +17,8 @@ ingress rules. Rescue sshd has been decommissioned across the fleet.
 - Captain confirmed tunnel route points to this node
 - Rollback snapshot exists
 - Captain-approved execution window
-- If node has iptables rate limiting: #602 loopback-exemption patch merged+applied
+- iptables rate limiting is owned by the chezmoi hook `run_onchange_fleet-firewall.sh.tmpl`
+  (loopback/Docker exemptions included); confirm `chezmoi apply` has run on the node
 
 ## Slice checklist
 
@@ -67,8 +68,8 @@ ingress rules. Rescue sshd has been decommissioned across the fleet.
 
 | Node | Script | Notes |
 |------|--------|-------|
-| oci1 | `scripts/install-et-no-sslh.sh` | Reference implementation (user: ubuntu) |
-| kali | `scripts/install-et-no-sslh-phillias.sh` | Kali adaptation (user: phillias, removes legacy :55554) |
+| oci1 | `scripts/install-fleet-networking.sh` | ubuntu variant (supersedes deprecated `install-et-no-sslh.sh`) |
+| kali | `scripts/install-fleet-networking.sh` | phillias variant: removes legacy :55554 (supersedes deprecated `install-et-no-sslh-phillias.sh`) |
 | kalione | Manual (canary complete) | Already locally-managed tunnel |
 | primary | Complete | Tunnel `d8787ea7`, ssh.phillias.cc + et.phillias.cc |
 

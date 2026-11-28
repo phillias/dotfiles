@@ -55,8 +55,8 @@ situations[13]{situation,go-to}:
   Encrypted files skipped during apply,refs/DESIGN.md — Setup & Recovery
   New machine,refs/DESIGN.md — Setup
   Broken SSH deploy key,refs/DESIGN.md — Setup & Recovery
-  Fleet opencode tunnels (cross-node agent mesh),refs/FLEET-TUNNELS.md
-  Add a fleet node or debug a tunnel,refs/FLEET-TUNNELS.md
+  Fleet opencode mesh (cross-node agent transport; autossh tunnels retired),refs/FLEET-TUNNELS.md
+  Add a fleet node or debug mesh reachability,refs/FLEET-TUNNELS.md
 
 ---
 

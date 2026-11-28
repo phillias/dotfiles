@@ -42,7 +42,9 @@ Prerequisites: curl, python3, ssh-keygen, Node.js or Bun, sudo (optional)
 
 Fresh-install bootstrap troubleshooting (first-time setup failing) → load `dotfiles-chezmoi`.
 The `scripts/` directory also holds standalone one-off installers (setup.sh, setup-omp.sh,
-install-et-sslh-for-moshi.sh, install-et-no-sslh.sh) — they are NOT chezmoi run scripts.
+install-fleet-networking.sh) — they are NOT chezmoi run scripts. Fleet iptables rules are the
+exception: they live in the chezmoi hook run_onchange_fleet-firewall.sh.tmpl (ports from
+.chezmoidata/fleet.toml .fleet.ports).
 
 ### Kimi harness bootstrap
 
