@@ -170,7 +170,8 @@ fleet-chat latest --node <peer> --session <id>
 The autossh tunnel units are retired in dotfiles. A plain `chezmoi apply`
 removes them: `run_fleet-tunnels.sh` disables (`disable --now`) and deletes
 any deployed `opencode-tunnel-{primary,kali,kalione,oci1}.service`, then
-daemon-reloads. No manual stop/disable/rm is needed.
+daemon-reloads. No manual stop/disable/rm is needed (a unit that fails to stop
+is kept and fails the apply for retry; see `dotfiles/refs/FLEET-TUNNELS.md`).
 
 ### Step 5: macOS captain workstation
 

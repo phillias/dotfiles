@@ -28,9 +28,10 @@ an administrator's laptop.
 
 The four `opencode-tunnel-{primary,kali,kalione,oci1}.service` autossh units
 are no longer shipped. `run_fleet-tunnels.sh` (runs on every `chezmoi apply`)
-disables and removes any tunnel unit still deployed on a host, daemon-reloads,
-`enable --now`s `opencode-serve.service`, and fails the apply if any deployed
-opencode unit is still disabled. autossh is no longer a node prerequisite.
+disables and removes any tunnel unit still deployed on a host (a unit whose
+`disable --now` fails is kept and fails the apply, so the next apply retries),
+daemon-reloads, `enable --now`s `opencode-serve.service`, and fails the apply if
+any deployed opencode unit is still disabled. autossh is no longer a node prerequisite.
 
 ## SSH aliases
 
