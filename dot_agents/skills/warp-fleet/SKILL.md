@@ -150,6 +150,12 @@ fleet-chat resolves nodes from `$FLEET_CHAT_NODES`, a `fleet-chat.nodes` file,
 or its built-in map. The built-in map now points at `<node>.mesh:4096`
 (resolved by the fleet dnsmasq from `fleet.toml` `mesh_ip` seeds plus
 mesh-ddns); the old `localhost:14xxx` tunnel entries are gone.
+Before applying the retirement, update any existing `localhost:14001`–
+`localhost:14004` entries in `FLEET_CHAT_NODES` or
+`~/.config/opencode/fleet-chat.nodes` to the corresponding `<node>.mesh:4096`
+URL (`primary`, `kali`, `kalione`, or `oci1`). Preserve unrelated custom node
+entries; if both sources are present, update both or unset the environment
+override.
 
 ### Step 3: Validate fleet-chat over Mesh
 

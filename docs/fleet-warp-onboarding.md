@@ -225,8 +225,12 @@ newton=http://<mesh-ip>:4096
 ```
 
 Create the file if it does not exist. If `FLEET_CHAT_NODES` is set in the
-environment it takes precedence over the file — either unset it or add the
-entry there too.
+environment it takes precedence over the file. Before applying the tunnel
+retirement, migrate any existing `localhost:14001`–`localhost:14004` entries
+in whichever source is active to the corresponding `<node>.mesh:4096` URL
+(`primary`, `kali`, `kalione`, or `oci1`). Keep unrelated custom node entries;
+if both sources are used during migration, update both or unset the
+environment override.
 
 Verify from the peer:
 
@@ -276,7 +280,12 @@ The autossh tunnel layer is **retired**: WARP Mesh is the primary inter-node
 transport. The `opencode-tunnel-<node>.service` units are no longer shipped,
 and `run_fleet-tunnels.sh` disables and removes any that are still deployed on
 the next `chezmoi apply` (including the automatic `chezmoi-sync-cron` run).
-No manual tunnel stop/disable/move is needed.
+Before that apply, migrate any existing `localhost:14001`–`localhost:14004`
+entries in `FLEET_CHAT_NODES` or `~/.config/opencode/fleet-chat.nodes` to the
+corresponding `<node>.mesh:4096` URL (`primary`, `kali`, `kalione`, or `oci1`),
+while preserving unrelated custom nodes. If both override sources are present,
+update both or unset the environment override. No manual tunnel
+stop/disable/move is needed.
 
 If Mesh connectivity to a node fails, diagnose the Mesh path rather than
 falling back to tunnels:
